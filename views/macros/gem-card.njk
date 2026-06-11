@@ -27,6 +27,9 @@
         {% if vm.reservation %}
         <div class="property">Reservation: <span class="colourDefault">{{ vm.reservation }}</span></div>
         {% endif %}
+        {% if vm.requirements.length %}
+        <div class="requirements">Requires: {% for r in vm.requirements %}<span class="colourDefault">{{ r }}</span>{% if not loop.last %}, {% endif %}{% endfor %}</div>
+        {% endif %}
 
         {% if vm.description %}
         <div class="separator"></div>

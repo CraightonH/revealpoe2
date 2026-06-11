@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { getGem, buildGemViewModel, listGems } from '../src/data/gems.js';
+import { getGem, buildGemViewModel, listGems, attributeRequirements } from '../src/data/gems.js';
 
 test('listGems returns active + support gems with slugs', () => {
   const gems = listGems();
@@ -73,6 +73,23 @@ test('typeLine resolves a player-facing category, not an internal token', () => 
   assert.equal(buildGemViewModel('shockwave-totem').typeLine, 'Totem');
   assert.equal(buildGemViewModel('raise-zombie').typeLine, 'Minion');
   assert.equal(buildGemViewModel('boneshatter').typeLine, 'Attack');
+});
+
+test('attributeRequirements splits the fixed range by weight', () => {
+  assert.deepEqual(attributeRequirements({ strength: 100, dexterity: 0, intelligence: 0 }), ['(4—157) Str']);
+  assert.deepEqual(attributeRequirements({ strength: 50, dexterity: 50, intelligence: 0 }), ['(2—79) Str', '(2—79) Dex']);
+  assert.deepEqual(attributeRequirements({ strength: 0, dexterity: 0, intelligence: 100 }), ['(4—157) Int']);
+});
+
+test('attributeRequirements is empty for no/zero requirement', () => {
+  assert.deepEqual(attributeRequirements({ strength: 0, dexterity: 0, intelligence: 0 }), []);
+  assert.deepEqual(attributeRequirements(null), []);
+});
+
+test('buildGemViewModel emits attribute requirements', () => {
+  assert.deepEqual(buildGemViewModel('herald-of-ash').requirements, ['(4—157) Str']);
+  assert.deepEqual(buildGemViewModel('armour-piercing-rounds').requirements, ['(2—79) Str', '(2—79) Dex']);
+  assert.deepEqual(buildGemViewModel('align-fate').requirements, []); // all-zero weights -> no line
 });
 
 test('typeLine never leaks known internal mechanic tokens across active gems', () => {

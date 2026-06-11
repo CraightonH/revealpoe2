@@ -13,6 +13,15 @@ const RESERVATION_LABEL = { spirit: 'Spirit', mana: 'Mana', life: 'Life' };
 const GEM_LEVEL_CAP = 20; // fixed display cap (plan data fact: "Display level cap: 20")
 const SKILL_PANEL_FOOTER = 'Skills can be managed in the Skills Panel.';
 
+// Attribute requirement display. The dataset carries requirement_weights (the
+// proportional split) but NOT the magnitude progression. ATTR_REQ_RANGE is the
+// observed pure-attribute range from the reference card (gem levels 1–20); it is
+// split proportionally by weight, analogous to the fixed levelRange. Adjust the
+// bounds here if the true values differ — they are a deliberate display approximation.
+const ATTR_REQ_RANGE = { min: 4, max: 157 };
+const ATTR_ABBR = { strength: 'Str', dexterity: 'Dex', intelligence: 'Int' };
+const ATTR_ORDER = ['strength', 'dexterity', 'intelligence'];
+
 // Player-facing primary skill categories. A granted skill's `active_skill.types`
 // interleaves internal mechanic/descriptor tokens (OngoingSkill, Trappable, Fire,
 // Area, ...) with its primary category; we take the first token that maps to a
@@ -76,6 +85,22 @@ export function listGems() {
 
 export function getGem(slug) {
   return index().get(slug) ?? null;
+}
+
+// Attribute requirement lines from requirement_weights, e.g. {strength:100} ->
+// ['(4—157) Str']; {strength:50,dexterity:50} -> ['(2—79) Str','(2—79) Dex'].
+// Returns [] when there is no attribute requirement (all-zero or missing weights).
+export function attributeRequirements(weights) {
+  if (!weights) return [];
+  const out = [];
+  for (const attr of ATTR_ORDER) {
+    const w = weights[attr];
+    if (!w) continue;
+    const min = Math.round((ATTR_REQ_RANGE.min * w) / 100);
+    const max = Math.round((ATTR_REQ_RANGE.max * w) / 100);
+    out.push(`(${min}—${max}) ${ATTR_ABBR[attr]}`);
+  }
+  return out;
 }
 
 export function getRecommendedSupports(gem) {
@@ -142,6 +167,7 @@ export function buildGemViewModel(slug) {
     // Fixed display range (not derived per-gem) — see GEM_LEVEL_CAP.
     levelRange: { min: 1, max: GEM_LEVEL_CAP },
     reservation,
+    requirements: attributeRequirements(gem.requirement_weights),
     skillIconUrl: ddsUrl(gem.icon_dds_file),
     hoverImageUrl: ddsUrl(gem.ui_image),
     description: skill?.active_skill?.description

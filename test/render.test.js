@@ -22,6 +22,9 @@ test('GET /gem/herald-of-ash renders the card', async () => {
   assert.match(res.text, /\(16\.67—23\)%/);
   // footer
   assert.match(res.text, /Skills can be managed in the Skills Panel\./);
+  // attribute requirement (fixed display range, split by requirement_weights)
+  assert.match(res.text, /Requires:/);
+  assert.match(res.text, /\(4—157\) Str/);
 });
 
 test('GET /gem/unknown returns 404', async () => {
