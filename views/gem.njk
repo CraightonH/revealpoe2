@@ -1,6 +1,12 @@
 {% extends "base.njk" %}
 {% from "macros/gem-card.njk" import gemCard %}
+{% from "macros/recommended-supports.njk" import recommendedSupports %}
 {% block title %}{{ vm.name }} — PoE2 Wiki{% endblock %}
 {% block content %}
-<div class="page">{{ gemCard(vm) }}</div>
+<div class="page">
+  <div class="gem-detail">
+    {{ gemCard(vm) }}
+    {{ recommendedSupports(vm) }}
+  </div>
+</div>
 {% endblock %}

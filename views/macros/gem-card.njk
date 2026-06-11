@@ -62,15 +62,6 @@
       {% endif %}
     </div>
 
-    {% if vm.recommendedSupports.length %}
-    <div class="separator"></div>
-    <div class="property" style="text-align:center;">Recommended Supports</div>
-    <div class="support-list">
-      {% for s in vm.recommendedSupports %}
-      <a class="{{ s.color }}" href="/gem/{{ s.slug }}">{{ s.name }}</a>
-      {% endfor %}
-    </div>
-    {% endif %}
   </div>
 </div>
 {% endmacro %}

@@ -44,7 +44,10 @@ body {
 }
 .search-results a:hover { background: var(--bg-base); }
 .page { padding: 24px; display: flex; justify-content: center; }
-.support-list { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 14px 12px; }
+.gem-detail { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.recommended-supports { width: 100%; max-width: 390px; }
+.recommended-supports__title { margin: 0 0 8px; font-size: 14px; font-weight: 600; text-align: center; color: var(--color-prop); }
+.support-list { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
 .support-list a {
   font-size: 11px;
   padding: 3px 9px;

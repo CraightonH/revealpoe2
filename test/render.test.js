@@ -26,6 +26,15 @@ test('GET /gem/herald-of-ash renders the card', async () => {
   assert.match(res.text, /Requires:/);
   assert.match(res.text, /Level \(1—90\)/);
   assert.match(res.text, /\(4—157\) Str/);
+  // Recommended Supports must NOT be inside the in-game card popup...
+  const supIdx = res.text.indexOf('recommended-supports');
+  assert.ok(supIdx > -1, 'recommended-supports section should be present on the page');
+  const popupToSupports = res.text.slice(res.text.indexOf('newItemPopup'), supIdx);
+  assert.ok(!/Recommended Supports/.test(popupToSupports), 'supports must be rendered outside the card');
+  // ...but they ARE rendered (below the card) with support links
+  const sectionHtml = res.text.slice(supIdx);
+  assert.match(sectionHtml, /Recommended Supports/);
+  assert.match(sectionHtml, /<a class="[rgbw]" href="\/gem\//);
 });
 
 test('GET /gem/unknown returns 404', async () => {
