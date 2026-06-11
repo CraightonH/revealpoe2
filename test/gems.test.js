@@ -86,10 +86,11 @@ test('attributeRequirements is empty for no/zero requirement', () => {
   assert.deepEqual(attributeRequirements(null), []);
 });
 
-test('buildGemViewModel emits attribute requirements', () => {
-  assert.deepEqual(buildGemViewModel('herald-of-ash').requirements, ['(4—157) Str']);
-  assert.deepEqual(buildGemViewModel('armour-piercing-rounds').requirements, ['(2—79) Str', '(2—79) Dex']);
-  assert.deepEqual(buildGemViewModel('align-fate').requirements, []); // all-zero weights -> no line
+test('buildGemViewModel emits requirements (level always, attributes when present)', () => {
+  assert.deepEqual(buildGemViewModel('herald-of-ash').requirements, ['Level (1—90)', '(4—157) Str']);
+  assert.deepEqual(buildGemViewModel('armour-piercing-rounds').requirements, ['Level (1—90)', '(2—79) Str', '(2—79) Dex']);
+  // all-zero attribute weights -> still shows the level requirement, no attribute line
+  assert.deepEqual(buildGemViewModel('align-fate').requirements, ['Level (1—90)']);
 });
 
 test('typeLine never leaks known internal mechanic tokens across active gems', () => {

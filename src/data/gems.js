@@ -22,6 +22,11 @@ const ATTR_REQ_RANGE = { min: 4, max: 157 };
 const ATTR_ABBR = { strength: 'Str', dexterity: 'Dex', intelligence: 'Int' };
 const ATTR_ORDER = ['strength', 'dexterity', 'intelligence'];
 
+// Character-level requirement display range. Like ATTR_REQ_RANGE, the magnitude
+// progression is not in the dataset; this is the observed reference range across
+// gem levels 1–20, shown for every gem as a deliberate display approximation.
+const CHAR_LEVEL_RANGE = { min: 1, max: 90 };
+
 // Player-facing primary skill categories. A granted skill's `active_skill.types`
 // interleaves internal mechanic/descriptor tokens (OngoingSkill, Trappable, Fire,
 // Area, ...) with its primary category; we take the first token that maps to a
@@ -167,7 +172,11 @@ export function buildGemViewModel(slug) {
     // Fixed display range (not derived per-gem) — see GEM_LEVEL_CAP.
     levelRange: { min: 1, max: GEM_LEVEL_CAP },
     reservation,
-    requirements: attributeRequirements(gem.requirement_weights),
+    // Every gem shows a character-level requirement; attribute lines follow when present.
+    requirements: [
+      `Level (${CHAR_LEVEL_RANGE.min}—${CHAR_LEVEL_RANGE.max})`,
+      ...attributeRequirements(gem.requirement_weights),
+    ],
     skillIconUrl: ddsUrl(gem.icon_dds_file),
     hoverImageUrl: ddsUrl(gem.ui_image),
     description: skill?.active_skill?.description
