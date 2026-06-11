@@ -10,7 +10,7 @@ const REPOE = 'repoe-poe2';
 const TYPE_LABEL = { active: 'Skill', support: 'Support', spirit: 'Spirit' };
 
 const RESERVATION_LABEL = { spirit: 'Spirit', mana: 'Mana', life: 'Life' };
-const GEM_LEVEL_CAP = 20;
+const GEM_LEVEL_CAP = 20; // fixed display cap (plan data fact: "Display level cap: 20")
 const SKILL_PANEL_FOOTER = 'Skills can be managed in the Skills Panel.';
 
 const BORDER = {
@@ -116,6 +116,7 @@ export function buildGemViewModel(slug) {
     typeLine,
     tags,
     tier: gem.crafting_level ?? null,
+    // Fixed display range (not derived per-gem) — see GEM_LEVEL_CAP.
     levelRange: { min: 1, max: GEM_LEVEL_CAP },
     reservation,
     skillIconUrl: ddsUrl(gem.icon_dds_file),

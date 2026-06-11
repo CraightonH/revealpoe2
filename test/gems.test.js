@@ -52,3 +52,14 @@ test('buildGemViewModel emits rich card fields for Herald of Ash', () => {
   assert.ok(vm.sections[1].lines.some((l) => /\(16\.67—23\)%/.test(l)));
   assert.ok(vm.sections[1].lines.some((l) => /<span class="kw"/.test(l)));
 });
+
+test('buildGemViewModel handles a support gem (no active skill)', () => {
+  const vm = buildGemViewModel('abiding-hex');
+  assert.ok(vm, 'abiding-hex should exist');
+  assert.equal(vm.typeLine, 'Support');
+  assert.equal(vm.footer, null);
+  assert.equal(vm.description, null);
+  assert.equal(vm.reservation, null);
+  assert.equal(typeof vm.tier, 'number');
+  assert.ok(Array.isArray(vm.sections)); // support skills still expose stat sections
+});
