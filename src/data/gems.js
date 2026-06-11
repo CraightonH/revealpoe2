@@ -13,6 +13,29 @@ const RESERVATION_LABEL = { spirit: 'Spirit', mana: 'Mana', life: 'Life' };
 const GEM_LEVEL_CAP = 20; // fixed display cap (plan data fact: "Display level cap: 20")
 const SKILL_PANEL_FOOTER = 'Skills can be managed in the Skills Panel.';
 
+// Player-facing primary skill categories. A granted skill's `active_skill.types`
+// interleaves internal mechanic/descriptor tokens (OngoingSkill, Trappable, Fire,
+// Area, ...) with its primary category; we take the first token that maps to a
+// category label here, preserving the game's own ordering. Verb-form categories
+// (e.g. "SummonsTotem") map to their player-facing noun ("Totem").
+const SKILL_TYPE_CATEGORY = {
+  Attack: 'Attack', Spell: 'Spell', Minion: 'Minion', Buff: 'Buff',
+  Aura: 'Aura', Herald: 'Herald', Curse: 'Curse', Mark: 'Mark',
+  Warcry: 'Warcry', Banner: 'Banner', Companion: 'Companion',
+  Offering: 'Offering', Channel: 'Channel', Movement: 'Movement',
+  Travel: 'Travel', Slam: 'Slam', Nova: 'Nova', Grenade: 'Grenade',
+  Projectile: 'Projectile', Melee: 'Melee',
+  SummonsTotem: 'Totem', SummonsAttackTotem: 'Totem',
+};
+
+// First player-facing category among a skill's types, or null if none.
+function skillTypeLine(skill) {
+  for (const t of skill?.active_skill?.types ?? []) {
+    if (t in SKILL_TYPE_CATEGORY) return SKILL_TYPE_CATEGORY[t];
+  }
+  return null;
+}
+
 const BORDER = {
   r: { border: 'rgba(139,48,48,0.7)', glow: 'rgba(139,48,48,0.45)' },
   g: { border: 'rgba(48,100,48,0.7)', glow: 'rgba(48,100,48,0.45)' },
@@ -79,14 +102,14 @@ export function buildGemViewModel(slug) {
 
   const b = BORDER[gem.color] ?? BORDER.w;
 
-  // Type line: spirit gems keep their gem-type label ("Spirit") — their granted
-  // skill's first type is an internal token ("HasReservation"), not player-facing.
-  // For other gems, prefer the granted active skill's first type (e.g. "Buff"),
+  // Type line: spirit gems keep their gem-type label ("Spirit"); their granted
+  // skill's first category is a buff/etc. but "Spirit" is the meaningful label.
+  // Other gems use the first player-facing category from the granted skill,
   // falling back to the gem-type label.
   const typeLine =
     gem.gem_type === 'spirit'
       ? (TYPE_LABEL.spirit ?? 'Spirit')
-      : (skill?.active_skill?.types?.[0] ?? (TYPE_LABEL[gem.gem_type] ?? 'Skill'));
+      : (skillTypeLine(skill) ?? (TYPE_LABEL[gem.gem_type] ?? 'Skill'));
 
   // Tags as display names, excluding the one already shown as the type line.
   const tags = displayTags(gem.tags, [typeLine]);

@@ -63,3 +63,26 @@ test('buildGemViewModel handles a support gem (no active skill)', () => {
   assert.equal(typeof vm.tier, 'number');
   assert.ok(Array.isArray(vm.sections)); // support skills still expose stat sections
 });
+
+test('typeLine resolves a player-facing category, not an internal token', () => {
+  // archmage's types[0] is the internal token "OngoingSkill"; the category is "Buff".
+  assert.equal(buildGemViewModel('archmage').typeLine, 'Buff');
+  // bloodhounds-mark: "Mark" is last in its types array, after several mechanic tokens.
+  assert.equal(buildGemViewModel('bloodhounds-mark').typeLine, 'Mark');
+  // totem skills are encoded as the verb "SummonsTotem" -> display "Totem".
+  assert.equal(buildGemViewModel('shockwave-totem').typeLine, 'Totem');
+  assert.equal(buildGemViewModel('raise-zombie').typeLine, 'Minion');
+  assert.equal(buildGemViewModel('boneshatter').typeLine, 'Attack');
+});
+
+test('typeLine never leaks known internal mechanic tokens across active gems', () => {
+  const banned = new Set([
+    'OngoingSkill', 'HasReservation', 'CrossbowAmmoSkill', 'Trappable',
+    'Totemable', 'Mineable', 'Triggerable', 'UsableWhileMoving', 'SummonsTotem',
+  ]);
+  const leaks = listGems()
+    .filter((g) => g.gemType === 'active')
+    .map((g) => buildGemViewModel(g.slug).typeLine)
+    .filter((tl) => banned.has(tl));
+  assert.deepEqual(leaks, [], `internal tokens leaked as type lines: ${[...new Set(leaks)].join(', ')}`);
+});
