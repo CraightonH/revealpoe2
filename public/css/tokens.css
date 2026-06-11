@@ -1,0 +1,49 @@
+:root {
+  --color-normal: #c8c8c8;
+  --color-magic: #8888ff;
+  --color-rare: #ffff77;
+  --color-unique: #af6025;
+  --color-gem: #1ba29b;
+  --color-gem-r: #c44040;
+  --color-gem-g: #4aad4a;
+  --color-gem-b: #6666aa;
+  --color-gem-w: #aaaaaa;
+  --color-fire: #960000;
+  --color-cold: #366492;
+  --color-lightning: #ffd700;
+  --color-chaos: #d02090;
+  --color-prop: #6e9a97;
+  --color-default: #7f7f7f;
+  --color-crafted: #b4b4ff;
+}
+
+/* Aliases used by gem-card.css (matches reference variable names) */
+:root {
+  --gem-color: var(--color-gem);
+  --magic-color: var(--color-magic);
+  --rare-color: var(--color-rare);
+  --unique-color: var(--color-unique);
+  --normal-color: var(--color-normal);
+  --fire-color: var(--color-fire);
+  --cold-color: var(--color-cold);
+  --lightning-color: var(--color-lightning);
+  --chaos-color: var(--color-chaos);
+  --crafted-color: var(--color-crafted);
+  --prop-color: var(--color-prop);
+  --default-color: var(--color-default);
+}
+
+:root,
+:root[data-theme="dark"] {
+  --bg-base: #0d0d0d;
+  --bg-surface: #16181f;
+  --border: #2a2d3d;
+  --text: #c8b888;
+}
+
+:root[data-theme="light"] {
+  --bg-base: #f8f6f0;
+  --bg-surface: #eeebe3;
+  --border: #ccc8bb;
+  --text: #2a2418;
+}
