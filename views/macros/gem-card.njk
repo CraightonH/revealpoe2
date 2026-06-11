@@ -13,35 +13,51 @@
       <div class="itemName typeLine"><span class="lc">{{ vm.typeLine }}</span></div>
     </div>
 
-    <div class="Stats">
-      {% if vm.tags.length %}
-      <div class="property">{{ vm.tags | join(', ') }}</div>
-      {% endif %}
-      {% if vm.craftingLevel %}
-      <div class="property">Level: <span class="colourDefault">{{ vm.craftingLevel }}</span></div>
-      {% endif %}
+    <div class="content">
+      <div class="Stats">
+        {% if vm.tags.length %}
+        <div class="property">{{ vm.tags | join(', ') }}</div>
+        {% endif %}
+        {% if vm.tier %}
+        <div class="property">Tier: <span class="colourDefault">{{ vm.tier }}</span></div>
+        {% endif %}
+        {% if vm.levelRange %}
+        <div class="property">Level: <span class="colourDefault">({{ vm.levelRange.min }}—{{ vm.levelRange.max }})</span></div>
+        {% endif %}
+        {% if vm.reservation %}
+        <div class="property">Reservation: <span class="colourDefault">{{ vm.reservation }}</span></div>
+        {% endif %}
 
-      {% if vm.description %}
-      <div class="separator"></div>
-      <div class="secDescrText">{{ vm.description | safe }}</div>
-      {% endif %}
+        {% if vm.description %}
+        <div class="separator"></div>
+        <div class="secDescrText">{{ vm.description | safe }}</div>
+        {% endif %}
+      </div>
 
-      {% if vm.supportText %}
-      <div class="separator"></div>
-      <div class="secDescrText">{{ vm.supportText | safe }}</div>
+      {% for section in vm.sections %}
+      {% if section.label %}
+      <div class="hybridHeader gemTabs">
+        <div class="TextGem TitleBar"><span class="ItemType">{{ section.label }}</span></div>
+      </div>
       {% endif %}
-    </div>
-
-    {% if vm.mods.length %}
-    <div class="hybridHeader gemTabs">
-      <div class="TextGem TitleBar"><span class="ItemType">{{ vm.typeLine }}</span></div>
-    </div>
-    <div class="Stats">
-      {% for mod in vm.mods %}
-      <div class="explicitMod">{{ mod | safe }}</div>
+      <div class="Stats">
+        {% for line in section.lines %}
+        <div class="explicitMod">{{ line | safe }}</div>
+        {% endfor %}
+        {% if section.quality.length %}
+        <div class="quality-text"><br><span class="white">Additional Effects From Quality:</span></div>
+        {% for q in section.quality %}
+        <div class="qualityMod">{{ q | safe }}</div>
+        {% endfor %}
+        {% endif %}
+      </div>
       {% endfor %}
+
+      {% if vm.footer %}
+      <div class="separator"></div>
+      <div class="default fst-italic">{{ vm.footer }}</div>
+      {% endif %}
     </div>
-    {% endif %}
 
     {% if vm.recommendedSupports.length %}
     <div class="separator"></div>
