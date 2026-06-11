@@ -21,7 +21,7 @@ test('buildGemViewModel produces card fields', () => {
   assert.equal(vm.borderColor, 'rgba(139,48,48,0.7)');
   assert.ok(vm.skillIconUrl.includes('HeraldOfAshSkill'));
   assert.ok(vm.hoverImageUrl.includes('GemHoverImage'));
-  assert.ok(vm.tags.includes('fire'));
+  assert.ok(vm.tags.includes('Fire'));
   assert.match(vm.description, /<span class="kw"/); // tokens rendered
   assert.ok(vm.recommendedSupports.length > 0);
   assert.ok(vm.recommendedSupports[0].slug);
@@ -35,4 +35,54 @@ test('spirit gems are labeled Spirit in typeLine', () => {
   const vm = buildGemViewModel('fire-spell-on-hit');
   assert.ok(vm, 'fire-spell-on-hit gem should exist');
   assert.equal(vm.typeLine, 'Spirit');
+});
+
+test('buildGemViewModel emits rich card fields for Herald of Ash', () => {
+  const vm = buildGemViewModel('herald-of-ash');
+  assert.equal(vm.typeLine, 'Buff');
+  assert.deepEqual(vm.tags, ['Persistent', 'AoE', 'Fire', 'Duration', 'Herald']);
+  assert.equal(vm.tier, 4);
+  assert.deepEqual(vm.levelRange, { min: 1, max: 20 });
+  assert.equal(vm.reservation, '30 Spirit');
+  assert.equal(vm.footer, 'Skills can be managed in the Skills Panel.');
+
+  const labels = vm.sections.map((s) => s.label);
+  assert.deepEqual(labels, ['Buff', 'Explosion']);
+  // section lines are rendered to safe HTML (bracket tokens -> spans)
+  assert.ok(vm.sections[1].lines.some((l) => /\(16\.67—23\)%/.test(l)));
+  assert.ok(vm.sections[1].lines.some((l) => /<span class="kw"/.test(l)));
+});
+
+test('buildGemViewModel handles a support gem (no active skill)', () => {
+  const vm = buildGemViewModel('abiding-hex');
+  assert.ok(vm, 'abiding-hex should exist');
+  assert.equal(vm.typeLine, 'Support');
+  assert.equal(vm.footer, null);
+  assert.equal(vm.description, null);
+  assert.equal(vm.reservation, null);
+  assert.equal(typeof vm.tier, 'number');
+  assert.ok(Array.isArray(vm.sections)); // support skills still expose stat sections
+});
+
+test('typeLine resolves a player-facing category, not an internal token', () => {
+  // archmage's types[0] is the internal token "OngoingSkill"; the category is "Buff".
+  assert.equal(buildGemViewModel('archmage').typeLine, 'Buff');
+  // bloodhounds-mark: "Mark" is last in its types array, after several mechanic tokens.
+  assert.equal(buildGemViewModel('bloodhounds-mark').typeLine, 'Mark');
+  // totem skills are encoded as the verb "SummonsTotem" -> display "Totem".
+  assert.equal(buildGemViewModel('shockwave-totem').typeLine, 'Totem');
+  assert.equal(buildGemViewModel('raise-zombie').typeLine, 'Minion');
+  assert.equal(buildGemViewModel('boneshatter').typeLine, 'Attack');
+});
+
+test('typeLine never leaks known internal mechanic tokens across active gems', () => {
+  const banned = new Set([
+    'OngoingSkill', 'HasReservation', 'CrossbowAmmoSkill', 'Trappable',
+    'Totemable', 'Mineable', 'Triggerable', 'UsableWhileMoving', 'SummonsTotem',
+  ]);
+  const leaks = listGems()
+    .filter((g) => g.gemType === 'active')
+    .map((g) => buildGemViewModel(g.slug).typeLine)
+    .filter((tl) => banned.has(tl));
+  assert.deepEqual(leaks, [], `internal tokens leaked as type lines: ${[...new Set(leaks)].join(', ')}`);
 });

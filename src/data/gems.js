@@ -2,10 +2,39 @@ import { loadJson } from './loader.js';
 import { slugify } from './slug.js';
 import { renderGameText } from './keywords.js';
 import { ddsUrl } from './images.js';
+import { displayTags } from './gemTags.js';
+import { buildSections } from './statText.js';
 
 const REPOE = 'repoe-poe2';
 
 const TYPE_LABEL = { active: 'Skill', support: 'Support', spirit: 'Spirit' };
+
+const RESERVATION_LABEL = { spirit: 'Spirit', mana: 'Mana', life: 'Life' };
+const GEM_LEVEL_CAP = 20; // fixed display cap (plan data fact: "Display level cap: 20")
+const SKILL_PANEL_FOOTER = 'Skills can be managed in the Skills Panel.';
+
+// Player-facing primary skill categories. A granted skill's `active_skill.types`
+// interleaves internal mechanic/descriptor tokens (OngoingSkill, Trappable, Fire,
+// Area, ...) with its primary category; we take the first token that maps to a
+// category label here, preserving the game's own ordering. Verb-form categories
+// (e.g. "SummonsTotem") map to their player-facing noun ("Totem").
+const SKILL_TYPE_CATEGORY = {
+  Attack: 'Attack', Spell: 'Spell', Minion: 'Minion', Buff: 'Buff',
+  Aura: 'Aura', Herald: 'Herald', Curse: 'Curse', Mark: 'Mark',
+  Warcry: 'Warcry', Banner: 'Banner', Companion: 'Companion',
+  Offering: 'Offering', Channel: 'Channel', Movement: 'Movement',
+  Travel: 'Travel', Slam: 'Slam', Nova: 'Nova', Grenade: 'Grenade',
+  Projectile: 'Projectile', Melee: 'Melee',
+  SummonsTotem: 'Totem', SummonsAttackTotem: 'Totem',
+};
+
+// First player-facing category among a skill's types, or null if none.
+function skillTypeLine(skill) {
+  for (const t of skill?.active_skill?.types ?? []) {
+    if (t in SKILL_TYPE_CATEGORY) return SKILL_TYPE_CATEGORY[t];
+  }
+  return null;
+}
 
 const BORDER = {
   r: { border: 'rgba(139,48,48,0.7)', glow: 'rgba(139,48,48,0.45)' },
@@ -64,24 +93,42 @@ export function getRecommendedSupports(gem) {
   return out;
 }
 
-function explicitMods(gem) {
-  const grants = gem.grants_skills?.[0];
-  if (!grants) return { description: null, mods: [] };
-  const skills = loadJson(`${REPOE}/skills.json`);
-  const skill = skills[grants];
-  if (!skill) return { description: null, mods: [] };
-  const description = skill.active_skill?.description ?? null;
-  const set = skill.stat_sets?.[0];
-  const statText = set?.static?.stat_text ?? {};
-  const mods = Object.values(statText).filter((t) => t && t.trim().length > 0);
-  return { description, mods };
-}
-
 export function buildGemViewModel(slug) {
   const gem = getGem(slug);
   if (!gem) return null;
-  const { description, mods } = explicitMods(gem);
+
+  const skills = loadJson(`${REPOE}/skills.json`);
+  const skill = skills[gem.grants_skills?.[0]] ?? null;
+
   const b = BORDER[gem.color] ?? BORDER.w;
+
+  // Type line: spirit gems keep their gem-type label ("Spirit"); their granted
+  // skill's first category is a buff/etc. but "Spirit" is the meaningful label.
+  // Other gems use the first player-facing category from the granted skill,
+  // falling back to the gem-type label.
+  const typeLine =
+    gem.gem_type === 'spirit'
+      ? (TYPE_LABEL.spirit ?? 'Spirit')
+      : (skillTypeLine(skill) ?? (TYPE_LABEL[gem.gem_type] ?? 'Skill'));
+
+  // Tags as display names, excluding the one already shown as the type line.
+  const tags = displayTags(gem.tags, [typeLine]);
+
+  // Reservation, e.g. { spirit: 30 } -> "30 Spirit".
+  let reservation = null;
+  const res = skill?.static?.reservations;
+  if (res) {
+    const [kind, amount] = Object.entries(res)[0] ?? [];
+    if (kind != null) reservation = `${amount} ${RESERVATION_LABEL[kind] ?? kind}`;
+  }
+
+  // Sections, with every line/quality string rendered to safe token HTML.
+  const sections = buildSections(skill, GEM_LEVEL_CAP).map((s) => ({
+    label: s.label,
+    lines: s.lines.map(renderGameText),
+    quality: s.quality.map(renderGameText),
+  }));
+
   return {
     slug,
     name: gem.base_item.display_name,
@@ -89,14 +136,19 @@ export function buildGemViewModel(slug) {
     gemType: gem.gem_type,
     borderColor: b.border,
     glowColor: b.glow,
-    typeLine: TYPE_LABEL[gem.gem_type] ?? 'Skill',
-    tags: gem.tags ?? [],
-    craftingLevel: gem.crafting_level ?? null,
+    typeLine,
+    tags,
+    tier: gem.crafting_level ?? null,
+    // Fixed display range (not derived per-gem) — see GEM_LEVEL_CAP.
+    levelRange: { min: 1, max: GEM_LEVEL_CAP },
+    reservation,
     skillIconUrl: ddsUrl(gem.icon_dds_file),
     hoverImageUrl: ddsUrl(gem.ui_image),
-    description: description ? renderGameText(description) : null,
-    mods: mods.map(renderGameText),
-    supportText: gem.support_text ? renderGameText(gem.support_text) : null,
+    description: skill?.active_skill?.description
+      ? renderGameText(skill.active_skill.description)
+      : null,
+    sections,
+    footer: skill?.active_skill ? SKILL_PANEL_FOOTER : null,
     recommendedSupports: getRecommendedSupports(gem),
   };
 }
