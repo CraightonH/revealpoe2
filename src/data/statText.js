@@ -52,6 +52,7 @@ export function resolveQuality(qstat) {
   const raw = qstat.stats?.[id];
   if (raw == null) return null;
   const resolved = Number(applyHandler(handler, raw));
+  if (Number.isNaN(resolved)) return null;
   const isPercent = tmpl.includes('}%');
   if (isPercent && resolved > 100) return null; // implausible — omit
   return tmpl.replace(m[0], `(0${EM}${resolved})`);
