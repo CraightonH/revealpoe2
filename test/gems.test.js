@@ -21,7 +21,7 @@ test('buildGemViewModel produces card fields', () => {
   assert.equal(vm.borderColor, 'rgba(139,48,48,0.7)');
   assert.ok(vm.skillIconUrl.includes('HeraldOfAshSkill'));
   assert.ok(vm.hoverImageUrl.includes('GemHoverImage'));
-  assert.ok(vm.tags.includes('fire'));
+  assert.ok(vm.tags.includes('Fire'));
   assert.match(vm.description, /<span class="kw"/); // tokens rendered
   assert.ok(vm.recommendedSupports.length > 0);
   assert.ok(vm.recommendedSupports[0].slug);
@@ -35,4 +35,20 @@ test('spirit gems are labeled Spirit in typeLine', () => {
   const vm = buildGemViewModel('fire-spell-on-hit');
   assert.ok(vm, 'fire-spell-on-hit gem should exist');
   assert.equal(vm.typeLine, 'Spirit');
+});
+
+test('buildGemViewModel emits rich card fields for Herald of Ash', () => {
+  const vm = buildGemViewModel('herald-of-ash');
+  assert.equal(vm.typeLine, 'Buff');
+  assert.deepEqual(vm.tags, ['Persistent', 'AoE', 'Fire', 'Duration', 'Herald']);
+  assert.equal(vm.tier, 4);
+  assert.deepEqual(vm.levelRange, { min: 1, max: 20 });
+  assert.equal(vm.reservation, '30 Spirit');
+  assert.equal(vm.footer, 'Skills can be managed in the Skills Panel.');
+
+  const labels = vm.sections.map((s) => s.label);
+  assert.deepEqual(labels, ['Buff', 'Explosion']);
+  // section lines are rendered to safe HTML (bracket tokens -> spans)
+  assert.ok(vm.sections[1].lines.some((l) => /\(16\.67—23\)%/.test(l)));
+  assert.ok(vm.sections[1].lines.some((l) => /<span class="kw"/.test(l)));
 });

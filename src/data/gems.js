@@ -2,10 +2,16 @@ import { loadJson } from './loader.js';
 import { slugify } from './slug.js';
 import { renderGameText } from './keywords.js';
 import { ddsUrl } from './images.js';
+import { displayTags } from './gemTags.js';
+import { buildSections } from './statText.js';
 
 const REPOE = 'repoe-poe2';
 
 const TYPE_LABEL = { active: 'Skill', support: 'Support', spirit: 'Spirit' };
+
+const RESERVATION_LABEL = { spirit: 'Spirit', mana: 'Mana', life: 'Life' };
+const GEM_LEVEL_CAP = 20;
+const SKILL_PANEL_FOOTER = 'Skills can be managed in the Skills Panel.';
 
 const BORDER = {
   r: { border: 'rgba(139,48,48,0.7)', glow: 'rgba(139,48,48,0.45)' },
@@ -64,24 +70,42 @@ export function getRecommendedSupports(gem) {
   return out;
 }
 
-function explicitMods(gem) {
-  const grants = gem.grants_skills?.[0];
-  if (!grants) return { description: null, mods: [] };
-  const skills = loadJson(`${REPOE}/skills.json`);
-  const skill = skills[grants];
-  if (!skill) return { description: null, mods: [] };
-  const description = skill.active_skill?.description ?? null;
-  const set = skill.stat_sets?.[0];
-  const statText = set?.static?.stat_text ?? {};
-  const mods = Object.values(statText).filter((t) => t && t.trim().length > 0);
-  return { description, mods };
-}
-
 export function buildGemViewModel(slug) {
   const gem = getGem(slug);
   if (!gem) return null;
-  const { description, mods } = explicitMods(gem);
+
+  const skills = loadJson(`${REPOE}/skills.json`);
+  const skill = skills[gem.grants_skills?.[0]] ?? null;
+
   const b = BORDER[gem.color] ?? BORDER.w;
+
+  // Type line: spirit gems keep their gem-type label ("Spirit") — their granted
+  // skill's first type is an internal token ("HasReservation"), not player-facing.
+  // For other gems, prefer the granted active skill's first type (e.g. "Buff"),
+  // falling back to the gem-type label.
+  const typeLine =
+    gem.gem_type === 'spirit'
+      ? (TYPE_LABEL.spirit ?? 'Spirit')
+      : (skill?.active_skill?.types?.[0] ?? (TYPE_LABEL[gem.gem_type] ?? 'Skill'));
+
+  // Tags as display names, excluding the one already shown as the type line.
+  const tags = displayTags(gem.tags, [typeLine]);
+
+  // Reservation, e.g. { spirit: 30 } -> "30 Spirit".
+  let reservation = null;
+  const res = skill?.static?.reservations;
+  if (res) {
+    const [kind, amount] = Object.entries(res)[0] ?? [];
+    if (kind != null) reservation = `${amount} ${RESERVATION_LABEL[kind] ?? kind}`;
+  }
+
+  // Sections, with every line/quality string rendered to safe token HTML.
+  const sections = buildSections(skill, GEM_LEVEL_CAP).map((s) => ({
+    label: s.label,
+    lines: s.lines.map(renderGameText),
+    quality: s.quality.map(renderGameText),
+  }));
+
   return {
     slug,
     name: gem.base_item.display_name,
@@ -89,14 +113,18 @@ export function buildGemViewModel(slug) {
     gemType: gem.gem_type,
     borderColor: b.border,
     glowColor: b.glow,
-    typeLine: TYPE_LABEL[gem.gem_type] ?? 'Skill',
-    tags: gem.tags ?? [],
-    craftingLevel: gem.crafting_level ?? null,
+    typeLine,
+    tags,
+    tier: gem.crafting_level ?? null,
+    levelRange: { min: 1, max: GEM_LEVEL_CAP },
+    reservation,
     skillIconUrl: ddsUrl(gem.icon_dds_file),
     hoverImageUrl: ddsUrl(gem.ui_image),
-    description: description ? renderGameText(description) : null,
-    mods: mods.map(renderGameText),
-    supportText: gem.support_text ? renderGameText(gem.support_text) : null,
+    description: skill?.active_skill?.description
+      ? renderGameText(skill.active_skill.description)
+      : null,
+    sections,
+    footer: skill?.active_skill ? SKILL_PANEL_FOOTER : null,
     recommendedSupports: getRecommendedSupports(gem),
   };
 }
