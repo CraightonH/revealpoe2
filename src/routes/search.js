@@ -1,5 +1,8 @@
+import { search } from '../data/search.js';
+
 export function registerSearch(app) {
   app.get('/search', (req, res) => {
-    res.type('html').send('');
+    const results = search(req.query.q);
+    res.render('partials/search-results.njk', { results });
   });
 }

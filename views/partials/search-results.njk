@@ -1,0 +1,7 @@
+{% if results.length %}
+<div class="search-results">
+  {% for r in results %}
+  <a href="{{ r.url }}">{{ r.name }}</a>
+  {% endfor %}
+</div>
+{% endif %}
