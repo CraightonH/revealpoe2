@@ -30,3 +30,9 @@ test('buildGemViewModel produces card fields', () => {
 test('getGem returns null for unknown slug', () => {
   assert.equal(getGem('not-a-real-gem'), null);
 });
+
+test('spirit gems are labeled Spirit in typeLine', () => {
+  const vm = buildGemViewModel('fire-spell-on-hit');
+  assert.ok(vm, 'fire-spell-on-hit gem should exist');
+  assert.equal(vm.typeLine, 'Spirit');
+});

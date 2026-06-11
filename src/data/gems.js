@@ -5,6 +5,8 @@ import { ddsUrl } from './images.js';
 
 const REPOE = 'repoe-poe2';
 
+const TYPE_LABEL = { active: 'Skill', support: 'Support', spirit: 'Spirit' };
+
 const BORDER = {
   r: { border: 'rgba(139,48,48,0.7)', glow: 'rgba(139,48,48,0.45)' },
   g: { border: 'rgba(48,100,48,0.7)', glow: 'rgba(48,100,48,0.45)' },
@@ -22,7 +24,14 @@ function index() {
     const name = rec?.base_item?.display_name;
     if (!name) continue;
     const slug = slugify(name);
-    if (!_index.has(slug)) _index.set(slug, { key, ...rec });
+    if (!_index.has(slug)) {
+      _index.set(slug, { key, ...rec });
+    } else if (_index.get(slug).gem_type !== rec.gem_type) {
+      const existing = _index.get(slug);
+      console.warn(
+        `[gems] cross-type slug collision: "${slug}" — keeping ${existing.base_item.display_name} (${existing.gem_type}), skipping ${name} (${rec.gem_type})`
+      );
+    }
   }
   return _index;
 }
@@ -80,7 +89,7 @@ export function buildGemViewModel(slug) {
     gemType: gem.gem_type,
     borderColor: b.border,
     glowColor: b.glow,
-    typeLine: gem.gem_type === 'support' ? 'Support' : 'Skill',
+    typeLine: TYPE_LABEL[gem.gem_type] ?? 'Skill',
     tags: gem.tags ?? [],
     craftingLevel: gem.crafting_level ?? null,
     skillIconUrl: ddsUrl(gem.icon_dds_file),
