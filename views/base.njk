@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}PoE2 Wiki{% endblock %}</title>
+  <link rel="stylesheet" href="/static/fonts.css">
+  <link rel="stylesheet" href="/static/css/tokens.css">
+  <link rel="stylesheet" href="/static/css/app.css">
+  <link rel="stylesheet" href="/static/css/gem-card.css">
+  <script src="/static/vendor/htmx.min.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/">PoE2 Wiki</a>
+    <div class="search-box">
+      <input type="search" name="q" placeholder="Search gems…"
+             hx-get="/search" hx-trigger="input changed delay:200ms, search"
+             hx-target="#search-results" autocomplete="off">
+      <div id="search-results"></div>
+    </div>
+  </header>
+  <main>{% block content %}{% endblock %}</main>
+</body>
+</html>

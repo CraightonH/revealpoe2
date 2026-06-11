@@ -1,0 +1,6 @@
+{% extends "base.njk" %}
+{% from "macros/gem-card.njk" import gemCard %}
+{% block title %}{{ vm.name }} — PoE2 Wiki{% endblock %}
+{% block content %}
+<div class="page">{{ gemCard(vm) }}</div>
+{% endblock %}

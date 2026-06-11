@@ -1,0 +1,11 @@
+{% extends "base.njk" %}
+{% block content %}
+<div class="page" style="flex-direction:column;align-items:center;">
+  <h1 style="font-family:'OptimusPrincepsSemiBold',serif;color:var(--color-unique);">
+    Path of Exile 2 Wiki
+  </h1>
+  {% if notFound %}<p>No gem found for "{{ notFound }}".</p>{% endif %}
+  <p>Search for a skill gem above. Try
+    <a href="/gem/herald-of-ash" style="color:var(--color-gem);">Herald of Ash</a>.</p>
+</div>
+{% endblock %}

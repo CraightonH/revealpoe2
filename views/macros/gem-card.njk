@@ -1,0 +1,57 @@
+{% macro gemCard(vm) %}
+<div class="newItemPopup GemPopup item-popup--poe2"
+     style="--card-border: {{ vm.borderColor }}; --card-glow: {{ vm.glowColor }};
+            {% if vm.hoverImageUrl %}--hover-image: url('{{ vm.hoverImageUrl }}');{% endif %}">
+  <div class="bg-art"></div>
+  <div class="content">
+    <div class="itemHeader doubleLine">
+      {% if vm.skillIconUrl %}
+      <img class="leadSkillIcon" src="{{ vm.skillIconUrl }}"
+           onerror="this.style.visibility='hidden'">
+      {% endif %}
+      <div class="itemName"><span class="lc">{{ vm.name }}</span></div>
+      <div class="itemName typeLine"><span class="lc">{{ vm.typeLine }}</span></div>
+    </div>
+
+    <div class="Stats">
+      {% if vm.tags.length %}
+      <div class="property">{{ vm.tags | join(', ') }}</div>
+      {% endif %}
+      {% if vm.craftingLevel %}
+      <div class="property">Level: <span class="colourDefault">{{ vm.craftingLevel }}</span></div>
+      {% endif %}
+
+      {% if vm.description %}
+      <div class="separator"></div>
+      <div class="secDescrText">{{ vm.description | safe }}</div>
+      {% endif %}
+
+      {% if vm.supportText %}
+      <div class="separator"></div>
+      <div class="secDescrText">{{ vm.supportText | safe }}</div>
+      {% endif %}
+    </div>
+
+    {% if vm.mods.length %}
+    <div class="hybridHeader gemTabs">
+      <div class="TextGem TitleBar"><span class="ItemType">{{ vm.typeLine }}</span></div>
+    </div>
+    <div class="Stats">
+      {% for mod in vm.mods %}
+      <div class="explicitMod">{{ mod | safe }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if vm.recommendedSupports.length %}
+    <div class="separator"></div>
+    <div class="property" style="text-align:center;">Recommended Supports</div>
+    <div class="support-list">
+      {% for s in vm.recommendedSupports %}
+      <a class="{{ s.color }}" href="/gem/{{ s.slug }}">{{ s.name }}</a>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endmacro %}
