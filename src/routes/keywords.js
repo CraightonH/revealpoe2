@@ -1,12 +1,5 @@
 import { getDefinition, hasDefinition } from '../data/keywordDefs.js';
-import { renderGameText } from '../data/keywords.js';
-
-function escapeHtml(s) {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
+import { renderGameText, escapeHtml } from '../data/keywords.js';
 
 export function registerKeywords(app) {
   app.get('/api/keyword/:key', (req, res) => {
