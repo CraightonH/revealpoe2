@@ -61,3 +61,24 @@ body {
 .support-list a.g { border-left: 2px solid var(--color-gem-g); }
 .support-list a.b { border-left: 2px solid var(--color-gem-b); }
 .support-list a.w { border-left: 2px solid var(--color-gem-w); }
+
+/* Keyword tooltips */
+.kw {
+  color: var(--color-prop);
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+  cursor: help;
+}
+.kw:hover { color: var(--color-rare); }
+
+.tippy-box[data-theme~='poe2'] {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--color-normal);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.tippy-box[data-theme~='poe2'] .tippy-content { padding: 8px 10px; }
+.tippy-box[data-theme~='poe2'] .tippy-arrow { color: var(--bg-surface); }
+.kw-tip > strong { display: block; margin-bottom: 4px; color: var(--text); }
+.kw-tip__body .kw { cursor: help; }
