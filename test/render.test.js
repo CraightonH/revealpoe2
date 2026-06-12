@@ -43,3 +43,17 @@ test('GET /gem/unknown returns 404', async () => {
   const res = await request(createApp()).get('/gem/does-not-exist');
   assert.equal(res.status, 404);
 });
+
+test('layout loads Popper before Tippy before the keyword glue', async () => {
+  // Tippy's UMD build requires window.Popper; it must load (and execute)
+  // before tippy, which must load before keywords.js, or tooltips never show.
+  const res = await request(createApp()).get('/gem/herald-of-ash');
+  const popper = res.text.indexOf('popper.min.js');
+  const tippy = res.text.indexOf('tippy.umd'); // the script, not tippy.css
+  const glue = res.text.indexOf('js/keywords.js');
+  assert.ok(popper > -1, 'Popper script must be present');
+  assert.ok(tippy > -1, 'Tippy script must be present');
+  assert.ok(glue > -1, 'keywords.js glue must be present');
+  assert.ok(popper < tippy, 'Popper must load before Tippy');
+  assert.ok(tippy < glue, 'Tippy must load before keywords.js');
+});
