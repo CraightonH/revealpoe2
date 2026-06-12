@@ -81,4 +81,3 @@ body {
 .tippy-box[data-theme~='poe2'] .tippy-content { padding: 8px 10px; }
 .tippy-box[data-theme~='poe2'] .tippy-arrow { color: var(--bg-surface); }
 .kw-tip > strong { display: block; margin-bottom: 4px; color: var(--text); }
-.kw-tip__body .kw { cursor: help; }

@@ -25,13 +25,20 @@
       if (instance._kwLoading) return;
       instance._kwLoading = true;
       fetch('/api/keyword/' + encodeURIComponent(key))
-        .then(function (r) { return r.ok ? r.text() : null; })
-        .then(function (html) {
-          var val = html || 'No description available.';
-          cache.set(key, val);
+        .then(function (r) {
+          // Cache real hits and real 404s (missing keyword = stable). Treat any
+          // other status (5xx, etc.) as transient: show the fallback but don't
+          // cache it, so the next hover retries.
+          if (r.ok) return r.text().then(function (html) { return { cache: true, html: html }; });
+          return { cache: r.status === 404, html: null };
+        })
+        .then(function (result) {
+          var val = result.html || 'No description available.';
+          if (result.cache) cache.set(key, val);
           instance.setContent(val);
         })
         .catch(function () {
+          // Network error — transient, don't cache.
           instance.setContent('No description available.');
         })
         .finally(function () { instance._kwLoading = false; });
