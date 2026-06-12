@@ -21,7 +21,7 @@ test('buildGemViewModel produces card fields', () => {
   assert.equal(vm.borderColor, 'rgba(139,48,48,0.7)');
   assert.ok(vm.skillIconUrl.includes('HeraldOfAshSkill'));
   assert.ok(vm.hoverImageUrl.includes('GemHoverImage'));
-  assert.ok(vm.tags.includes('Fire'));
+  assert.ok(vm.tags.some((t) => /data-keyword="Fire"/.test(t))); // tag is hoverable
   assert.match(vm.description, /<span class="kw"/); // tokens rendered
   assert.ok(vm.recommendedSupports.length > 0);
   assert.ok(vm.recommendedSupports[0].slug);
@@ -40,7 +40,9 @@ test('spirit gems are labeled Spirit in typeLine', () => {
 test('buildGemViewModel emits rich card fields for Herald of Ash', () => {
   const vm = buildGemViewModel('herald-of-ash');
   assert.equal(vm.typeLine, 'Buff');
-  assert.deepEqual(vm.tags, ['Persistent', 'AoE', 'Fire', 'Duration', 'Herald']);
+  // Tags are now rendered keyword HTML; verify the right display names appear in order.
+  const tagTexts = vm.tags.map((t) => t.replace(/<[^>]+>/g, ''));
+  assert.deepEqual(tagTexts, ['Persistent', 'AoE', 'Fire', 'Duration', 'Herald']);
   assert.equal(vm.tier, 4);
   assert.deepEqual(vm.levelRange, { min: 1, max: 20 });
   assert.equal(vm.reservation, '30 Spirit');

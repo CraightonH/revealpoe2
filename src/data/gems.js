@@ -2,7 +2,8 @@ import { loadJson } from './loader.js';
 import { slugify } from './slug.js';
 import { renderGameText } from './keywords.js';
 import { ddsUrl } from './images.js';
-import { displayTags } from './gemTags.js';
+import { displayTagTokens } from './gemTags.js';
+import { hasDefinition } from './keywordDefs.js';
 import { buildSections } from './statText.js';
 
 const REPOE = 'repoe-poe2';
@@ -141,8 +142,9 @@ export function buildGemViewModel(slug) {
       ? (TYPE_LABEL.spirit ?? 'Spirit')
       : (skillTypeLine(skill) ?? (TYPE_LABEL[gem.gem_type] ?? 'Skill'));
 
-  // Tags as display names, excluding the one already shown as the type line.
-  const tags = displayTags(gem.tags, [typeLine]);
+  // Tag tokens, excluding the one already shown as the type line; rendered to
+  // gated keyword HTML so defined tags become hoverable.
+  const tagTokens = displayTagTokens(gem.tags, [typeLine]);
 
   // Reservation, e.g. { spirit: 30 } -> "30 Spirit".
   let reservation = null;
@@ -155,8 +157,8 @@ export function buildGemViewModel(slug) {
   // Sections, with every line/quality string rendered to safe token HTML.
   const sections = buildSections(skill, GEM_LEVEL_CAP).map((s) => ({
     label: s.label,
-    lines: s.lines.map(renderGameText),
-    quality: s.quality.map(renderGameText),
+    lines: s.lines.map((t) => renderGameText(t, hasDefinition)),
+    quality: s.quality.map((t) => renderGameText(t, hasDefinition)),
   }));
 
   return {
@@ -167,7 +169,8 @@ export function buildGemViewModel(slug) {
     borderColor: b.border,
     glowColor: b.glow,
     typeLine,
-    tags,
+    typeLineHtml: renderGameText(`[${typeLine}]`, hasDefinition),
+    tags: tagTokens.map((t) => renderGameText(t, hasDefinition)),
     tier: gem.crafting_level ?? null,
     // Fixed display range (not derived per-gem) — see GEM_LEVEL_CAP.
     levelRange: { min: 1, max: GEM_LEVEL_CAP },
@@ -180,7 +183,7 @@ export function buildGemViewModel(slug) {
     skillIconUrl: ddsUrl(gem.icon_dds_file),
     hoverImageUrl: ddsUrl(gem.ui_image),
     description: skill?.active_skill?.description
-      ? renderGameText(skill.active_skill.description)
+      ? renderGameText(skill.active_skill.description, hasDefinition)
       : null,
     sections,
     footer: skill?.active_skill ? SKILL_PANEL_FOOTER : null,
