@@ -2,7 +2,8 @@ export function escapeHtml(s) {
   return s
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 // Convert "[Id]" / "[Id|Display]" tokens to styled spans; escape the rest.
