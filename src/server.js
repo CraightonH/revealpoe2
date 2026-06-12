@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { registerPages } from './routes/pages.js';
 import { registerSearch } from './routes/search.js';
+import { registerKeywords } from './routes/keywords.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
@@ -24,6 +25,7 @@ export function createApp() {
 
   registerPages(app);
   registerSearch(app);
+  registerKeywords(app);
 
   return app;
 }
