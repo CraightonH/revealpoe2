@@ -83,6 +83,7 @@ body {
 .tippy-box[data-theme~='poe2'] .tippy-content { padding: 0; }
 .tippy-box[data-theme~='poe2'] .tippy-arrow { color: #000; }
 
+.kw-tip { text-align: center; }   /* poe2db centres the popup text */
 .kw-tip > strong {            /* term — poe2db's .card-header */
   display: block;
   margin: 0;
@@ -96,5 +97,12 @@ body {
   font-size: 16px;
   line-height: 1.4;
   padding: 4px 16px 8px;
+}
+.kw-tip__body::before {       /* yellowish divider — poe2db's .ItemRareSeparator */
+  content: "";
+  display: block;
+  height: 2px;
+  margin: 2px 0 7px;
+  background: linear-gradient(90deg, transparent, #c9a227, transparent);
 }
 .kw-tip__body .kw { color: inherit; }   /* nested keywords match body text, like poe2db */
