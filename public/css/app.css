@@ -83,7 +83,11 @@ body {
 .tippy-box[data-theme~='poe2'] .tippy-content { padding: 0; }
 .tippy-box[data-theme~='poe2'] .tippy-arrow { color: #000; }
 
-.kw-tip { text-align: center; }   /* poe2db centres the popup text */
+.kw-tip {
+  text-align: center;             /* poe2db centres the popup text */
+  /* same Fontin faces as the gem card (poe2db: FontinSmallCaps popup, FontinRegular body) */
+  font-family: "FontinSmallCaps", "Fontin SmallCaps", "Palatino Linotype", Georgia, serif;
+}
 .kw-tip > strong {            /* term — poe2db's .card-header */
   display: block;
   margin: 0;
@@ -94,8 +98,9 @@ body {
   letter-spacing: 0.02em;
   padding: 8px 16px 0;
 }
-.kw-tip__body {               /* definition — poe2db's .card-body */
+.kw-tip__body {               /* definition — poe2db's .card-body / .keyword-body */
   color: #b7ab83;
+  font-family: "FontinRegular", "Palatino Linotype", Georgia, serif;
   font-size: 16px;
   line-height: 1.4;
   padding: 4px 16px 8px;
