@@ -10,13 +10,13 @@
            onerror="this.style.visibility='hidden'">
       {% endif %}
       <div class="itemName"><span class="lc">{{ vm.name }}</span></div>
-      <div class="itemName typeLine"><span class="lc">{{ vm.typeLine }}</span></div>
+      <div class="itemName typeLine"><span class="lc">{{ vm.typeLineHtml | safe }}</span></div>
     </div>
 
     <div class="content">
       <div class="Stats">
         {% if vm.tags.length %}
-        <div class="property">{{ vm.tags | join(', ') }}</div>
+        <div class="property">{{ vm.tags | join(', ') | safe }}</div>
         {% endif %}
         {% if vm.tier %}
         <div class="property">Tier: <span class="colourDefault">{{ vm.tier }}</span></div>

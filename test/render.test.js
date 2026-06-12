@@ -10,12 +10,12 @@ test('GET /gem/herald-of-ash renders the card', async () => {
   assert.match(res.text, /newItemPopup/);
   assert.match(res.text, /--card-border:/);
   assert.match(res.text, /leadSkillIcon/);
-  // type line + properties
-  assert.match(res.text, /class="lc">Buff</);
+  // type line + properties (type line is now a hoverable keyword span)
+  assert.match(res.text, /class="lc">.*Buff.*<\/span>/);
   assert.match(res.text, /Tier: <span class="colourDefault">4</);
   assert.match(res.text, /Reservation: <span class="colourDefault">30 Spirit</);
-  // tags as display names
-  assert.match(res.text, /Persistent, AoE, Fire, Duration, Herald/);
+  // tags as hoverable keyword spans
+  assert.match(res.text, /data-keyword="Persistent"/);
   // section headers
   assert.match(res.text, /<span class="ItemType">Explosion<\/span>/);
   // per-level range line

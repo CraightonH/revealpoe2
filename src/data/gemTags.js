@@ -24,3 +24,25 @@ export function displayTags(tags, exclude = []) {
   }
   return out;
 }
+
+// Raw "[Key|Display]" / "[Display]" token for a tag id, or null if the tag has
+// no display form. The keyword id is the bracket key (e.g. "[AoESkill|AoE]"),
+// which differs from the tag id ("area").
+export function tagToken(id) {
+  const map = loadJson(`${REPOE}/gem_tags.json`);
+  return map[id] || null;
+}
+
+// Tokens for displayable tags, dropping non-display tags and any whose display
+// name is in `exclude`. Preserves the keyword id so tooltips can resolve.
+export function displayTagTokens(tags, exclude = []) {
+  const skip = new Set(exclude);
+  const out = [];
+  for (const id of tags ?? []) {
+    const raw = tagToken(id);
+    if (!raw) continue;
+    const display = tagDisplay(id);
+    if (display && !skip.has(display)) out.push(raw);
+  }
+  return out;
+}
