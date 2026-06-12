@@ -90,6 +90,8 @@ body {
   color: #e7b478;
   font-weight: 500;
   font-size: 20px;
+  text-transform: uppercase;  /* poe2db uses FontinSmallCaps; uppercase matches the all-caps look */
+  letter-spacing: 0.02em;
   padding: 8px 16px 0;
 }
 .kw-tip__body {               /* definition — poe2db's .card-body */
