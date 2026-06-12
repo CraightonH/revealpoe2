@@ -1,3 +1,10 @@
+/* User-scalable card: zoom the whole gem-detail unit (card + recommended
+   supports). zoom reflows the layout box so the flex-centered card stays
+   centered and every px value scales proportionally. Medium is the default
+   (no rule / zoom:1). Driven by data-card-size on <html>; see card-size.js. */
+html[data-card-size="s"] .gem-detail { zoom: 0.85; }
+html[data-card-size="l"] .gem-detail { zoom: 1.25; }
+
 .newItemPopup {
   font-family: "FontinSmallCaps", "Fontin SmallCaps", "Palatino Linotype", Georgia, serif;
   background-color: var(--bg-base);

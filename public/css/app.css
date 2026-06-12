@@ -21,6 +21,26 @@ body {
   font-size: 20px;
 }
 .search-box { flex: 1; max-width: 480px; }
+
+/* Card size control (S/M/L) — scales the gem-detail unit, persisted in localStorage */
+.card-size { display: flex; gap: 2px; margin-left: auto; }
+.card-size button {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--color-normal);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.card-size button:hover { border-color: var(--color-prop); }
+.card-size button.active {
+  border-color: var(--color-prop);
+  color: var(--color-prop);
+}
 .search-box input {
   width: 100%;
   padding: 8px 12px;
@@ -77,7 +97,7 @@ body {
   border: 0;
   border-radius: 4px;
   color: #b7ab83;
-  font-size: 16px;
+  font-size: 13px;
   line-height: 1.4;
   /* Tall tooltips can't fit any placement and spill off-screen; cap to the
      viewport and let the body scroll so the title is never clipped at the top. */
@@ -97,7 +117,7 @@ body {
   margin: 0;
   color: #f0e6d2;
   font-weight: 500;
-  font-size: 20px;
+  font-size: 15px;
   /* No text-transform: FontinSmallCaps renders caps itself (capitals full-size,
      lowercase as small caps). Forcing uppercase removes that size variation. */
   padding: 8px 16px 0;
@@ -105,7 +125,7 @@ body {
 .kw-tip__body {               /* definition — poe2db's .card-body / .keyword-body */
   color: #b7ab83;
   font-family: "FontinRegular", "Palatino Linotype", Georgia, serif;
-  font-size: 16px;
+  font-size: 12.5px;
   line-height: 1.4;
   padding: 4px 16px 8px;
 }

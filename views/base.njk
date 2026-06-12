@@ -4,6 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}PoE2 Wiki{% endblock %}</title>
+  <!-- Apply the saved card size before first paint to avoid a flash at default size. -->
+  <script>
+    (function () {
+      try {
+        var s = localStorage.getItem('cardSize');
+        if (s === 's' || s === 'l') document.documentElement.setAttribute('data-card-size', s);
+      } catch (e) {}
+    })();
+  </script>
   <link rel="stylesheet" href="/static/fonts.css">
   <link rel="stylesheet" href="/static/css/tokens.css">
   <link rel="stylesheet" href="/static/css/app.css">
@@ -14,6 +23,7 @@
   <script src="/static/vendor/popper.min.js" defer></script>
   <script src="/static/vendor/tippy.umd.min.js" defer></script>
   <script src="/static/js/keywords.js" defer></script>
+  <script src="/static/js/card-size.js" defer></script>
 </head>
 <body>
   <header class="site-header">
@@ -23,6 +33,11 @@
              hx-get="/search" hx-trigger="input changed delay:200ms, search"
              hx-target="#search-results" autocomplete="off">
       <div id="search-results"></div>
+    </div>
+    <div class="card-size" role="group" aria-label="Card size">
+      <button type="button" data-size="s" title="Small card">S</button>
+      <button type="button" data-size="m" title="Medium card">M</button>
+      <button type="button" data-size="l" title="Large card">L</button>
     </div>
   </header>
   <main>{% block content %}{% endblock %}</main>
