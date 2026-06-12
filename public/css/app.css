@@ -62,22 +62,39 @@ body {
 .support-list a.b { border-left: 2px solid var(--color-gem-b); }
 .support-list a.w { border-left: 2px solid var(--color-gem-w); }
 
-/* Keyword tooltips */
+/* Keyword tooltips — styling matched to poe2db's live tooltip (term #e7b478,
+   body #b7ab83, opaque black popup; Tippy box neutralized so the popup paints). */
 .kw {
   color: var(--color-prop);
   text-decoration: underline dotted;
-  text-underline-offset: 2px;
+  text-underline-offset: 0.2em;
   cursor: help;
 }
 .kw:hover { color: var(--color-rare); }
 
 .tippy-box[data-theme~='poe2'] {
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  color: var(--color-normal);
-  font-size: 12px;
-  line-height: 1.45;
+  background: #000;
+  border: 0;
+  border-radius: 4px;
+  color: #b7ab83;
+  font-size: 16px;
+  line-height: 1.4;
 }
-.tippy-box[data-theme~='poe2'] .tippy-content { padding: 8px 10px; }
-.tippy-box[data-theme~='poe2'] .tippy-arrow { color: var(--bg-surface); }
-.kw-tip > strong { display: block; margin-bottom: 4px; color: var(--text); }
+.tippy-box[data-theme~='poe2'] .tippy-content { padding: 0; }
+.tippy-box[data-theme~='poe2'] .tippy-arrow { color: #000; }
+
+.kw-tip > strong {            /* term — poe2db's .card-header */
+  display: block;
+  margin: 0;
+  color: #e7b478;
+  font-weight: 500;
+  font-size: 20px;
+  padding: 8px 16px 0;
+}
+.kw-tip__body {               /* definition — poe2db's .card-body */
+  color: #b7ab83;
+  font-size: 16px;
+  line-height: 1.4;
+  padding: 4px 16px 8px;
+}
+.kw-tip__body .kw { color: inherit; }   /* nested keywords match body text, like poe2db */
