@@ -1,7 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { tagDisplay, displayTags } from '../src/data/gemTags.js';
-import { tagToken, displayTagTokens } from '../src/data/gemTags.js';
+import { tagDisplay, displayTags, tagToken, displayTagTokens } from '../src/data/gemTags.js';
 
 test('tagDisplay extracts plain bracket display', () => {
   assert.equal(tagDisplay('fire'), 'Fire');

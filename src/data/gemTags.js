@@ -36,12 +36,15 @@ export function tagToken(id) {
 // Tokens for displayable tags, dropping non-display tags and any whose display
 // name is in `exclude`. Preserves the keyword id so tooltips can resolve.
 export function displayTagTokens(tags, exclude = []) {
+  const map = loadJson(`${REPOE}/gem_tags.json`);
   const skip = new Set(exclude);
   const out = [];
   for (const id of tags ?? []) {
-    const raw = tagToken(id);
+    const raw = map[id];
     if (!raw) continue;
-    const display = tagDisplay(id);
+    const inner = raw.replace(/^\[/, '').replace(/\]$/, '');
+    const pipe = inner.indexOf('|');
+    const display = pipe === -1 ? inner : inner.slice(pipe + 1);
     if (display && !skip.has(display)) out.push(raw);
   }
   return out;
