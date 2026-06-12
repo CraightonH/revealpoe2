@@ -79,6 +79,10 @@ body {
   color: #b7ab83;
   font-size: 16px;
   line-height: 1.4;
+  /* Tall tooltips can't fit any placement and spill off-screen; cap to the
+     viewport and let the body scroll so the title is never clipped at the top. */
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
 }
 .tippy-box[data-theme~='poe2'] .tippy-content { padding: 0; }
 .tippy-box[data-theme~='poe2'] .tippy-arrow { color: #000; }
@@ -91,7 +95,7 @@ body {
 .kw-tip > strong {            /* term — poe2db's .card-header */
   display: block;
   margin: 0;
-  color: #e7b478;
+  color: #f0e6d2;
   font-weight: 500;
   font-size: 20px;
   /* No text-transform: FontinSmallCaps renders caps itself (capitals full-size,

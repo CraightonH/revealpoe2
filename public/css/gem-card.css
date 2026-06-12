@@ -99,7 +99,7 @@
   height: 8px;
   margin: 4px 10px;
   background: radial-gradient(ellipse at center, #6e9a97 0%, #6e9a97 10%, transparent 33%);
-  background-size: 100% 1px;
+  background-size: 100% 2px;
   background-repeat: no-repeat;
   background-position: center;
 }

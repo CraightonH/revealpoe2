@@ -14,6 +14,22 @@
     maxWidth: 360,
     theme: 'poe2',
     appendTo: function () { return document.body; },
+    // Keep the popup inside the viewport so tall tooltips don't spill off the
+    // top; paired with the max-height cap in app.css.
+    popperOptions: {
+      modifiers: [
+        // altAxis pins the vertical axis too (default preventOverflow only does
+        // the main axis), and tether:false lets the box detach from the
+        // reference so it shifts fully into view instead of spilling off the top.
+        { name: 'preventOverflow', options: { padding: 8, altAxis: true, tether: false } },
+        { name: 'flip', options: { padding: 8 } },
+      ],
+    },
+    // Content loads async; reposition once it lands so the placement reflects
+    // the final (taller) size rather than the small "Loading…" box.
+    onShown: function (instance) {
+      if (instance.popperInstance) instance.popperInstance.update();
+    },
     content: 'Loading…',
     onShow: function (instance) {
       var key = instance.reference.getAttribute('data-keyword');
