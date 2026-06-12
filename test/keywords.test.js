@@ -19,3 +19,18 @@ test('token with pipe uses display text after pipe', () => {
     'non-<span class="kw" data-keyword="Attack">Attacks</span>'
   );
 });
+
+test('token without a definition renders as plain escaped text', () => {
+  const has = (id) => id === 'Attack';
+  assert.equal(
+    renderGameText('non-[Attack|Attacks] then [Foo|Bar]', has),
+    'non-<span class="kw" data-keyword="Attack">Attacks</span> then Bar'
+  );
+});
+
+test('default predicate keeps every token interactive', () => {
+  assert.equal(
+    renderGameText('[Foo|Bar]'),
+    '<span class="kw" data-keyword="Foo">Bar</span>'
+  );
+});
