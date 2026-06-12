@@ -63,7 +63,7 @@ html[data-card-size="l"] .gem-detail { zoom: 1.25; }
 /* Gem item icon mirrored on the right of the header */
 .trailGemIcon {
   position: absolute;
-  right: 17px;
+  right: 5px;
   top: 5px;
   width: 45px;
   height: 45px;
