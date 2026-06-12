@@ -113,6 +113,7 @@ body {
    the content scales while the anchor math stays in an unzoomed frame. */
 html[data-card-size="s"] .tippy-box[data-theme~='poe2'] { zoom: 0.85; }
 html[data-card-size="l"] .tippy-box[data-theme~='poe2'] { zoom: 1.25; }
+html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
 
 .kw-tip {
   text-align: center;             /* poe2db centres the popup text */

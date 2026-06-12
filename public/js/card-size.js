@@ -7,7 +7,7 @@
 
   function current() {
     var s = root.getAttribute('data-card-size');
-    return s === 's' || s === 'l' ? s : 'm';
+    return s === 's' || s === 'l' || s === 'xl' ? s : 'm';
   }
 
   function apply(size) {

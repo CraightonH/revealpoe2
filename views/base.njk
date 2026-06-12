@@ -9,7 +9,7 @@
     (function () {
       try {
         var s = localStorage.getItem('cardSize');
-        if (s === 's' || s === 'l') document.documentElement.setAttribute('data-card-size', s);
+        if (s === 's' || s === 'l' || s === 'xl') document.documentElement.setAttribute('data-card-size', s);
       } catch (e) {}
     })();
   </script>
@@ -38,6 +38,7 @@
       <button type="button" data-size="s" title="Small card">S</button>
       <button type="button" data-size="m" title="Medium card">M</button>
       <button type="button" data-size="l" title="Large card">L</button>
+      <button type="button" data-size="xl" title="Extra large card">XL</button>
     </div>
   </header>
   <main>{% block content %}{% endblock %}</main>

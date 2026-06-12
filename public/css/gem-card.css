@@ -4,6 +4,7 @@
    (no rule / zoom:1). Driven by data-card-size on <html>; see card-size.js. */
 html[data-card-size="s"] .gem-detail { zoom: 0.85; }
 html[data-card-size="l"] .gem-detail { zoom: 1.25; }
+html[data-card-size="xl"] .gem-detail { zoom: 1.5; }
 
 .newItemPopup {
   font-family: "FontinSmallCaps", "Fontin SmallCaps", "Palatino Linotype", Georgia, serif;
