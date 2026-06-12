@@ -9,6 +9,10 @@
       <img class="leadSkillIcon" src="{{ vm.skillIconUrl }}"
            onerror="this.style.visibility='hidden'">
       {% endif %}
+      {% if vm.gemIconUrl %}
+      <img class="trailGemIcon" src="{{ vm.gemIconUrl }}"
+           onerror="this.style.visibility='hidden'">
+      {% endif %}
       <div class="itemName"><span class="lc">{{ vm.name }}</span></div>
       <div class="itemName typeLine"><span class="lc">{{ vm.typeLineHtml | safe }}</span></div>
     </div>

@@ -131,6 +131,11 @@ export function buildGemViewModel(slug) {
   const skills = loadJson(`${REPOE}/skills.json`);
   const skill = skills[gem.grants_skills?.[0]] ?? null;
 
+  // Gem item icon (the faceted inventory gem) — distinct from icon_dds_file,
+  // which is the skill's icon. Looked up in base_items via the gem's item id.
+  const baseItems = loadJson(`${REPOE}/base_items.json`);
+  const baseItem = baseItems[gem.base_item?.id];
+
   const b = BORDER[gem.color] ?? BORDER.w;
 
   // Type line: spirit gems keep their gem-type label ("Spirit"); their granted
@@ -181,6 +186,7 @@ export function buildGemViewModel(slug) {
       ...attributeRequirements(gem.requirement_weights),
     ],
     skillIconUrl: ddsUrl(gem.icon_dds_file),
+    gemIconUrl: ddsUrl(baseItem?.visual_identity?.dds_file),
     hoverImageUrl: ddsUrl(gem.ui_image),
     description: skill?.active_skill?.description
       ? renderGameText(skill.active_skill.description, hasDefinition)
