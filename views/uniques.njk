@@ -1,0 +1,22 @@
+{% extends "base.njk" %}
+{% block title %}Unique Items — PoE2 Wiki{% endblock %}
+{% block content %}
+<div class="page" style="flex-direction:column;align-items:center;">
+  <h1 class="page-title unique-page-title">Unique Items</h1>
+  <p class="page-subtitle">{{ uniques.length }} unique items</p>
+  <div class="unique-index-grid">
+    {% for u in uniques %}
+    <a class="unique-index-card" href="/unique/{{ u.slug }}">
+      {% if u.iconUrl %}
+      <img src="{{ u.iconUrl }}" alt="{{ u.name }}" class="unique-index-icon"
+           onerror="this.style.visibility='hidden'">
+      {% else %}
+      <div class="unique-index-icon unique-index-placeholder">{{ u.name[0] }}</div>
+      {% endif %}
+      <span class="unique-index-name">{{ u.name }}</span>
+      <span class="unique-index-base">{{ u.base }}</span>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
