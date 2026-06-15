@@ -1,16 +1,23 @@
 import { listGems } from './gems.js';
+import { listUniques } from './uniques.js';
 
 let _docs = null;
 
 function docs() {
   if (_docs) return _docs;
-  _docs = listGems().map((g) => ({
+  const gems = listGems().map((g) => ({
     name: g.name,
     slug: g.slug,
-    color: g.color,
     url: `/gem/${g.slug}`,
     haystack: g.name.toLowerCase(),
   }));
+  const uniques = listUniques().map((u) => ({
+    name: u.name,
+    slug: u.slug,
+    url: `/unique/${u.slug}`,
+    haystack: u.name.toLowerCase(),
+  }));
+  _docs = [...gems, ...uniques];
   return _docs;
 }
 
@@ -20,7 +27,7 @@ export function search(q, limit = 20) {
   const out = [];
   for (const d of docs()) {
     if (d.haystack.includes(needle)) {
-      out.push({ name: d.name, slug: d.slug, color: d.color, url: d.url });
+      out.push({ name: d.name, slug: d.slug, url: d.url });
       if (out.length >= limit) break;
     }
   }
