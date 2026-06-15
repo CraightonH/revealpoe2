@@ -1,0 +1,19 @@
+{% extends "base.njk" %}
+{% block title %}Ascendancies — PoE2 Wiki{% endblock %}
+{% block content %}
+<div class="page" style="flex-direction:column;align-items:center;">
+  <h1 class="page-title" style="font-family:'OptimusPrincepsSemiBold',serif;color:var(--color-normal);">
+    Ascendancies
+  </h1>
+  <p class="page-subtitle">{{ ascendancies.length }} ascendancies</p>
+  <div class="asc-grid">
+    {% for a in ascendancies %}
+    <a class="asc-card" href="/ascendancy/{{ a.id }}">
+      <div class="asc-class">{{ a.charClass }}</div>
+      <div class="asc-name">{{ a.name }}</div>
+      <div class="asc-count">{{ a.notables.length }} notables</div>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

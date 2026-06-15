@@ -83,3 +83,43 @@ test('GET /base/stellar-amulet includes affix section', async () => {
   assert.equal(res.status, 200);
   assert.ok(res.text.includes('Affix') || res.text.includes('affix') || res.text.includes('IncreasedLife'));
 });
+
+test('GET /keystones returns 200 with Keystones heading', async () => {
+  const app = createApp();
+  const res = await request(app).get('/keystones');
+  assert.equal(res.status, 200);
+  assert.ok(res.text.includes('Keystones'));
+});
+
+test("GET /keystone/passive_keystone_zealots_oath returns 200 with Zealot's Oath", async () => {
+  const app = createApp();
+  const res = await request(app).get('/keystone/passive_keystone_zealots_oath');
+  assert.equal(res.status, 200);
+  assert.ok(res.text.includes('Zealot'));
+});
+
+test('GET /keystone/not-a-real-keystone returns 404', async () => {
+  const app = createApp();
+  const res = await request(app).get('/keystone/not-a-real-keystone');
+  assert.equal(res.status, 404);
+});
+
+test('GET /ascendancies returns 200 with Ascendancies heading', async () => {
+  const app = createApp();
+  const res = await request(app).get('/ascendancies');
+  assert.equal(res.status, 200);
+  assert.ok(res.text.includes('Ascendancies'));
+});
+
+test('GET /ascendancy/Ranger1 returns 200 with Deadeye', async () => {
+  const app = createApp();
+  const res = await request(app).get('/ascendancy/Ranger1');
+  assert.equal(res.status, 200);
+  assert.ok(res.text.includes('Deadeye'));
+});
+
+test('GET /ascendancy/NotReal returns 404', async () => {
+  const app = createApp();
+  const res = await request(app).get('/ascendancy/NotReal');
+  assert.equal(res.status, 404);
+});

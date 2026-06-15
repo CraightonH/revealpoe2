@@ -2,6 +2,7 @@ import { buildGemViewModel, listGems } from '../data/gems.js';
 import { buildUniqueViewModel, listUniques } from '../data/uniques.js';
 import { listItemClasses, getItemClass, buildBaseItemViewModel } from '../data/baseItems.js';
 import { listModGroups, getModGroup } from '../data/mods.js';
+import { listKeystones, getKeystone, listAscendancies, getAscendancy } from '../data/passiveTree.js';
 
 export function registerPages(app) {
   app.get('/', (_req, res) => {
@@ -55,6 +56,26 @@ export function registerPages(app) {
     if (!entry) return res.status(404).render('home.njk', { notFound: req.params.typeSlug });
     const group = getModGroup(entry.type);
     res.render('mod-group.njk', { group });
+  });
+
+  app.get('/keystones', (_req, res) => {
+    res.render('keystones.njk', { keystones: listKeystones() });
+  });
+
+  app.get('/keystone/:id', (req, res) => {
+    const k = getKeystone(req.params.id);
+    if (!k) return res.status(404).render('home.njk', { notFound: req.params.id });
+    res.render('keystone.njk', { k });
+  });
+
+  app.get('/ascendancies', (_req, res) => {
+    res.render('ascendancies.njk', { ascendancies: listAscendancies() });
+  });
+
+  app.get('/ascendancy/:id', (req, res) => {
+    const a = getAscendancy(req.params.id);
+    if (!a) return res.status(404).render('home.njk', { notFound: req.params.id });
+    res.render('ascendancy.njk', { a });
   });
 
   // expose for warmup/debug

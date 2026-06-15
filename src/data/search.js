@@ -1,6 +1,7 @@
 import { listGems } from './gems.js';
 import { listUniques } from './uniques.js';
 import { getItemClass, listItemClasses } from './baseItems.js';
+import { listKeystones } from './passiveTree.js';
 
 let _docs = null;
 
@@ -29,7 +30,13 @@ function docs() {
       }));
     })
   );
-  _docs = [...gems, ...uniques, ...bases];
+  const keystones = listKeystones().map((k) => ({
+    name: k.name,
+    slug: k.id,
+    url: `/keystone/${k.id}`,
+    haystack: k.name.toLowerCase(),
+  }));
+  _docs = [...gems, ...uniques, ...bases, ...keystones];
   return _docs;
 }
 

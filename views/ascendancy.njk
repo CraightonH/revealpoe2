@@ -1,0 +1,30 @@
+{% extends "base.njk" %}
+{% block title %}{{ a.name }} — PoE2 Wiki{% endblock %}
+{% block content %}
+<div class="page" style="flex-direction:column;align-items:center;">
+  <nav class="bases-breadcrumb">
+    <a href="/ascendancies">Ascendancies</a> › {{ a.charClass }} › {{ a.name }}
+  </nav>
+  <h1 class="page-title" style="font-family:'OptimusPrincepsSemiBold',serif;color:var(--color-normal);">
+    {{ a.name }}
+    <span style="font-size:14px;color:var(--color-default);margin-left:8px;">({{ a.charClass }})</span>
+  </h1>
+  <div class="passive-node-grid">
+    {% for n in a.notables %}
+    <div class="passive-node-card passive-node-card--asc">
+      {% if n.iconUrl %}
+      <img class="passive-node-icon" src="{{ n.iconUrl }}" alt="{{ n.name }}" onerror="this.style.visibility='hidden'">
+      {% endif %}
+      <div class="passive-node-name">{{ n.name }}</div>
+      {% if n.statLines.length %}
+      <div class="passive-node-stats">
+        {% for line in n.statLines %}
+        <div>{{ line | safe }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
