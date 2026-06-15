@@ -1,63 +1,10 @@
 {% extends "base.njk" %}
+{% from "macros/unique-card.njk" import uniqueCard %}
 {% block title %}{{ vm.name }} — PoE2 Wiki{% endblock %}
-{% macro modLine(stat) %}
-<div class="explicitMod">
-  {%- if stat.gemSlug -%}
-  {%- if stat.iconUrl %}<img loading="lazy" src="{{ stat.iconUrl }}" class="grantsSkill" alt="" onerror="this.style.display='none'">{% endif -%}
-  {{ stat.prefixHtml | safe }}<a href="/gem/{{ stat.gemSlug }}" data-card-url="/gem/{{ stat.gemSlug }}/card" class="skill-grant-link">{{ stat.skillName }}</a>
-  {%- else -%}
-  {{ stat.html | safe }}
-  {%- endif -%}
-</div>
-{% endmacro %}
 {% block content %}
 <div class="page">
   <div class="gem-detail">
-    <div class="unique-item-with-art">
-      <div class="newItemPopup UniquePopup item-popup--poe2"
-           style="--card-border: {{ vm.borderColor }}; --card-glow: {{ vm.glowColor }};">
-        <div class="itemHeader doubleLine">
-          <div class="itemName"><span class="lc unique-name">{{ vm.name }}</span></div>
-          <div class="itemName typeLine"><a class="lc unique-type" href="/base/{{ vm.baseSlug }}" data-card-url="/base/{{ vm.baseSlug }}/card">{{ vm.base }}</a></div>
-        </div>
-        <div class="content">
-          <div class="Stats">
-            <div class="property">{{ vm.className }}</div>
-            {% for prop in vm.properties %}
-            <div class="property">{{ prop.labelHtml | safe }}: <span class="{{ prop.colorClass }}">{{ prop.value }}</span></div>
-            {% endfor %}
-          </div>
-          {% if vm.requirements.length %}
-          <div class="separator"></div>
-          <div class="Stats">
-            <div class="requirements">Requires: <span class="colourDefault">{{ vm.requirements | join('</span>, <span class="colourDefault">') | safe }}</span></div>
-          </div>
-          {% endif %}
-          <div class="separator"></div>
-          {% if vm.implicits.length %}
-          <div class="Stats">
-            {% for stat in vm.implicits %}{{ modLine(stat) }}{% endfor %}
-          </div>
-          {% if vm.explicits.length %}<div class="separator"></div>{% endif %}
-          {% endif %}
-          {% if vm.explicits.length %}
-          <div class="Stats">
-            {% for stat in vm.explicits %}{{ modLine(stat) }}{% endfor %}
-          </div>
-          {% endif %}
-          {% if vm.flavour.length %}
-          <div class="separator"></div>
-          <div class="FlavourText">{{ vm.flavour | join('<br>') | safe }}</div>
-          {% endif %}
-        </div>
-      </div>
-      {% if vm.iconUrl %}
-      <div class="itemboximage">
-        <img loading="lazy" src="{{ vm.iconUrl }}" alt="{{ vm.name }}"
-             onerror="this.style.visibility='hidden'">
-      </div>
-      {% endif %}
-    </div>
+    {{ uniqueCard(vm) }}
   </div>
 </div>
 {% endblock %}
