@@ -16,3 +16,9 @@ export function loadJson(relPath) {
 export function clearCache() {
   cache.clear();
 }
+
+// Returns the filenames (not full paths) in a data subdirectory.
+export function listDataDir(relDir) {
+  const full = path.join(getDataDir(), relDir);
+  return fs.readdirSync(full);
+}
