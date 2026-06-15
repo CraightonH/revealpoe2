@@ -5,6 +5,8 @@ import { ddsUrl } from './images.js';
 import { getGem } from './gems.js';
 import { getBaseByName } from './baseItems.js';
 import { parseLocalMods, computeProperties } from './itemStats.js';
+import { getFlavourLines } from './flavour.js';
+import { hasDefinition } from './keywordDefs.js';
 
 const REPOE = 'repoe-poe2';
 const POB_DIR = 'pob-uniques';
@@ -22,29 +24,66 @@ function escapeHtml(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-// Wrap numeric values and ranges — e.g. "(100-120)", "1", "30" — in a
-// .mod-value span so they render white, leaving the surrounding mod text blue.
-function highlightValues(text) {
-  return escapeHtml(text).replace(
-    /\(?\d+(?:\.\d+)?(?:-\d+(?:\.\d+)?)?\)?/g,
-    (m) => `<span class="mod-value">${m}</span>`,
-  );
+// Curated surface-phrase → keyword-id map for affix text. The pob-uniques text
+// has no [keyword] tokens (unlike gem skill text), so we detect known terms and
+// make them hoverable via the existing .kw glossary tooltips. Longest phrases
+// first so e.g. "Critical Hit" wins over "Hit"; gated by hasDefinition so dead
+// keywords never become hovers.
+const KEYWORD_PHRASES = [
+  ['Critical Strike', 'Critical'], ['Critical Hits', 'Critical'], ['Critical Hit', 'Critical'],
+  ['Energy Shield', 'EnergyShield'], ['Spear Skills', 'Spear'],
+  ['Physical', 'Physical'], ['Fire', 'Fire'], ['Cold', 'Cold'],
+  ['Lightning', 'Lightning'], ['Chaos', 'Chaos'],
+  ['Attacks', 'Attack'], ['Attack', 'Attack'], ['Presence', 'Presence'],
+  ['Spells', 'Spell'], ['Spell', 'Spell'], ['Projectiles', 'Projectile'], ['Projectile', 'Projectile'],
+  ['Minions', 'Minion'], ['Minion', 'Minion'], ['Melee', 'Melee'],
+  ['Spears', 'Spear'], ['Spear', 'Spear'], ['Hit', 'HitDamage'],
+  ['Ignite', 'Ignite'], ['Bleeding', 'Bleeding'], ['Poison', 'Poison'],
+  ['Freeze', 'Freeze'], ['Shock', 'Shock'], ['Chill', 'Chill'],
+  ['Block', 'Block'], ['Curses', 'Curse'], ['Curse', 'Curse'], ['Auras', 'Aura'], ['Aura', 'Aura'],
+].filter(([, id]) => hasDefinition(id));
+
+const PHRASE_TO_ID = new Map(KEYWORD_PHRASES.map(([p, id]) => [p, id]));
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const NUM_PAT = '\\(?\\d+(?:\\.\\d+)?(?:-\\d+(?:\\.\\d+)?)?\\)?';
+const KW_PAT = KEYWORD_PHRASES.map(([p]) => p).sort((a, b) => b.length - a.length).map(escapeRe).join('|');
+const AFFIX_RE = new RegExp(`(${NUM_PAT})|\\b(${KW_PAT})\\b`, 'g');
+
+// Render affix text to safe HTML: numeric values → white .mod-value spans,
+// known keywords → hoverable .kw spans, everything else escaped.
+function renderAffix(text) {
+  let out = '';
+  let last = 0;
+  let m;
+  AFFIX_RE.lastIndex = 0;
+  while ((m = AFFIX_RE.exec(text)) !== null) {
+    out += escapeHtml(text.slice(last, m.index));
+    if (m[1] !== undefined) {
+      out += `<span class="mod-value">${escapeHtml(m[1])}</span>`;
+    } else {
+      const id = PHRASE_TO_ID.get(m[2]);
+      out += `<span class="kw" data-keyword="${escapeHtml(id)}">${escapeHtml(m[2])}</span>`;
+    }
+    last = AFFIX_RE.lastIndex;
+  }
+  out += escapeHtml(text.slice(last));
+  return out;
 }
 
 // Parse a stat line; for grant lines, attach a gemSlug + skill icon if the gem
 // exists. `html`/`prefixHtml` carry value-highlighted markup for | safe render.
 function parseStatLine(text) {
   const m = text.match(GRANTS_SKILL_RE);
-  if (!m) return { text, html: highlightValues(text) };
+  if (!m) return { text, html: renderAffix(text) };
   const prefix = m[1];
   const skillName = m[2];
   const slug = slugify(skillName);
   const gem = getGem(slug);
   return {
     text,
-    html: highlightValues(text),
+    html: renderAffix(text),
     prefix,
-    prefixHtml: highlightValues(prefix),
+    prefixHtml: renderAffix(prefix),
     skillName,
     gemSlug: gem ? slug : null,
     iconUrl: gem ? ddsUrl(gem.icon_dds_file) : null,
@@ -79,8 +118,12 @@ function parsePob(text) {
   if (name.includes(':') || name === 'source' || name === 'base_url') return null;
 
   const curVariant = currentVariantIndex(lines);
-  const stats = [];
 
+  // PoB marks how many leading stat lines are implicits ("Implicits: N").
+  const implicitsLine = lines.find((l) => /^Implicits:\s*\d+/.test(l));
+  const implicitCount = implicitsLine ? Number(implicitsLine.match(/\d+/)[0]) : 0;
+
+  const stats = [];
   for (const line of lines.slice(2)) {
     if (META_RE.test(line)) continue;
     const spec = variantSpec(line);
@@ -90,7 +133,7 @@ function parsePob(text) {
     if (cleaned) stats.push(cleaned);
   }
 
-  return { name, base, stats };
+  return { name, base, stats, implicitCount };
 }
 
 // Build name → uniques.json entry mapping (skip alternate art).
@@ -134,6 +177,8 @@ function index() {
         stats: parsed.stats,
         itemClass: meta?.item_class ?? path.basename(file, '.json'),
         iconUrl: ddsUrl(meta?.visual_identity?.dds_file),
+        flavour: getFlavourLines(meta?.visual_identity?.id),
+        implicitCount: parsed.implicitCount,
       });
     }
   }
@@ -158,14 +203,19 @@ export function buildUniqueViewModel(slug) {
   // browsable (jewels, flasks) have no record — properties/requirements stay empty.
   const baseRecord = getBaseByName(u.base);
   const mods = parseLocalMods(u.stats);
-  const properties = baseRecord ? computeProperties(baseRecord.rawProperties, mods) : [];
+  // Keyword-link the property labels too (e.g. "Physical" in Physical Damage,
+  // "Critical Hit" in Critical Hit Chance) — same .kw glossary treatment.
+  const properties = baseRecord
+    ? computeProperties(baseRecord.rawProperties, mods).map((p) => ({ ...p, labelHtml: renderAffix(p.label) }))
+    : [];
   const requirements = baseRecord?.requirements ?? [];
 
-  // Grant lines ("Grants Skill: …") are implicits — shown above the explicit
-  // affixes, separated by a divider (matching the in-game / poe2db layout).
+  // Implicits (the leading PoB-flagged lines — granted skills, base implicit
+  // mods) are shown above the explicit affixes, separated by a divider, as in
+  // the in-game / poe2db layout.
   const parsedStats = u.stats.map(parseStatLine);
-  const implicits = parsedStats.filter((s) => s.prefix);
-  const explicits = parsedStats.filter((s) => !s.prefix);
+  const implicits = parsedStats.slice(0, u.implicitCount);
+  const explicits = parsedStats.slice(u.implicitCount);
 
   return {
     ...u,
@@ -174,6 +224,8 @@ export function buildUniqueViewModel(slug) {
     explicits,
     properties,
     requirements,
+    // Prefer the base's display name ("Spears") over the raw item class ("Spear").
+    className: baseRecord?.className ?? u.itemClass,
     borderColor: UNIQUE_BORDER,
     glowColor: UNIQUE_GLOW,
     baseSlug: slugify(u.base),

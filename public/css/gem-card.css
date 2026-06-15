@@ -215,6 +215,9 @@ html[data-card-size="xl"] .gem-detail { zoom: 1.5; }
 .explicitMod a { color: var(--magic-color); text-decoration: none; border-bottom: 1px dotted var(--magic-color); }
 /* Granted-skill links render gem-teal to stand apart from the blue mod text */
 .explicitMod a.skill-grant-link { color: var(--color-gem); border-bottom-color: var(--color-gem); }
+/* Keywords in affix text keep the mod color, marked only by a dotted underline */
+.explicitMod .kw { color: inherit; }
+.explicitMod .kw:hover { color: var(--color-rare); }
 /* Inline skill icon preceding "Grants Skill:" (poe2db pattern) */
 .explicitMod .grantsSkill {
   width: 18px;
@@ -305,6 +308,9 @@ a.lc.unique-type:hover {
   color: #7f7f7f;
   text-align: center;
 }
+/* Keywords in property labels keep the label color, marked by dotted underline */
+.UniquePopup .property .kw { color: inherit; }
+.UniquePopup .property .kw:hover { color: var(--color-rare); }
 
 /* Item art beside the card — matches poe2db .itemboximage pattern */
 .unique-item-with-art {
@@ -319,10 +325,19 @@ a.lc.unique-type:hover {
 }
 
 .itemboximage img {
-  width: 84px;
-  height: 84px;
-  object-fit: contain;
   display: block;
+}
+
+/* Unique flavour text — warm amber italic, centered (poe2db .FlavourText) */
+.FlavourText {
+  color: #af6025;
+  font-style: italic;
+  font-family: "FontinRegular", "Palatino Linotype", Georgia, serif;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.55;
+  padding: 6px 20px 10px;
+  text-shadow: 1px 1px 2px black, -1px -1px 2px black;
 }
 
 .unique-base-line {

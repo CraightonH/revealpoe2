@@ -22,15 +22,15 @@
         </div>
         <div class="content">
           <div class="Stats">
-            <div class="property">{{ vm.itemClass }}</div>
+            <div class="property">{{ vm.className }}</div>
             {% for prop in vm.properties %}
-            <div class="property">{{ prop.label }}: <span class="{{ prop.colorClass }}">{{ prop.value }}</span></div>
+            <div class="property">{{ prop.labelHtml | safe }}: <span class="{{ prop.colorClass }}">{{ prop.value }}</span></div>
             {% endfor %}
           </div>
           {% if vm.requirements.length %}
           <div class="separator"></div>
           <div class="Stats">
-            <div class="requirements">Requires <span class="colourDefault">{{ vm.requirements | join('</span>, <span class="colourDefault">') | safe }}</span></div>
+            <div class="requirements">Requires: <span class="colourDefault">{{ vm.requirements | join('</span>, <span class="colourDefault">') | safe }}</span></div>
           </div>
           {% endif %}
           <div class="separator"></div>
@@ -44,6 +44,10 @@
           <div class="Stats">
             {% for stat in vm.explicits %}{{ modLine(stat) }}{% endfor %}
           </div>
+          {% endif %}
+          {% if vm.flavour.length %}
+          <div class="separator"></div>
+          <div class="FlavourText">{{ vm.flavour | join('<br>') | safe }}</div>
           {% endif %}
         </div>
       </div>

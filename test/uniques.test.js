@@ -71,6 +71,12 @@ test('buildUniqueViewModel derives item stats from base + local mods', () => {
   assert.deepEqual(vm.requirements, ['Level 72', '46 Str', '115 Dex']);
 });
 
+test('buildUniqueViewModel includes flavour text from flavour.json', () => {
+  const vm = buildUniqueViewModel('atziris-contempt');
+  assert.ok(Array.isArray(vm.flavour));
+  assert.ok(vm.flavour.some((l) => l.includes('I am their Queen')));
+});
+
 test('buildUniqueViewModel leaves properties empty for non-browsable bases', () => {
   // Astramentis is a Stellar Amulet — amulets have no derived damage/defence props.
   const vm = buildUniqueViewModel('astramentis');
