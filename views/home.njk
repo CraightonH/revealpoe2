@@ -4,8 +4,11 @@
   <h1 style="font-family:'OptimusPrincepsSemiBold',serif;color:var(--color-unique);">
     Path of Exile 2 Wiki
   </h1>
-  {% if notFound %}<p>No gem found for "{{ notFound }}".</p>{% endif %}
-  <p>Search for a skill gem above. Try
-    <a href="/gem/herald-of-ash" style="color:var(--color-gem);">Herald of Ash</a>.</p>
+  {% if notFound %}<p>No result found for "{{ notFound }}".</p>{% endif %}
+  <p>Search for a skill gem or unique item above.</p>
+  <div class="home-links">
+    <a href="/gem/herald-of-ash" style="color:var(--color-gem);">Herald of Ash (gem)</a>
+    <a href="/uniques" style="color:var(--color-unique);">Browse Unique Items →</a>
+  </div>
 </div>
 {% endblock %}
