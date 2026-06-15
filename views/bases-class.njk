@@ -1,0 +1,27 @@
+{% extends "base.njk" %}
+{% block title %}{{ cls.name }} — Base Items — PoE2 Wiki{% endblock %}
+{% block content %}
+<div class="page" style="flex-direction:column;align-items:center;">
+  <nav class="bases-breadcrumb">
+    <a href="/bases">Base Items</a> › {{ cls.name }}
+  </nav>
+  <h1 class="page-title" style="font-family:'OptimusPrincepsSemiBold',serif;color:var(--color-normal);">
+    {{ cls.name }}
+  </h1>
+  <p class="page-subtitle">{{ cls.bases.length }} base items</p>
+  <div class="bases-list-grid">
+    {% for b in cls.bases %}
+    <a class="bases-list-card" href="/base/{{ b.slug }}">
+      {% if b.iconUrl %}
+      <img src="{{ b.iconUrl }}" alt="{{ b.name }}" class="bases-list-icon"
+           onerror="this.style.visibility='hidden'">
+      {% else %}
+      <div class="bases-list-icon bases-list-icon--placeholder">{{ b.name[0] }}</div>
+      {% endif %}
+      <span class="bases-list-name">{{ b.name }}</span>
+      {% if b.dropLevel %}<span class="bases-list-level">Lvl {{ b.dropLevel }}</span>{% endif %}
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

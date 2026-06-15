@@ -338,3 +338,148 @@ html[data-card-size="xl"] .gem-detail { zoom: 1.5; }
   font-size: 11px;
   white-space: nowrap;
 }
+
+/* Normal item card (base items) */
+.NormalPopup .itemHeader.doubleLine {
+  background: linear-gradient(180deg,
+    rgba(30,30,30,0.95) 0%,
+    rgba(15,15,15,0.98) 100%);
+  border-bottom: 1px solid rgba(139,139,139,0.3);
+  height: auto;
+  min-height: 54px;
+  padding: 8px 14px;
+  justify-content: center;
+  text-align: center;
+}
+
+.NormalPopup .normal-name {
+  color: var(--normal-color);
+  padding: 0;
+  text-align: center;
+}
+
+.NormalPopup .normal-type {
+  color: var(--color-default);
+  padding: 0;
+  font-size: 13px;
+  text-align: center;
+}
+
+/* Base item breadcrumb */
+.bases-breadcrumb {
+  font-size: 12px;
+  color: var(--color-default);
+  margin-bottom: 8px;
+}
+
+.bases-breadcrumb a {
+  color: var(--normal-color);
+  text-decoration: none;
+}
+
+.bases-breadcrumb a:hover {
+  color: var(--color-normal);
+}
+
+/* Base item class browser */
+.bases-group {
+  width: 100%;
+  max-width: 900px;
+  margin-bottom: 24px;
+}
+
+.bases-group-title {
+  font-family: 'OptimusPrincepsSemiBold', serif;
+  color: var(--color-normal);
+  font-size: 16px;
+  margin: 0 0 8px;
+}
+
+.bases-class-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 6px;
+}
+
+.bases-class-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  text-decoration: none;
+  color: var(--normal-color);
+  font-family: "FontinSmallCaps", serif;
+  font-size: 13px;
+  transition: border-color 0.15s;
+}
+
+.bases-class-card:hover {
+  border-color: var(--normal-color);
+}
+
+.bases-class-count {
+  color: var(--color-default);
+  font-size: 11px;
+}
+
+/* Base item class listing */
+.bases-list-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 6px;
+  width: 100%;
+  max-width: 900px;
+  padding: 16px 0;
+}
+
+.bases-list-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  text-decoration: none;
+  color: var(--normal-color);
+  font-family: "FontinSmallCaps", serif;
+  font-size: 13px;
+  transition: border-color 0.15s;
+}
+
+.bases-list-card:hover {
+  border-color: var(--normal-color);
+}
+
+.bases-list-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.bases-list-icon--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(139,139,139,0.2);
+  border-radius: 3px;
+  color: var(--normal-color);
+  font-size: 14px;
+}
+
+.bases-list-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bases-list-level {
+  color: var(--color-default);
+  font-size: 11px;
+  white-space: nowrap;
+}

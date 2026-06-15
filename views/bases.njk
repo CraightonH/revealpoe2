@@ -1,0 +1,23 @@
+{% extends "base.njk" %}
+{% block title %}Base Items — PoE2 Wiki{% endblock %}
+{% block content %}
+<div class="page" style="flex-direction:column;align-items:center;">
+  <h1 class="page-title" style="font-family:'OptimusPrincepsSemiBold',serif;color:var(--color-normal);">
+    Base Items
+  </h1>
+  <p class="page-subtitle">Browse item bases by class</p>
+  {% for group in groups %}
+  <div class="bases-group">
+    <h2 class="bases-group-title">{{ group.label }}</h2>
+    <div class="bases-class-grid">
+      {% for cls in group.classes %}
+      <a class="bases-class-card" href="/bases/{{ cls.classSlug }}">
+        <span class="bases-class-name">{{ cls.name }}</span>
+        <span class="bases-class-count">{{ cls.count }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

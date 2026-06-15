@@ -1,5 +1,6 @@
 import { listGems } from './gems.js';
 import { listUniques } from './uniques.js';
+import { getItemClass, listItemClasses } from './baseItems.js';
 
 let _docs = null;
 
@@ -17,7 +18,18 @@ function docs() {
     url: `/unique/${u.slug}`,
     haystack: u.name.toLowerCase(),
   }));
-  _docs = [...gems, ...uniques];
+  const bases = listItemClasses().flatMap((group) =>
+    group.classes.flatMap((cls) => {
+      const c = getItemClass(cls.classSlug);
+      return (c?.bases ?? []).map((b) => ({
+        name: b.name,
+        slug: b.slug,
+        url: `/base/${b.slug}`,
+        haystack: b.name.toLowerCase(),
+      }));
+    })
+  );
+  _docs = [...gems, ...uniques, ...bases];
   return _docs;
 }
 

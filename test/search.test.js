@@ -5,7 +5,7 @@ import { search } from '../src/data/search.js';
 test('search finds gems by case-insensitive substring', () => {
   const hits = search('herald');
   assert.ok(hits.some((h) => h.name === 'Herald of Ash'));
-  assert.ok(hits.every((h) => h.slug && h.url.startsWith('/gem/')));
+  assert.ok(hits.every((h) => h.slug && h.url));
 });
 
 test('search returns [] for blank query', () => {

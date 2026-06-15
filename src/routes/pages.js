@@ -1,5 +1,6 @@
 import { buildGemViewModel, listGems } from '../data/gems.js';
 import { buildUniqueViewModel, listUniques } from '../data/uniques.js';
+import { listItemClasses, getItemClass, buildBaseItemViewModel } from '../data/baseItems.js';
 
 export function registerPages(app) {
   app.get('/', (_req, res) => {
@@ -21,6 +22,23 @@ export function registerPages(app) {
     const vm = buildUniqueViewModel(req.params.slug);
     if (!vm) return res.status(404).render('home.njk', { notFound: req.params.slug });
     res.render('unique.njk', { vm });
+  });
+
+  app.get('/bases', (_req, res) => {
+    const groups = listItemClasses();
+    res.render('bases.njk', { groups });
+  });
+
+  app.get('/bases/:classSlug', (req, res) => {
+    const cls = getItemClass(req.params.classSlug);
+    if (!cls) return res.status(404).render('home.njk', { notFound: req.params.classSlug });
+    res.render('bases-class.njk', { cls });
+  });
+
+  app.get('/base/:slug', (req, res) => {
+    const vm = buildBaseItemViewModel(req.params.slug);
+    if (!vm) return res.status(404).render('home.njk', { notFound: req.params.slug });
+    res.render('base-item.njk', { vm });
   });
 
   // expose for warmup/debug
