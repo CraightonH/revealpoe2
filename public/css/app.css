@@ -90,6 +90,123 @@ body {
 .search-result-cat--keystone { background: rgba(200, 180, 100, 0.2); color: #c8b464; }
 .search-result-cat--notable { background: rgba(200, 180, 100, 0.15); color: #b8a454; }
 .search-result-cat--affix { background: rgba(136, 136, 255, 0.15); color: var(--magic-color); }
+/* --- Site nav --- */
+.site-nav {
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+}
+.site-nav__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 0;
+}
+.site-nav__item {
+  position: relative;
+}
+.site-nav__top {
+  display: block;
+  padding: 9px 14px;
+  font-size: 13px;
+  color: var(--color-normal);
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.1s;
+}
+.site-nav__top:hover,
+.site-nav__item:focus-within .site-nav__top {
+  color: var(--color-unique);
+}
+.site-nav__dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 160px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+.site-nav__item:hover .site-nav__dropdown,
+.site-nav__item:focus-within .site-nav__dropdown {
+  display: block;
+}
+.site-nav__dropdown li a {
+  display: block;
+  padding: 7px 14px;
+  font-size: 13px;
+  color: var(--color-normal);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.1s, color 0.1s;
+}
+.site-nav__dropdown li a:hover {
+  background: var(--bg-base);
+  color: var(--color-unique);
+}
+
+/* --- Gem browse grid --- */
+.gem-list-section {
+  width: 100%;
+  max-width: 960px;
+  margin-bottom: 32px;
+}
+.gem-list-heading {
+  font-family: 'OptimusPrincepsSemiBold', serif;
+  font-size: 16px;
+  margin: 0 0 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  color: var(--color-normal);
+}
+.gem-list-heading--active { color: var(--color-normal); }
+.gem-list-heading--spirit { color: var(--color-gem); }
+.gem-list-heading--support { color: var(--color-prop); }
+.gem-browse-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 6px;
+}
+.gem-browse-card {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  text-decoration: none;
+  color: var(--color-normal);
+  font-size: 12px;
+  transition: border-color 0.12s;
+  overflow: hidden;
+}
+.gem-browse-card:hover { border-color: rgba(200, 200, 200, 0.5); }
+.gem-browse-card--r { border-left: 2px solid var(--color-gem-r); }
+.gem-browse-card--g { border-left: 2px solid var(--color-gem-g); }
+.gem-browse-card--b { border-left: 2px solid var(--color-gem-b); }
+.gem-browse-card--w { border-left: 2px solid var(--color-gem-w); }
+.gem-browse-icon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.gem-browse-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .page { padding: 24px; display: flex; justify-content: center; }
 .gem-detail { display: flex; flex-direction: column; align-items: center; gap: 14px; }
 .recommended-supports { width: 100%; max-width: 390px; }

@@ -124,6 +124,15 @@ test('GET /ascendancy/NotReal returns 404', async () => {
   assert.equal(res.status, 404);
 });
 
+test('GET /gems returns 200 with gem sections', async () => {
+  const app = createApp();
+  const res = await request(app).get('/gems');
+  assert.equal(res.status, 200);
+  assert.ok(res.text.includes('Herald of Ash'));
+  assert.ok(res.text.includes('Active Skills'));
+  assert.ok(res.text.includes('Support Gems'));
+});
+
 test('GET /notable/ailments38 returns 200 with Fast Acting Toxins', async () => {
   const app = createApp();
   const res = await request(app).get('/notable/ailments38');

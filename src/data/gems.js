@@ -86,6 +86,7 @@ export function listGems() {
     name: rec.base_item.display_name,
     color: rec.color,
     gemType: rec.gem_type,
+    iconUrl: ddsUrl(rec.icon_dds_file),
   }));
 }
 

@@ -41,6 +41,36 @@
       <button type="button" data-size="xl" title="Extra large card">XL</button>
     </div>
   </header>
+  <nav class="site-nav" aria-label="Browse">
+    <ul class="site-nav__list">
+      <li class="site-nav__item">
+        <a href="/gems" class="site-nav__top">Gems</a>
+        <ul class="site-nav__dropdown">
+          <li><a href="/gems">All Skill Gems</a></li>
+        </ul>
+      </li>
+      <li class="site-nav__item">
+        <span class="site-nav__top" tabindex="0">Items</span>
+        <ul class="site-nav__dropdown">
+          <li><a href="/uniques">Unique Items</a></li>
+          <li><a href="/bases">Base Items</a></li>
+        </ul>
+      </li>
+      <li class="site-nav__item">
+        <span class="site-nav__top" tabindex="0">Passives</span>
+        <ul class="site-nav__dropdown">
+          <li><a href="/keystones">Keystones</a></li>
+          <li><a href="/ascendancies">Ascendancies</a></li>
+        </ul>
+      </li>
+      <li class="site-nav__item">
+        <a href="/mods" class="site-nav__top">Affixes</a>
+        <ul class="site-nav__dropdown">
+          <li><a href="/mods">Browse Affixes</a></li>
+        </ul>
+      </li>
+    </ul>
+  </nav>
   <main>{% block content %}{% endblock %}</main>
 </body>
 </html>

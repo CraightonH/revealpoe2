@@ -1,0 +1,52 @@
+{% extends "base.njk" %}
+{% block title %}Skill Gems — PoE2 Wiki{% endblock %}
+{% block content %}
+<div class="page" style="flex-direction:column;align-items:center;">
+  <h1 class="page-title" style="font-family:'OptimusPrincepsSemiBold',serif;color:var(--color-gem);">
+    Skill Gems
+  </h1>
+  <p class="page-subtitle">{{ active.length + support.length + spirit.length }} gems</p>
+
+  <section class="gem-list-section">
+    <h2 class="gem-list-heading gem-list-heading--active">Active Skills ({{ active.length }})</h2>
+    <div class="gem-browse-grid">
+      {% for g in active %}
+      <a class="gem-browse-card gem-browse-card--{{ g.color }}" href="/gem/{{ g.slug }}">
+        {% if g.iconUrl %}
+        <img class="gem-browse-icon" src="{{ g.iconUrl }}" alt="{{ g.name }}" onerror="this.style.visibility='hidden'">
+        {% endif %}
+        <span class="gem-browse-name">{{ g.name }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="gem-list-section">
+    <h2 class="gem-list-heading gem-list-heading--spirit">Spirit Skills ({{ spirit.length }})</h2>
+    <div class="gem-browse-grid">
+      {% for g in spirit %}
+      <a class="gem-browse-card gem-browse-card--{{ g.color }}" href="/gem/{{ g.slug }}">
+        {% if g.iconUrl %}
+        <img class="gem-browse-icon" src="{{ g.iconUrl }}" alt="{{ g.name }}" onerror="this.style.visibility='hidden'">
+        {% endif %}
+        <span class="gem-browse-name">{{ g.name }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="gem-list-section">
+    <h2 class="gem-list-heading gem-list-heading--support">Support Gems ({{ support.length }})</h2>
+    <div class="gem-browse-grid">
+      {% for g in support %}
+      <a class="gem-browse-card gem-browse-card--{{ g.color }}" href="/gem/{{ g.slug }}">
+        {% if g.iconUrl %}
+        <img class="gem-browse-icon" src="{{ g.iconUrl }}" alt="{{ g.name }}" onerror="this.style.visibility='hidden'">
+        {% endif %}
+        <span class="gem-browse-name">{{ g.name }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

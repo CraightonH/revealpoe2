@@ -9,6 +9,14 @@ export function registerPages(app) {
     res.render('home.njk');
   });
 
+  app.get('/gems', (_req, res) => {
+    const gems = listGems().sort((a, b) => a.name.localeCompare(b.name));
+    const active = gems.filter((g) => g.gemType === 'active');
+    const support = gems.filter((g) => g.gemType === 'support');
+    const spirit = gems.filter((g) => g.gemType === 'spirit');
+    res.render('gems.njk', { active, support, spirit });
+  });
+
   app.get('/gem/:slug', (req, res) => {
     const vm = buildGemViewModel(req.params.slug);
     if (!vm) return res.status(404).render('home.njk', { notFound: req.params.slug });
