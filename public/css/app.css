@@ -145,3 +145,16 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
   background: linear-gradient(90deg, transparent, #c9a227, transparent);
 }
 .kw-tip__body .kw { color: inherit; }   /* nested keywords match body text, like poe2db */
+
+.home-links {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 12px;
+}
+.home-links a {
+  text-decoration: none;
+  font-family: "FontinSmallCaps", serif;
+}
+.home-links a:hover { text-decoration: underline; }
