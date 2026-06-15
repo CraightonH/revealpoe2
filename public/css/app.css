@@ -189,12 +189,26 @@ body {
   font-size: 12px;
   transition: border-color 0.12s;
   overflow: hidden;
+  position: relative;
 }
 .gem-browse-card:hover { border-color: rgba(200, 200, 200, 0.5); }
 .gem-browse-card--r { border-left: 2px solid var(--color-gem-r); }
 .gem-browse-card--g { border-left: 2px solid var(--color-gem-g); }
 .gem-browse-card--b { border-left: 2px solid var(--color-gem-b); }
 .gem-browse-card--w { border-left: 2px solid var(--color-gem-w); }
+.gem-browse-card--rg::before,
+.gem-browse-card--rb::before,
+.gem-browse-card--gb::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+}
+.gem-browse-card--rg::before { background: linear-gradient(to bottom, var(--color-gem-r), var(--color-gem-g)); }
+.gem-browse-card--rb::before { background: linear-gradient(to bottom, var(--color-gem-r), var(--color-gem-b)); }
+.gem-browse-card--gb::before { background: linear-gradient(to bottom, var(--color-gem-g), var(--color-gem-b)); }
 .gem-browse-icon {
   width: 24px;
   height: 24px;
@@ -289,6 +303,51 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
   background: linear-gradient(90deg, transparent, #c9a227, transparent);
 }
 .kw-tip__body .kw { color: inherit; }   /* nested keywords match body text, like poe2db */
+
+/* --- Filter bar --- */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 20px;
+  width: 100%;
+  max-width: 960px;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.filter-label {
+  font-size: 11px;
+  color: var(--color-default);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-right: 4px;
+}
+
+.filter-btn {
+  padding: 3px 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--color-normal);
+  font-family: "FontinSmallCaps", serif;
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s, background 0.12s;
+}
+
+.filter-btn:hover { border-color: var(--color-normal); }
+
+.filter-btn--r.is-active { border-color: var(--color-gem-r); color: var(--color-gem-r); background: rgba(196,64,64,0.12); }
+.filter-btn--g.is-active { border-color: var(--color-gem-g); color: var(--color-gem-g); background: rgba(74,173,74,0.12); }
+.filter-btn--b.is-active { border-color: var(--color-gem-b); color: var(--color-gem-b); background: rgba(102,102,170,0.12); }
+.filter-btn--w.is-active { border-color: var(--color-gem-w); color: var(--color-gem-w); background: rgba(170,170,170,0.12); }
+.filter-btn.is-active    { border-color: var(--color-normal); color: var(--color-normal); background: rgba(200,200,200,0.1); }
 
 .home-links {
   display: flex;

@@ -2,6 +2,7 @@ import path from 'node:path';
 import { loadJson, listDataDir } from './loader.js';
 import { slugify } from './slug.js';
 import { ddsUrl } from './images.js';
+import { getGem } from './gems.js';
 
 const REPOE = 'repoe-poe2';
 const POB_DIR = 'pob-uniques';
@@ -11,6 +12,19 @@ const UNIQUE_GLOW = 'rgba(175,96,37,0.45)';
 
 // PoB metadata line prefixes — not item stats
 const META_RE = /^(Variant|Implicits|League|Source|Corrupted|Limited to|Drop level|Drop|Unreleased):/;
+
+// "Grants Skill: Name" or "Grants Skill: Level (N-M) Name"
+const GRANTS_SKILL_RE = /^(Grants Skill: (?:Level \([^)]+\) )?)(.+)$/;
+
+// Parse a stat line; for grant lines, attach a gemSlug if the gem exists.
+function parseStatLine(text) {
+  const m = text.match(GRANTS_SKILL_RE);
+  if (!m) return { text };
+  const prefix = m[1];
+  const skillName = m[2];
+  const gemSlug = slugify(skillName);
+  return { text, prefix, skillName, gemSlug: getGem(gemSlug) ? gemSlug : null };
+}
 
 // Count Variant: lines to determine the "current" variant index (last one = highest).
 function currentVariantIndex(lines) {
@@ -115,6 +129,7 @@ export function buildUniqueViewModel(slug) {
   if (!u) return null;
   return {
     ...u,
+    stats: u.stats.map(parseStatLine),
     borderColor: UNIQUE_BORDER,
     glowColor: UNIQUE_GLOW,
     baseSlug: slugify(u.base),

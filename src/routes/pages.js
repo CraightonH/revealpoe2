@@ -23,6 +23,12 @@ export function registerPages(app) {
     res.render('gem.njk', { vm });
   });
 
+  app.get('/gem/:slug/card', (req, res) => {
+    const vm = buildGemViewModel(req.params.slug);
+    if (!vm) return res.status(404).send('');
+    res.render('partials/gem-card-fragment.njk', { vm });
+  });
+
   app.get('/uniques', (_req, res) => {
     const uniques = listUniques().sort((a, b) => a.name.localeCompare(b.name));
     res.render('uniques.njk', { uniques });
@@ -32,6 +38,12 @@ export function registerPages(app) {
     const vm = buildUniqueViewModel(req.params.slug);
     if (!vm) return res.status(404).render('home.njk', { notFound: req.params.slug });
     res.render('unique.njk', { vm });
+  });
+
+  app.get('/unique/:slug/card', (req, res) => {
+    const vm = buildUniqueViewModel(req.params.slug);
+    if (!vm) return res.status(404).send('');
+    res.render('partials/unique-card-fragment.njk', { vm });
   });
 
   app.get('/bases', (_req, res) => {

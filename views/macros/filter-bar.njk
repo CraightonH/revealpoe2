@@ -1,0 +1,25 @@
+{#
+  filterBar(groups, target, section)
+
+  groups  – array of { key, label?, options: [{ value, label, color? }] }
+             key    – data attribute name (e.g. "req" → data-req)
+             color  – optional gem color token (r/g/b/w) for tinted active state
+  target  – CSS selector for the items to show/hide (e.g. ".gem-browse-card")
+  section – CSS selector for parent containers to hide when all children are filtered (optional)
+#}
+{% macro filterBar(groups, target, section=null) %}
+<div class="filter-bar"
+     data-target="{{ target }}"
+     {% if section %}data-section="{{ section }}"{% endif %}>
+  {% for group in groups %}
+  <div class="filter-group" data-key="{{ group.key }}">
+    {% if group.label %}<span class="filter-label">{{ group.label }}</span>{% endif %}
+    {% for opt in group.options %}
+    <button type="button"
+            class="filter-btn{% if opt.color %} filter-btn--{{ opt.color }}{% endif %}"
+            data-value="{{ opt.value }}">{{ opt.label }}</button>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>
+{% endmacro %}

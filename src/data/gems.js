@@ -21,6 +21,7 @@ const SKILL_PANEL_FOOTER = 'Skills can be managed in the Skills Panel.';
 // bounds here if the true values differ — they are a deliberate display approximation.
 const ATTR_REQ_RANGE = { min: 4, max: 157 };
 const ATTR_ABBR = { strength: 'Str', dexterity: 'Dex', intelligence: 'Int' };
+const ATTR_KEY  = { strength: 'str', dexterity: 'dex', intelligence: 'int' };
 const ATTR_ORDER = ['strength', 'dexterity', 'intelligence'];
 
 // Character-level requirement display range. Like ATTR_REQ_RANGE, the magnitude
@@ -57,6 +58,7 @@ const BORDER = {
   b: { border: 'rgba(48,48,139,0.7)', glow: 'rgba(48,48,139,0.45)' },
   w: { border: 'rgba(100,100,100,0.7)', glow: 'rgba(100,100,100,0.45)' },
 };
+const REQ_BORDER_KEY = { str: 'r', dex: 'g', int: 'b' };
 
 let _index = null;
 
@@ -80,14 +82,41 @@ function index() {
   return _index;
 }
 
+function reqKeys(weights) {
+  if (!weights) return [];
+  return ATTR_ORDER.filter((a) => weights[a]).map((a) => ATTR_KEY[a]);
+}
+
+// CSS class suffix for the browse-card left-border accent.
+// Hybrid gems get a combo token (rg/rb/gb) instead of the socket color (w).
+function cardColor(req, socketColor) {
+  if (req.length === 2) {
+    const has = (k) => req.includes(k);
+    if (has('str') && has('dex')) return 'rg';
+    if (has('str') && has('int')) return 'rb';
+    if (has('dex') && has('int')) return 'gb';
+  }
+  if (req.length === 1) {
+    if (req[0] === 'str') return 'r';
+    if (req[0] === 'dex') return 'g';
+    if (req[0] === 'int') return 'b';
+  }
+  return socketColor;
+}
+
 export function listGems() {
-  return [...index().entries()].map(([slug, rec]) => ({
-    slug,
-    name: rec.base_item.display_name,
-    color: rec.color,
-    gemType: rec.gem_type,
-    iconUrl: ddsUrl(rec.icon_dds_file),
-  }));
+  return [...index().entries()].map(([slug, rec]) => {
+    const req = reqKeys(rec.requirement_weights);
+    return {
+      slug,
+      name: rec.base_item.display_name,
+      color: rec.color,
+      cardColor: cardColor(req, rec.color),
+      gemType: rec.gem_type,
+      iconUrl: ddsUrl(rec.icon_dds_file),
+      req,
+    };
+  });
 }
 
 export function getGem(slug) {
@@ -137,7 +166,9 @@ export function buildGemViewModel(slug) {
   const baseItems = loadJson(`${REPOE}/base_items.json`);
   const baseItem = baseItems[gem.base_item?.id];
 
-  const b = BORDER[gem.color] ?? BORDER.w;
+  const req = reqKeys(gem.requirement_weights);
+  const b  = BORDER[REQ_BORDER_KEY[req[0]] ?? gem.color] ?? BORDER.w;
+  const b2 = req.length === 2 ? (BORDER[REQ_BORDER_KEY[req[1]]] ?? BORDER.w) : null;
 
   // Type line: spirit gems keep their gem-type label ("Spirit"); their granted
   // skill's first category is a buff/etc. but "Spirit" is the meaningful label.
@@ -174,6 +205,8 @@ export function buildGemViewModel(slug) {
     gemType: gem.gem_type,
     borderColor: b.border,
     glowColor: b.glow,
+    borderColor2: b2?.border ?? null,
+    glowColor2: b2?.glow ?? null,
     typeLine,
     typeLineHtml: renderGameText(`[${typeLine}]`, hasDefinition),
     tags: tagTokens.map((t) => renderGameText(t, hasDefinition)),

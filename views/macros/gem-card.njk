@@ -1,6 +1,7 @@
 {% macro gemCard(vm) %}
-<div class="newItemPopup GemPopup item-popup--poe2"
+<div class="newItemPopup GemPopup item-popup--poe2{% if vm.borderColor2 %} hybrid-border{% endif %}"
      style="--card-border: {{ vm.borderColor }}; --card-glow: {{ vm.glowColor }};
+            {% if vm.borderColor2 %}--card-border-2: {{ vm.borderColor2 }}; --card-glow-2: {{ vm.glowColor2 }};{% endif %}
             {% if vm.hoverImageUrl %}--hover-image: url('{{ vm.hoverImageUrl }}');{% endif %}">
   <div class="bg-art"></div>
   <div class="content">

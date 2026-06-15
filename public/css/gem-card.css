@@ -21,6 +21,24 @@ html[data-card-size="xl"] .gem-detail { zoom: 1.5; }
   overflow: hidden;
 }
 
+/* Hybrid gem card: gradient border via double-background trick.
+   Layer 1 fills the padding-box with the card's bg; layer 2 fills the border-box
+   with the gradient — the visible "border" is just the border-box minus padding-box. */
+.newItemPopup.hybrid-border {
+  border: 1px solid transparent;
+  background-image:
+    linear-gradient(var(--bg-base), var(--bg-base)),
+    linear-gradient(135deg, var(--card-border), var(--card-border-2));
+  background-origin: padding-box, border-box;
+  background-clip: padding-box, border-box;
+  box-shadow:
+    0 0 18px var(--card-glow),
+    0 0 12px var(--card-glow-2),
+    0 0 6px var(--card-glow),
+    0 0 4px var(--card-glow-2),
+    inset 0 0 20px rgba(0,0,0,0.8);
+}
+
 /* Atmospheric background art */
 .newItemPopup .bg-art {
   position: absolute;
