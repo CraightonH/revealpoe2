@@ -101,3 +101,9 @@ test('Energy Blade slug disambiguated by class', () => {
   if (b1) assert.equal(b1.name, 'Energy Blade');
   if (b2) assert.equal(b2.name, 'Energy Blade');
 });
+
+test('getBaseItem includes metadataKey field', () => {
+  const b = getBaseItem('stellar-amulet');
+  assert.ok(b);
+  assert.equal(b.metadataKey, 'Metadata/Items/Amulets/FourAmulet8');
+});

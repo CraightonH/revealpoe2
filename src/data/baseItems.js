@@ -119,7 +119,7 @@ function buildIndex() {
 
   const seenNameClass = new Set();
 
-  for (const v of Object.values(raw)) {
+  for (const [metaKey, v] of Object.entries(raw)) {
     if (v.domain !== 'item' || v.release_state !== 'released') continue;
     if (!BROWSABLE_CLASSES.has(v.item_class)) continue;
 
@@ -130,6 +130,7 @@ function buildIndex() {
     const slug = buildSlug(v.name, v.item_class, nameAcrossClassesDeduped);
     const record = {
       slug,
+      metadataKey: metaKey,
       name: v.name,
       itemClass: v.item_class,
       className: _classInfo.get(v.item_class)?.name ?? v.item_class,
