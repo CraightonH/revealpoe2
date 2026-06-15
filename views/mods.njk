@@ -1,0 +1,36 @@
+{% extends "base.njk" %}
+{% block title %}Affixes — PoE2 Wiki{% endblock %}
+{% block content %}
+<div class="page" style="flex-direction:column;align-items:center;">
+  <h1 class="page-title" style="font-family:'OptimusPrincepsSemiBold',serif;color:var(--color-normal);">
+    Rollable Affixes
+  </h1>
+  <p class="page-subtitle">{{ prefix.length + suffix.length }} affix families</p>
+  <div class="mods-columns">
+    <section class="mods-section">
+      <h2 class="mods-section-title">Prefix ({{ prefix.length }})</h2>
+      <div class="mods-list">
+        {% for g in prefix %}
+        <a class="mods-list-row" href="/mod/{{ g.typeSlug }}">
+          <span class="mods-list-name">{{ g.type }}</span>
+          <span class="mods-list-text">{{ g.text | truncate(60) }}</span>
+          <span class="mods-list-count">{{ g.tierCount }} tier{{ 's' if g.tierCount != 1 }}</span>
+        </a>
+        {% endfor %}
+      </div>
+    </section>
+    <section class="mods-section">
+      <h2 class="mods-section-title">Suffix ({{ suffix.length }})</h2>
+      <div class="mods-list">
+        {% for g in suffix %}
+        <a class="mods-list-row" href="/mod/{{ g.typeSlug }}">
+          <span class="mods-list-name">{{ g.type }}</span>
+          <span class="mods-list-text">{{ g.text | truncate(60) }}</span>
+          <span class="mods-list-count">{{ g.tierCount }} tier{{ 's' if g.tierCount != 1 }}</span>
+        </a>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

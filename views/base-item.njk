@@ -56,6 +56,30 @@
             {% endfor %}
           </div>
           {% endif %}
+          {% if vm.affixes and (vm.affixes.prefix.length or vm.affixes.suffix.length) %}
+          <div class="separator"></div>
+          <div class="Stats">
+            <div class="property" style="margin-bottom:4px;">Rollable Affixes:</div>
+            {% if vm.affixes.prefix.length %}
+            <div class="property" style="padding-left:4px;color:var(--color-default);font-size:11.5px;">Prefixes</div>
+            {% for g in vm.affixes.prefix %}
+            <div class="property" style="padding-left:8px;">
+              <a href="/mod/{{ g.typeSlug }}" style="color:var(--magic-color);text-decoration:none;">{{ g.type }}</a>
+              <span style="color:var(--color-default);font-size:11px;margin-left:6px;">({{ g.tiers.length }} tier{{ 's' if g.tiers.length != 1 }})</span>
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% if vm.affixes.suffix.length %}
+            <div class="property" style="padding-left:4px;color:var(--color-default);font-size:11.5px;margin-top:4px;">Suffixes</div>
+            {% for g in vm.affixes.suffix %}
+            <div class="property" style="padding-left:8px;">
+              <a href="/mod/{{ g.typeSlug }}" style="color:var(--magic-color);text-decoration:none;">{{ g.type }}</a>
+              <span style="color:var(--color-default);font-size:11px;margin-left:6px;">({{ g.tiers.length }} tier{{ 's' if g.tiers.length != 1 }})</span>
+            </div>
+            {% endfor %}
+            {% endif %}
+          </div>
+          {% endif %}
         </div>
       </div>
       {% if vm.iconUrl %}

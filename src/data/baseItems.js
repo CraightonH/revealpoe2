@@ -2,6 +2,7 @@ import { loadJson } from './loader.js';
 import { slugify } from './slug.js';
 import { ddsUrl } from './images.js';
 import { listUniques } from './uniques.js';
+import { getModsForBase } from './mods.js';
 
 const REPOE = 'repoe-poe2';
 
@@ -191,5 +192,7 @@ export function buildBaseItemViewModel(slug) {
     .filter((u) => u.base === b.name)
     .map((u) => ({ slug: u.slug, name: u.name, iconUrl: u.iconUrl }));
 
-  return { ...b, uniquesOnBase };
+  const affixes = getModsForBase(b.metadataKey, b.className);
+
+  return { ...b, uniquesOnBase, affixes };
 }
