@@ -36,6 +36,12 @@ describe('passiveTree', () => {
       const k = getKeystone('passive_keystone_zealots_oath');
       assert.ok(k.iconUrl.startsWith('https://'));
     });
+    it("Zealot's Oath has statRaw plain text without HTML tags", () => {
+      const k = getKeystone('passive_keystone_zealots_oath');
+      assert.ok(typeof k.statRaw === 'string');
+      assert.ok(k.statRaw.includes('Energy Shield'));
+      assert.ok(!k.statRaw.includes('<'));
+    });
     it('returns null for unknown id', () => {
       assert.equal(getKeystone('nonexistent_id'), null);
     });
@@ -66,6 +72,12 @@ describe('passiveTree', () => {
       const n = getNotable('ailments38');
       const joined = n.statLines.join(' ');
       assert.ok(joined.includes('12'));
+    });
+    it('Fast Acting Toxins statRaw is plain text containing 12', () => {
+      const n = getNotable('ailments38');
+      assert.ok(typeof n.statRaw === 'string');
+      assert.ok(n.statRaw.includes('12'));
+      assert.ok(!n.statRaw.includes('<'));
     });
     it('returns null for unknown id', () => {
       assert.equal(getNotable('nope'), null);

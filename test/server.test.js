@@ -123,3 +123,23 @@ test('GET /ascendancy/NotReal returns 404', async () => {
   const res = await request(app).get('/ascendancy/NotReal');
   assert.equal(res.status, 404);
 });
+
+test('GET /notable/ailments38 returns 200 with Fast Acting Toxins', async () => {
+  const app = createApp();
+  const res = await request(app).get('/notable/ailments38');
+  assert.equal(res.status, 200);
+  assert.ok(res.text.includes('Fast Acting Toxins'));
+});
+
+test('GET /notable/not-a-real-notable returns 404', async () => {
+  const app = createApp();
+  const res = await request(app).get('/notable/not-a-real-notable');
+  assert.equal(res.status, 404);
+});
+
+test('GET /search?q=maximum+life returns Affix results', async () => {
+  const app = createApp();
+  const res = await request(app).get('/search?q=maximum+life');
+  assert.equal(res.status, 200);
+  assert.ok(res.text.includes('Affix'));
+});

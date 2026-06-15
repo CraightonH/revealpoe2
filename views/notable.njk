@@ -1,0 +1,25 @@
+{% extends "base.njk" %}
+{% block title %}{{ n.name }} — PoE2 Wiki{% endblock %}
+{% block content %}
+<div class="page" style="flex-direction:column;align-items:center;">
+  <nav class="bases-breadcrumb">
+    <a href="/keystones">Keystones</a> › Notable › {{ n.name }}
+  </nav>
+  <div class="passive-detail-card">
+    {% if n.iconUrl %}
+    <img class="passive-detail-icon" src="{{ n.iconUrl }}" alt="{{ n.name }}" onerror="this.style.visibility='hidden'">
+    {% endif %}
+    <h1 class="passive-detail-name">{{ n.name }}</h1>
+    {% if n.statLines.length %}
+    <div class="passive-detail-stats">
+      {% for line in n.statLines %}
+      <div class="explicitMod">{{ line | safe }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% if n.flavourText %}
+    <div class="FlavourText passive-detail-flavour">{{ n.flavourText }}</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

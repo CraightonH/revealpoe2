@@ -2,7 +2,7 @@ import { buildGemViewModel, listGems } from '../data/gems.js';
 import { buildUniqueViewModel, listUniques } from '../data/uniques.js';
 import { listItemClasses, getItemClass, buildBaseItemViewModel } from '../data/baseItems.js';
 import { listModGroups, getModGroup } from '../data/mods.js';
-import { listKeystones, getKeystone, listAscendancies, getAscendancy } from '../data/passiveTree.js';
+import { listKeystones, getKeystone, listNotables, getNotable, listAscendancies, getAscendancy } from '../data/passiveTree.js';
 
 export function registerPages(app) {
   app.get('/', (_req, res) => {
@@ -56,6 +56,12 @@ export function registerPages(app) {
     if (!entry) return res.status(404).render('home.njk', { notFound: req.params.typeSlug });
     const group = getModGroup(entry.type);
     res.render('mod-group.njk', { group });
+  });
+
+  app.get('/notable/:id', (req, res) => {
+    const n = getNotable(req.params.id);
+    if (!n) return res.status(404).render('home.njk', { notFound: req.params.id });
+    res.render('notable.njk', { n });
   });
 
   app.get('/keystones', (_req, res) => {

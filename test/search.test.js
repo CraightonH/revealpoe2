@@ -43,3 +43,54 @@ test('GET /search returns an HTML fragment with links', async () => {
   assert.match(res.text, /\/gem\/herald-of-ash/);
   assert.doesNotMatch(res.text, /<html/); // fragment, not full page
 });
+
+test('search results include category field', () => {
+  const hits = search('herald');
+  assert.ok(hits.length > 0);
+  assert.ok(hits.every((h) => typeof h.category === 'string' && h.category.length > 0));
+});
+
+test('search finds keystones by stat text', () => {
+  const hits = search('energy shield');
+  const zealots = hits.find((h) => h.url.includes('passive_keystone_zealots_oath'));
+  assert.ok(zealots, "Zealot's Oath not found by stat text 'energy shield'");
+});
+
+test('search finds notables by name', () => {
+  const hits = search('fast acting toxins');
+  assert.ok(hits.some((h) => h.name === 'Fast Acting Toxins'));
+});
+
+test('search finds notables by stat text', () => {
+  const hits = search('damaging ailments');
+  assert.ok(hits.some((h) => h.url.includes('ailments38')));
+});
+
+test('search finds mod groups by text', () => {
+  const hits = search('maximum life');
+  assert.ok(hits.some((h) => h.url.startsWith('/mod/')));
+});
+
+test('search returns category Keystone for keystones', () => {
+  const hits = search('zealot');
+  const k = hits.find((h) => h.url.includes('passive_keystone_zealots_oath'));
+  assert.ok(k);
+  assert.equal(k.category, 'Keystone');
+});
+
+test('search returns category Notable for notables', () => {
+  const hits = search('fast acting toxins');
+  const n = hits.find((h) => h.name === 'Fast Acting Toxins');
+  assert.ok(n);
+  assert.equal(n.category, 'Notable');
+});
+
+test('search returns category Gem for gems', () => {
+  const hits = search('herald of ash');
+  assert.ok(hits.some((h) => h.category === 'Gem'));
+});
+
+test('search returns category Affix for mods', () => {
+  const hits = search('maximum life');
+  assert.ok(hits.some((h) => h.category === 'Affix'));
+});

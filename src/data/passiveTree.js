@@ -31,21 +31,40 @@ function buildStatMap() {
   }
 }
 
+function rawString(entry, val) {
+  return entry.format?.[0] === 'ignore'
+    ? entry.string
+    : entry.string.replace('{0}', val);
+}
+
+function stripMarkup(text) {
+  return text.replace(/\[([^\]|]+)(?:\|([^\]]+))?\]/g, (_, id, display) => display ?? id);
+}
+
 function translateStats(stats) {
   buildStatMap();
   const lines = [];
   for (const [id, val] of Object.entries(stats ?? {})) {
     const entry = _statMap.get(id);
     if (!entry) continue;
-    const raw = entry.format?.[0] === 'ignore'
-      ? entry.string
-      : entry.string.replace('{0}', val);
-    // Split on newlines (some keystone descriptions are multi-line)
-    for (const line of raw.split('\n')) {
+    for (const line of rawString(entry, val).split('\n')) {
       if (line.trim()) lines.push(renderGameText(line, hasDefinition));
     }
   }
   return lines;
+}
+
+function translateStatsRaw(stats) {
+  buildStatMap();
+  const parts = [];
+  for (const [id, val] of Object.entries(stats ?? {})) {
+    const entry = _statMap.get(id);
+    if (!entry) continue;
+    for (const line of rawString(entry, val).split('\n')) {
+      if (line.trim()) parts.push(stripMarkup(line));
+    }
+  }
+  return parts.join(' ');
 }
 
 function buildPassiveIndex() {
@@ -70,6 +89,7 @@ function nodeRecord(p) {
     name: p.name,
     iconUrl: ddsUrl(p.icon),
     statLines: translateStats(p.stats),
+    statRaw: translateStatsRaw(p.stats),
     flavourText: p.flavour_text || '',
     reminderText: Array.isArray(p.reminder_text) ? p.reminder_text : [],
     ascendancy: p.ascendancy ?? null,
