@@ -38,6 +38,17 @@ For skill gems: `icon_dds_file` directly on `skill_gems.json` records.
 
 Offline fallback: render a placeholder using `visual_identity.id`/`name` — deterministic color from hash, initials as label. See `$POE2DATADIR/docs/image-assets.md` for the full pattern including CSS and onerror handling.
 
+## UI Fidelity Goal
+
+Item and gem tooltips should imitate the in-game look and feel as closely as possible. The reference implementation is **poe2db.tw** — inspect its HTML/CSS for layout patterns before building new popup styles.
+
+Key layout patterns already established (do not drift from these):
+- `.newItemPopup` — outer popup wrapper; `--card-border` / `--card-glow` CSS variables set per rarity
+- `.itemHeader.doubleLine` — header banner with item name and type line; gems use `GemHoverTitle.dds` background, unique items override with a dark gradient header
+- `.Stats` / `.explicitMod` / `.implicitMod` / `.separator` / `.FlavourText` — inner content structure matching poe2db class names exactly
+- **Item art goes outside the popup** in `.itemboximage` beside `.newItemPopup` (poe2db pattern) — not inside the header
+- poe2db URL pattern: `https://poe2db.tw/us/{ItemName_snake_case}` — use to cross-reference layout and class names
+
 ## Architecture Decisions
 
 This wiki is a greenfield project — no framework has been chosen yet. When building:

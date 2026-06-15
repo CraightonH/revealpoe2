@@ -210,31 +210,63 @@ html[data-card-size="xl"] .gem-detail { zoom: 1.5; }
   padding: 7px 12px 9px;
 }
 
-/* Unique item card overrides */
-.UniquePopup .uniqueHeader {
-  background: none;
+/* Unique item card — header overrides the gem banner with a centered, amber-themed header */
+.UniquePopup .itemHeader.doubleLine {
+  background: linear-gradient(180deg,
+    rgba(60,30,0,0.95) 0%,
+    rgba(30,15,0,0.98) 100%);
+  border-bottom: 1px solid rgba(175,96,37,0.4);
   height: auto;
   min-height: 54px;
-  padding: 8px 12px 8px 12px;
-  justify-content: flex-end;
+  padding: 8px 14px;
+  justify-content: center;
+  text-align: center;
 }
 
 .UniquePopup .unique-name {
   color: var(--unique-color);
-  padding: 0 60px 0 12px;
+  padding: 0;
+  text-align: center;
 }
 
 .UniquePopup .unique-type {
   color: var(--color-normal);
-  padding: 0 60px 0 12px;
+  padding: 0;
   font-size: 13px;
+  text-align: center;
 }
 
-.UniquePopup .base-link {
+/* Item art beside the card — matches poe2db .itemboximage pattern */
+.unique-item-with-art {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.itemboximage {
+  padding-top: 8px;
+  flex-shrink: 0;
+}
+
+.itemboximage img {
+  width: 84px;
+  height: 84px;
+  object-fit: contain;
+  display: block;
+}
+
+.unique-base-line {
+  color: var(--color-default);
+  font-size: 11.5px;
+  text-align: center;
+  padding: 6px 12px 9px;
+}
+
+.unique-base-line .base-link {
   color: var(--color-normal);
   text-decoration: none;
 }
-.UniquePopup .base-link:hover {
+.unique-base-line .base-link:hover {
   color: var(--unique-color);
 }
 

@@ -3,29 +3,33 @@
 {% block content %}
 <div class="page">
   <div class="gem-detail">
-    <div class="newItemPopup UniquePopup"
-         style="--card-border: {{ vm.borderColor }}; --card-glow: {{ vm.glowColor }};">
-      <div class="content">
-        <div class="itemHeader doubleLine uniqueHeader">
-          {% if vm.iconUrl %}
-          <img class="trailGemIcon" src="{{ vm.iconUrl }}"
-               onerror="this.style.visibility='hidden'">
-          {% endif %}
+    <div class="unique-item-with-art">
+      <div class="newItemPopup UniquePopup item-popup--poe2"
+           style="--card-border: {{ vm.borderColor }}; --card-glow: {{ vm.glowColor }};">
+        <div class="itemHeader doubleLine">
           <div class="itemName"><span class="lc unique-name">{{ vm.name }}</span></div>
           <div class="itemName typeLine"><span class="lc unique-type">{{ vm.base }}</span></div>
         </div>
         <div class="content">
           <div class="Stats">
+            <div class="property">{{ vm.itemClass }}</div>
+            <div class="separator"></div>
             {% for stat in vm.stats %}
             <div class="explicitMod">{{ stat }}</div>
             {% endfor %}
           </div>
           <div class="separator"></div>
-          <div class="default" style="padding:6px 12px;">
+          <div class="default unique-base-line">
             Base item: <a href="/base/{{ vm.baseSlug }}" class="base-link">{{ vm.base }}</a>
           </div>
         </div>
       </div>
+      {% if vm.iconUrl %}
+      <div class="itemboximage">
+        <img loading="lazy" src="{{ vm.iconUrl }}" alt="{{ vm.name }}"
+             onerror="this.style.visibility='hidden'">
+      </div>
+      {% endif %}
     </div>
   </div>
 </div>
