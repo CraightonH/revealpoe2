@@ -1,5 +1,15 @@
 {% extends "base.njk" %}
 {% block title %}{{ vm.name }} — PoE2 Wiki{% endblock %}
+{% macro modLine(stat) %}
+<div class="explicitMod">
+  {%- if stat.gemSlug -%}
+  {%- if stat.iconUrl %}<img loading="lazy" src="{{ stat.iconUrl }}" class="grantsSkill" alt="" onerror="this.style.display='none'">{% endif -%}
+  {{ stat.prefixHtml | safe }}<a href="/gem/{{ stat.gemSlug }}" data-card-url="/gem/{{ stat.gemSlug }}/card" class="skill-grant-link">{{ stat.skillName }}</a>
+  {%- else -%}
+  {{ stat.html | safe }}
+  {%- endif -%}
+</div>
+{% endmacro %}
 {% block content %}
 <div class="page">
   <div class="gem-detail">
@@ -8,26 +18,33 @@
            style="--card-border: {{ vm.borderColor }}; --card-glow: {{ vm.glowColor }};">
         <div class="itemHeader doubleLine">
           <div class="itemName"><span class="lc unique-name">{{ vm.name }}</span></div>
-          <div class="itemName typeLine"><span class="lc unique-type">{{ vm.base }}</span></div>
+          <div class="itemName typeLine"><a class="lc unique-type" href="/base/{{ vm.baseSlug }}" data-card-url="/base/{{ vm.baseSlug }}/card">{{ vm.base }}</a></div>
         </div>
         <div class="content">
           <div class="Stats">
             <div class="property">{{ vm.itemClass }}</div>
-            <div class="separator"></div>
-            {% for stat in vm.stats %}
-            <div class="explicitMod">
-              {%- if stat.gemSlug -%}
-              {{ stat.prefix }}<a href="/gem/{{ stat.gemSlug }}" data-card-url="/gem/{{ stat.gemSlug }}/card" class="skill-grant-link">{{ stat.skillName }}</a>
-              {%- else -%}
-              {{ stat.text }}
-              {%- endif -%}
-            </div>
+            {% for prop in vm.properties %}
+            <div class="property">{{ prop.label }}: <span class="{{ prop.colorClass }}">{{ prop.value }}</span></div>
             {% endfor %}
           </div>
+          {% if vm.requirements.length %}
           <div class="separator"></div>
-          <div class="default unique-base-line">
-            Base item: <a href="/base/{{ vm.baseSlug }}" class="base-link">{{ vm.base }}</a>
+          <div class="Stats">
+            <div class="requirements">Requires <span class="colourDefault">{{ vm.requirements | join('</span>, <span class="colourDefault">') | safe }}</span></div>
           </div>
+          {% endif %}
+          <div class="separator"></div>
+          {% if vm.implicits.length %}
+          <div class="Stats">
+            {% for stat in vm.implicits %}{{ modLine(stat) }}{% endfor %}
+          </div>
+          {% if vm.explicits.length %}<div class="separator"></div>{% endif %}
+          {% endif %}
+          {% if vm.explicits.length %}
+          <div class="Stats">
+            {% for stat in vm.explicits %}{{ modLine(stat) }}{% endfor %}
+          </div>
+          {% endif %}
         </div>
       </div>
       {% if vm.iconUrl %}

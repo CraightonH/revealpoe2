@@ -80,6 +80,7 @@ function buildSlug(name, classId, nameAcrossClasses) {
 
 let _index = null;
 let _byClass = null;
+let _byName = null;
 let _classInfo = null;
 
 function buildIndex() {
@@ -110,6 +111,7 @@ function buildIndex() {
 
   _index = new Map();
   _byClass = new Map();
+  _byName = new Map();
   _classInfo = new Map();
 
   for (const [classId, info] of Object.entries(classesRaw)) {
@@ -141,10 +143,12 @@ function buildIndex() {
       tags: v.tags ?? [],
       requirements: buildRequirements(v.requirements, v.drop_level),
       properties: buildProperties(v.properties),
+      rawProperties: v.properties ?? null,
       iconUrl: ddsUrl(v.visual_identity?.dds_file),
     };
 
     if (!_index.has(slug)) _index.set(slug, record);
+    if (!_byName.has(v.name)) _byName.set(v.name, record);
     _byClass.get(v.item_class)?.push(record);
   }
 
@@ -182,6 +186,13 @@ export function getItemClass(classSlug) {
 export function getBaseItem(slug) {
   buildIndex();
   return _index.get(slug) ?? null;
+}
+
+// Look up a base item record by its display name (e.g. "Pronged Spear").
+// Returns null for names whose item class isn't browsable (jewels, flasks, …).
+export function getBaseByName(name) {
+  buildIndex();
+  return _byName.get(name) ?? null;
 }
 
 export function buildBaseItemViewModel(slug) {

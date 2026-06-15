@@ -63,6 +63,12 @@ export function registerPages(app) {
     res.render('base-item.njk', { vm });
   });
 
+  app.get('/base/:slug/card', (req, res) => {
+    const vm = buildBaseItemViewModel(req.params.slug);
+    if (!vm) return res.status(404).send('');
+    res.render('partials/base-card-fragment.njk', { vm });
+  });
+
   app.get('/mods', (_req, res) => {
     const groups = listModGroups();
     const prefix = groups.filter((g) => g.generation_type === 'prefix');

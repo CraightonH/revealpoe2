@@ -117,6 +117,13 @@ html[data-card-size="xl"] .gem-detail { zoom: 1.5; }
   font-size: 12.5px;
 }
 .property .colourDefault { color: var(--normal-color); }
+/* Augmented (mod-modified) values render magic-blue, matching the in-game tooltip */
+.property .colourAugmented { color: var(--magic-color); }
+.property .colourPhysicalDamage { color: var(--normal-color); }
+.property .colourFireDamage { color: var(--fire-color); }
+.property .colourColdDamage { color: var(--cold-color); }
+.property .colourLightningDamage { color: var(--lightning-color); }
+.property .colourChaosDamage { color: var(--chaos-color); }
 .property a.KeywordPopups, .requirements a.KeywordPopups {
   color: var(--prop-color);
   text-decoration: none;
@@ -136,6 +143,14 @@ html[data-card-size="xl"] .gem-detail { zoom: 1.5; }
   height: 8px;
   margin: 4px 10px;
   background: radial-gradient(ellipse at center, #6e9a97 0%, #6e9a97 10%, transparent 33%);
+  background-size: 100% 2px;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+/* Unique cards use amber dividers, matching the in-game unique item tooltip */
+.UniquePopup .separator {
+  background: radial-gradient(ellipse at center, #c87a30 0%, #c87a30 10%, transparent 33%);
   background-size: 100% 2px;
   background-repeat: no-repeat;
   background-position: center;
@@ -198,6 +213,16 @@ html[data-card-size="xl"] .gem-detail { zoom: 1.5; }
 }
 .explicitMod .mod-value { color: white; }
 .explicitMod a { color: var(--magic-color); text-decoration: none; border-bottom: 1px dotted var(--magic-color); }
+/* Granted-skill links render gem-teal to stand apart from the blue mod text */
+.explicitMod a.skill-grant-link { color: var(--color-gem); border-bottom-color: var(--color-gem); }
+/* Inline skill icon preceding "Grants Skill:" (poe2db pattern) */
+.explicitMod .grantsSkill {
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
+  margin-right: 4px;
+  object-fit: contain;
+}
 
 .qualityMod {
   color: var(--magic-color);
@@ -228,15 +253,23 @@ html[data-card-size="xl"] .gem-detail { zoom: 1.5; }
   padding: 7px 12px 9px;
 }
 
-/* Unique item card — header overrides the gem banner with a centered, amber-themed header */
+/* Unique item card — the genuine in-game unique item header, referenced from
+   the GGPK CDN. It's a 3-slice texture (ornate left/right corners + a tiling
+   middle), the same ItemsHeaderUnique{Left,Middle,Right}.dds pieces poe2db
+   re-hosts. Corners scale to header height; middle repeats across. */
 .UniquePopup .itemHeader.doubleLine {
-  background: linear-gradient(180deg,
-    rgba(60,30,0,0.95) 0%,
-    rgba(30,15,0,0.98) 100%);
-  border-bottom: 1px solid rgba(175,96,37,0.4);
-  height: auto;
-  min-height: 54px;
-  padding: 8px 14px;
+  background:
+    url(https://image.ggpk.exposed/poe2/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderUniqueLeft.dds?format=webp) top left no-repeat,
+    url(https://image.ggpk.exposed/poe2/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderUniqueRight.dds?format=webp) top right no-repeat,
+    url(https://image.ggpk.exposed/poe2/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderUniqueMiddle.dds?format=webp) 0 top repeat-x,
+    url(https://image.ggpk.exposed/poe2/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderUniqueMiddle.dds?format=webp) 23px top repeat-x;
+  /* Corners scale to height and sit on top. The middle is tiled at native
+     horizontal scale to keep its filigree crisp; the GGPK slice has a 1px
+     transparent trim edge, so it's layered twice at a half-tile offset — each
+     copy fills the other's seam, leaving no visible gap. */
+  background-size: auto 100%, auto 100%, auto 100%, auto 100%;
+  height: 56px;
+  padding: 4px 14px;
   justify-content: center;
   text-align: center;
 }
@@ -247,10 +280,29 @@ html[data-card-size="xl"] .gem-detail { zoom: 1.5; }
   text-align: center;
 }
 
-.UniquePopup .unique-type {
-  color: var(--color-normal);
+.UniquePopup .itemName.typeLine .lc.unique-type {
+  color: var(--unique-color);
   padding: 0;
   font-size: 13px;
+  text-align: center;
+}
+
+/* Subtitle links to the base item; dotted underline marks it as navigable.
+   inline-block keeps the underline hugging the text, parent centers it. */
+.UniquePopup .itemName.typeLine { text-align: center; }
+a.lc.unique-type {
+  display: inline-block;
+  text-decoration: none;
+  border-bottom: 1px dotted var(--unique-color);
+}
+a.lc.unique-type:hover {
+  border-bottom-style: solid;
+}
+
+/* Computed item stats + requirements — centered, muted grey labels */
+.UniquePopup .property,
+.UniquePopup .requirements {
+  color: #7f7f7f;
   text-align: center;
 }
 

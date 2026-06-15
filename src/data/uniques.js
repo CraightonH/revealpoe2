@@ -3,6 +3,8 @@ import { loadJson, listDataDir } from './loader.js';
 import { slugify } from './slug.js';
 import { ddsUrl } from './images.js';
 import { getGem } from './gems.js';
+import { getBaseByName } from './baseItems.js';
+import { parseLocalMods, computeProperties } from './itemStats.js';
 
 const REPOE = 'repoe-poe2';
 const POB_DIR = 'pob-uniques';
@@ -16,14 +18,37 @@ const META_RE = /^(Variant|Implicits|League|Source|Corrupted|Limited to|Drop lev
 // "Grants Skill: Name" or "Grants Skill: Level (N-M) Name"
 const GRANTS_SKILL_RE = /^(Grants Skill: (?:Level \([^)]+\) )?)(.+)$/;
 
-// Parse a stat line; for grant lines, attach a gemSlug if the gem exists.
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// Wrap numeric values and ranges — e.g. "(100-120)", "1", "30" — in a
+// .mod-value span so they render white, leaving the surrounding mod text blue.
+function highlightValues(text) {
+  return escapeHtml(text).replace(
+    /\(?\d+(?:\.\d+)?(?:-\d+(?:\.\d+)?)?\)?/g,
+    (m) => `<span class="mod-value">${m}</span>`,
+  );
+}
+
+// Parse a stat line; for grant lines, attach a gemSlug + skill icon if the gem
+// exists. `html`/`prefixHtml` carry value-highlighted markup for | safe render.
 function parseStatLine(text) {
   const m = text.match(GRANTS_SKILL_RE);
-  if (!m) return { text };
+  if (!m) return { text, html: highlightValues(text) };
   const prefix = m[1];
   const skillName = m[2];
-  const gemSlug = slugify(skillName);
-  return { text, prefix, skillName, gemSlug: getGem(gemSlug) ? gemSlug : null };
+  const slug = slugify(skillName);
+  const gem = getGem(slug);
+  return {
+    text,
+    html: highlightValues(text),
+    prefix,
+    prefixHtml: highlightValues(prefix),
+    skillName,
+    gemSlug: gem ? slug : null,
+    iconUrl: gem ? ddsUrl(gem.icon_dds_file) : null,
+  };
 }
 
 // Count Variant: lines to determine the "current" variant index (last one = highest).
@@ -127,9 +152,28 @@ export function getUnique(slug) {
 export function buildUniqueViewModel(slug) {
   const u = getUnique(slug);
   if (!u) return null;
+
+  // Derive in-game item stats from the base item with the unique's local mods
+  // applied (e.g. base phys × increased phys%). Bases whose class isn't
+  // browsable (jewels, flasks) have no record — properties/requirements stay empty.
+  const baseRecord = getBaseByName(u.base);
+  const mods = parseLocalMods(u.stats);
+  const properties = baseRecord ? computeProperties(baseRecord.rawProperties, mods) : [];
+  const requirements = baseRecord?.requirements ?? [];
+
+  // Grant lines ("Grants Skill: …") are implicits — shown above the explicit
+  // affixes, separated by a divider (matching the in-game / poe2db layout).
+  const parsedStats = u.stats.map(parseStatLine);
+  const implicits = parsedStats.filter((s) => s.prefix);
+  const explicits = parsedStats.filter((s) => !s.prefix);
+
   return {
     ...u,
-    stats: u.stats.map(parseStatLine),
+    stats: parsedStats,
+    implicits,
+    explicits,
+    properties,
+    requirements,
     borderColor: UNIQUE_BORDER,
     glowColor: UNIQUE_GLOW,
     baseSlug: slugify(u.base),
