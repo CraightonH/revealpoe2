@@ -48,7 +48,7 @@ test('GET /gem/unknown returns 404', async () => {
 test('GET /keystone/:id renders a keystone passive popup', async () => {
   const res = await request(createApp()).get('/keystone/passive_keystone_zealots_oath');
   assert.equal(res.status, 200);
-  assert.match(res.text, /Zealot/);
+  assert.match(res.text, /Zealot&#39;s Oath/);
   // newItemPopup family + passive + keystone modifier
   assert.match(res.text, /newItemPopup/);
   assert.match(res.text, /PassivePopup/);

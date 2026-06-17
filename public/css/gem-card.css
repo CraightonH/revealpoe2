@@ -760,20 +760,15 @@ a.lc.unique-type:hover {
   margin: 16px auto 0;
 }
 .PassivePopup.is-keystone {
-  --card-border: var(--color-keystone);
-  --card-glow: var(--color-keystone-glow);
   --passive-name-color: var(--color-keystone);
 }
 .PassivePopup.is-notable {
-  --card-border: var(--color-notable);
-  --card-glow: var(--color-notable-glow);
   --passive-name-color: var(--color-notable);
 }
 
 /* Flat header bar — overrides the gem .dds banner background */
 .itemHeader.doubleLine.passiveHeader {
   background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.25));
-  background-size: auto;
 }
 .PassivePopup .leadPassiveIcon {
   position: absolute;
