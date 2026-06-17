@@ -1,0 +1,31 @@
+{% if result.empty %}
+<div class="tc-empty">
+  <p>Search across gems, supports, uniques, affixes, keystones, notables and bases.</p>
+  <p class="tc-examples">Examples:
+    <code>onslaught</code> &middot; <code>type:support cold</code> &middot;
+    <code>color:green tag:attack</code> &middot; <code>-type:unique chaos resistance</code></p>
+</div>
+{% elif not result.groups.length %}
+<div class="tc-empty"><p>No results for <code>{{ result.query }}</code>.</p></div>
+{% else %}
+<div class="tc-summary">{{ result.total }} result{{ 's' if result.total != 1 }} for <code>{{ result.query }}</code></div>
+{% for g in result.groups %}
+<section class="tc-group">
+  <h2 class="tc-group-heading">{{ g.label }} ({{ g.total }})</h2>
+  <div class="tc-result-grid">
+    {% for it in g.items %}
+    <a class="tc-result-card tc-result-card--{{ g.category }}" href="{{ it.url }}"
+       {% if g.category in ['gem', 'support', 'spirit', 'unique'] %}data-card-url="{{ it.url }}/card"{% endif %}>
+      {% if it.iconUrl %}
+      <img class="tc-result-icon" src="{{ it.iconUrl }}" alt="{{ it.name }}" loading="lazy"
+           onerror="this.style.visibility='hidden'">
+      {% endif %}
+      <span class="tc-result-name">{{ it.name }}</span>
+      {% if it.subtitle %}<span class="tc-result-sub">{{ it.subtitle }}</span>{% endif %}
+    </a>
+    {% endfor %}
+  </div>
+  {% if g.shown < g.total %}<p class="tc-more">Showing {{ g.shown }} of {{ g.total }}</p>{% endif %}
+</section>
+{% endfor %}
+{% endif %}

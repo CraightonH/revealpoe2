@@ -122,3 +122,26 @@ test('allDocs: a known gem doc carries deep text and fields', () => {
 test('allDocs: is cached (same array on repeat calls)', () => {
   assert.equal(allDocs(), allDocs());
 });
+
+import request from 'supertest';
+import { createApp } from '../src/server.js';
+
+test('GET /theorycraft renders the page with a query input', async () => {
+  const res = await request(createApp()).get('/theorycraft');
+  assert.equal(res.status, 200);
+  assert.match(res.text, /hx-get="\/theorycraft\/results"/);
+  assert.match(res.text, /Theory Crafting/);
+});
+
+test('GET /theorycraft/results?q=herald returns grouped results', async () => {
+  const res = await request(createApp()).get('/theorycraft/results?q=herald');
+  assert.equal(res.status, 200);
+  assert.match(res.text, /Skill Gems/);
+  assert.match(res.text, /Herald of Ash/);
+});
+
+test('GET /theorycraft/results with empty q shows the prompt', async () => {
+  const res = await request(createApp()).get('/theorycraft/results?q=');
+  assert.equal(res.status, 200);
+  assert.match(res.text, /tc-empty/);
+});

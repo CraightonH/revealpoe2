@@ -22,6 +22,8 @@
   <!-- Popper must load before Tippy (Tippy's UMD build depends on window.Popper). -->
   <script src="/static/vendor/popper.min.js" defer></script>
   <script src="/static/vendor/tippy.umd.min.js" defer></script>
+  <!-- Shared tooltip harness must load before the per-feature caller scripts. -->
+  <script src="/static/js/tooltips.js" defer></script>
   <script src="/static/js/keywords.js" defer></script>
   <script src="/static/js/gem-tooltip.js" defer></script>
   <script src="/static/js/filter-bar.js" defer></script>
@@ -71,6 +73,9 @@
         <ul class="site-nav__dropdown">
           <li><a href="/mods">Browse Affixes</a></li>
         </ul>
+      </li>
+      <li class="site-nav__item">
+        <a href="/theorycraft" class="site-nav__top">Theory Crafting</a>
       </li>
     </ul>
   </nav>

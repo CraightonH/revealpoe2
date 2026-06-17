@@ -15,7 +15,7 @@ body {
   border-bottom: 1px solid var(--border);
 }
 .site-header a.brand {
-  font-family: "OptimusPrincepsSemiBold", serif;
+  font-family: var(--font-display);
   color: var(--color-unique);
   text-decoration: none;
   font-size: 20px;
@@ -161,7 +161,7 @@ body {
   margin-bottom: 32px;
 }
 .gem-list-heading {
-  font-family: 'OptimusPrincepsSemiBold', serif;
+  font-family: var(--font-display);
   font-size: 16px;
   margin: 0 0 12px;
   padding-bottom: 6px;
@@ -191,7 +191,7 @@ body {
   overflow: hidden;
   position: relative;
 }
-.gem-browse-card:hover { border-color: rgba(200, 200, 200, 0.5); }
+.gem-browse-card:hover { border-color: var(--card-hover-border); }
 .gem-browse-card--r { border-left: 2px solid var(--color-gem-r); }
 .gem-browse-card--g { border-left: 2px solid var(--color-gem-g); }
 .gem-browse-card--b { border-left: 2px solid var(--color-gem-b); }
@@ -222,6 +222,11 @@ body {
 }
 
 .page { padding: 24px; display: flex; justify-content: center; }
+/* Column layout variant — templates add this in place of inline
+   flex-direction/align-items on column pages. */
+.page--column { flex-direction: column; align-items: center; }
+/* Page titles use the display face; per-page color stays inline on the element. */
+.page-title { font-family: var(--font-display); }
 .gem-detail { display: flex; flex-direction: column; align-items: center; gap: 14px; }
 .recommended-supports { width: 100%; max-width: 390px; }
 .recommended-supports__title { margin: 0 0 8px; font-size: 14px; font-weight: 600; text-align: center; color: var(--color-prop); }
@@ -276,7 +281,7 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
 .kw-tip {
   text-align: center;             /* poe2db centres the popup text */
   /* same Fontin faces as the gem card (poe2db: FontinSmallCaps popup, FontinRegular body) */
-  font-family: "FontinSmallCaps", "Fontin SmallCaps", "Palatino Linotype", Georgia, serif;
+  font-family: var(--font-smallcaps);
 }
 .kw-tip > strong {            /* term — poe2db's .card-header */
   display: block;
@@ -290,7 +295,7 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
 }
 .kw-tip__body {               /* definition — poe2db's .card-body / .keyword-body */
   color: #b7ab83;
-  font-family: "FontinRegular", "Palatino Linotype", Georgia, serif;
+  font-family: var(--font-regular);
   font-size: 12.5px;
   line-height: 1.4;
   padding: 4px 16px 8px;
@@ -335,7 +340,7 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
   border: 1px solid var(--border);
   border-radius: 3px;
   color: var(--color-normal);
-  font-family: "FontinSmallCaps", serif;
+  font-family: var(--font-smallcaps);
   font-size: 12px;
   cursor: pointer;
   transition: border-color 0.12s, color 0.12s, background 0.12s;
@@ -358,6 +363,46 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
 }
 .home-links a {
   text-decoration: none;
-  font-family: "FontinSmallCaps", serif;
+  font-family: var(--font-smallcaps);
 }
 .home-links a:hover { text-decoration: underline; }
+
+/* Theory Crafting search */
+.tc-search { margin-bottom: 18px; }
+.tc-input {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 18px;
+  background: var(--surface-2, #1a1a1a);
+  border: 1px solid var(--border, #333);
+  border-radius: 6px;
+  color: inherit;
+}
+.tc-input:focus { outline: none; border-color: var(--accent, #c8a13a); }
+.tc-hint { margin: 8px 2px 0; font-size: 12.5px; color: var(--color-default, #888); }
+.tc-hint code, .tc-examples code, .tc-summary code {
+  background: var(--surface-2, #1a1a1a); padding: 1px 5px; border-radius: 3px;
+}
+.tc-empty { padding: 24px 4px; color: var(--color-default, #888); }
+.tc-examples { margin-top: 8px; }
+.tc-summary { margin: 4px 2px 14px; color: var(--color-default, #888); font-size: 13px; }
+.tc-group { margin-bottom: 22px; }
+.tc-group-heading { font-size: 15px; margin: 0 0 10px; }
+.tc-result-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+}
+.tc-result-card {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; text-decoration: none; color: inherit;
+  background: var(--surface-2, #1a1a1a);
+  border: 1px solid var(--border, #333);
+  border-left-width: 3px;
+  border-radius: 5px;
+}
+.tc-result-card:hover { border-color: var(--accent, #c8a13a); }
+.tc-result-icon { width: 28px; height: 28px; object-fit: contain; flex: 0 0 auto; }
+.tc-result-name { font-weight: 600; }
+.tc-result-sub { color: var(--color-default, #888); font-size: 12px; margin-left: auto; }
+.tc-more { margin: 8px 2px 0; font-size: 12px; color: var(--color-default, #888); }

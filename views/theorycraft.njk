@@ -1,0 +1,20 @@
+{% extends "base.njk" %}
+{% from "macros/nav.njk" import pageHeader %}
+{% block title %}Theory Crafting — PoE2 Wiki{% endblock %}
+{% block content %}
+<div class="page page--column">
+  {{ pageHeader('Theory Crafting', 'search everything') }}
+  <div class="tc-search">
+    <input class="tc-input" type="search" name="q" value="{{ q }}" autocomplete="off" autofocus
+           placeholder="Search everything — try: onslaught, type:support cold, color:green tag:attack"
+           hx-get="/theorycraft/results" hx-trigger="input changed delay:200ms, search"
+           hx-target="#tc-results">
+    <p class="tc-hint">Type words to match anything. Use <code>field:value</code> to narrow
+      (<code>type:</code>, <code>color:</code>, <code>tag:</code>, <code>req:</code>, <code>grants:</code>),
+      <code>-term</code> to exclude, and <code>"quotes"</code> for exact phrases.</p>
+  </div>
+  <div id="tc-results">
+    {% include "partials/theorycraft-results.njk" %}
+  </div>
+</div>
+{% endblock %}
