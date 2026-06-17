@@ -93,6 +93,24 @@ test('GET /keystone/:id/card returns 404 empty body for unknown id', async () =>
   assert.equal(res.text, '');
 });
 
+test('GET /keystones renders aligned index cards with hover previews', async () => {
+  const res = await request(createApp()).get('/keystones');
+  assert.equal(res.status, 200);
+  // compact index-card layout (mirrors /uniques), not the old verbose tile
+  assert.match(res.text, /keystone-index-grid/);
+  assert.match(res.text, /keystone-index-card/);
+  assert.ok(!/passive-node-card/.test(res.text), 'keystones page must not use the old passive-node-card tile');
+  // hover-preview wiring + keystone header accent
+  assert.match(res.text, /data-card-url="\/keystone\/[^"]+\/card"/);
+  assert.match(res.text, /color:var\(--color-keystone\)/);
+});
+
+test('ascendancy page still uses passiveNodeCard tiles (scope guard)', async () => {
+  const res = await request(createApp()).get('/ascendancy/Druid1');
+  assert.equal(res.status, 200);
+  assert.match(res.text, /passive-node-card/);
+});
+
 test('layout loads Popper before Tippy before the keyword glue', async () => {
   // Tippy's UMD build requires window.Popper; it must load (and execute)
   // before tippy, which must load before keywords.js, or tooltips never show.

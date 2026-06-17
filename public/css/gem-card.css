@@ -378,12 +378,14 @@ a.lc.unique-type:hover {
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
 }
 .unique-index-grid,
+.keystone-index-grid,
 .bases-list-grid,
 .passive-node-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
 }
 .unique-index-grid,
+.keystone-index-grid,
 .bases-list-grid,
 .passive-node-grid,
 .asc-grid {
@@ -392,13 +394,15 @@ a.lc.unique-type:hover {
   padding: 16px 0;
 }
 
-.unique-index-grid {
+.unique-index-grid,
+.keystone-index-grid {
   gap: 8px;
 }
 
 /* Icon + name row cards share a flat surface + bordered shell; each variant
    keeps its own gap/padding/color/font and hover accent. */
 .unique-index-card,
+.keystone-index-card,
 .bases-class-card,
 .bases-list-card,
 .mods-list-row {
@@ -451,6 +455,42 @@ a.lc.unique-type:hover {
   color: var(--color-normal);
   font-size: 11px;
   white-space: nowrap;
+}
+
+/* Keystone browse cards — mirror .unique-index-card with keystone coloring */
+.keystone-index-card {
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  color: var(--color-keystone);
+  font-family: var(--font-smallcaps);
+  font-size: 13px;
+  transition: border-color 0.15s;
+}
+.keystone-index-card:hover {
+  border-color: var(--color-keystone);
+}
+.keystone-index-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.keystone-index-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(136,136,255,0.2);
+  border-radius: 4px;
+  color: var(--color-keystone);
+  font-size: 16px;
+}
+.keystone-index-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Normal item card (base items) */
