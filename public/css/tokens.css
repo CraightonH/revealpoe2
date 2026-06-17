@@ -19,6 +19,10 @@
   --color-unique-flavour: #af6025;
   --color-gem-tab: #1e2929;
   --color-unique-divider: #c87a30;
+  --color-keystone: #8888ff;
+  --color-keystone-glow: rgba(136, 136, 255, 0.45);
+  --color-notable: #d4a13a;
+  --color-notable-glow: rgba(212, 161, 58, 0.45);
 }
 
 /* Derived surface shades for dark cards (passive/asc node shells, hovers) */

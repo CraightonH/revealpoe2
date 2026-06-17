@@ -1,19 +1,32 @@
 {% macro passiveDetail(node) %}
-<div class="passive-detail-card">
-  {% if node.iconUrl %}
-  <img class="passive-detail-icon" src="{{ node.iconUrl }}" alt="{{ node.name }}" onerror="this.style.visibility='hidden'">
-  {% endif %}
-  <h1 class="passive-detail-name">{{ node.name }}</h1>
-  {% if node.statLines.length %}
-  <div class="passive-detail-stats">
-    {% for line in node.statLines %}
-    <div class="explicitMod">{{ line | safe }}</div>
-    {% endfor %}
+<div class="newItemPopup PassivePopup item-popup--poe2 is-{{ node.kind }}" style="--card-border: var(--color-{{ node.kind }}); --card-glow: var(--color-{{ node.kind }}-glow);">
+  <div class="itemHeader doubleLine passiveHeader">
+    {% if node.iconUrl %}
+    <img class="leadPassiveIcon" src="{{ node.iconUrl }}" alt="{{ node.name }}" onerror="this.style.visibility='hidden'">
+    {% endif %}
+    <div class="itemName"><span class="lc">{{ node.name }}</span></div>
+    <div class="itemName typeLine"><span class="lc">{% if node.kind == 'keystone' %}Keystone{% else %}Notable Passive{% endif %}</span></div>
   </div>
-  {% endif %}
-  {% if node.flavourText %}
-  <div class="FlavourText passive-detail-flavour">{{ node.flavourText }}</div>
-  {% endif %}
+  <div class="content">
+    {% if node.statLines.length %}
+    <div class="Stats">
+      {% for line in node.statLines %}
+      <div class="explicitMod">{{ line | safe }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% if node.reminderText.length %}
+    <div class="Stats">
+      {% for line in node.reminderText %}
+      <div class="reminderText">{{ line | safe }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% if node.flavourText %}
+    <div class="separator"></div>
+    <div class="FlavourText">{{ node.flavourText }}</div>
+    {% endif %}
+  </div>
 </div>
 {% endmacro %}
 

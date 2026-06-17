@@ -3,12 +3,14 @@
 {% from "macros/passive.njk" import passiveDetail %}
 {% block title %}{{ n.name }} — PoE2 Wiki{% endblock %}
 {% block content %}
-<div class="page page--column">
+<div class="page">
   {{ breadcrumb([
     { label: 'Keystones', href: '/keystones' },
     { label: 'Notable' },
     { label: n.name }
   ]) }}
-  {{ passiveDetail(n) }}
+  <div class="gem-detail">
+    {{ passiveDetail(n) }}
+  </div>
 </div>
 {% endblock %}

@@ -88,6 +88,7 @@ function nodeRecord(p) {
     flavourText: p.flavour_text || '',
     reminderText: Array.isArray(p.reminder_text) ? p.reminder_text : [],
     ascendancy: p.ascendancy ?? null,
+    kind: p.is_keystone ? 'keystone' : 'notable',
   };
 }
 
