@@ -99,3 +99,26 @@ test('runQuery: per-group cap reports shown vs total', () => {
   assert.equal(r.groups[0].shown, 100);
   assert.equal(r.groups[0].items.length, 100);
 });
+
+import { allDocs } from '../src/data/theorycraft.js';
+
+test('allDocs: builds a multi-category index', () => {
+  const docs = allDocs();
+  assert.ok(docs.length > 100, 'expected a large index');
+  const cats = new Set(docs.map((d) => d.category));
+  for (const c of ['gem', 'unique', 'affix', 'keystone', 'base']) {
+    assert.ok(cats.has(c), `expected category ${c} present`);
+  }
+});
+
+test('allDocs: a known gem doc carries deep text and fields', () => {
+  const herald = allDocs().find((d) => d.url === '/gem/herald-of-ash');
+  assert.ok(herald, 'Herald of Ash should be indexed');
+  assert.equal(herald.category, 'gem');
+  assert.match(herald.text, /herald/);
+  assert.ok(Array.isArray(herald.tags));
+});
+
+test('allDocs: is cached (same array on repeat calls)', () => {
+  assert.equal(allDocs(), allDocs());
+});

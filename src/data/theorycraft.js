@@ -1,3 +1,11 @@
+import { listGems, buildGemViewModel, getGem } from './gems.js';
+import { listUniques } from './uniques.js';
+import { listItemClasses, getItemClass } from './baseItems.js';
+import { listKeystones, listNotables } from './passiveTree.js';
+import { listModGroups } from './mods.js';
+import { loadJson } from './loader.js';
+import { REPOE } from '../config.js';
+
 const FIELDS = new Set(['type', 'color', 'tag', 'req', 'grants']);
 
 // Tokenize a raw query into terms, honoring "quoted phrases", -exclusion,
@@ -72,4 +80,127 @@ export function runQuery(q, { docs = allDocs(), capPerGroup = 100 } = {}) {
     });
   }
   return { empty: false, groups, total: matched.length, query };
+}
+
+const stripHtml = (s) => String(s ?? '').replace(/<[^>]*>/g, ' ');
+const norm = (parts) => stripHtml(parts.filter(Boolean).join(' ')).toLowerCase();
+
+function gemCategory(gemType) {
+  if (gemType === 'support') return 'support';
+  if (gemType === 'spirit') return 'spirit';
+  return 'gem'; // 'active'
+}
+
+function gemDocs() {
+  const skills = loadJson(`${REPOE}/skills.json`);
+  return listGems().map((g) => {
+    const raw = getGem(g.slug) ?? {};
+    const grants = (raw.grants_skills ?? [])
+      .map((k) => skills[k]?.active_skill?.display_name)
+      .filter(Boolean);
+    let textParts = [g.name];
+    let subtitle = '';
+    try {
+      const vm = buildGemViewModel(g.slug);
+      subtitle = vm.typeLine || '';
+      textParts = [vm.name, vm.typeLine, ...(vm.tags || []), vm.description,
+        ...vm.sections.flatMap((s) => s.lines), ...grants];
+    } catch {
+      textParts = [g.name, ...grants];
+    }
+    return {
+      name: g.name,
+      url: `/gem/${g.slug}`,
+      category: gemCategory(g.gemType),
+      iconUrl: g.iconUrl || null,
+      subtitle,
+      color: g.color || '',
+      tags: (raw.tags ?? []).map((t) => String(t).toLowerCase()),
+      req: g.req || [],
+      grants: grants.map((s) => s.toLowerCase()),
+      text: norm(textParts),
+    };
+  });
+}
+
+function uniqueDocs() {
+  return listUniques().map((u) => ({
+    name: u.name,
+    url: `/unique/${u.slug}`,
+    category: 'unique',
+    iconUrl: u.iconUrl || null,
+    subtitle: u.base || '',
+    color: '',
+    tags: [String(u.itemClass || '').toLowerCase()].filter(Boolean),
+    req: [],
+    grants: [],
+    text: norm([u.name, u.base, ...(u.stats || []), ...(u.flavour || [])]),
+  }));
+}
+
+function affixDocs() {
+  return listModGroups()
+    .filter((g) => g.text)
+    .map((g) => ({
+      name: g.type,
+      url: `/mod/${g.typeSlug}`,
+      category: 'affix',
+      iconUrl: null,
+      subtitle: g.text,
+      color: '',
+      tags: [g.generation_type].filter(Boolean),
+      req: [],
+      grants: [],
+      text: norm([g.type, g.text]),
+    }));
+}
+
+function nodeDocs(list, category, urlBase) {
+  return list.map((n) => ({
+    name: n.name,
+    url: `/${urlBase}/${n.id}`,
+    category,
+    iconUrl: n.iconUrl || null,
+    subtitle: '',
+    color: '',
+    tags: [],
+    req: [],
+    grants: [],
+    text: norm([n.name, n.statRaw, n.flavourText]),
+  }));
+}
+
+function baseDocs() {
+  return listItemClasses().flatMap((group) =>
+    group.classes.flatMap((cls) => {
+      const c = getItemClass(cls.classSlug);
+      return (c?.bases ?? []).map((b) => ({
+        name: b.name,
+        url: `/base/${b.slug}`,
+        category: 'base',
+        iconUrl: b.iconUrl || null,
+        subtitle: c?.className || '',
+        color: '',
+        tags: [],
+        req: [],
+        grants: [],
+        text: norm([b.name, c?.className]),
+      }));
+    })
+  );
+}
+
+let _docs = null;
+
+export function allDocs() {
+  if (_docs) return _docs;
+  _docs = [
+    ...gemDocs(),
+    ...uniqueDocs(),
+    ...affixDocs(),
+    ...nodeDocs(listKeystones(), 'keystone', 'keystone'),
+    ...nodeDocs(listNotables(), 'notable', 'notable'),
+    ...baseDocs(),
+  ];
+  return _docs;
 }
