@@ -81,6 +81,7 @@ export function registerPages(app) {
   });
 
   detailRoute(app, '/keystone/:id', getKeystone, 'keystone.njk', 'k');
+  cardRoute(app, '/keystone/:id/card', getKeystone, 'partials/passive-card-fragment.njk');
 
   app.get('/ascendancies', (_req, res) => {
     res.render('ascendancies.njk', { ascendancies: listAscendancies() });
