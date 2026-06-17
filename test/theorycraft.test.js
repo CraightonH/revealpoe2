@@ -39,3 +39,63 @@ test('parseQuery: empty/whitespace yields no terms', () => {
   assert.deepEqual(parseQuery('   ').terms, []);
   assert.deepEqual(parseQuery(null).terms, []);
 });
+
+import { docMatches, runQuery } from '../src/data/theorycraft.js';
+
+const FIXTURE = [
+  { name: 'Onslaught Support', url: '/gem/onslaught-support', category: 'support',
+    iconUrl: null, subtitle: 'Support', color: 'g', tags: ['support'], req: ['dex'],
+    grants: [], text: 'onslaught support grants onslaught movement and cast speed' },
+  { name: 'Cold Snap', url: '/gem/cold-snap', category: 'gem',
+    iconUrl: null, subtitle: 'Spell', color: 'b', tags: ['cold', 'spell', 'area'],
+    req: ['int'], grants: [], text: 'cold snap deals cold damage and chill' },
+  { name: 'Test Amulet', url: '/unique/test-amulet', category: 'unique',
+    iconUrl: null, subtitle: 'Amber Amulet', color: '', tags: ['amulet'], req: [],
+    grants: [], text: 'test amulet chaos resistance onslaught' },
+];
+
+test('runQuery: free text matches across categories', () => {
+  const r = runQuery('onslaught', { docs: FIXTURE });
+  assert.equal(r.total, 2);
+  assert.deepEqual(r.groups.map((g) => g.category), ['support', 'unique']);
+});
+
+test('runQuery: type field constrains to a category', () => {
+  const r = runQuery('type:support', { docs: FIXTURE });
+  assert.equal(r.total, 1);
+  assert.equal(r.groups[0].items[0].name, 'Onslaught Support');
+});
+
+test('runQuery: exclusion removes matches', () => {
+  const r = runQuery('onslaught -type:unique', { docs: FIXTURE });
+  assert.equal(r.total, 1);
+  assert.equal(r.groups[0].category, 'support');
+});
+
+test('runQuery: quoted phrase matches the blob', () => {
+  const r = runQuery('"cold damage"', { docs: FIXTURE });
+  assert.equal(r.total, 1);
+  assert.equal(r.groups[0].items[0].name, 'Cold Snap');
+});
+
+test('runQuery: color and tag fields', () => {
+  assert.equal(runQuery('color:b', { docs: FIXTURE }).total, 1);
+  assert.equal(runQuery('tag:cold', { docs: FIXTURE }).total, 1);
+});
+
+test('runQuery: empty query is flagged empty', () => {
+  const r = runQuery('', { docs: FIXTURE });
+  assert.equal(r.empty, true);
+  assert.equal(r.groups.length, 0);
+});
+
+test('runQuery: per-group cap reports shown vs total', () => {
+  const many = Array.from({ length: 150 }, (_, i) => ({
+    name: `Gem ${i}`, url: `/gem/g${i}`, category: 'gem', iconUrl: null,
+    subtitle: '', color: '', tags: [], req: [], grants: [], text: 'onslaught',
+  }));
+  const r = runQuery('onslaught', { docs: many, capPerGroup: 100 });
+  assert.equal(r.groups[0].total, 150);
+  assert.equal(r.groups[0].shown, 100);
+  assert.equal(r.groups[0].items.length, 100);
+});
