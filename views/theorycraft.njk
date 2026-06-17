@@ -9,12 +9,81 @@
            placeholder="Search everything — try: onslaught, type:support cold, color:green tag:attack"
            hx-get="/theorycraft/results" hx-trigger="input changed delay:200ms, search"
            hx-target="#tc-results">
-    <p class="tc-hint">Type words to match anything. Use <code>field:value</code> to narrow
-      (<code>type:</code>, <code>color:</code>, <code>tag:</code>, <code>req:</code>, <code>grants:</code>),
-      <code>-term</code> to exclude, and <code>"quotes"</code> for exact phrases.</p>
+    <p class="tc-lead">Type any words to match anything; combine terms to narrow — all terms must match.</p>
+    <details class="tc-help">
+      <summary>How to search — terms &amp; examples</summary>
+      <dl class="tc-help-terms">
+        <dt>Free text</dt>
+        <dd>Matches names, stats, tags — anything.
+          <span class="tc-examples-row">
+            <button type="button" class="tc-example" data-q="onslaught">onslaught</button>
+            <button type="button" class="tc-example" data-q="chaos">chaos</button>
+            <button type="button" class="tc-example" data-q="life regeneration">life regeneration</button>
+          </span>
+        </dd>
+        <dt><code>type:</code></dt>
+        <dd>Limit to a content type: gem, support, spirit, unique, affix, keystone, notable, base.
+          <span class="tc-examples-row">
+            <button type="button" class="tc-example" data-q="type:support">type:support</button>
+            <button type="button" class="tc-example" data-q="type:unique">type:unique</button>
+            <button type="button" class="tc-example" data-q="type:keystone">type:keystone</button>
+          </span>
+        </dd>
+        <dt><code>color:</code></dt>
+        <dd>Gem colour: red, green, blue, white (or r/g/b/w).
+          <span class="tc-examples-row">
+            <button type="button" class="tc-example" data-q="color:green">color:green</button>
+            <button type="button" class="tc-example" data-q="color:red">color:red</button>
+          </span>
+        </dd>
+        <dt><code>req:</code></dt>
+        <dd>Attribute requirement: str, dex, int.
+          <span class="tc-examples-row">
+            <button type="button" class="tc-example" data-q="req:int">req:int</button>
+            <button type="button" class="tc-example" data-q="req:str">req:str</button>
+          </span>
+        </dd>
+        <dt><code>tag:</code></dt>
+        <dd>A gem/item tag — any tag works (e.g. fire, cold, lightning, attack, spell, area, projectile, melee, minion).
+          <span class="tc-examples-row">
+            <button type="button" class="tc-example" data-q="tag:fire">tag:fire</button>
+            <button type="button" class="tc-example" data-q="tag:attack">tag:attack</button>
+          </span>
+        </dd>
+        <dt><code>grants:</code></dt>
+        <dd>A skill granted by the item/gem — any skill name works.
+          <span class="tc-examples-row">
+            <button type="button" class="tc-example" data-q="grants:onslaught">grants:onslaught</button>
+          </span>
+        </dd>
+        <dt><code>-</code> exclude</dt>
+        <dd>Prefix a term with <code>-</code> to exclude it.
+          <span class="tc-examples-row">
+            <button type="button" class="tc-example" data-q="-type:unique">-type:unique</button>
+            <button type="button" class="tc-example" data-q="chaos -type:affix">chaos -type:affix</button>
+          </span>
+        </dd>
+        <dt><code>"quoted phrase"</code></dt>
+        <dd>Match an exact multi-word phrase.
+          <span class="tc-examples-row">
+            <button type="button" class="tc-example" data-q='"cast speed"'>"cast speed"</button>
+            <button type="button" class="tc-example" data-q='"spirit reservation"'>"spirit reservation"</button>
+          </span>
+        </dd>
+        <dt>Combine (AND)</dt>
+        <dd>List several terms; all must match.
+          <span class="tc-examples-row">
+            <button type="button" class="tc-example" data-q="type:support cold">type:support cold</button>
+            <button type="button" class="tc-example" data-q="color:green tag:attack">color:green tag:attack</button>
+            <button type="button" class="tc-example" data-q="req:int spirit">req:int spirit</button>
+          </span>
+        </dd>
+      </dl>
+    </details>
   </div>
   <div id="tc-results">
     {% include "partials/theorycraft-results.njk" %}
   </div>
+  <script src="/static/js/theorycraft.js" defer></script>
 </div>
 {% endblock %}
