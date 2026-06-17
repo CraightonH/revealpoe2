@@ -1,6 +1,5 @@
 import { loadJson } from './loader.js';
-
-const REPOE = 'repoe-poe2';
+import { REPOE } from '../config.js';
 
 let _flavour = null;
 

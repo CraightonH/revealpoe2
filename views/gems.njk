@@ -1,15 +1,32 @@
 {% extends "base.njk" %}
 {% from "macros/filter-bar.njk" import filterBar %}
+{% from "macros/gem-card.njk" import gemSection %}
+{% from "macros/nav.njk" import pageHeader %}
 {% block title %}Skill Gems — PoE2 Wiki{% endblock %}
 {% block content %}
-<div class="page" style="flex-direction:column;align-items:center;">
-  <h1 class="page-title" style="font-family:'OptimusPrincepsSemiBold',serif;color:var(--color-gem);">
-    Skill Gems
-  </h1>
-  <p class="page-subtitle">{{ active.length + support.length + spirit.length }} gems</p>
+<div class="page page--column">
+  {{ pageHeader('Skill Gems', (active.length + support.length + spirit.length) ~ ' gems', '--color-gem') }}
 
   {{ filterBar(
     groups=[{
+      key: "type",
+      label: "Type",
+      match: "any",
+      options: [
+        { value: "active", label: "Active" },
+        { value: "spirit", label: "Spirit" },
+        { value: "support", label: "Support" }
+      ]
+    }, {
+      key: "origin",
+      label: "Origin",
+      match: "any",
+      options: [
+        { value: "gem", label: "Gem", default: true },
+        { value: "item", label: "Item" },
+        { value: "other", label: "Other" }
+      ]
+    }, {
       key: "req",
       label: "Requires",
       options: [
@@ -22,49 +39,8 @@
     section=".gem-list-section"
   ) }}
 
-  <section class="gem-list-section">
-    <h2 class="gem-list-heading gem-list-heading--active">Active Skills ({{ active.length }})</h2>
-    <div class="gem-browse-grid">
-      {% for g in active %}
-      <a class="gem-browse-card gem-browse-card--{{ g.cardColor }}" href="/gem/{{ g.slug }}"
-         data-req="{{ g.req | join(' ') }}">
-        {% if g.iconUrl %}
-        <img class="gem-browse-icon" src="{{ g.iconUrl }}" alt="{{ g.name }}" onerror="this.style.visibility='hidden'">
-        {% endif %}
-        <span class="gem-browse-name">{{ g.name }}</span>
-      </a>
-      {% endfor %}
-    </div>
-  </section>
-
-  <section class="gem-list-section">
-    <h2 class="gem-list-heading gem-list-heading--spirit">Spirit Skills ({{ spirit.length }})</h2>
-    <div class="gem-browse-grid">
-      {% for g in spirit %}
-      <a class="gem-browse-card gem-browse-card--{{ g.cardColor }}" href="/gem/{{ g.slug }}"
-         data-req="{{ g.req | join(' ') }}">
-        {% if g.iconUrl %}
-        <img class="gem-browse-icon" src="{{ g.iconUrl }}" alt="{{ g.name }}" onerror="this.style.visibility='hidden'">
-        {% endif %}
-        <span class="gem-browse-name">{{ g.name }}</span>
-      </a>
-      {% endfor %}
-    </div>
-  </section>
-
-  <section class="gem-list-section">
-    <h2 class="gem-list-heading gem-list-heading--support">Support Gems ({{ support.length }})</h2>
-    <div class="gem-browse-grid">
-      {% for g in support %}
-      <a class="gem-browse-card gem-browse-card--{{ g.cardColor }}" href="/gem/{{ g.slug }}"
-         data-req="{{ g.req | join(' ') }}">
-        {% if g.iconUrl %}
-        <img class="gem-browse-icon" src="{{ g.iconUrl }}" alt="{{ g.name }}" onerror="this.style.visibility='hidden'">
-        {% endif %}
-        <span class="gem-browse-name">{{ g.name }}</span>
-      </a>
-      {% endfor %}
-    </div>
-  </section>
+  {{ gemSection('Active Skills', active, 'active') }}
+  {{ gemSection('Spirit Skills', spirit, 'spirit') }}
+  {{ gemSection('Support Gems', support, 'support') }}
 </div>
 {% endblock %}

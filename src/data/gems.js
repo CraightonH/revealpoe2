@@ -1,12 +1,13 @@
 import { loadJson } from './loader.js';
 import { slugify } from './slug.js';
-import { renderGameText } from './keywords.js';
+import { renderGameText, linkifyRequirement } from './keywords.js';
 import { ddsUrl } from './images.js';
 import { displayTagTokens } from './gemTags.js';
 import { hasDefinition } from './keywordDefs.js';
 import { buildSections } from './statText.js';
-
-const REPOE = 'repoe-poe2';
+import { ATTR_ABBR, ATTR_KEY, ATTR_ORDER } from './attributes.js';
+import { grantedSkillNames } from './grantedSkills.js';
+import { REPOE } from '../config.js';
 
 const TYPE_LABEL = { active: 'Skill', support: 'Support', spirit: 'Spirit' };
 
@@ -20,9 +21,6 @@ const SKILL_PANEL_FOOTER = 'Skills can be managed in the Skills Panel.';
 // split proportionally by weight, analogous to the fixed levelRange. Adjust the
 // bounds here if the true values differ — they are a deliberate display approximation.
 const ATTR_REQ_RANGE = { min: 4, max: 157 };
-const ATTR_ABBR = { strength: 'Str', dexterity: 'Dex', intelligence: 'Int' };
-const ATTR_KEY  = { strength: 'str', dexterity: 'dex', intelligence: 'int' };
-const ATTR_ORDER = ['strength', 'dexterity', 'intelligence'];
 
 // Character-level requirement display range. Like ATTR_REQ_RANGE, the magnitude
 // progression is not in the dataset; this is the observed reference range across
@@ -60,18 +58,49 @@ const BORDER = {
 };
 const REQ_BORDER_KEY = { str: 'r', dex: 'g', int: 'b' };
 
+// Non-skill placeholder entries in the game's gem table: unreleased ("Coming
+// Soon"), disabled ("Removed Skill"), dev ("Playtest …"), and templated stubs
+// ("Soul Crystal: {0}"). Never shown — same treatment as [DNT].
+const GARBAGE_RE = /Coming Soon|Removed Skill|Playtest|\{0\}/;
+
+// Origin = how a gem enters the game. Surfaced as a filter on /gems.
+//   gem   – obtainable as a socketable gem (cut from an uncut gem). The signal
+//           is crafting_types (the uncut-gem tag) OR a base-item progression tag
+//           (up_to_levelN_gem); the latter covers tiered/spirit supports whose
+//           crafting_types are unpopulated in the dataset.
+//   item  – not gem-obtainable, but granted by a unique item (matched via the
+//           unique's "Grants Skill:" text), or a weapon's default attack
+//           (SkillGemPlayerDefault*, e.g. "Bow Shot") — the equipped item
+//           determines availability either way.
+//   other – everything else: ascendancy/quest/boss-granted skills with no
+//           obtain method in the data. We can't reliably split ascendancy from
+//           monster skills (no field distinguishes them), so they share a bucket.
+function classifyOrigin(rec, baseTags) {
+  if (rec.crafting_types != null) return 'gem';
+  if (baseTags?.some((t) => t !== 'gem' && t.endsWith('_gem'))) return 'gem';
+  if (rec.base_item.id?.includes('SkillGemPlayerDefault')) return 'item';
+  if (grantedSkillNames().has(rec.base_item.display_name)) return 'item';
+  return 'other';
+}
+
 let _index = null;
 
 function index() {
   if (_index) return _index;
   const gems = loadJson(`${REPOE}/skill_gems.json`);
+  const baseItems = loadJson(`${REPOE}/base_items.json`);
   _index = new Map();
   for (const [key, rec] of Object.entries(gems)) {
     const name = rec?.base_item?.display_name;
     if (!name) continue;
+    // [DNT]/[DNT-UNUSED] = "do not translate" — unimplemented content present in
+    // the game files but not playable. Exclude from the wiki (cf. passiveTree.js).
+    if (name.includes('[DNT')) continue;
+    if (GARBAGE_RE.test(name)) continue;
+    const origin = classifyOrigin(rec, baseItems[rec.base_item.id]?.tags);
     const slug = slugify(name);
     if (!_index.has(slug)) {
-      _index.set(slug, { key, ...rec });
+      _index.set(slug, { key, origin, ...rec });
     } else if (_index.get(slug).gem_type !== rec.gem_type) {
       const existing = _index.get(slug);
       console.warn(
@@ -113,6 +142,7 @@ export function listGems() {
       color: rec.color,
       cardColor: cardColor(req, rec.color),
       gemType: rec.gem_type,
+      origin: rec.origin,
       iconUrl: ddsUrl(rec.icon_dds_file),
       req,
     };
@@ -218,7 +248,7 @@ export function buildGemViewModel(slug) {
     requirements: [
       `Level (${CHAR_LEVEL_RANGE.min}—${CHAR_LEVEL_RANGE.max})`,
       ...attributeRequirements(gem.requirement_weights),
-    ],
+    ].map((r) => linkifyRequirement(r, hasDefinition)),
     skillIconUrl: ddsUrl(gem.icon_dds_file),
     gemIconUrl: ddsUrl(baseItem?.visual_identity?.dds_file),
     hoverImageUrl: ddsUrl(gem.ui_image),

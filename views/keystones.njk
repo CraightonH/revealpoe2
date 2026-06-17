@@ -1,26 +1,13 @@
 {% extends "base.njk" %}
+{% from "macros/nav.njk" import pageHeader %}
+{% from "macros/passive.njk" import passiveNodeCard %}
 {% block title %}Keystones — PoE2 Wiki{% endblock %}
 {% block content %}
-<div class="page" style="flex-direction:column;align-items:center;">
-  <h1 class="page-title" style="font-family:'OptimusPrincepsSemiBold',serif;color:var(--color-normal);">
-    Keystones
-  </h1>
-  <p class="page-subtitle">{{ keystones.length }} keystones</p>
+<div class="page page--column">
+  {{ pageHeader('Keystones', keystones.length ~ ' keystones') }}
   <div class="passive-node-grid">
     {% for k in keystones %}
-    <a class="passive-node-card" href="/keystone/{{ k.id }}">
-      {% if k.iconUrl %}
-      <img class="passive-node-icon" src="{{ k.iconUrl }}" alt="{{ k.name }}" onerror="this.style.visibility='hidden'">
-      {% endif %}
-      <div class="passive-node-name">{{ k.name }}</div>
-      {% if k.statLines.length %}
-      <div class="passive-node-stats">
-        {% for line in k.statLines %}
-        <div>{{ line | safe }}</div>
-        {% endfor %}
-      </div>
-      {% endif %}
-    </a>
+    {{ passiveNodeCard(k, href='/keystone/' + k.id) }}
     {% endfor %}
   </div>
 </div>

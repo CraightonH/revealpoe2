@@ -1,0 +1,83 @@
+{% macro baseCard(vm, full=false) %}
+<div class="unique-item-with-art">
+  <div class="newItemPopup NormalPopup item-popup--poe2">
+    <div class="itemHeader doubleLine">
+      <div class="itemName"><span class="lc normal-name">{{ vm.name }}</span></div>
+      <div class="itemName typeLine"><span class="lc normal-type">{{ vm.className }}</span></div>
+    </div>
+    <div class="content">
+      {% if vm.properties.length %}
+      <div class="Stats">
+        {% for prop in vm.properties %}
+        <div class="property">{{ prop.label }}: <span class="{{ prop.colorClass if prop.colorClass else 'colourDefault' }}">{{ prop.value }}</span></div>
+        {% endfor %}
+      </div>
+      <div class="separator"></div>
+      {% endif %}
+      {% if vm.requirements.length %}
+      <div class="Stats">
+        <div class="requirements">Requires: <span class="colourDefault">{{ vm.requirements | join('</span>, <span class="colourDefault">') | safe }}</span></div>
+      </div>
+      <div class="separator"></div>
+      {% endif %}
+      {% if full and vm.tags.length %}
+      <div class="Stats">
+        <div class="default fst-italic">Tags: {{ vm.tags | join(', ') }}</div>
+      </div>
+      <div class="separator"></div>
+      {% endif %}
+      <div class="Stats">
+        <div class="property">Size: <span class="colourDefault">{{ vm.inventorySize.w }}×{{ vm.inventorySize.h }}</span></div>
+      </div>
+      {% if full and vm.uniquesOnBase.length %}
+      <div class="separator"></div>
+      <div class="Stats">
+        <div class="property" style="margin-bottom:4px;">Unique versions:</div>
+        {% for u in vm.uniquesOnBase %}
+        <div class="property" style="padding-left:8px;">
+          <a href="/unique/{{ u.slug }}" style="color:var(--unique-color);text-decoration:none;">
+            {% if u.iconUrl %}
+            <img src="{{ u.iconUrl }}" alt="{{ u.name }}"
+                 style="width:16px;height:16px;vertical-align:middle;margin-right:4px;object-fit:contain;"
+                 onerror="this.style.visibility='hidden'">
+            {% endif %}
+            {{ u.name }}
+          </a>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% if full and vm.affixes and (vm.affixes.prefix.length or vm.affixes.suffix.length) %}
+      <div class="separator"></div>
+      <div class="Stats">
+        <div class="property" style="margin-bottom:4px;">Rollable Affixes:</div>
+        {% if vm.affixes.prefix.length %}
+        <div class="property" style="padding-left:4px;color:var(--color-default);font-size:11.5px;">Prefixes</div>
+        {% for g in vm.affixes.prefix %}
+        <div class="property" style="padding-left:8px;">
+          <a href="/mod/{{ g.typeSlug }}" style="color:var(--magic-color);text-decoration:none;">{{ g.type }}</a>
+          <span style="color:var(--color-default);font-size:11px;margin-left:6px;">({{ g.tiers.length }} tier{{ 's' if g.tiers.length != 1 }})</span>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% if vm.affixes.suffix.length %}
+        <div class="property" style="padding-left:4px;color:var(--color-default);font-size:11.5px;margin-top:4px;">Suffixes</div>
+        {% for g in vm.affixes.suffix %}
+        <div class="property" style="padding-left:8px;">
+          <a href="/mod/{{ g.typeSlug }}" style="color:var(--magic-color);text-decoration:none;">{{ g.type }}</a>
+          <span style="color:var(--color-default);font-size:11px;margin-left:6px;">({{ g.tiers.length }} tier{{ 's' if g.tiers.length != 1 }})</span>
+        </div>
+        {% endfor %}
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% if vm.iconUrl %}
+  <div class="itemboximage">
+    <img loading="lazy" src="{{ vm.iconUrl }}" alt="{{ vm.name }}"
+         onerror="this.style.visibility='hidden'">
+  </div>
+  {% endif %}
+</div>
+{% endmacro %}

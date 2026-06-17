@@ -1,11 +1,9 @@
 {% extends "base.njk" %}
+{% from "macros/nav.njk" import pageHeader %}
 {% block title %}Ascendancies — PoE2 Wiki{% endblock %}
 {% block content %}
-<div class="page" style="flex-direction:column;align-items:center;">
-  <h1 class="page-title" style="font-family:'OptimusPrincepsSemiBold',serif;color:var(--color-normal);">
-    Ascendancies
-  </h1>
-  <p class="page-subtitle">{{ ascendancies.length }} ascendancies</p>
+<div class="page page--column">
+  {{ pageHeader('Ascendancies', ascendancies.length ~ ' ascendancies') }}
   <div class="asc-grid">
     {% for a in ascendancies %}
     <a class="asc-card" href="/ascendancy/{{ a.id }}">

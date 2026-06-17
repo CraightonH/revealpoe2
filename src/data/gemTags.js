@@ -1,16 +1,21 @@
 import { loadJson } from './loader.js';
+import { REPOE } from '../config.js';
 
-const REPOE = 'repoe-poe2';
+// Parse a raw gem-tag token ("[Display]" or "[Id|Display]") into its bracket
+// key (`token`) and human-readable `display` name. Returns null for falsy raw.
+function parseTagToken(raw) {
+  if (!raw) return null;
+  const inner = raw.replace(/^\[/, '').replace(/\]$/, '');
+  const pipe = inner.indexOf('|');
+  return { token: raw, display: pipe === -1 ? inner : inner.slice(pipe + 1) };
+}
 
 // gem_tags.json maps a tag id to "[Display]", "[Id|Display]", or null.
 // Returns the human display name, or null if the tag has no display form.
 export function tagDisplay(id) {
   const map = loadJson(`${REPOE}/gem_tags.json`);
-  const raw = map[id];
-  if (!raw) return null;
-  const inner = raw.replace(/^\[/, '').replace(/\]$/, '');
-  const pipe = inner.indexOf('|');
-  return pipe === -1 ? inner : inner.slice(pipe + 1);
+  const parsed = parseTagToken(map[id]);
+  return parsed ? parsed.display : null;
 }
 
 // Map a list of tag ids to display names, dropping non-display tags and any
@@ -40,12 +45,9 @@ export function displayTagTokens(tags, exclude = []) {
   const skip = new Set(exclude);
   const out = [];
   for (const id of tags ?? []) {
-    const raw = map[id];
-    if (!raw) continue;
-    const inner = raw.replace(/^\[/, '').replace(/\]$/, '');
-    const pipe = inner.indexOf('|');
-    const display = pipe === -1 ? inner : inner.slice(pipe + 1);
-    if (display && !skip.has(display)) out.push(raw);
+    const parsed = parseTagToken(map[id]);
+    if (!parsed) continue;
+    if (parsed.display && !skip.has(parsed.display)) out.push(parsed.token);
   }
   return out;
 }

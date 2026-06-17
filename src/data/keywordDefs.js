@@ -1,6 +1,5 @@
 import { loadJson } from './loader.js';
-
-const REPOE = 'repoe-poe2';
+import { REPOE } from '../config.js';
 
 function entry(key) {
   const map = loadJson(`${REPOE}/keywords.json`);

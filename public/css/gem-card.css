@@ -7,7 +7,7 @@ html[data-card-size="l"] .gem-detail { zoom: 1.25; }
 html[data-card-size="xl"] .gem-detail { zoom: 1.5; }
 
 .newItemPopup {
-  font-family: "FontinSmallCaps", "Fontin SmallCaps", "Palatino Linotype", Georgia, serif;
+  font-family: var(--font-smallcaps);
   background-color: var(--bg-base);
   border: 1px solid var(--card-border, rgba(139,48,48,0.7));
   box-shadow:
@@ -137,30 +137,31 @@ html[data-card-size="xl"] .gem-detail { zoom: 1.5; }
 }
 .requirements .colourDefault { color: var(--normal-color); }
 
-/* Separator line */
+/* Separator line — shared geometry; only the gradient color differs per rarity */
+.separator,
+.UniquePopup .separator {
+  background-size: 100% 2px;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
 .separator {
   border: none;
   height: 8px;
   margin: 4px 10px;
-  background: radial-gradient(ellipse at center, #6e9a97 0%, #6e9a97 10%, transparent 33%);
-  background-size: 100% 2px;
-  background-repeat: no-repeat;
-  background-position: center;
+  background-image: radial-gradient(ellipse at center, var(--color-prop) 0%, var(--color-prop) 10%, transparent 33%);
 }
 
 /* Unique cards use amber dividers, matching the in-game unique item tooltip */
 .UniquePopup .separator {
-  background: radial-gradient(ellipse at center, #c87a30 0%, #c87a30 10%, transparent 33%);
-  background-size: 100% 2px;
-  background-repeat: no-repeat;
-  background-position: center;
+  background-image: radial-gradient(ellipse at center, var(--color-unique-divider) 0%, var(--color-unique-divider) 10%, transparent 33%);
 }
 
 /* Description text (italic parchment) */
 .secDescrText {
-  color: #baad85;
+  color: var(--color-parchment);
   font-style: italic;
-  font-family: "FontinRegular", "Palatino Linotype", Georgia, serif;
+  font-family: var(--font-regular);
   padding: 7px 30px;
   text-align: center;
   font-size: 12.5px;
@@ -168,16 +169,16 @@ html[data-card-size="xl"] .gem-detail { zoom: 1.5; }
   text-shadow: 1px 1px 2px black, -1px -1px 2px black;
 }
 .secDescrText a {
-  color: #baad85;
+  color: var(--color-parchment);
   text-decoration: none;
-  border-bottom: 1px dotted #baad85;
+  border-bottom: 1px dotted var(--color-parchment);
 }
 
 /* hybridHeader section divider — gem style */
 .hybridHeader.gemTabs {
   display: flex;
   flex-direction: row;
-  background-image: linear-gradient(90deg, rgba(30,41,41,0), #1e2929, rgba(30,41,41,0));
+  background-image: linear-gradient(90deg, rgba(30,41,41,0), var(--color-gem-tab), rgba(30,41,41,0));
   background-size: 100% 2px;
   background-repeat: no-repeat;
   background-position: bottom;
@@ -189,9 +190,9 @@ html[data-card-size="xl"] .gem-detail { zoom: 1.5; }
 }
 
 .TextGem.TitleBar {
-  border-top: 1px solid #1e2929;
-  border-left: 1px solid #1e2929;
-  border-right: 1px solid #1e2929;
+  border-top: 1px solid var(--color-gem-tab);
+  border-left: 1px solid var(--color-gem-tab);
+  border-right: 1px solid var(--color-gem-tab);
   border-top-left-radius: 6px;
   border-top-right-radius: 6px;
   line-height: 20px;
@@ -202,17 +203,28 @@ html[data-card-size="xl"] .gem-detail { zoom: 1.5; }
   letter-spacing: 0.5px;
 }
 
-/* Explicit mods — magic blue */
-.explicitMod {
-  color: var(--magic-color);
-  font-family: "FontinSmallCaps", "Fontin SmallCaps", "Palatino Linotype", Georgia, serif;
-  line-height: 1.3;
+/* Mod text blocks share layout; only the text/link color differs per type. */
+.explicitMod,
+.qualityMod,
+.secondaryQualityMod {
   font-size: 12.5px;
   padding: 1px 14px;
   text-align: center;
 }
-.explicitMod .mod-value { color: white; }
-.explicitMod a { color: var(--magic-color); text-decoration: none; border-bottom: 1px dotted var(--magic-color); }
+.explicitMod .mod-value,
+.qualityMod .mod-value,
+.secondaryQualityMod .mod-value { color: white; }
+.explicitMod a,
+.qualityMod a,
+.secondaryQualityMod a { text-decoration: none; }
+
+/* Explicit mods — magic blue */
+.explicitMod {
+  color: var(--magic-color);
+  font-family: var(--font-smallcaps);
+  line-height: 1.3;
+}
+.explicitMod a { color: var(--magic-color); border-bottom: 1px dotted var(--magic-color); }
 /* Granted-skill links render gem-teal to stand apart from the blue mod text */
 .explicitMod a.skill-grant-link { color: var(--color-gem); border-bottom-color: var(--color-gem); }
 /* Keywords in affix text keep the mod color, marked only by a dotted underline */
@@ -229,21 +241,13 @@ html[data-card-size="xl"] .gem-detail { zoom: 1.5; }
 
 .qualityMod {
   color: var(--magic-color);
-  font-size: 12.5px;
-  padding: 1px 14px;
-  text-align: center;
 }
-.qualityMod .mod-value { color: white; }
-.qualityMod a { color: var(--magic-color); text-decoration: none; border-bottom: 1px dotted var(--magic-color); }
+.qualityMod a { color: var(--magic-color); border-bottom: 1px dotted var(--magic-color); }
 
 .secondaryQualityMod {
   color: var(--crafted-color);
-  font-size: 12.5px;
-  padding: 1px 14px;
-  text-align: center;
 }
-.secondaryQualityMod .mod-value { color: white; }
-.secondaryQualityMod a { color: var(--crafted-color); text-decoration: none; border-bottom: 1px dotted var(--crafted-color); }
+.secondaryQualityMod a { color: var(--crafted-color); border-bottom: 1px dotted var(--crafted-color); }
 
 .quality-text { padding: 4px 14px 1px; text-align: center; }
 .quality-text .white { color: var(--normal-color); font-size: 12px; }
@@ -305,7 +309,7 @@ a.lc.unique-type:hover {
 /* Computed item stats + requirements — centered, muted grey labels */
 .UniquePopup .property,
 .UniquePopup .requirements {
-  color: #7f7f7f;
+  color: var(--color-default);
   text-align: center;
 }
 /* Keywords in property labels keep the label color, marked by dotted underline */
@@ -330,9 +334,9 @@ a.lc.unique-type:hover {
 
 /* Unique flavour text — warm amber italic, centered (poe2db .FlavourText) */
 .FlavourText {
-  color: #af6025;
+  color: var(--color-unique-flavour);
   font-style: italic;
-  font-family: "FontinRegular", "Palatino Linotype", Georgia, serif;
+  font-family: var(--font-regular);
   text-align: center;
   font-size: 12px;
   line-height: 1.55;
@@ -357,7 +361,7 @@ a.lc.unique-type:hover {
 
 /* Unique index page */
 .unique-page-title {
-  font-family: 'OptimusPrincepsSemiBold', serif;
+  font-family: var(--font-display);
   color: var(--unique-color);
 }
 
@@ -366,26 +370,51 @@ a.lc.unique-type:hover {
   margin: 4px 0 16px;
 }
 
-.unique-index-grid {
+/* Shared card-grid geometry. Two column-width variants (160px / 200px min);
+   most are centered at page width (asc overrides max-width to 800px). */
+.bases-class-grid,
+.asc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+}
+.unique-index-grid,
+.bases-list-grid,
+.passive-node-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 8px;
+}
+.unique-index-grid,
+.bases-list-grid,
+.passive-node-grid,
+.asc-grid {
   width: 100%;
   max-width: 900px;
   padding: 16px 0;
 }
 
-.unique-index-card {
+.unique-index-grid {
+  gap: 8px;
+}
+
+/* Icon + name row cards share a flat surface + bordered shell; each variant
+   keeps its own gap/padding/color/font and hover accent. */
+.unique-index-card,
+.bases-class-card,
+.bases-list-card,
+.mods-list-row {
   display: flex;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  text-decoration: none;
+}
+
+.unique-index-card {
   align-items: center;
   gap: 10px;
   padding: 8px 12px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
   border-radius: 4px;
-  text-decoration: none;
   color: var(--unique-color);
-  font-family: "FontinSmallCaps", serif;
+  font-family: var(--font-smallcaps);
   font-size: 13px;
   transition: border-color 0.15s;
 }
@@ -474,29 +503,23 @@ a.lc.unique-type:hover {
 }
 
 .bases-group-title {
-  font-family: 'OptimusPrincepsSemiBold', serif;
+  font-family: var(--font-display);
   color: var(--color-normal);
   font-size: 16px;
   margin: 0 0 8px;
 }
 
 .bases-class-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 6px;
 }
 
 .bases-class-card {
-  display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 7px 12px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
   border-radius: 4px;
-  text-decoration: none;
   color: var(--normal-color);
-  font-family: "FontinSmallCaps", serif;
+  font-family: var(--font-smallcaps);
   font-size: 13px;
   transition: border-color 0.15s;
 }
@@ -512,25 +535,16 @@ a.lc.unique-type:hover {
 
 /* Base item class listing */
 .bases-list-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 6px;
-  width: 100%;
-  max-width: 900px;
-  padding: 16px 0;
 }
 
 .bases-list-card {
-  display: flex;
   align-items: center;
   gap: 8px;
   padding: 6px 10px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
   border-radius: 4px;
-  text-decoration: none;
   color: var(--normal-color);
-  font-family: "FontinSmallCaps", serif;
+  font-family: var(--font-smallcaps);
   font-size: 13px;
   transition: border-color 0.15s;
 }
@@ -584,7 +598,7 @@ a.lc.unique-type:hover {
 }
 
 .mods-section-title {
-  font-family: 'OptimusPrincepsSemiBold', serif;
+  font-family: var(--font-display);
   color: var(--color-normal);
   font-size: 15px;
   margin: 0 0 8px;
@@ -597,14 +611,10 @@ a.lc.unique-type:hover {
 }
 
 .mods-list-row {
-  display: flex;
   align-items: baseline;
   gap: 8px;
   padding: 5px 8px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
   border-radius: 3px;
-  text-decoration: none;
   transition: border-color 0.12s;
   overflow: hidden;
 }
@@ -615,7 +625,7 @@ a.lc.unique-type:hover {
 
 .mods-list-name {
   color: var(--magic-color);
-  font-family: "FontinSmallCaps", serif;
+  font-family: var(--font-smallcaps);
   font-size: 12px;
   white-space: nowrap;
   min-width: 180px;
@@ -641,7 +651,7 @@ a.lc.unique-type:hover {
   width: 100%;
   max-width: 700px;
   border-collapse: collapse;
-  font-family: "FontinSmallCaps", serif;
+  font-family: var(--font-smallcaps);
   font-size: 13px;
   margin-top: 8px;
 }
@@ -689,31 +699,37 @@ a.lc.unique-type:hover {
 
 /* --- Passive tree nodes --- */
 .passive-node-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 12px;
-  width: 100%;
-  max-width: 900px;
-  padding: 16px 0;
 }
 
-.passive-node-card {
+/* Dark card shell shared by passive node, keystone detail, and asc cards.
+   Variants below add their own gap/padding/sizing and (for the clickable
+   ones) color/text-decoration/transition + hover. */
+.passive-node-card,
+.passive-detail-card,
+.asc-card {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 6px;
-  padding: 12px;
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(139, 139, 139, 0.4);
+  background: var(--card-dark-bg);
+  border: 1px solid var(--card-dark-border);
   border-radius: 4px;
+}
+.passive-node-card,
+.asc-card {
   color: var(--color-default);
   text-decoration: none;
   transition: border-color 0.15s;
 }
+.passive-node-card:hover,
+.asc-card:hover {
+  border-color: var(--card-hover-border);
+}
 
-.passive-node-card:hover {
-  border-color: rgba(200, 200, 200, 0.6);
+.passive-node-card {
+  gap: 6px;
+  padding: 12px;
 }
 
 .passive-node-card--asc {
@@ -740,15 +756,8 @@ a.lc.unique-type:hover {
 
 /* Keystone detail */
 .passive-detail-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
   gap: 12px;
   padding: 24px;
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(139, 139, 139, 0.4);
-  border-radius: 4px;
   max-width: 480px;
   width: 100%;
   margin-top: 16px;
@@ -761,7 +770,7 @@ a.lc.unique-type:hover {
 }
 
 .passive-detail-name {
-  font-family: 'OptimusPrincepsSemiBold', serif;
+  font-family: var(--font-display);
   font-size: 20px;
   color: var(--color-normal);
   margin: 0;
@@ -777,33 +786,15 @@ a.lc.unique-type:hover {
   margin-top: 4px;
 }
 
-/* Ascendancy grid */
+/* Ascendancy grid — narrower page width than the other 200px-min grids. */
 .asc-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 12px;
-  width: 100%;
   max-width: 800px;
-  padding: 16px 0;
 }
 
 .asc-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
   gap: 4px;
   padding: 14px 10px;
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(139, 139, 139, 0.4);
-  border-radius: 4px;
-  color: var(--color-default);
-  text-decoration: none;
-  transition: border-color 0.15s;
-}
-
-.asc-card:hover {
-  border-color: rgba(200, 200, 200, 0.6);
 }
 
 .asc-class {

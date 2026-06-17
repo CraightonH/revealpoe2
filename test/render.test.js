@@ -27,7 +27,8 @@ test('GET /gem/herald-of-ash renders the card', async () => {
   // requirements row: level range (always) + attribute (fixed display ranges)
   assert.match(res.text, /Requires:/);
   assert.match(res.text, /Level \(1—90\)/);
-  assert.match(res.text, /\(4—157\) Str/);
+  // "Str" abbreviation is linked to the Strength glossary keyword
+  assert.match(res.text, /\(4—157\) <span class="kw" data-keyword="Strength">Str<\/span>/);
   // Recommended Supports must NOT be inside the in-game card popup...
   const supIdx = res.text.indexOf('recommended-supports');
   assert.ok(supIdx > -1, 'recommended-supports section should be present on the page');

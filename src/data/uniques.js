@@ -7,66 +7,44 @@ import { getBaseByName } from './baseItems.js';
 import { parseLocalMods, computeProperties } from './itemStats.js';
 import { getFlavourLines } from './flavour.js';
 import { hasDefinition } from './keywordDefs.js';
+import { escapeHtml, linkifyPhrases } from './keywords.js';
+import { REPOE } from '../config.js';
 
-const REPOE = 'repoe-poe2';
 const POB_DIR = 'pob-uniques';
 
 const UNIQUE_BORDER = 'rgba(175,96,37,0.8)';
 const UNIQUE_GLOW = 'rgba(175,96,37,0.45)';
 
-// PoB metadata line prefixes — not item stats
-const META_RE = /^(Variant|Implicits|League|Source|Corrupted|Limited to|Drop level|Drop|Unreleased):/;
+// PoB metadata line prefixes — not item stats. These appear interspersed before
+// the mod block; every one must be filtered or it leaks into `stats` and throws
+// off the implicit/explicit split (which slices the first `Implicits: N` lines).
+// NOTE: "Grants Skill:" is intentionally NOT here — it's a real granted-skill stat.
+const META_COLON_RE = /^(Variant|Implicits|League|Source|Corrupted|Limited to|Drop level|Drop|Unreleased|Sockets|Radius|Has Alt Variant(?: Two| Three)?|Selected (?:Alt )?Variant(?: Two| Three)?|Left ring slot|Right ring slot):/;
+// "Requires Level N" / "Requires N Str" appear WITHOUT a trailing colon.
+const META_NOCOLON_RE = /^Requires\b/;
+const isMetaLine = (line) => META_COLON_RE.test(line) || META_NOCOLON_RE.test(line);
 
 // "Grants Skill: Name" or "Grants Skill: Level (N-M) Name"
 const GRANTS_SKILL_RE = /^(Grants Skill: (?:Level \([^)]+\) )?)(.+)$/;
 
-function escapeHtml(s) {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
+// Numeric values in affix text, e.g. "10", "1.5", "(100-150)" — highlighted as
+// white .mod-value spans. Keyword phrases are handled by the shared linkifyPhrases.
+const NUM_RE = /\(?\d+(?:\.\d+)?(?:-\d+(?:\.\d+)?)?\)?/g;
 
-// Curated surface-phrase → keyword-id map for affix text. The pob-uniques text
-// has no [keyword] tokens (unlike gem skill text), so we detect known terms and
-// make them hoverable via the existing .kw glossary tooltips. Longest phrases
-// first so e.g. "Critical Hit" wins over "Hit"; gated by hasDefinition so dead
-// keywords never become hovers.
-const KEYWORD_PHRASES = [
-  ['Critical Strike', 'Critical'], ['Critical Hits', 'Critical'], ['Critical Hit', 'Critical'],
-  ['Energy Shield', 'EnergyShield'], ['Spear Skills', 'Spear'],
-  ['Physical', 'Physical'], ['Fire', 'Fire'], ['Cold', 'Cold'],
-  ['Lightning', 'Lightning'], ['Chaos', 'Chaos'],
-  ['Attacks', 'Attack'], ['Attack', 'Attack'], ['Presence', 'Presence'],
-  ['Spells', 'Spell'], ['Spell', 'Spell'], ['Projectiles', 'Projectile'], ['Projectile', 'Projectile'],
-  ['Minions', 'Minion'], ['Minion', 'Minion'], ['Melee', 'Melee'],
-  ['Spears', 'Spear'], ['Spear', 'Spear'], ['Hit', 'HitDamage'],
-  ['Ignite', 'Ignite'], ['Bleeding', 'Bleeding'], ['Poison', 'Poison'],
-  ['Freeze', 'Freeze'], ['Shock', 'Shock'], ['Chill', 'Chill'],
-  ['Block', 'Block'], ['Curses', 'Curse'], ['Curse', 'Curse'], ['Auras', 'Aura'], ['Aura', 'Aura'],
-].filter(([, id]) => hasDefinition(id));
-
-const PHRASE_TO_ID = new Map(KEYWORD_PHRASES.map(([p, id]) => [p, id]));
-const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const NUM_PAT = '\\(?\\d+(?:\\.\\d+)?(?:-\\d+(?:\\.\\d+)?)?\\)?';
-const KW_PAT = KEYWORD_PHRASES.map(([p]) => p).sort((a, b) => b.length - a.length).map(escapeRe).join('|');
-const AFFIX_RE = new RegExp(`(${NUM_PAT})|\\b(${KW_PAT})\\b`, 'g');
-
-// Render affix text to safe HTML: numeric values → white .mod-value spans,
-// known keywords → hoverable .kw spans, everything else escaped.
+// Render affix text to safe HTML: numeric values → white .mod-value spans; the
+// text between numbers is run through the shared phrase linker so known glossary
+// terms become hoverable .kw spans (and everything else is escaped).
 function renderAffix(text) {
   let out = '';
   let last = 0;
   let m;
-  AFFIX_RE.lastIndex = 0;
-  while ((m = AFFIX_RE.exec(text)) !== null) {
-    out += escapeHtml(text.slice(last, m.index));
-    if (m[1] !== undefined) {
-      out += `<span class="mod-value">${escapeHtml(m[1])}</span>`;
-    } else {
-      const id = PHRASE_TO_ID.get(m[2]);
-      out += `<span class="kw" data-keyword="${escapeHtml(id)}">${escapeHtml(m[2])}</span>`;
-    }
-    last = AFFIX_RE.lastIndex;
+  NUM_RE.lastIndex = 0;
+  while ((m = NUM_RE.exec(text)) !== null) {
+    out += linkifyPhrases(text.slice(last, m.index), hasDefinition);
+    out += `<span class="mod-value">${escapeHtml(m[0])}</span>`;
+    last = NUM_RE.lastIndex;
   }
-  out += escapeHtml(text.slice(last));
+  out += linkifyPhrases(text.slice(last), hasDefinition);
   return out;
 }
 
@@ -125,7 +103,7 @@ function parsePob(text) {
 
   const stats = [];
   for (const line of lines.slice(2)) {
-    if (META_RE.test(line)) continue;
+    if (isMetaLine(line)) continue;
     const spec = variantSpec(line);
     // If this line is variant-gated and the current variant isn't listed, skip it.
     if (spec && !spec.includes(curVariant)) continue;

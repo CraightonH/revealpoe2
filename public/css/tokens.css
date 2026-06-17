@@ -15,6 +15,26 @@
   --color-prop: #6e9a97;
   --color-default: #7f7f7f;
   --color-crafted: #b4b4ff;
+  --color-parchment: #baad85;
+  --color-unique-flavour: #af6025;
+  --color-gem-tab: #1e2929;
+  --color-unique-divider: #c87a30;
+}
+
+/* Derived surface shades for dark cards (passive/asc node shells, hovers) */
+:root {
+  --card-dark-bg: rgba(0, 0, 0, 0.5);
+  --card-dark-border: rgba(139, 139, 139, 0.4);
+  /* Canonical card hover border — collapses prior 0.5 and 0.6 alpha variants
+     to a single value (visually indistinguishable at 1px). */
+  --card-hover-border: rgba(200, 200, 200, 0.6);
+}
+
+/* Font stacks (matched to the bundled Fontin / Optimus faces) */
+:root {
+  --font-smallcaps: "FontinSmallCaps", "Fontin SmallCaps", "Palatino Linotype", Georgia, serif;
+  --font-regular: "FontinRegular", "Palatino Linotype", Georgia, serif;
+  --font-display: 'OptimusPrincepsSemiBold', serif;
 }
 
 /* Aliases used by gem-card.css (matches reference variable names) */

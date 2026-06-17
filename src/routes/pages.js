@@ -4,6 +4,28 @@ import { listItemClasses, getItemClass, buildBaseItemViewModel } from '../data/b
 import { listModGroups, getModGroup } from '../data/mods.js';
 import { listKeystones, getKeystone, listNotables, getNotable, listAscendancies, getAscendancy } from '../data/passiveTree.js';
 
+// Register a detail page: reads the single route param, runs the builder,
+// renders `template` with { [contextKey]: result }, or 404s to home.njk.
+function detailRoute(app, path, builder, template, contextKey) {
+  app.get(path, (req, res) => {
+    const param = Object.values(req.params)[0];
+    const result = builder(param);
+    if (!result) return res.status(404).render('home.njk', { notFound: param });
+    res.render(template, { [contextKey]: result });
+  });
+}
+
+// Register an htmx card fragment: reads the single route param, runs the
+// builder, renders `fragment` with { vm: result }, or 404s with empty body.
+function cardRoute(app, path, builder, fragment) {
+  app.get(path, (req, res) => {
+    const param = Object.values(req.params)[0];
+    const result = builder(param);
+    if (!result) return res.status(404).send('');
+    res.render(fragment, { vm: result });
+  });
+}
+
 export function registerPages(app) {
   app.get('/', (_req, res) => {
     res.render('home.njk');
@@ -17,57 +39,25 @@ export function registerPages(app) {
     res.render('gems.njk', { active, support, spirit });
   });
 
-  app.get('/gem/:slug', (req, res) => {
-    const vm = buildGemViewModel(req.params.slug);
-    if (!vm) return res.status(404).render('home.njk', { notFound: req.params.slug });
-    res.render('gem.njk', { vm });
-  });
-
-  app.get('/gem/:slug/card', (req, res) => {
-    const vm = buildGemViewModel(req.params.slug);
-    if (!vm) return res.status(404).send('');
-    res.render('partials/gem-card-fragment.njk', { vm });
-  });
+  detailRoute(app, '/gem/:slug', buildGemViewModel, 'gem.njk', 'vm');
+  cardRoute(app, '/gem/:slug/card', buildGemViewModel, 'partials/gem-card-fragment.njk');
 
   app.get('/uniques', (_req, res) => {
     const uniques = listUniques().sort((a, b) => a.name.localeCompare(b.name));
     res.render('uniques.njk', { uniques });
   });
 
-  app.get('/unique/:slug', (req, res) => {
-    const vm = buildUniqueViewModel(req.params.slug);
-    if (!vm) return res.status(404).render('home.njk', { notFound: req.params.slug });
-    res.render('unique.njk', { vm });
-  });
-
-  app.get('/unique/:slug/card', (req, res) => {
-    const vm = buildUniqueViewModel(req.params.slug);
-    if (!vm) return res.status(404).send('');
-    res.render('partials/unique-card-fragment.njk', { vm });
-  });
+  detailRoute(app, '/unique/:slug', buildUniqueViewModel, 'unique.njk', 'vm');
+  cardRoute(app, '/unique/:slug/card', buildUniqueViewModel, 'partials/unique-card-fragment.njk');
 
   app.get('/bases', (_req, res) => {
     const groups = listItemClasses();
     res.render('bases.njk', { groups });
   });
 
-  app.get('/bases/:classSlug', (req, res) => {
-    const cls = getItemClass(req.params.classSlug);
-    if (!cls) return res.status(404).render('home.njk', { notFound: req.params.classSlug });
-    res.render('bases-class.njk', { cls });
-  });
-
-  app.get('/base/:slug', (req, res) => {
-    const vm = buildBaseItemViewModel(req.params.slug);
-    if (!vm) return res.status(404).render('home.njk', { notFound: req.params.slug });
-    res.render('base-item.njk', { vm });
-  });
-
-  app.get('/base/:slug/card', (req, res) => {
-    const vm = buildBaseItemViewModel(req.params.slug);
-    if (!vm) return res.status(404).send('');
-    res.render('partials/base-card-fragment.njk', { vm });
-  });
+  detailRoute(app, '/bases/:classSlug', getItemClass, 'bases-class.njk', 'cls');
+  detailRoute(app, '/base/:slug', buildBaseItemViewModel, 'base-item.njk', 'vm');
+  cardRoute(app, '/base/:slug/card', buildBaseItemViewModel, 'partials/base-card-fragment.njk');
 
   app.get('/mods', (_req, res) => {
     const groups = listModGroups();
@@ -84,31 +74,19 @@ export function registerPages(app) {
     res.render('mod-group.njk', { group });
   });
 
-  app.get('/notable/:id', (req, res) => {
-    const n = getNotable(req.params.id);
-    if (!n) return res.status(404).render('home.njk', { notFound: req.params.id });
-    res.render('notable.njk', { n });
-  });
+  detailRoute(app, '/notable/:id', getNotable, 'notable.njk', 'n');
 
   app.get('/keystones', (_req, res) => {
     res.render('keystones.njk', { keystones: listKeystones() });
   });
 
-  app.get('/keystone/:id', (req, res) => {
-    const k = getKeystone(req.params.id);
-    if (!k) return res.status(404).render('home.njk', { notFound: req.params.id });
-    res.render('keystone.njk', { k });
-  });
+  detailRoute(app, '/keystone/:id', getKeystone, 'keystone.njk', 'k');
 
   app.get('/ascendancies', (_req, res) => {
     res.render('ascendancies.njk', { ascendancies: listAscendancies() });
   });
 
-  app.get('/ascendancy/:id', (req, res) => {
-    const a = getAscendancy(req.params.id);
-    if (!a) return res.status(404).render('home.njk', { notFound: req.params.id });
-    res.render('ascendancy.njk', { a });
-  });
+  detailRoute(app, '/ascendancy/:id', getAscendancy, 'ascendancy.njk', 'a');
 
   // expose for warmup/debug
   app.locals.gemCount = () => listGems().length;

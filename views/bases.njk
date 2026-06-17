@@ -1,11 +1,9 @@
 {% extends "base.njk" %}
+{% from "macros/nav.njk" import pageHeader %}
 {% block title %}Base Items — PoE2 Wiki{% endblock %}
 {% block content %}
-<div class="page" style="flex-direction:column;align-items:center;">
-  <h1 class="page-title" style="font-family:'OptimusPrincepsSemiBold',serif;color:var(--color-normal);">
-    Base Items
-  </h1>
-  <p class="page-subtitle">Browse item bases by class</p>
+<div class="page page--column">
+  {{ pageHeader('Base Items', 'Browse item bases by class') }}
   {% for group in groups %}
   <div class="bases-group">
     <h2 class="bases-group-title">{{ group.label }}</h2>

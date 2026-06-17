@@ -3,13 +3,17 @@
 //
 // HTML contract:
 //   .filter-bar[data-target][data-section?]
-//     .filter-group[data-key]
+//     .filter-group[data-key][data-match?]   (match: "all" (default) | "any")
 //       .filter-btn[data-value]  (toggleable)
 //
 // Filter logic (per .filter-bar):
 //   - For each .filter-group, collect its active (selected) values.
-//   - A target element passes a group if: the group has no active values, OR
-//     every active value appears in the element's data-{key} (space-separated).
+//   - A target element passes a group if the group has no active values, OR:
+//       match="all" (AND, default): every active value appears in the element's
+//         data-{key} (space-separated). Use for multi-valued attributes where you
+//         want to narrow (e.g. Requires Str AND Dex).
+//       match="any" (OR): at least one active value appears. Use for
+//         single-valued attributes where selections widen (e.g. Type, Origin).
 //   - AND across groups: an element must pass all groups to remain visible.
 //   - If data-section is set, any section container with no visible children
 //     is hidden automatically.
@@ -26,10 +30,14 @@
       applyFilters();
     });
 
+    // Apply any default (server-rendered is-active) selections on load.
+    applyFilters();
+
     function applyFilters() {
       var activeFilters = groups.map(function (g) {
         return {
           key: g.dataset.key,
+          match: g.dataset.match === 'any' ? 'any' : 'all',
           values: Array.from(g.querySelectorAll('.filter-btn.is-active'))
                        .map(function (b) { return b.dataset.value; }),
         };
@@ -39,7 +47,8 @@
         var visible = activeFilters.every(function (f) {
           if (!f.values.length) return true;
           var itemVals = (item.dataset[f.key] || '').split(' ').filter(Boolean);
-          return f.values.every(function (v) { return itemVals.indexOf(v) !== -1; });
+          var has = function (v) { return itemVals.indexOf(v) !== -1; };
+          return f.match === 'any' ? f.values.some(has) : f.values.every(has);
         });
         item.style.display = visible ? '' : 'none';
       });

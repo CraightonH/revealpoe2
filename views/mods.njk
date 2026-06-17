@@ -1,11 +1,9 @@
 {% extends "base.njk" %}
+{% from "macros/nav.njk" import pageHeader %}
 {% block title %}Affixes — PoE2 Wiki{% endblock %}
 {% block content %}
-<div class="page" style="flex-direction:column;align-items:center;">
-  <h1 class="page-title" style="font-family:'OptimusPrincepsSemiBold',serif;color:var(--color-normal);">
-    Rollable Affixes
-  </h1>
-  <p class="page-subtitle">{{ prefix.length + suffix.length }} affix families</p>
+<div class="page page--column">
+  {{ pageHeader('Rollable Affixes', (prefix.length + suffix.length) ~ ' affix families') }}
   <div class="mods-columns">
     <section class="mods-section">
       <h2 class="mods-section-title">Prefix ({{ prefix.length }})</h2>

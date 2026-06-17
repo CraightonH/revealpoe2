@@ -3,8 +3,11 @@ import { slugify } from './slug.js';
 import { ddsUrl } from './images.js';
 import { listUniques } from './uniques.js';
 import { getModsForBase } from './mods.js';
-
-const REPOE = 'repoe-poe2';
+import { computeProperties } from './itemStats.js';
+import { ATTR_ABBR } from './attributes.js';
+import { hasDefinition } from './keywordDefs.js';
+import { linkifyRequirement } from './keywords.js';
+import { REPOE } from '../config.js';
 
 const GROUPS = [
   {
@@ -26,51 +29,17 @@ const GROUPS = [
 
 const BROWSABLE_CLASSES = new Set(GROUPS.flatMap((g) => g.classes));
 
-function buildProperties(props) {
-  const out = [];
-  if (!props) return out;
-
-  if (props.physical_damage_min != null && props.physical_damage_max != null) {
-    out.push({ label: 'Physical Damage', value: `${props.physical_damage_min} to ${props.physical_damage_max}` });
-  }
-  if (props.critical_strike_chance != null) {
-    out.push({ label: 'Critical Hit Chance', value: `${props.critical_strike_chance / 100}%` });
-  }
-  if (props.attack_time != null) {
-    out.push({ label: 'Attacks per Second', value: (1000 / props.attack_time).toFixed(2) });
-  }
-  if (props.range != null) {
-    out.push({ label: 'Weapon Range', value: (props.range / 10).toFixed(1) });
-  }
-  for (const [key, label] of [
-    ['armour', 'Armour'],
-    ['evasion', 'Evasion Rating'],
-    ['energy_shield', 'Energy Shield'],
-    ['ward', 'Ward'],
-  ]) {
-    const val = props[key];
-    if (!val) continue;
-    out.push({ label, value: val.min === val.max ? String(val.min) : `${val.min}–${val.max}` });
-  }
-  if (props.block != null) {
-    out.push({ label: 'Block Chance', value: `${props.block}%` });
-  }
-  if (props.movement_speed != null) {
-    out.push({ label: 'Movement Speed', value: `${props.movement_speed / 100}%` });
-  }
-  return out;
-}
-
-const ATTR_ABBR = { strength: 'Str', dexterity: 'Dex', intelligence: 'Int' };
-
+// Requirement display strings, with Str/Dex/Int abbreviations linked to their
+// glossary keyword (returned as safe HTML — templates render with `| safe`).
 function buildRequirements(req, dropLevel) {
   const out = [];
   if (dropLevel != null && dropLevel > 0) out.push(`Level ${dropLevel}`);
-  if (!req) return out;
-  for (const [attr, label] of Object.entries(ATTR_ABBR)) {
-    if (req[attr]) out.push(`${req[attr]} ${label}`);
+  if (req) {
+    for (const [attr, label] of Object.entries(ATTR_ABBR)) {
+      if (req[attr]) out.push(`${req[attr]} ${label}`);
+    }
   }
-  return out;
+  return out.map((r) => linkifyRequirement(r, hasDefinition));
 }
 
 function buildSlug(name, classId, nameAcrossClasses) {
@@ -142,7 +111,7 @@ function buildIndex() {
       inventorySize: { w: v.inventory_width, h: v.inventory_height },
       tags: v.tags ?? [],
       requirements: buildRequirements(v.requirements, v.drop_level),
-      properties: buildProperties(v.properties),
+      properties: computeProperties(v.properties),
       rawProperties: v.properties ?? null,
       iconUrl: ddsUrl(v.visual_identity?.dds_file),
     };

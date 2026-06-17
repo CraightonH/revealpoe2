@@ -1,14 +1,13 @@
 {% extends "base.njk" %}
+{% from "macros/nav.njk" import breadcrumb, pageHeader %}
 {% block title %}{{ cls.name }} — Base Items — PoE2 Wiki{% endblock %}
 {% block content %}
-<div class="page" style="flex-direction:column;align-items:center;">
-  <nav class="bases-breadcrumb">
-    <a href="/bases">Base Items</a> › {{ cls.name }}
-  </nav>
-  <h1 class="page-title" style="font-family:'OptimusPrincepsSemiBold',serif;color:var(--color-normal);">
-    {{ cls.name }}
-  </h1>
-  <p class="page-subtitle">{{ cls.bases.length }} base items</p>
+<div class="page page--column">
+  {{ breadcrumb([
+    { label: 'Base Items', href: '/bases' },
+    { label: cls.name }
+  ]) }}
+  {{ pageHeader(cls.name, cls.bases.length ~ ' base items') }}
   <div class="bases-list-grid">
     {% for b in cls.bases %}
     <a class="bases-list-card" href="/base/{{ b.slug }}">

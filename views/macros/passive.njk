@@ -1,0 +1,42 @@
+{% macro passiveDetail(node) %}
+<div class="passive-detail-card">
+  {% if node.iconUrl %}
+  <img class="passive-detail-icon" src="{{ node.iconUrl }}" alt="{{ node.name }}" onerror="this.style.visibility='hidden'">
+  {% endif %}
+  <h1 class="passive-detail-name">{{ node.name }}</h1>
+  {% if node.statLines.length %}
+  <div class="passive-detail-stats">
+    {% for line in node.statLines %}
+    <div class="explicitMod">{{ line | safe }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% if node.flavourText %}
+  <div class="FlavourText passive-detail-flavour">{{ node.flavourText }}</div>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro passiveNodeCard(node, href=null, modifier='') %}
+{% if href %}
+<a class="passive-node-card{% if modifier %} {{ modifier }}{% endif %}" href="{{ href }}">
+{% else %}
+<div class="passive-node-card{% if modifier %} {{ modifier }}{% endif %}">
+{% endif %}
+  {% if node.iconUrl %}
+  <img class="passive-node-icon" src="{{ node.iconUrl }}" alt="{{ node.name }}" onerror="this.style.visibility='hidden'">
+  {% endif %}
+  <div class="passive-node-name">{{ node.name }}</div>
+  {% if node.statLines.length %}
+  <div class="passive-node-stats">
+    {% for line in node.statLines %}
+    <div>{{ line | safe }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% if href %}
+</a>
+{% else %}
+</div>
+{% endif %}
+{% endmacro %}

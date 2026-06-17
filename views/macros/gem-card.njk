@@ -1,3 +1,22 @@
+{% macro gemSection(label, gems, modifier='') %}
+<section class="gem-list-section">
+  <h2 class="gem-list-heading gem-list-heading--{{ modifier }}">{{ label }} ({{ gems.length }})</h2>
+  <div class="gem-browse-grid">
+    {% for g in gems %}
+    <a class="gem-browse-card gem-browse-card--{{ g.cardColor }}" href="/gem/{{ g.slug }}"
+       data-type="{{ modifier }}"
+       data-origin="{{ g.origin }}"
+       data-req="{{ g.req | join(' ') }}">
+      {% if g.iconUrl %}
+      <img class="gem-browse-icon" src="{{ g.iconUrl }}" alt="{{ g.name }}" onerror="this.style.visibility='hidden'">
+      {% endif %}
+      <span class="gem-browse-name">{{ g.name }}</span>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endmacro %}
+
 {% macro gemCard(vm) %}
 <div class="newItemPopup GemPopup item-popup--poe2{% if vm.borderColor2 %} hybrid-border{% endif %}"
      style="--card-border: {{ vm.borderColor }}; --card-glow: {{ vm.glowColor }};
@@ -33,7 +52,7 @@
         <div class="property">Reservation: <span class="colourDefault">{{ vm.reservation }}</span></div>
         {% endif %}
         {% if vm.requirements.length %}
-        <div class="requirements">Requires: {% for r in vm.requirements %}<span class="colourDefault">{{ r }}</span>{% if not loop.last %}, {% endif %}{% endfor %}</div>
+        <div class="requirements">Requires: {% for r in vm.requirements %}<span class="colourDefault">{{ r | safe }}</span>{% if not loop.last %}, {% endif %}{% endfor %}</div>
         {% endif %}
 
         {% if vm.description %}

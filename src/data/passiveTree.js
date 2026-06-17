@@ -1,9 +1,8 @@
 import { loadJson } from './loader.js';
 import { ddsUrl } from './images.js';
-import { renderGameText } from './keywords.js';
+import { renderGameText, stripGameText } from './keywords.js';
 import { hasDefinition } from './keywordDefs.js';
-
-const REPOE = 'repoe-poe2';
+import { REPOE } from '../config.js';
 
 let _passives = null;
 let _statMap = null;
@@ -37,10 +36,6 @@ function rawString(entry, val) {
     : entry.string.replace('{0}', val);
 }
 
-function stripMarkup(text) {
-  return text.replace(/\[([^\]|]+)(?:\|([^\]]+))?\]/g, (_, id, display) => display ?? id);
-}
-
 function translateStats(stats) {
   buildStatMap();
   const lines = [];
@@ -61,7 +56,7 @@ function translateStatsRaw(stats) {
     const entry = _statMap.get(id);
     if (!entry) continue;
     for (const line of rawString(entry, val).split('\n')) {
-      if (line.trim()) parts.push(stripMarkup(line));
+      if (line.trim()) parts.push(stripGameText(line));
     }
   }
   return parts.join(' ');

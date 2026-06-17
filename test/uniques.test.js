@@ -68,7 +68,23 @@ test('buildUniqueViewModel derives item stats from base + local mods', () => {
   assert.equal(byLabel['Weapon Range'].value, '1.5');
   assert.equal(byLabel['Fire Damage'].colorClass, 'colourFireDamage');
 
-  assert.deepEqual(vm.requirements, ['Level 72', '46 Str', '115 Dex']);
+  assert.deepEqual(vm.requirements, [
+    'Level 72',
+    '46 <span class="kw" data-keyword="Strength">Str</span>',
+    '115 <span class="kw" data-keyword="Dexterity">Dex</span>',
+  ]);
+});
+
+test('buildUniqueViewModel splits implicits/explicits and filters colon-less metadata', () => {
+  // Adonia's Ego has a "Requires Level 65" header line (no trailing colon).
+  // It must NOT leak into stats, or it eats an implicit slot and shoves the
+  // second granted skill ("Pinnacle of Power") into the explicit affixes.
+  const vm = buildUniqueViewModel('adonias-ego');
+  assert.ok(!vm.stats.some((s) => /^Requires\b/.test(s.text)), 'Requires line leaked into stats');
+  // Implicits: 2 → both granted skills sit together above the divider.
+  assert.equal(vm.implicits.length, 2);
+  assert.ok(vm.implicits.every((s) => s.text.startsWith('Grants Skill:')));
+  assert.equal(vm.explicits[0].text, '+(100-150) to maximum Mana');
 });
 
 test('buildUniqueViewModel includes flavour text from flavour.json', () => {

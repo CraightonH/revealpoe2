@@ -1,0 +1,10 @@
+{% macro breadcrumb(trail) %}
+<nav class="bases-breadcrumb">
+  {% for item in trail %}{% if loop.last %}{{ item.label }}{% elif item.href %}<a href="{{ item.href }}">{{ item.label }}</a> › {% else %}{{ item.label }} › {% endif %}{% endfor %}
+</nav>
+{% endmacro %}
+
+{% macro pageHeader(title, subtitle='', accentVar='--color-normal') %}
+<h1 class="page-title" style="color:var({{ accentVar }})">{{ title | safe }}</h1>
+{% if subtitle %}<p class="page-subtitle">{{ subtitle }}</p>{% endif %}
+{% endmacro %}

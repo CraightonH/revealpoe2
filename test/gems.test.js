@@ -8,6 +8,33 @@ test('listGems returns active + support gems with slugs', () => {
   assert.ok(gems.every((g) => g.slug && g.name));
 });
 
+test('listGems excludes [DNT]/[DNT-UNUSED] unimplemented gems', () => {
+  assert.ok(listGems().every((g) => !g.name.includes('[DNT')));
+});
+
+test('listGems excludes placeholder/dev gems (Coming Soon, Playtest, etc.)', () => {
+  const names = new Set(listGems().map((g) => g.name));
+  for (const n of ['Coming Soon', 'Removed Skill', 'Playtest Attack', 'Soul Crystal: {0}']) {
+    assert.ok(!names.has(n), `${n} should be excluded`);
+  }
+});
+
+test('listGems classifies origin: gem / item / other', () => {
+  const gems = listGems();
+  const origin = (name) => gems.find((g) => g.name === name)?.origin;
+  // obtainable socketable gems
+  assert.equal(origin('Herald of Ash'), 'gem');
+  assert.equal(origin('Spark'), 'gem');
+  // item-granted: unique-granted skill + weapon default attack
+  assert.equal(origin('Bursting Fen Toad'), 'item');
+  assert.equal(origin('Bow Shot'), 'item');
+  // ascendancy/boss skills with no obtain method
+  assert.equal(origin('Demon Form'), 'other');
+  assert.equal(origin("Ruzhan's Fury"), 'other');
+  // every shown gem carries a valid origin
+  assert.ok(gems.every((g) => ['gem', 'item', 'other'].includes(g.origin)));
+});
+
 test('getGem resolves Herald of Ash by slug', () => {
   const gem = getGem('herald-of-ash');
   assert.equal(gem.base_item.display_name, 'Herald of Ash');
@@ -89,8 +116,11 @@ test('attributeRequirements is empty for no/zero requirement', () => {
 });
 
 test('buildGemViewModel emits requirements (level always, attributes when present)', () => {
-  assert.deepEqual(buildGemViewModel('herald-of-ash').requirements, ['Level (1—90)', '(4—157) Str']);
-  assert.deepEqual(buildGemViewModel('armour-piercing-rounds').requirements, ['Level (1—90)', '(2—79) Str', '(2—79) Dex']);
+  // Str/Dex/Int abbreviations are linked to their glossary keyword (safe HTML).
+  const str = '<span class="kw" data-keyword="Strength">Str</span>';
+  const dex = '<span class="kw" data-keyword="Dexterity">Dex</span>';
+  assert.deepEqual(buildGemViewModel('herald-of-ash').requirements, ['Level (1—90)', `(4—157) ${str}`]);
+  assert.deepEqual(buildGemViewModel('armour-piercing-rounds').requirements, ['Level (1—90)', `(2—79) ${str}`, `(2—79) ${dex}`]);
   // all-zero attribute weights -> still shows the level requirement, no attribute line
   assert.deepEqual(buildGemViewModel('align-fate').requirements, ['Level (1—90)']);
 });

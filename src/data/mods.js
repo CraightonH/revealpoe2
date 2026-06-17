@@ -1,7 +1,7 @@
 import { loadJson } from './loader.js';
 import { slugify } from './slug.js';
+import { REPOE } from '../config.js';
 
-const REPOE = 'repoe-poe2';
 const ROLLABLE = new Set(['prefix', 'suffix']);
 
 let _byId = null;

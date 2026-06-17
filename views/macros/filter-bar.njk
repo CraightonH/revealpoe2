@@ -1,9 +1,14 @@
 {#
   filterBar(groups, target, section)
 
-  groups  – array of { key, label?, options: [{ value, label, color? }] }
-             key    – data attribute name (e.g. "req" → data-req)
-             color  – optional gem color token (r/g/b/w) for tinted active state
+  groups  – array of { key, label?, match?, options: [{ value, label, color?, default? }] }
+             key     – data attribute name (e.g. "req" → data-req)
+             match   – "all" (AND, default) narrows; "any" (OR) widens. Use "any"
+                       for single-valued attrs like Type/Origin, "all" for
+                       multi-valued narrowing like Requires.
+             color   – optional gem color token (r/g/b/w) for tinted active state
+             default – optional; when true the option starts selected (filter
+                       applied on page load)
   target  – CSS selector for the items to show/hide (e.g. ".gem-browse-card")
   section – CSS selector for parent containers to hide when all children are filtered (optional)
 #}
@@ -12,11 +17,11 @@
      data-target="{{ target }}"
      {% if section %}data-section="{{ section }}"{% endif %}>
   {% for group in groups %}
-  <div class="filter-group" data-key="{{ group.key }}">
+  <div class="filter-group" data-key="{{ group.key }}"{% if group.match %} data-match="{{ group.match }}"{% endif %}>
     {% if group.label %}<span class="filter-label">{{ group.label }}</span>{% endif %}
     {% for opt in group.options %}
     <button type="button"
-            class="filter-btn{% if opt.color %} filter-btn--{{ opt.color }}{% endif %}"
+            class="filter-btn{% if opt.color %} filter-btn--{{ opt.color }}{% endif %}{% if opt.default %} is-active{% endif %}"
             data-value="{{ opt.value }}">{{ opt.label }}</button>
     {% endfor %}
   </div>
