@@ -115,4 +115,21 @@ describe('passiveTree', () => {
       assert.equal(getAscendancy('Blah99'), null);
     });
   });
+
+  describe('kind discriminator', () => {
+    it('keystones have kind "keystone"', () => {
+      const k = getKeystone('passive_keystone_zealots_oath');
+      assert.equal(k.kind, 'keystone');
+    });
+    it('notables have kind "notable"', () => {
+      const n = getNotable('armour_and_evasion53');
+      assert.equal(n.kind, 'notable');
+    });
+    it('listed keystones all report kind "keystone"', () => {
+      assert.ok(listKeystones().every((k) => k.kind === 'keystone'));
+    });
+    it('listed notables all report kind "notable"', () => {
+      assert.ok(listNotables().every((n) => n.kind === 'notable'));
+    });
+  });
 });
