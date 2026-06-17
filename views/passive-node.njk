@@ -1,0 +1,24 @@
+{% extends "base.njk" %}
+{% from "macros/nav.njk" import breadcrumb %}
+{% from "macros/passive.njk" import passiveDetail %}
+{% block title %}{{ node.name }} — PoE2 Wiki{% endblock %}
+{% block content %}
+<div class="page page--column">
+  {% if node.ascendancy %}
+  {{ breadcrumb([
+    { label: 'Ascendancies', href: '/ascendancies' },
+    { label: node.charClass },
+    { label: node.ascendancyName, href: '/ascendancy/' + node.ascendancy },
+    { label: node.name }
+  ]) }}
+  {% else %}
+  {{ breadcrumb([
+    { label: 'Passives' },
+    { label: node.name }
+  ]) }}
+  {% endif %}
+  <div class="gem-detail">
+    {{ passiveDetail(node) }}
+  </div>
+</div>
+{% endblock %}

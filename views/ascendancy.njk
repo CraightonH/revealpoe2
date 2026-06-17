@@ -1,21 +1,28 @@
 {% extends "base.njk" %}
 {% from "macros/nav.njk" import breadcrumb %}
-{% from "macros/passive.njk" import passiveNodeCard %}
 {% block title %}{{ a.name }} — PoE2 Wiki{% endblock %}
 {% block content %}
-<div class="page page--column">
+<div class="page page--column" style="--asc-color: {{ a.color }};">
   {{ breadcrumb([
     { label: 'Ascendancies', href: '/ascendancies' },
     { label: a.charClass },
     { label: a.name }
   ]) }}
-  <h1 class="page-title" style="color:var(--color-normal);">
+  <h1 class="page-title" style="color:var(--asc-color);">
     {{ a.name }}
     <span style="font-size:14px;color:var(--color-default);margin-left:8px;">({{ a.charClass }})</span>
   </h1>
-  <div class="passive-node-grid">
+  <div class="keystone-index-grid">
     {% for n in a.notables %}
-    {{ passiveNodeCard(n, modifier='passive-node-card--asc') }}
+    <a class="keystone-index-card asc-notable-card" href="/passive/{{ n.id }}" data-card-url="/passive/{{ n.id }}/card">
+      {% if n.iconUrl %}
+      <img src="{{ n.iconUrl }}" alt="{{ n.name }}" class="keystone-index-icon"
+           onerror="this.style.visibility='hidden'">
+      {% else %}
+      <div class="keystone-index-icon keystone-index-placeholder asc-notable-placeholder">{{ n.name[0] }}</div>
+      {% endif %}
+      <span class="keystone-index-name">{{ n.name }}</span>
+    </a>
     {% endfor %}
   </div>
 </div>

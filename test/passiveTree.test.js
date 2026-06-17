@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { listKeystones, getKeystone, listNotables, getNotable, listAscendancies, getAscendancy } from '../src/data/passiveTree.js';
+import { listKeystones, getKeystone, listNotables, getNotable, getPassiveNode, listAscendancies, getAscendancy } from '../src/data/passiveTree.js';
 
 describe('passiveTree', () => {
   describe('listKeystones', () => {
@@ -113,6 +113,31 @@ describe('passiveTree', () => {
     });
     it('returns null for unknown id', () => {
       assert.equal(getAscendancy('Blah99'), null);
+    });
+    it('carries an ascendancy colorway', () => {
+      assert.equal(getAscendancy('Druid1').color, '#4fa3a3');
+    });
+    it('every ascendancy has a color', () => {
+      assert.ok(listAscendancies().every((a) => /^#[0-9a-f]{6}$/i.test(a.color)));
+    });
+  });
+
+  describe('getPassiveNode', () => {
+    it('finds a keystone by id', () => {
+      const n = getPassiveNode('passive_keystone_zealots_oath');
+      assert.equal(n.name, "Zealot's Oath");
+      assert.equal(n.kind, 'keystone');
+    });
+    it('finds an ascendancy notable (excluded by getNotable) and themes it', () => {
+      const n = getPassiveNode('AscendancyDruid1Notable4');
+      assert.ok(n);
+      assert.equal(n.ascendancy, 'Druid1');
+      assert.equal(n.ascendancyName, 'Oracle');
+      assert.equal(n.charClass, 'Druid');
+      assert.equal(n.ascColor, '#4fa3a3');
+    });
+    it('returns null for unknown id', () => {
+      assert.equal(getPassiveNode('nope'), null);
     });
   });
 

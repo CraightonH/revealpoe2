@@ -379,15 +379,13 @@ a.lc.unique-type:hover {
 }
 .unique-index-grid,
 .keystone-index-grid,
-.bases-list-grid,
-.passive-node-grid {
+.bases-list-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
 }
 .unique-index-grid,
 .keystone-index-grid,
 .bases-list-grid,
-.passive-node-grid,
 .asc-grid {
   width: 100%;
   max-width: 900px;
@@ -737,60 +735,36 @@ a.lc.unique-type:hover {
   white-space: nowrap;
 }
 
-/* --- Passive tree nodes --- */
-.passive-node-grid {
-  gap: 12px;
-}
-
-/* Dark card shell shared by passive node, keystone detail, and asc cards.
-   Variants below add their own gap/padding/sizing and (for the clickable
-   ones) color/text-decoration/transition + hover. */
-.passive-node-card,
+/* --- Ascendancy cards (list page) — dark shell tinted to the colorway --- */
 .asc-card {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  background: var(--card-dark-bg);
-  border: 1px solid var(--card-dark-border);
+  background: color-mix(in srgb, var(--asc-color, var(--card-dark-border)) 8%, var(--card-dark-bg));
+  border: 1px solid color-mix(in srgb, var(--asc-color, var(--card-dark-border)) 30%, var(--card-dark-border));
   border-radius: 4px;
-}
-.passive-node-card,
-.asc-card {
   color: var(--color-default);
   text-decoration: none;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, background 0.15s;
 }
-.passive-node-card:hover,
 .asc-card:hover {
-  border-color: var(--card-hover-border);
+  border-color: var(--asc-color, var(--card-hover-border));
 }
 
-.passive-node-card {
-  gap: 6px;
-  padding: 12px;
+/* Ascendancy notable browse cards — keystone-index-card shape, tinted to the
+   selected ascendancy's colorway instead of the keystone blue. */
+.asc-notable-card {
+  color: var(--asc-color);
+  background: color-mix(in srgb, var(--asc-color) 12%, var(--bg-surface));
+  border-color: color-mix(in srgb, var(--asc-color) 30%, var(--border));
 }
-
-.passive-node-card--asc {
-  cursor: default;
+.asc-notable-card:hover {
+  border-color: var(--asc-color);
 }
-
-.passive-node-icon {
-  width: 48px;
-  height: 48px;
-  object-fit: contain;
-}
-
-.passive-node-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-normal);
-}
-
-.passive-node-stats {
-  font-size: 11px;
-  color: var(--color-default);
-  line-height: 1.4;
+.asc-notable-placeholder {
+  background: color-mix(in srgb, var(--asc-color) 25%, transparent);
+  color: var(--asc-color);
 }
 
 /* Passive detail popup — keystone/notable, reuses .newItemPopup chrome.
@@ -859,7 +833,7 @@ a.lc.unique-type:hover {
 
 .asc-name {
   font-size: 14px;
-  color: var(--color-normal);
+  color: var(--asc-color, var(--color-normal));
   font-weight: 600;
 }
 

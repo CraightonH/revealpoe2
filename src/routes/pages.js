@@ -2,7 +2,7 @@ import { buildGemViewModel, listGems } from '../data/gems.js';
 import { buildUniqueViewModel, listUniques } from '../data/uniques.js';
 import { listItemClasses, getItemClass, buildBaseItemViewModel } from '../data/baseItems.js';
 import { listModGroups, getModGroup } from '../data/mods.js';
-import { listKeystones, getKeystone, listNotables, getNotable, listAscendancies, getAscendancy } from '../data/passiveTree.js';
+import { listKeystones, getKeystone, listNotables, getNotable, getPassiveNode, listAscendancies, getAscendancy } from '../data/passiveTree.js';
 
 // Register a detail page: reads the single route param, runs the builder,
 // renders `template` with { [contextKey]: result }, or 404s to home.njk.
@@ -75,6 +75,11 @@ export function registerPages(app) {
   });
 
   detailRoute(app, '/notable/:id', getNotable, 'notable.njk', 'n');
+
+  // Generic passive-node detail + hover card — covers ascendancy notables,
+  // which getNotable/getKeystone exclude.
+  detailRoute(app, '/passive/:id', getPassiveNode, 'passive-node.njk', 'node');
+  cardRoute(app, '/passive/:id/card', getPassiveNode, 'partials/passive-card-fragment.njk');
 
   app.get('/keystones', (_req, res) => {
     res.render('keystones.njk', { keystones: listKeystones() });

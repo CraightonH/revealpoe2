@@ -68,13 +68,48 @@ function buildPassiveIndex() {
   _passives = tree.passives;
 }
 
+// Per-ascendancy accent colors, keyed by ascendancy id. Chosen to evoke each
+// ascendancy's in-game theme; drives the header accent and card background tint
+// on the ascendancy pages. Fallback used for any future/unknown id.
+const ASC_COLORS = {
+  Druid1: '#4fa3a3', // Oracle — divinatory teal
+  Druid2: '#8a9a5b', // Shaman — mossy green
+  Huntress1: '#c9a24b', // Amazon — bronze
+  Huntress2: '#6fd1e0', // Spirit Walker — ethereal cyan
+  Huntress3: '#b23b54', // Ritualist — ritual crimson
+  Mercenary1: '#5b8fb9', // Tactician — steel blue
+  Mercenary2: '#9aa3ad', // Witchhunter — gunmetal
+  Mercenary3: '#2bb6a8', // Gemling Legionnaire — gem teal
+  Monk1: '#d77a3a', // Martial Artist — ember orange
+  Monk2: '#8ab4ff', // Invoker — lightning blue
+  Monk3: '#9b59c4', // Acolyte of Chayula — chaos violet
+  Ranger1: '#5aa84f', // Deadeye — forest green
+  Ranger3: '#84c145', // Pathfinder — toxic green
+  Sorceress1: '#d9c64a', // Stormweaver — storm gold
+  Sorceress2: '#5fc2c9', // Chronomancer — time teal
+  Sorceress3: '#d05ba8', // Disciple of Varashta — exotic magenta
+  Warrior1: '#b79a6b', // Titan — stone bronze
+  Warrior2: '#c0563f', // Warbringer — war ochre
+  Warrior3: '#d96b2c', // Smith of Kitava — forge orange
+  Witch1: '#d4582b', // Infernalist — infernal orange
+  Witch2: '#b03048', // Blood Mage — blood red
+  Witch3: '#7fae6f', // Lich — necrotic green
+  Witch3b: '#6a4f9c', // Abyssal Lich — abyssal purple
+};
+const ASC_COLOR_DEFAULT = '#9a8fd6';
+
 function buildAscIndex() {
   if (_ascData) return;
   const raw = loadJson(`${REPOE}/ascendancies.json`);
   _ascData = new Map();
   for (const [id, v] of Object.entries(raw)) {
     if (v.disabled || (v.name && v.name.includes('[DNT'))) continue;
-    _ascData.set(id, { id, name: v.name, charClass: v.character[1] });
+    _ascData.set(id, {
+      id,
+      name: v.name,
+      charClass: v.character[1],
+      color: ASC_COLORS[id] || ASC_COLOR_DEFAULT,
+    });
   }
 }
 
@@ -118,6 +153,27 @@ export function getNotable(id) {
   buildPassiveIndex();
   const p = Object.values(_passives).find((n) => n.is_notable && !n.ascendancy && n.id === id);
   return p ? nodeRecord(p) : null;
+}
+
+// Generic lookup for any passive node (keystone or notable, including
+// ascendancy notables, which getNotable/getKeystone deliberately exclude).
+// For ascendancy nodes it also attaches the ascendancy's display name, base
+// class, and colorway so the detail page / hover card can theme to match.
+export function getPassiveNode(id) {
+  buildPassiveIndex();
+  const p = Object.values(_passives).find((n) => (n.is_notable || n.is_keystone) && n.id === id);
+  if (!p) return null;
+  const rec = nodeRecord(p);
+  if (rec.ascendancy) {
+    buildAscIndex();
+    const a = _ascData.get(rec.ascendancy);
+    if (a) {
+      rec.ascendancyName = a.name;
+      rec.charClass = a.charClass;
+      rec.ascColor = a.color;
+    }
+  }
+  return rec;
 }
 
 export function listAscendancies() {
