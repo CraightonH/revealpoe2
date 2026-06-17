@@ -79,6 +79,20 @@ test('passive re-skin removes the legacy passive-detail card classes', async () 
   assert.ok(!/passive-detail-card/.test(res.text), 'legacy passive-detail-card must be gone');
 });
 
+test('GET /keystone/:id/card returns the passive card fragment', async () => {
+  const res = await request(createApp()).get('/keystone/passive_keystone_zealots_oath/card');
+  assert.equal(res.status, 200);
+  assert.match(res.text, /newItemPopup/);
+  assert.match(res.text, /PassivePopup/);
+  assert.match(res.text, /Zealot&#39;s Oath/);
+});
+
+test('GET /keystone/:id/card returns 404 empty body for unknown id', async () => {
+  const res = await request(createApp()).get('/keystone/not-a-real-keystone/card');
+  assert.equal(res.status, 404);
+  assert.equal(res.text, '');
+});
+
 test('layout loads Popper before Tippy before the keyword glue', async () => {
   // Tippy's UMD build requires window.Popper; it must load (and execute)
   // before tippy, which must load before keywords.js, or tooltips never show.
