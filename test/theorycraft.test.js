@@ -160,3 +160,21 @@ test('runQuery: type field narrows to a real category (real index)', () => {
   assert.ok(r.total > 0);
   assert.ok(r.groups.every((g) => g.category === 'support'));
 });
+
+test('GET /theorycraft renders the search help panel with clickable examples', async () => {
+  const res = await request(createApp()).get('/theorycraft');
+  assert.equal(res.status, 200);
+  // collapsible panel + summary
+  assert.match(res.text, /class="tc-help"/);
+  assert.match(res.text, /How to search/);
+  // term labels that live ONLY in the panel
+  assert.match(res.text, /<code>grants:<\/code>/);
+  assert.match(res.text, /<code>req:<\/code>/);
+  // closed-set values for type are spelled out
+  assert.match(res.text, /keystone, notable, base/);
+  // clickable example chips carry data-q
+  assert.match(res.text, /class="tc-example" data-q="type:keystone"/);
+  assert.match(res.text, /class="tc-example" data-q="color:green"/);
+  // page-scoped script is referenced
+  assert.match(res.text, /\/static\/js\/theorycraft\.js/);
+});
