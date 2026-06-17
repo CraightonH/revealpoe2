@@ -15,7 +15,7 @@
   <div class="tc-result-grid">
     {% for it in g.items %}
     <a class="tc-result-card tc-result-card--{{ g.category }}" href="{{ it.url }}"
-       {% if g.category in ['gem', 'support', 'spirit', 'unique'] %}data-card-url="{{ it.url }}/card"{% endif %}>
+       {% if g.category in ['gem', 'support', 'spirit', 'unique', 'base'] %}data-card-url="{{ it.url }}/card"{% endif %}>
       {% if it.iconUrl %}
       <img class="tc-result-icon" src="{{ it.iconUrl }}" alt="{{ it.name }}" loading="lazy"
            onerror="this.style.visibility='hidden'">

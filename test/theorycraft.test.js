@@ -145,3 +145,18 @@ test('GET /theorycraft/results with empty q shows the prompt', async () => {
   assert.equal(res.status, 200);
   assert.match(res.text, /tc-empty/);
 });
+
+test('runQuery: color word and color letter match the same gems (real index)', () => {
+  const docs = allDocs();
+  const byWord = runQuery('color:green', { docs }).total;
+  const byLetter = runQuery('color:g', { docs }).total;
+  assert.ok(byLetter > 0, 'color:g should match gems');
+  assert.equal(byWord, byLetter, 'color:green should equal color:g');
+});
+
+test('runQuery: type field narrows to a real category (real index)', () => {
+  const docs = allDocs();
+  const r = runQuery('type:support', { docs });
+  assert.ok(r.total > 0);
+  assert.ok(r.groups.every((g) => g.category === 'support'));
+});

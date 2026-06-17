@@ -41,6 +41,8 @@ const GROUPS = [
   { category: 'base',     label: 'Base Items' },
 ];
 
+const COLOR_WORDS = { red: 'r', green: 'g', blue: 'b', white: 'w' };
+
 function termMatches(doc, term) {
   let hit;
   if (term.kind === 'text') {
@@ -48,7 +50,11 @@ function termMatches(doc, term) {
   } else {
     switch (term.field) {
       case 'type':   hit = doc.category.includes(term.value); break;
-      case 'color':  hit = (doc.color || '').includes(term.value); break;
+      case 'color': {
+        const v = COLOR_WORDS[term.value] ?? term.value;
+        hit = (doc.color || '').includes(v);
+        break;
+      }
       case 'tag':    hit = doc.tags.some((t) => t.includes(term.value)); break;
       case 'req':    hit = doc.req.some((r) => r.includes(term.value)); break;
       case 'grants': hit = doc.grants.some((g) => g.includes(term.value)); break;
