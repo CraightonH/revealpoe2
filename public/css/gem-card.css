@@ -706,7 +706,6 @@ a.lc.unique-type:hover {
    Variants below add their own gap/padding/sizing and (for the clickable
    ones) color/text-decoration/transition + hover. */
 .passive-node-card,
-.passive-detail-card,
 .asc-card {
   display: flex;
   flex-direction: column;
@@ -754,36 +753,55 @@ a.lc.unique-type:hover {
   line-height: 1.4;
 }
 
-/* Keystone detail */
-.passive-detail-card {
-  gap: 12px;
-  padding: 24px;
-  max-width: 480px;
-  width: 100%;
-  margin-top: 16px;
+/* Passive detail popup — keystone/notable, reuses .newItemPopup chrome.
+   No banner image (passives have none); the header is a flat bar. */
+.PassivePopup {
+  max-width: 360px;
+  margin: 16px auto 0;
+}
+.PassivePopup.is-keystone {
+  --card-border: var(--color-keystone);
+  --card-glow: var(--color-keystone-glow);
+  --passive-name-color: var(--color-keystone);
+}
+.PassivePopup.is-notable {
+  --card-border: var(--color-notable);
+  --card-glow: var(--color-notable-glow);
+  --passive-name-color: var(--color-notable);
 }
 
-.passive-detail-icon {
-  width: 72px;
-  height: 72px;
+/* Flat header bar — overrides the gem .dds banner background */
+.itemHeader.doubleLine.passiveHeader {
+  background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.25));
+  background-size: auto;
+}
+.PassivePopup .leadPassiveIcon {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
   object-fit: contain;
 }
-
-.passive-detail-name {
-  font-family: var(--font-display);
-  font-size: 20px;
-  color: var(--color-normal);
-  margin: 0;
+.PassivePopup .itemName .lc {
+  padding: 2px 12px 0 64px;
+  text-align: left;
+  white-space: normal;
+  color: var(--passive-name-color);
+}
+.PassivePopup .itemName.typeLine .lc {
+  padding-top: 0;
+  color: var(--prop-color);
 }
 
-.passive-detail-stats {
-  width: 100%;
-}
-
-.passive-detail-flavour {
+/* Reminder text — muted blue italic, matching the in-game passive tooltip */
+.PassivePopup .reminderText {
+  color: var(--magic-color);
   font-style: italic;
+  opacity: 0.75;
   font-size: 12px;
-  margin-top: 4px;
+  line-height: 1.35;
 }
 
 /* Ascendancy grid — narrower page width than the other 200px-min grids. */

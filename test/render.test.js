@@ -45,6 +45,40 @@ test('GET /gem/unknown returns 404', async () => {
   assert.equal(res.status, 404);
 });
 
+test('GET /keystone/:id renders a keystone passive popup', async () => {
+  const res = await request(createApp()).get('/keystone/passive_keystone_zealots_oath');
+  assert.equal(res.status, 200);
+  assert.match(res.text, /Zealot/);
+  // newItemPopup family + passive + keystone modifier
+  assert.match(res.text, /newItemPopup/);
+  assert.match(res.text, /PassivePopup/);
+  assert.match(res.text, /is-keystone/);
+  // reuses the glow-border machinery
+  assert.match(res.text, /--card-border:/);
+  // flat header with left-anchored icon and a "Keystone" type line
+  assert.match(res.text, /passiveHeader/);
+  assert.match(res.text, /leadPassiveIcon/);
+  assert.match(res.text, /typeLine">.*Keystone.*<\/span>/);
+  // under the size scaler
+  const popupIdx = res.text.indexOf('newItemPopup');
+  const detailIdx = res.text.indexOf('gem-detail');
+  assert.ok(detailIdx > -1 && detailIdx < popupIdx, 'passive card must be wrapped in .gem-detail');
+});
+
+test('GET /notable/:id renders a notable passive popup', async () => {
+  const res = await request(createApp()).get('/notable/armour_and_evasion53');
+  assert.equal(res.status, 200);
+  assert.match(res.text, /Knight of Izaro/);
+  assert.match(res.text, /PassivePopup/);
+  assert.match(res.text, /is-notable/);
+  assert.match(res.text, /typeLine">.*Notable.*<\/span>/);
+});
+
+test('passive re-skin removes the legacy passive-detail card classes', async () => {
+  const res = await request(createApp()).get('/keystone/passive_keystone_zealots_oath');
+  assert.ok(!/passive-detail-card/.test(res.text), 'legacy passive-detail-card must be gone');
+});
+
 test('layout loads Popper before Tippy before the keyword glue', async () => {
   // Tippy's UMD build requires window.Popper; it must load (and execute)
   // before tippy, which must load before keywords.js, or tooltips never show.
