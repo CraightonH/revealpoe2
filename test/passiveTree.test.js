@@ -139,6 +139,16 @@ describe('passiveTree', () => {
     it('returns null for unknown id', () => {
       assert.equal(getPassiveNode('nope'), null);
     });
+    it('resolves a granted skill on a stats-less node', () => {
+      const n = getPassiveNode('AscendancyMonk1Notable4'); // Hollow Resonance Technique
+      assert.equal(n.statLines.length, 0);
+      assert.ok(n.grantedSkill);
+      assert.equal(n.grantedSkill.name, 'Hollow Resonance');
+      assert.equal(n.grantedSkill.slug, 'hollow-resonance');
+    });
+    it('leaves grantedSkill null for ordinary stat nodes', () => {
+      assert.equal(getKeystone('passive_keystone_zealots_oath').grantedSkill, null);
+    });
   });
 
   describe('kind discriminator', () => {

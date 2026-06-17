@@ -12,6 +12,14 @@
     <div class="itemName typeLine"><span class="lc">{% if node.ascendancyName %}{{ node.ascendancyName }}{% elif node.kind == 'keystone' %}Keystone{% else %}Notable Passive{% endif %}</span></div>
   </div>
   <div class="content">
+    {% if node.grantedSkill %}
+    <div class="Stats">
+      <div class="explicitMod">
+        {%- if node.grantedSkill.iconUrl %}<img loading="lazy" src="{{ node.grantedSkill.iconUrl }}" class="grantsSkill" alt="" onerror="this.style.display='none'">{% endif -%}
+        Grants Skill: <a href="/gem/{{ node.grantedSkill.slug }}" data-card-url="/gem/{{ node.grantedSkill.slug }}/card" class="skill-grant-link">{{ node.grantedSkill.name }}</a>
+      </div>
+    </div>
+    {% endif %}
     {% if node.statLines.length %}
     <div class="Stats">
       {% for line in node.statLines %}

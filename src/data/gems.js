@@ -153,6 +153,22 @@ export function getGem(slug) {
   return index().get(slug) ?? null;
 }
 
+// Resolve a gem by its raw Metadata key (e.g. a passive node's `granted_skill`
+// or a unique's grant) to a lightweight reference for linking. Returns null if
+// the key has no indexed gem. The reverse map is built once from the index, so
+// only the slug-winning record for each key resolves (no collision losers).
+let _byKey = null;
+export function getGemRefByKey(key) {
+  if (!_byKey) {
+    _byKey = new Map();
+    for (const [slug, rec] of index()) _byKey.set(rec.key, slug);
+  }
+  const slug = _byKey.get(key);
+  if (!slug) return null;
+  const rec = index().get(slug);
+  return { slug, name: rec.base_item.display_name, iconUrl: ddsUrl(rec.icon_dds_file) };
+}
+
 // Attribute requirement lines from requirement_weights, e.g. {strength:100} ->
 // ['(4—157) Str']; {strength:50,dexterity:50} -> ['(2—79) Str','(2—79) Dex'].
 // Returns [] when there is no attribute requirement (all-zero or missing weights).

@@ -2,6 +2,7 @@ import { loadJson } from './loader.js';
 import { ddsUrl } from './images.js';
 import { renderGameText, stripGameText } from './keywords.js';
 import { hasDefinition } from './keywordDefs.js';
+import { getGemRefByKey } from './gems.js';
 import { REPOE } from '../config.js';
 
 let _passives = null;
@@ -124,6 +125,9 @@ function nodeRecord(p) {
     reminderText: Array.isArray(p.reminder_text) ? p.reminder_text : [],
     ascendancy: p.ascendancy ?? null,
     kind: p.is_keystone ? 'keystone' : 'notable',
+    // Some nodes (esp. ascendancy) have no stats — their effect is a granted
+    // skill. Resolve it to a gem reference so the card can link to the skill.
+    grantedSkill: p.granted_skill ? getGemRefByKey(p.granted_skill) : null,
   };
 }
 

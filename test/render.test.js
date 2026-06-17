@@ -134,6 +134,15 @@ test('GET /passive/:id returns 404 for unknown id', async () => {
   assert.equal(res.status, 404);
 });
 
+test('a granted-skill node surfaces a Grants Skill link to the gem', async () => {
+  // Hollow Resonance Technique (Martial Artist) has no stats — only a granted skill
+  const res = await request(createApp()).get('/passive/AscendancyMonk1Notable4');
+  assert.equal(res.status, 200);
+  assert.match(res.text, /Grants Skill:/);
+  assert.match(res.text, /href="\/gem\/hollow-resonance"/);
+  assert.match(res.text, /Hollow Resonance<\/a>/);
+});
+
 test('ascendancies list tints each card to its colorway', async () => {
   const res = await request(createApp()).get('/ascendancies');
   assert.equal(res.status, 200);
