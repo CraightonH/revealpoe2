@@ -6,6 +6,27 @@ html[data-card-size="s"] .gem-detail { zoom: 0.85; }
 html[data-card-size="l"] .gem-detail { zoom: 1.25; }
 html[data-card-size="xl"] .gem-detail { zoom: 1.5; }
 
+/* Condensed browse-card grids scale with the same control: base items / uniques
+   / highest-tier (.bases-list-grid), gems (.gem-browse-grid), ascendancies
+   (.asc-grid), keystones + per-ascendancy nodes (.keystone-index-grid). Zoom the
+   grid as a unit so the gap and column tracks scale proportionally and the cards
+   stay aligned. */
+html[data-card-size="s"] .bases-list-grid,
+html[data-card-size="s"] .bases-class-grid,
+html[data-card-size="s"] .gem-browse-grid,
+html[data-card-size="s"] .asc-grid,
+html[data-card-size="s"] .keystone-index-grid { zoom: 0.85; }
+html[data-card-size="l"] .bases-list-grid,
+html[data-card-size="l"] .bases-class-grid,
+html[data-card-size="l"] .gem-browse-grid,
+html[data-card-size="l"] .asc-grid,
+html[data-card-size="l"] .keystone-index-grid { zoom: 1.25; }
+html[data-card-size="xl"] .bases-list-grid,
+html[data-card-size="xl"] .bases-class-grid,
+html[data-card-size="xl"] .gem-browse-grid,
+html[data-card-size="xl"] .asc-grid,
+html[data-card-size="xl"] .keystone-index-grid { zoom: 1.5; }
+
 .newItemPopup {
   font-family: var(--font-smallcaps);
   background-color: var(--bg-base);
@@ -553,25 +574,71 @@ a.lc.unique-type:hover {
   color: var(--color-normal);
   font-size: 16px;
   margin: 0 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+}
+.bases-group-title::-webkit-details-marker { display: none; }
+.bases-group-title::before {
+  content: "\25B8"; /* ▸ */
+  font-size: 12px;
+  color: var(--color-default);
+  transition: transform 0.15s;
+}
+details[open] > .bases-group-title::before {
+  transform: rotate(90deg);
+}
+
+.bases-subgroup-title {
+  font-family: var(--font-smallcaps);
+  color: var(--color-default);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 14px 0 4px;
+}
+
+.bases-group-count {
+  font-family: var(--font-smallcaps);
+  color: var(--color-default);
+  font-size: 12px;
+  font-weight: normal;
 }
 
 .bases-class-grid {
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
   gap: 6px;
 }
 
 .bases-class-card {
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  padding: 7px 12px;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 8px;
   border-radius: 4px;
-  color: var(--normal-color);
+  color: var(--color-normal);
   font-family: var(--font-smallcaps);
   font-size: 13px;
   transition: border-color 0.15s;
 }
 
 .bases-class-card:hover {
-  border-color: var(--normal-color);
+  border-color: var(--color-normal);
+}
+
+/* Class name above the representative base-item glyph. */
+.bases-class-name {
+  text-align: center;
+}
+
+.bases-class-icon {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  display: block;
 }
 
 .bases-class-count {
@@ -852,6 +919,18 @@ a.lc.unique-type:hover {
   font-size: 12.5px;
   margin-top: 12px;
 }
+.bases-top-title {
+  font-family: var(--font-smallcaps);
+  font-size: 20px;
+  color: var(--normal-color);
+  margin: 4px 0 2px;
+}
+.bases-top-hint {
+  color: var(--color-default);
+  font-size: 12.5px;
+  margin: 0 0 6px;
+}
+
 .affix-section {
   margin-top: 28px;
 }
@@ -908,6 +987,7 @@ a.lc.unique-type:hover {
   border-bottom: 1px solid var(--border);
 }
 .affix-col-num { text-align: right; white-space: nowrap; width: 1%; }
+.affix-col-tier { white-space: nowrap; width: 1%; }
 
 .affix-fam { border-bottom: 1px solid rgba(255,255,255,0.05); }
 .affix-row { cursor: pointer; }
@@ -923,6 +1003,22 @@ a.lc.unique-type:hover {
   transition: transform 0.12s ease;
 }
 .affix-row[aria-expanded="true"] .affix-caret { transform: rotate(90deg); }
+.affix-caret--empty { visibility: hidden; }
+
+.affix-tbadge {
+  display: inline-block;
+  min-width: 22px;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: rgba(136, 136, 255, 0.16);
+  color: var(--magic-color);
+  font-size: 11px;
+  text-align: center;
+}
+.affix-tbadge--lower {
+  background: rgba(255,255,255,0.06);
+  color: var(--color-default);
+}
 
 .affix-text { color: var(--normal-color); }
 .affix-tag {
@@ -938,25 +1034,28 @@ a.lc.unique-type:hover {
   vertical-align: 1px;
 }
 
-.affix-tiers > td { padding: 0 8px 8px 22px; }
-.affix-tier-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12.5px;
-  background: rgba(0,0,0,0.18);
-}
-.affix-tier-table th {
-  color: var(--prop-color);
+/* "+N tiers" affordance on the collapsed T1 row; hidden once expanded. */
+.affix-more {
+  margin-left: 6px;
+  color: var(--color-default);
   font-size: 11px;
-  font-weight: normal;
-  text-align: left;
-  padding: 3px 8px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
 }
-.affix-tier-table td { padding: 3px 8px; }
-.affix-tier-num { color: var(--color-default); white-space: nowrap; }
-.affix-tier-name { color: var(--magic-color); white-space: nowrap; }
-.affix-tier-text { color: var(--normal-color); }
+.affix-row[aria-expanded="true"] .affix-more { display: none; }
+
+/* Flavor name (e.g. "Jagged") — muted, out of the scan path. Hidden on the
+   collapsed T1 row, revealed when the family is expanded; always shown on the
+   lower-tier rows (which only appear when expanded). */
+.affix-tname {
+  margin-left: 8px;
+  color: var(--color-default);
+  font-size: 11px;
+  font-style: italic;
+}
+.affix-row .affix-tname { display: none; }
+.affix-row[aria-expanded="true"] .affix-tname { display: inline; }
+
+.affix-tier-row { background: rgba(0,0,0,0.18); }
+.affix-tier-row > td { padding: 3px 8px; font-size: 12.5px; }
 
 /* --- Ascendancy cards (list page) — dark shell tinted to the colorway --- */
 .asc-card {
@@ -985,10 +1084,17 @@ a.lc.unique-type:hover {
 .asc-notable-card:hover {
   border-color: var(--asc-color);
 }
+/* Header banner + name tinted to the ascendancy colorway (not keystone blue) */
+.asc-notable-card .keystone-index-header {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--asc-color) 20%, transparent), rgba(0,0,0,0.35));
+}
+.asc-notable-card .keystone-index-name { color: var(--asc-color); }
 .asc-notable-placeholder {
   background: color-mix(in srgb, var(--asc-color) 25%, transparent);
   color: var(--asc-color);
 }
+/* Granted-skill name (plain span here, not a link) — gem teal */
+.keystone-index-card .skill-grant-link { color: var(--color-gem); }
 
 /* Passive detail popup — keystone/notable, reuses .newItemPopup chrome.
    No banner image (passives have none); the header is a flat bar. */

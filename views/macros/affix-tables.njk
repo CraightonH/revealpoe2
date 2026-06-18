@@ -1,5 +1,6 @@
-{# Two-column rollable-affix browser for a base item. Each family row is an
-   accordion: clicking it reveals a per-tier sub-table (see affix-accordion.js). #}
+{# Two-column rollable-affix browser for a base item. Each family is a tbody whose
+   first row is the top tier (T1, always shown); clicking reveals the lower tiers
+   (T2..Tn) inline in the same column grid (see affix-accordion.js). #}
 
 {% macro _affixSide(title, families, accentVar) %}
 <section class="affix-side">
@@ -8,39 +9,42 @@
   <table class="affix-table">
     <thead>
       <tr>
+        <th class="affix-col-tier">Tier</th>
         <th class="affix-col-mod">Modifier</th>
-        <th class="affix-col-num">Tiers</th>
+        <th class="affix-col-num">iLvl</th>
       </tr>
     </thead>
     {% for f in families %}
-    <tbody class="affix-fam">
-      <tr class="affix-row" tabindex="0" role="button" aria-expanded="false" aria-label="Show tiers for {{ f.type }}">
+    {% set tiers = f.tiers | reverse %}
+    {% set top = tiers[0] %}
+    {% set more = tiers.length - 1 %}
+    <tbody class="affix-fam"{% if f.attrs and f.attrs.length %} data-attr="{{ f.attrs | join(' ') }}"{% endif %}>
+      <tr class="affix-row" tabindex="0" role="button" aria-expanded="false"
+          aria-label="{% if more %}Show {{ more }} lower tier{{ 's' if more != 1 }} for {{ f.type }}{% else %}{{ f.type }} (single tier){% endif %}">
+        <td class="affix-col-tier">
+          <span class="affix-caret{% if not more %} affix-caret--empty{% endif %}" aria-hidden="true">▸</span>
+          <span class="affix-tbadge">T1</span>
+        </td>
         <td class="affix-col-mod">
-          <span class="affix-caret" aria-hidden="true">▸</span>
-          <span class="affix-text">{{ f.genericHtml | safe }}</span>
+          <span class="affix-text">{{ top.html | safe }}</span>
           {% for tag in f.tags %}<span class="affix-tag">{{ tag | replace('_', ' ') }}</span>{% endfor %}
+          {% if more %}<span class="affix-more">+{{ more }} tier{{ 's' if more != 1 }}</span>{% endif %}
+          <span class="affix-tname">{{ top.name }}</span>
         </td>
-        <td class="affix-col-num">{{ f.tiers.length }}</td>
+        <td class="affix-col-num">{{ top.level }}</td>
       </tr>
-      <tr class="affix-tiers" hidden>
-        <td colspan="2">
-          <table class="affix-tier-table">
-            <thead>
-              <tr><th>Tier</th><th>Name</th><th>Stat</th><th class="affix-col-num">iLvl</th></tr>
-            </thead>
-            <tbody>
-              {% for t in f.tiers | reverse %}
-              <tr>
-                <td class="affix-tier-num">T{{ loop.index }}</td>
-                <td class="affix-tier-name">{{ t.name }}</td>
-                <td class="affix-tier-text">{{ t.html | safe }}</td>
-                <td class="affix-col-num">{{ t.level }}</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+      {% for t in tiers %}
+      {% if not loop.first %}
+      <tr class="affix-tier-row" hidden>
+        <td class="affix-col-tier"><span class="affix-tbadge affix-tbadge--lower">T{{ loop.index }}</span></td>
+        <td class="affix-col-mod">
+          <span class="affix-text">{{ t.html | safe }}</span>
+          <span class="affix-tname">{{ t.name }}</span>
         </td>
+        <td class="affix-col-num">{{ t.level }}</td>
       </tr>
+      {% endif %}
+      {% endfor %}
     </tbody>
     {% endfor %}
   </table>

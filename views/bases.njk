@@ -5,17 +5,26 @@
 <div class="page page--column">
   {{ pageHeader('Base Items', 'Browse item bases by class') }}
   {% for group in groups %}
-  <div class="bases-group">
-    <h2 class="bases-group-title">{{ group.label }}</h2>
+  <details class="bases-group" open>
+    <summary class="bases-group-title">{{ group.label }}</summary>
+    {% for section in group.sections %}
+    {% if section.cards.length %}
+    {% if section.title %}<h3 class="bases-subgroup-title">{{ section.title }}</h3>{% endif %}
     <div class="bases-class-grid">
-      {% for cls in group.classes %}
-      <a class="bases-class-card" href="/bases/{{ cls.classSlug }}">
-        <span class="bases-class-name">{{ cls.name }}</span>
-        <span class="bases-class-count">{{ cls.count }}</span>
+      {% for c in section.cards %}
+      <a class="bases-class-card" href="{{ c.href }}"
+         title="{{ c.name }}" aria-label="{{ c.name }} ({{ c.count }} bases)">
+        <span class="bases-class-name">{{ c.name }}</span>
+        {% if c.iconUrl %}
+        <img class="bases-class-icon" src="{{ c.iconUrl }}" alt="" loading="lazy" onerror="this.remove()">
+        {% endif %}
+        <span class="bases-class-count">{{ c.count }}</span>
       </a>
       {% endfor %}
     </div>
-  </div>
+    {% endif %}
+    {% endfor %}
+  </details>
   {% endfor %}
 </div>
 {% endblock %}

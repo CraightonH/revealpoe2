@@ -15,13 +15,24 @@
   <div class="keystone-index-grid">
     {% for n in a.notables %}
     <a class="keystone-index-card asc-notable-card" href="/passive/{{ n.id }}" data-card-url="/passive/{{ n.id }}/card">
-      {% if n.iconUrl %}
-      <img src="{{ n.iconUrl }}" alt="{{ n.name }}" class="keystone-index-icon"
-           onerror="this.style.visibility='hidden'">
-      {% else %}
-      <div class="keystone-index-icon keystone-index-placeholder asc-notable-placeholder">{{ n.name[0] }}</div>
-      {% endif %}
-      <span class="keystone-index-name">{{ n.name }}</span>
+      <div class="keystone-index-header"><span class="keystone-index-name">{{ n.name }}</span></div>
+      <div class="keystone-index-main">
+        {% if n.iconUrl %}
+        <img src="{{ n.iconUrl }}" alt="{{ n.name }}" class="keystone-index-icon" loading="lazy"
+             onerror="this.style.visibility='hidden'">
+        {% else %}
+        <div class="keystone-index-icon keystone-index-placeholder asc-notable-placeholder">{{ n.name[0] }}</div>
+        {% endif %}
+        <div class="keystone-index-body">
+          {% if n.grantedSkill %}
+          <div class="explicitMod">
+            {%- if n.grantedSkill.iconUrl %}<img loading="lazy" src="{{ n.grantedSkill.iconUrl }}" class="grantsSkill" alt="" onerror="this.style.display='none'">{% endif -%}
+            Grants Skill: <span class="skill-grant-link">{{ n.grantedSkill.name }}</span>
+          </div>
+          {% endif %}
+          {% for line in n.statLines %}<div class="explicitMod">{{ line | safe }}</div>{% endfor %}
+        </div>
+      </div>
     </a>
     {% endfor %}
   </div>

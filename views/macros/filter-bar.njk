@@ -1,28 +1,47 @@
 {#
   filterBar(groups, target, section)
 
-  groups  – array of { key, label?, match?, options: [{ value, label, color?, default? }] }
+  groups  – array of { key, label?, match?, options: [{ value, label, color?, default?, icon? }] }
+             icon    – optional image URL; renders an icon-only button (with the
+                       label as tooltip/aria-label and a text fallback if the
+                       image fails to load).
              key     – data attribute name (e.g. "req" → data-req)
              match   – "all" (AND, default) narrows; "any" (OR) widens. Use "any"
                        for single-valued attrs like Type/Origin, "all" for
                        multi-valued narrowing like Requires.
+             single  – optional; when true only one option in the group can be
+                       active at a time (radio-like). Clicking the active option
+                       clears it (back to no filter).
              color   – optional gem color token (r/g/b/w) for tinted active state
              default – optional; when true the option starts selected (filter
                        applied on page load)
+             active  – optional group-level value; the option whose value matches
+                       starts selected (e.g. pre-select from a URL param)
   target  – CSS selector for the items to show/hide (e.g. ".gem-browse-card")
   section – CSS selector for parent containers to hide when all children are filtered (optional)
+  align   – "center" centers the bar and its buttons on the page (default: left)
 #}
-{% macro filterBar(groups, target, section=null) %}
-<div class="filter-bar"
+{% macro filterBar(groups, target, section=null, align=null) %}
+<div class="filter-bar{% if align == 'center' %} filter-bar--center{% endif %}"
      data-target="{{ target }}"
      {% if section %}data-section="{{ section }}"{% endif %}>
   {% for group in groups %}
-  <div class="filter-group" data-key="{{ group.key }}"{% if group.match %} data-match="{{ group.match }}"{% endif %}>
+  <div class="filter-group" data-key="{{ group.key }}"{% if group.match %} data-match="{{ group.match }}"{% endif %}{% if group.single %} data-single{% endif %}>
     {% if group.label %}<span class="filter-label">{{ group.label }}</span>{% endif %}
     {% for opt in group.options %}
+    {% if opt.icon %}
     <button type="button"
-            class="filter-btn{% if opt.color %} filter-btn--{{ opt.color }}{% endif %}{% if opt.default %} is-active{% endif %}"
+            class="filter-btn filter-btn--icon{% if opt.color %} filter-btn--{{ opt.color }}{% endif %}{% if opt.default or opt.value == group.active %} is-active{% endif %}"
+            data-value="{{ opt.value }}" title="{{ opt.label }}" aria-label="{{ opt.label }}">
+      <span class="filter-btn-label">{{ opt.label }}</span>
+      <img class="filter-btn-icon" src="{{ opt.icon }}" alt="" loading="lazy"
+           onerror="this.remove(); this.parentNode.classList.add('filter-btn--noicon')">
+    </button>
+    {% else %}
+    <button type="button"
+            class="filter-btn{% if opt.color %} filter-btn--{{ opt.color }}{% endif %}{% if opt.default or opt.value == group.active %} is-active{% endif %}"
             data-value="{{ opt.value }}">{{ opt.label }}</button>
+    {% endif %}
     {% endfor %}
   </div>
   {% endfor %}

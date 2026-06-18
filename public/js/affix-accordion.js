@@ -1,13 +1,23 @@
-// Affix family rows are accordions: clicking one toggles the hidden tier
-// sub-table that follows it. Multiple rows can stay open at once. Tiers are
-// already in the DOM (server-rendered), so there is no network round-trip.
+// Affix families are accordions: the always-visible first row is the top tier
+// (T1); clicking it toggles the lower-tier rows (T2..Tn) that follow it in the
+// same tbody. Tiers are server-rendered, so there is no network round-trip.
 (function () {
+  function lowerRows(row) {
+    var rows = [];
+    var el = row.nextElementSibling;
+    while (el && el.classList.contains('affix-tier-row')) {
+      rows.push(el);
+      el = el.nextElementSibling;
+    }
+    return rows;
+  }
+
   function toggle(row) {
-    var tiers = row.nextElementSibling;
-    if (!tiers || !tiers.classList.contains('affix-tiers')) return;
+    var rows = lowerRows(row);
+    if (!rows.length) return;
     var open = row.getAttribute('aria-expanded') === 'true';
     row.setAttribute('aria-expanded', open ? 'false' : 'true');
-    tiers.hidden = open;
+    rows.forEach(function (r) { r.hidden = open; });
   }
 
   document.addEventListener('click', function (e) {

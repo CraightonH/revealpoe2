@@ -1,6 +1,6 @@
 import { buildGemViewModel, listGems, listGemCards } from '../data/gems.js';
-import { buildUniqueViewModel, listUniqueCards } from '../data/uniques.js';
-import { listItemClasses, getItemClass, buildBaseItemViewModel } from '../data/baseItems.js';
+import { buildUniqueViewModel, listUniqueCards, listUniqueClassFilters } from '../data/uniques.js';
+import { listBaseNav, getItemClass, buildBaseItemViewModel } from '../data/baseItems.js';
 import { listModGroups, getModGroup } from '../data/mods.js';
 import { listKeystones, getKeystone, listNotables, getNotable, getPassiveNode, listAscendancies, getAscendancy } from '../data/passiveTree.js';
 
@@ -44,18 +44,22 @@ export function registerPages(app) {
 
   app.get('/uniques', (_req, res) => {
     const uniques = listUniqueCards().sort((a, b) => a.name.localeCompare(b.name));
-    res.render('uniques.njk', { uniques });
+    const classFilters = listUniqueClassFilters();
+    res.render('uniques.njk', { uniques, classFilters });
   });
 
   detailRoute(app, '/unique/:slug', buildUniqueViewModel, 'unique.njk', 'vm');
   cardRoute(app, '/unique/:slug/card', buildUniqueViewModel, 'partials/unique-card-fragment.njk');
 
   app.get('/bases', (_req, res) => {
-    const groups = listItemClasses();
-    res.render('bases.njk', { groups });
+    res.render('bases.njk', { groups: listBaseNav() });
   });
 
-  detailRoute(app, '/bases/:classSlug', getItemClass, 'bases-class.njk', 'cls');
+  app.get('/bases/:classSlug', (req, res) => {
+    const cls = getItemClass(req.params.classSlug);
+    if (!cls) return res.status(404).render('home.njk', { notFound: req.params.classSlug });
+    res.render('bases-class.njk', { cls, activeAttr: req.query.attr || null });
+  });
   detailRoute(app, '/base/:slug', buildBaseItemViewModel, 'base-item.njk', 'vm');
   cardRoute(app, '/base/:slug/card', buildBaseItemViewModel, 'partials/base-card-fragment.njk');
 

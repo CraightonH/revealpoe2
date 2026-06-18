@@ -3,7 +3,7 @@ import { loadJson, listDataDir } from './loader.js';
 import { slugify } from './slug.js';
 import { ddsUrl } from './images.js';
 import { getGem } from './gems.js';
-import { getBaseByName } from './baseItems.js';
+import { getBaseByName, listItemClasses } from './baseItems.js';
 import { parseLocalMods, computeProperties } from './itemStats.js';
 import { getFlavourLines } from './flavour.js';
 import { hasDefinition } from './keywordDefs.js';
@@ -168,6 +168,65 @@ export function listUniques() {
   return [...index().values()];
 }
 
+// Canonical item-class lookup (clean in-game class names + stable slugs),
+// keyed by class slug. Built from the base-item layer so unique filters line up
+// with the /bases class taxonomy. Lazily memoized.
+let _canonClassBySlug = null;
+function canonClassBySlug() {
+  if (_canonClassBySlug) return _canonClassBySlug;
+  _canonClassBySlug = new Map();
+  for (const group of listItemClasses()) {
+    for (const c of group.classes) {
+      _canonClassBySlug.set(c.classSlug, { label: c.name, slug: c.classSlug, iconUrl: c.iconUrl });
+    }
+  }
+  return _canonClassBySlug;
+}
+
+// Resolve a unique's filterable item class. Prefer the base item's canonical
+// class (clean plural name, e.g. "Two Hand Maces"); fall back to the unique's
+// own item_class for bases that aren't browsable (charms, flasks, jewels) or
+// whose base name doesn't resolve, normalizing to the canonical class when one
+// matches by slug.
+function classifyUnique(baseRecord, rawItemClass) {
+  if (baseRecord) return { label: baseRecord.className, slug: baseRecord.classSlug };
+  const slug = slugify(rawItemClass);
+  return canonClassBySlug().get(slug) ?? { label: rawItemClass, slug };
+}
+
+// Distinct item-class filter options present among the uniques, ordered by the
+// canonical /bases group order (Weapons → Armour → Accessories), with any
+// non-browsable extras (Charm, Flask, Jewel, …) appended alphabetically.
+export function listUniqueClassFilters() {
+  const canon = canonClassBySlug();
+  const present = new Map(); // slug -> { value, label, icon }  (filterBar option schema)
+  for (const u of index().values()) {
+    const { label, slug } = classifyUnique(getBaseByName(u.base), u.itemClass);
+    if (!present.has(slug)) {
+      // Generic class glyph: the canonical base-item rep icon when the class is
+      // browsable, else fall back to a member unique's own art (charms, flasks,
+      // jewels — classes with no browsable base).
+      present.set(slug, { value: slug, label, icon: canon.get(slug)?.iconUrl ?? u.iconUrl ?? null });
+    } else if (!present.get(slug).icon && u.iconUrl) {
+      present.get(slug).icon = u.iconUrl;
+    }
+  }
+  const ordered = [];
+  const seen = new Set();
+  for (const group of listItemClasses()) {
+    for (const c of group.classes) {
+      if (present.has(c.classSlug)) {
+        ordered.push(present.get(c.classSlug));
+        seen.add(c.classSlug);
+      }
+    }
+  }
+  const extras = [...present.values()]
+    .filter((e) => !seen.has(e.value))
+    .sort((a, b) => a.label.localeCompare(b.label));
+  return [...ordered, ...extras];
+}
+
 // Condensed view models for the /uniques browse grid: enough to render the
 // at-a-glance card (name, base, icon, inventory size for the icon box, and the
 // parsed implicit/explicit mod lines). Lighter than the full detail VM — no
@@ -175,6 +234,7 @@ export function listUniques() {
 export function listUniqueCards() {
   return [...index().values()].map((u) => {
     const baseRecord = getBaseByName(u.base);
+    const itemClass = classifyUnique(baseRecord, u.itemClass);
     const parsed = u.stats.map(parseStatLine);
     // Derived item stats (defences, damage) — base properties with the unique's
     // local mods applied, same as the full tooltip. Keyword-linked labels.
@@ -186,6 +246,8 @@ export function listUniqueCards() {
       slug: u.slug,
       name: u.name,
       base: u.base,
+      itemClass: itemClass.label,
+      itemClassSlug: itemClass.slug,
       iconUrl: u.iconUrl,
       inventorySize: baseRecord?.inventorySize ?? null,
       properties,

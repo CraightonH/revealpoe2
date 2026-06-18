@@ -1,10 +1,22 @@
 {% extends "base.njk" %}
 {% from "macros/nav.njk" import pageHeader %}
+{% from "macros/filter-bar.njk" import filterBar %}
 {% from "macros/unique-card.njk" import uniqueListCard %}
 {% block title %}Unique Items — PoE2 Wiki{% endblock %}
 {% block content %}
 <div class="page page--column">
   {{ pageHeader('Unique Items', uniques.length ~ ' unique items', '--color-unique') }}
+
+  {{ filterBar(
+    groups=[{
+      key: "itemclass",
+      match: "any",
+      options: classFilters
+    }],
+    target=".bases-list-card--unique",
+    align="center"
+  ) }}
+
   <div class="bases-list-grid">
     {% for u in uniques %}
     {{ uniqueListCard(u) }}

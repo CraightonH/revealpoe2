@@ -1,5 +1,6 @@
 {% extends "base.njk" %}
 {% from "macros/nav.njk" import breadcrumb, pageHeader %}
+{% from "macros/filter-bar.njk" import filterBar %}
 {% from "macros/affix-tables.njk" import affixTables %}
 {% from "macros/base-card.njk" import baseListCard %}
 {% block title %}{{ cls.name }} — Base Items — PoE2 Wiki{% endblock %}
@@ -9,12 +10,33 @@
     { label: 'Base Items', href: '/bases' },
     { label: cls.name }
   ]) }}
-  {{ pageHeader(cls.name, cls.bases.length ~ ' base items') }}
-  <div class="bases-list-grid">
-    {% for b in cls.bases %}
-    {{ baseListCard(b) }}
-    {% endfor %}
-  </div>
+  {{ pageHeader(cls.name) }}
+  {% if cls.attrSubtypes.length %}
+  {{ filterBar(
+    groups=[{ key: "attr", match: "any", single: true, active: activeAttr, options: cls.attrSubtypes }],
+    target=".bases-list-card, .affix-fam",
+    align="center"
+  ) }}
+  {% endif %}
+  {% if cls.topBases.length %}
+  <details class="bases-group" open>
+    <summary class="bases-group-title">Highest-Tier Bases <span class="bases-group-count">{{ cls.topBases.length }}</span></summary>
+    <p class="bases-top-hint">The endgame base of each implicit archetype — what matters once you're crafting.</p>
+    <div class="bases-list-grid">
+      {% for b in cls.topBases %}
+      {{ baseListCard(b) }}
+      {% endfor %}
+    </div>
+  </details>
+  {% endif %}
+  <details class="bases-group">
+    <summary class="bases-group-title">All Base Items <span class="bases-group-count">{{ cls.bases.length }}</span></summary>
+    <div class="bases-list-grid">
+      {% for b in cls.bases %}
+      {{ baseListCard(b) }}
+      {% endfor %}
+    </div>
+  </details>
   {% if cls.affixes and (cls.affixes.prefix.length or cls.affixes.suffix.length) %}
   <section class="affix-section">
     <h2 class="affix-section-title">Rollable Affixes</h2>

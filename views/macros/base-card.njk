@@ -1,7 +1,7 @@
 {# Condensed card for the /bases/:class grid: one key stat per line with the
    same keyword-linked labels unique cards use; full tooltip on hover. #}
 {% macro baseListCard(b) %}
-<a class="bases-list-card" href="/base/{{ b.slug }}" data-card-url="/base/{{ b.slug }}/card">
+<a class="bases-list-card" href="/base/{{ b.slug }}" data-card-url="/base/{{ b.slug }}/card"{% if b.attr %} data-attr="{{ b.attr }}"{% endif %}>
   <div class="bases-list-header"><span class="bases-list-name">{{ b.name }}</span></div>
   <div class="bases-list-main">
     {% set sizeClass = 'bases-list-icon--' ~ b.inventorySize.w ~ 'x' ~ b.inventorySize.h %}

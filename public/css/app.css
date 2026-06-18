@@ -374,9 +374,18 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
 
 .filter-group {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 4px;
 }
+
+/* Centered variant: center the bar on the page and center its buttons. */
+.filter-bar--center {
+  margin-left: auto;
+  margin-right: auto;
+  justify-content: center;
+}
+.filter-bar--center .filter-group { justify-content: center; }
 
 .filter-label {
   font-size: 11px;
@@ -399,6 +408,26 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
 }
 
 .filter-btn:hover { border-color: var(--color-normal); }
+
+/* Icon buttons: label stacked above a generic class glyph, so each option is
+   readable at a glance without waiting for the tooltip. If the icon fails to
+   load the label remains and the button collapses to a plain text chip. */
+.filter-btn--icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 8px;
+  line-height: normal;
+}
+.filter-btn-icon {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  display: block;
+}
+.filter-btn--icon .filter-btn-label { display: block; }
+.filter-btn--icon.filter-btn--noicon { padding: 3px 10px; }
 
 .filter-btn--r.is-active { border-color: var(--color-gem-r); color: var(--color-gem-r); background: rgba(196,64,64,0.12); }
 .filter-btn--g.is-active { border-color: var(--color-gem-g); color: var(--color-gem-g); background: rgba(74,173,74,0.12); }

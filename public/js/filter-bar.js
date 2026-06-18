@@ -3,8 +3,11 @@
 //
 // HTML contract:
 //   .filter-bar[data-target][data-section?]
-//     .filter-group[data-key][data-match?]   (match: "all" (default) | "any")
+//     .filter-group[data-key][data-match?][data-single?]  (match: "all" (default) | "any")
 //       .filter-btn[data-value]  (toggleable)
+//
+// data-single: only one button in the group may be active at a time (radio-like);
+//   clicking the active button clears it.
 //
 // Filter logic (per .filter-bar):
 //   - For each .filter-group, collect its active (selected) values.
@@ -26,7 +29,17 @@
     bar.addEventListener('click', function (e) {
       var btn = e.target.closest('.filter-btn');
       if (!btn) return;
-      btn.classList.toggle('is-active');
+      var group = btn.closest('.filter-group');
+      if (group && group.dataset.single !== undefined) {
+        // Radio-like: clear the group, then re-select unless we just cleared
+        // the button that was already active.
+        var wasActive = btn.classList.contains('is-active');
+        group.querySelectorAll('.filter-btn.is-active')
+             .forEach(function (b) { b.classList.remove('is-active'); });
+        if (!wasActive) btn.classList.add('is-active');
+      } else {
+        btn.classList.toggle('is-active');
+      }
       applyFilters();
     });
 
