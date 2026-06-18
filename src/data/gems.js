@@ -149,6 +149,42 @@ export function listGems() {
   });
 }
 
+// Condensed view models for the /gems browse grid: the at-a-glance fields
+// (type/tags, requirements, and the skill's effect lines) plus the filter
+// metadata. Builds sections like the full VM — cheap enough across ~1000 gems
+// (~70ms) — but skips quality lines and per-section labels.
+export function listGemCards() {
+  const skills = loadJson(`${REPOE}/skills.json`);
+  return [...index().entries()].map(([slug, gem]) => {
+    const skill = skills[gem.grants_skills?.[0]] ?? null;
+    const req = reqKeys(gem.requirement_weights);
+    const typeLine =
+      gem.gem_type === 'spirit'
+        ? (TYPE_LABEL.spirit ?? 'Spirit')
+        : (skillTypeLine(skill) ?? (TYPE_LABEL[gem.gem_type] ?? 'Skill'));
+    const tagTokens = displayTagTokens(gem.tags, [typeLine]);
+    const effect = buildSections(skill, GEM_LEVEL_CAP)
+      .flatMap((s) => s.lines)
+      .map((t) => renderGameText(t, hasDefinition));
+    return {
+      slug,
+      name: gem.base_item.display_name,
+      cardColor: cardColor(req, gem.color),
+      gemType: gem.gem_type,
+      origin: gem.origin,
+      req,
+      iconUrl: ddsUrl(gem.icon_dds_file),
+      typeLineHtml: renderGameText(`[${typeLine}]`, hasDefinition),
+      tags: tagTokens.map((t) => renderGameText(t, hasDefinition)),
+      requirements: [
+        `Level (${CHAR_LEVEL_RANGE.min}—${CHAR_LEVEL_RANGE.max})`,
+        ...attributeRequirements(gem.requirement_weights),
+      ].map((r) => linkifyRequirement(r, hasDefinition)),
+      effect,
+    };
+  });
+}
+
 export function getGem(slug) {
   return index().get(slug) ?? null;
 }

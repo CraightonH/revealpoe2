@@ -1,4 +1,4 @@
-import { buildGemViewModel, listGems } from '../data/gems.js';
+import { buildGemViewModel, listGems, listGemCards } from '../data/gems.js';
 import { buildUniqueViewModel, listUniqueCards } from '../data/uniques.js';
 import { listItemClasses, getItemClass, buildBaseItemViewModel } from '../data/baseItems.js';
 import { listModGroups, getModGroup } from '../data/mods.js';
@@ -32,7 +32,7 @@ export function registerPages(app) {
   });
 
   app.get('/gems', (_req, res) => {
-    const gems = listGems().sort((a, b) => a.name.localeCompare(b.name));
+    const gems = listGemCards().sort((a, b) => a.name.localeCompare(b.name));
     const active = gems.filter((g) => g.gemType === 'active');
     const support = gems.filter((g) => g.gemType === 'support');
     const spirit = gems.filter((g) => g.gemType === 'spirit');

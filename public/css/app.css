@@ -173,25 +173,28 @@ body {
 .gem-list-heading--support { color: var(--color-prop); }
 .gem-browse-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 8px;
+  /* Cards size to their own content rather than stretching to the row. */
+  align-items: start;
 }
+/* Condensed gem card: a gem header banner on top, then icon + a body of
+   type/tags, requirements and the skill description. Full tooltip on hover. */
 .gem-browse-card {
   display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 5px 8px;
+  flex-direction: column;
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: 4px;
   text-decoration: none;
   color: var(--color-normal);
-  font-size: 12px;
+  font-family: var(--font-smallcaps);
   transition: border-color 0.12s;
   overflow: hidden;
   position: relative;
 }
 .gem-browse-card:hover { border-color: var(--card-hover-border); }
+/* Gem-color spine down the left edge (single color, or a hybrid gradient). */
 .gem-browse-card--r { border-left: 2px solid var(--color-gem-r); }
 .gem-browse-card--g { border-left: 2px solid var(--color-gem-g); }
 .gem-browse-card--b { border-left: 2px solid var(--color-gem-b); }
@@ -205,20 +208,69 @@ body {
   top: 0;
   bottom: 0;
   width: 2px;
+  z-index: 2;
 }
 .gem-browse-card--rg::before { background: linear-gradient(to bottom, var(--color-gem-r), var(--color-gem-g)); }
 .gem-browse-card--rb::before { background: linear-gradient(to bottom, var(--color-gem-r), var(--color-gem-b)); }
 .gem-browse-card--gb::before { background: linear-gradient(to bottom, var(--color-gem-g), var(--color-gem-b)); }
+
+/* In-game gem header banner (GemHoverTitle texture, left-anchored ornate
+   corner over a dark fill) with the name in white. */
+.gem-browse-header {
+  background: #0c0d0d url(https://image.ggpk.exposed/poe2/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SmartHover/GemHoverTitle.dds?format=webp) left center / auto 100% no-repeat;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 14px;
+  border-bottom: 1px solid rgba(0,0,0,0.6);
+}
+.gem-browse-name {
+  color: #fff;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gem-browse-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 11px;
+}
 .gem-browse-icon {
-  width: 24px;
-  height: 24px;
+  width: 44px;
+  height: 44px;
   object-fit: contain;
   flex-shrink: 0;
 }
-.gem-browse-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.gem-browse-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+/* Type + tags line; keywords keep the muted color, dotted underline marks them */
+.gem-browse-tags {
+  font-size: 11.5px;
+  color: var(--color-default);
+  line-height: 1.3;
+}
+.gem-browse-tags .kw { color: inherit; }
+.gem-browse-req {
+  font-size: 11px;
+  color: var(--color-default);
+}
+.gem-browse-req .kw { color: inherit; }
+/* Skill effect lines — reuse the tooltip .explicitMod (magic blue, white
+   values) but left-align and tighten for the dense card. */
+.gem-browse-effect { display: flex; flex-direction: column; gap: 2px; }
+.gem-browse-card .explicitMod {
+  text-align: left;
+  padding: 0;
+  font-size: 11.5px;
+  line-height: 1.35;
 }
 
 .page { padding: 24px; display: flex; justify-content: center; }

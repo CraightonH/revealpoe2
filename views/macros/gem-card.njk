@@ -4,13 +4,28 @@
   <div class="gem-browse-grid">
     {% for g in gems %}
     <a class="gem-browse-card gem-browse-card--{{ g.cardColor }}" href="/gem/{{ g.slug }}"
+       data-card-url="/gem/{{ g.slug }}/card"
        data-type="{{ modifier }}"
        data-origin="{{ g.origin }}"
        data-req="{{ g.req | join(' ') }}">
-      {% if g.iconUrl %}
-      <img class="gem-browse-icon" src="{{ g.iconUrl }}" alt="{{ g.name }}" onerror="this.style.visibility='hidden'">
-      {% endif %}
-      <span class="gem-browse-name">{{ g.name }}</span>
+      <div class="gem-browse-header"><span class="gem-browse-name">{{ g.name }}</span></div>
+      <div class="gem-browse-main">
+        {% if g.iconUrl %}
+        <img class="gem-browse-icon" src="{{ g.iconUrl }}" alt="{{ g.name }}" loading="lazy" onerror="this.style.visibility='hidden'">
+        {% endif %}
+        <div class="gem-browse-body">
+          <div class="gem-browse-tags">{{ g.typeLineHtml | safe }}{% if g.tags.length %} · {{ g.tags | join(', ') | safe }}{% endif %}</div>
+          {% if g.requirements.length %}
+          <div class="gem-browse-req">Requires: {{ g.requirements | join(', ') | safe }}</div>
+          {% endif %}
+          {% if g.effect.length %}
+          <div class="separator"></div>
+          <div class="gem-browse-effect">
+            {% for line in g.effect %}<div class="explicitMod">{{ line | safe }}</div>{% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
     </a>
     {% endfor %}
   </div>
