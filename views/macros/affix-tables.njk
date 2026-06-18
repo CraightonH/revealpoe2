@@ -27,7 +27,7 @@
         </td>
         <td class="affix-col-mod">
           <span class="affix-text">{{ top.html | safe }}</span>
-          {% for tag in f.tags %}<span class="affix-tag">{{ tag | replace('_', ' ') }}</span>{% endfor %}
+          {% for tag in f.tags %}<span class="affix-tag affix-tag--{{ tag }}">{{ tag | replace('_', ' ') }}</span>{% endfor %}
           {% if more %}<span class="affix-more">+{{ more }} tier{{ 's' if more != 1 }}</span>{% endif %}
           <span class="affix-tname">{{ top.name }}</span>
         </td>

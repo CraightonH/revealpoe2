@@ -1020,19 +1020,72 @@ details[open] > .bases-group-title::before {
   color: var(--color-default);
 }
 
-.affix-text { color: var(--normal-color); }
+/* pre-line honors the \n between hybrid stat lines (e.g. Ev/ES + Ev + max ES),
+   so each rolls onto its own line instead of running together inline. */
+.affix-text { color: var(--normal-color); white-space: pre-line; }
 .affix-tag {
+  --tag: var(--magic-color); /* fallback for any uncolored tag */
   display: inline-block;
   margin-left: 5px;
   padding: 0 6px;
   border-radius: 8px;
-  background: rgba(136, 136, 255, 0.14);
-  color: var(--magic-color);
+  background: color-mix(in srgb, var(--tag) 16%, transparent);
+  color: var(--tag);
   font-size: 10.5px;
   text-transform: uppercase;
   letter-spacing: 0.4px;
   vertical-align: 1px;
 }
+
+/* Consistent tag colorways — a tag's hue is the same on every affix table.
+   Anchored to the wiki's element hues (red fire / blue cold / yellow lightning
+   / magenta chaos), brightened for legible pills on dark surfaces. Defence and
+   resource tags follow their attribute colorway (armour=STR, evasion=DEX,
+   energy_shield=INT). Tags may share a color where they read as one family
+   (e.g. an element and its resistance). */
+/* Elements + their resistances */
+.affix-tag--fire,      .affix-tag--fire_resistance      { --tag: #e0563c; }
+.affix-tag--cold,      .affix-tag--cold_resistance      { --tag: #5aa6e0; }
+.affix-tag--lightning, .affix-tag--lightning_resistance { --tag: #e8c83c; }
+.affix-tag--chaos,     .affix-tag--chaos_resistance     { --tag: #d050b0; }
+.affix-tag--resistance                                  { --tag: #d8a24a; }
+/* "elemental" spans all four elements — so it gets all four (plus) as rainbow
+   text. background-clip:text clips the gradient to the glyphs, so this trades
+   the pill fill for multicolor letters. */
+.affix-tag--elemental, .affix-tag--elemental_resistance {
+  background: linear-gradient(90deg, #e0563c, #e8c83c 28%, #84c84a 48%, #5aa6e0 68%, #8f86e8 84%, #d050b0);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+/* Physical + offense */
+.affix-tag--physical { --tag: #c8b89a; }
+.affix-tag--damage   { --tag: #e06a5a; }
+.affix-tag--attack   { --tag: #d88a4a; }
+.affix-tag--caster   { --tag: #8f86e8; }
+.affix-tag--critical, .affix-tag--caster_critical { --tag: #f0d24a; }
+.affix-tag--speed,    .affix-tag--caster_speed    { --tag: #5ccfa0; }
+.affix-tag--ailment  { --tag: #b070d8; }
+.affix-tag--bleed    { --tag: #c43a2e; }
+.affix-tag--poison   { --tag: #84c84a; }
+/* Defences — attribute colorways */
+.affix-tag--defences      { --tag: #9aa6b2; }
+.affix-tag--armour        { --tag: #c87a4a; }
+.affix-tag--evasion       { --tag: #6cc05a; }
+.affix-tag--energy_shield { --tag: #5ab0d8; }
+.affix-tag--block         { --tag: #8ba0b4; }
+/* Core resources + attributes */
+.affix-tag--life, .affix-tag--flat_life_regen { --tag: #e06a6a; }
+.affix-tag--mana      { --tag: #5a86e0; }
+.affix-tag--resource  { --tag: #7fb0b8; }
+.affix-tag--attribute { --tag: #b894d8; }
+/* Misc */
+.affix-tag--minion { --tag: #a8c878; }
+.affix-tag--gem    { --tag: #36c0b8; }
+.affix-tag--aura   { --tag: #58c8c0; }
+.affix-tag--flask  { --tag: #d89a4a; }
+.affix-tag--charm  { --tag: #e088b8; }
+.affix-tag--drop   { --tag: #e0c84a; }
 
 /* "+N tiers" affordance on the collapsed T1 row; hidden once expanded. */
 .affix-more {

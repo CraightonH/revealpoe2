@@ -48,8 +48,8 @@ describe('passiveTree', () => {
   });
 
   describe('listNotables', () => {
-    it('returns 974 non-ascendancy notables', () => {
-      assert.equal(listNotables().length, 974);
+    it('returns 984 non-ascendancy notables', () => {
+      assert.equal(listNotables().length, 984);
     });
     it('each notable has id, name, statLines', () => {
       const n = listNotables()[0];
