@@ -1,0 +1,58 @@
+{# Two-column rollable-affix browser for a base item. Each family row is an
+   accordion: clicking it reveals a per-tier sub-table (see affix-accordion.js). #}
+
+{% macro _affixSide(title, families, accentVar) %}
+<section class="affix-side">
+  <h2 class="affix-side-title" style="color:var({{ accentVar }})">{{ title }} <span class="affix-side-count">{{ families.length }}</span></h2>
+  {% if families.length %}
+  <table class="affix-table">
+    <thead>
+      <tr>
+        <th class="affix-col-mod">Modifier</th>
+        <th class="affix-col-num">Tiers</th>
+      </tr>
+    </thead>
+    {% for f in families %}
+    <tbody class="affix-fam">
+      <tr class="affix-row" tabindex="0" role="button" aria-expanded="false" aria-label="Show tiers for {{ f.type }}">
+        <td class="affix-col-mod">
+          <span class="affix-caret" aria-hidden="true">▸</span>
+          <span class="affix-text">{{ f.genericHtml | safe }}</span>
+          {% for tag in f.tags %}<span class="affix-tag">{{ tag | replace('_', ' ') }}</span>{% endfor %}
+        </td>
+        <td class="affix-col-num">{{ f.tiers.length }}</td>
+      </tr>
+      <tr class="affix-tiers" hidden>
+        <td colspan="2">
+          <table class="affix-tier-table">
+            <thead>
+              <tr><th>Tier</th><th>Name</th><th>Stat</th><th class="affix-col-num">iLvl</th></tr>
+            </thead>
+            <tbody>
+              {% for t in f.tiers | reverse %}
+              <tr>
+                <td class="affix-tier-num">T{{ loop.index }}</td>
+                <td class="affix-tier-name">{{ t.name }}</td>
+                <td class="affix-tier-text">{{ t.html | safe }}</td>
+                <td class="affix-col-num">{{ t.level }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </td>
+      </tr>
+    </tbody>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="affix-empty">No {{ title | lower }} roll on this base.</p>
+  {% endif %}
+</section>
+{% endmacro %}
+
+{% macro affixTables(affixes) %}
+<div class="affix-tables">
+  {{ _affixSide('Prefix', affixes.prefix, '--magic-color') }}
+  {{ _affixSide('Suffix', affixes.suffix, '--magic-color') }}
+</div>
+{% endmacro %}

@@ -491,21 +491,33 @@ a.lc.unique-type:hover {
   text-overflow: ellipsis;
 }
 
-/* Normal item card (base items) */
+/* Base items have no rarity tint — a soft white glow/border instead of the
+   reddish default the unique cards use. */
+.NormalPopup {
+  --card-border: rgba(200,200,200,0.45);
+  --card-glow: rgba(255,255,255,0.35);
+}
+
+/* Normal item card (base items) — the genuine in-game white item header, the
+   same ItemsHeaderWhite{Left,Middle,Right}.dds 3-slice texture poe2db re-hosts,
+   mirroring the unique header treatment above. Corners scale to header height;
+   the middle tiles across, layered twice at a half-tile offset so each copy
+   fills the other's 1px transparent trim seam. */
 .NormalPopup .itemHeader.doubleLine {
-  background: linear-gradient(180deg,
-    rgba(30,30,30,0.95) 0%,
-    rgba(15,15,15,0.98) 100%);
-  border-bottom: 1px solid rgba(139,139,139,0.3);
-  height: auto;
-  min-height: 54px;
-  padding: 8px 14px;
+  background:
+    url(https://image.ggpk.exposed/poe2/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderWhiteLeft.dds?format=webp) top left no-repeat,
+    url(https://image.ggpk.exposed/poe2/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderWhiteRight.dds?format=webp) top right no-repeat,
+    url(https://image.ggpk.exposed/poe2/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderWhiteMiddle.dds?format=webp) 0 top repeat-x,
+    url(https://image.ggpk.exposed/poe2/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderWhiteMiddle.dds?format=webp) 24px top repeat-x;
+  background-size: auto 100%, auto 100%, auto 100%, auto 100%;
+  height: 56px;
+  padding: 4px 14px;
   justify-content: center;
   text-align: center;
 }
 
 .NormalPopup .normal-name {
-  color: var(--normal-color);
+  color: #fff;
   padding: 0;
   text-align: center;
 }
@@ -514,6 +526,13 @@ a.lc.unique-type:hover {
   color: var(--color-default);
   padding: 0;
   font-size: 13px;
+  text-align: center;
+}
+
+/* Stats, requirements + tags centered to match the unique card layout */
+.NormalPopup .property,
+.NormalPopup .requirements,
+.NormalPopup .default {
   text-align: center;
 }
 
@@ -734,6 +753,118 @@ a.lc.unique-type:hover {
   text-align: right;
   white-space: nowrap;
 }
+
+/* --- Rollable affixes (item-class pages) --------------------------------- */
+.base-affix-pointer {
+  color: var(--color-default);
+  font-size: 12.5px;
+  margin-top: 12px;
+}
+.affix-section {
+  margin-top: 28px;
+}
+.affix-section-title {
+  font-family: var(--font-smallcaps);
+  font-size: 20px;
+  color: var(--normal-color);
+  margin: 0 0 2px;
+}
+.affix-section-hint {
+  color: var(--color-default);
+  font-size: 12.5px;
+  margin: 0 0 14px;
+}
+
+.affix-tables {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .affix-tables { grid-template-columns: 1fr; }
+}
+
+.affix-side-title {
+  font-family: var(--font-smallcaps);
+  font-size: 16px;
+  margin: 0 0 6px;
+}
+.affix-side-count {
+  color: var(--color-default);
+  font-size: 13px;
+  margin-left: 4px;
+}
+.affix-empty {
+  color: var(--color-default);
+  font-size: 13px;
+  font-style: italic;
+}
+
+.affix-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-smallcaps);
+  font-size: 13px;
+}
+.affix-table > thead th {
+  color: var(--prop-color);
+  font-size: 11.5px;
+  font-weight: normal;
+  text-align: left;
+  padding: 3px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.affix-col-num { text-align: right; white-space: nowrap; width: 1%; }
+
+.affix-fam { border-bottom: 1px solid rgba(255,255,255,0.05); }
+.affix-row { cursor: pointer; }
+.affix-row > td { padding: 6px 8px; vertical-align: top; }
+.affix-row:hover { background: var(--bg-surface); }
+.affix-row:focus-visible { outline: 1px solid var(--magic-color); outline-offset: -1px; }
+
+.affix-caret {
+  display: inline-block;
+  color: var(--color-default);
+  font-size: 10px;
+  margin-right: 6px;
+  transition: transform 0.12s ease;
+}
+.affix-row[aria-expanded="true"] .affix-caret { transform: rotate(90deg); }
+
+.affix-text { color: var(--normal-color); }
+.affix-tag {
+  display: inline-block;
+  margin-left: 5px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: rgba(136, 136, 255, 0.14);
+  color: var(--magic-color);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  vertical-align: 1px;
+}
+
+.affix-tiers > td { padding: 0 8px 8px 22px; }
+.affix-tier-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  background: rgba(0,0,0,0.18);
+}
+.affix-tier-table th {
+  color: var(--prop-color);
+  font-size: 11px;
+  font-weight: normal;
+  text-align: left;
+  padding: 3px 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.affix-tier-table td { padding: 3px 8px; }
+.affix-tier-num { color: var(--color-default); white-space: nowrap; }
+.affix-tier-name { color: var(--magic-color); white-space: nowrap; }
+.affix-tier-text { color: var(--normal-color); }
 
 /* --- Ascendancy cards (list page) — dark shell tinted to the colorway --- */
 .asc-card {

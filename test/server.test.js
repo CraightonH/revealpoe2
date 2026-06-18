@@ -77,11 +77,22 @@ test('GET /mod/not-a-real-mod returns 404', async () => {
   assert.equal(res.status, 404);
 });
 
-test('GET /base/stellar-amulet includes affix section', async () => {
+test('GET /bases/amulet includes the class affix section', async () => {
+  const app = createApp();
+  const res = await request(app).get('/bases/amulet');
+  assert.equal(res.status, 200);
+  assert.ok(res.text.includes('Rollable Affixes'), 'renders the affix section');
+  assert.ok(res.text.includes('affix-table'), 'renders the prefix/suffix tables');
+  assert.ok(res.text.includes('affix-tiers'), 'renders collapsible tier sub-tables');
+  assert.ok(res.text.includes('aria-expanded="false"'), 'tier rows start collapsed');
+});
+
+test('GET /base/stellar-amulet points to the class affix page', async () => {
   const app = createApp();
   const res = await request(app).get('/base/stellar-amulet');
   assert.equal(res.status, 200);
-  assert.ok(res.text.includes('Affix') || res.text.includes('affix') || res.text.includes('IncreasedLife'));
+  assert.ok(res.text.includes('/bases/amulet'), 'links to the class page for affixes');
+  assert.ok(!res.text.includes('affix-table'), 'no per-base affix tables');
 });
 
 test('GET /keystones returns 200 with Keystones heading', async () => {

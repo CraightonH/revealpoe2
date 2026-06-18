@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  getMod, getModGroup, listModGroups, getModsForBase,
+  getMod, getModGroup, listModGroups, getModsForBase, getModsForClass,
 } from '../src/data/mods.js';
 
 test('getMod returns a known mod by id', () => {
@@ -57,7 +57,7 @@ test('listModGroups entries have typeSlug', () => {
 });
 
 test('getModsForBase returns prefix/suffix groups for Stellar Amulet', () => {
-  const result = getModsForBase('Metadata/Items/Amulets/FourAmulet8', 'Amulets');
+  const result = getModsForBase('Metadata/Items/Amulets/FourAmulet8');
   assert.ok(result);
   assert.ok(Array.isArray(result.prefix));
   assert.ok(Array.isArray(result.suffix));
@@ -68,7 +68,45 @@ test('getModsForBase returns prefix/suffix groups for Stellar Amulet', () => {
   assert.ok(str, 'Strength should be a suffix group for amulets');
 });
 
+test('getModsForBase decorates families with generic text and clean tags', () => {
+  const result = getModsForBase('Metadata/Items/Amulets/FourAmulet8');
+  const life = result.prefix.find((g) => g.type === 'IncreasedLife');
+  // Generic text collapses rolled ranges to "#" and carries no raw [Id|Display] markup.
+  assert.match(life.genericHtml, /# to.*maximum Life/i);
+  assert.ok(!life.genericHtml.includes('('), 'ranges should be collapsed to #');
+  assert.ok(!/\[[^\]]*\|/.test(life.genericHtml), 'game-text markup should be rendered out');
+  // Tags are cleaned of structural/compound entries.
+  assert.ok(!life.tags.some((t) => /^has_|_mod$|_damage$/.test(t)));
+});
+
+test('getModsForBase sorts families alphabetically by modifier text', () => {
+  const { prefix } = getModsForBase('Metadata/Items/Amulets/FourAmulet8');
+  for (let i = 1; i < prefix.length; i++) {
+    assert.ok(prefix[i - 1].sortKey.localeCompare(prefix[i].sortKey) <= 0, 'families ordered by text');
+  }
+});
+
 test('getModsForBase returns empty prefix/suffix for unknown base', () => {
-  const result = getModsForBase('Metadata/Items/NotReal/Fake', 'Amulets');
+  const result = getModsForBase('Metadata/Items/NotReal/Fake');
   assert.deepEqual(result, { prefix: [], suffix: [] });
+});
+
+test('getModsForClass unions affixes across bases and dedupes by family', () => {
+  const a = getModsForBase('Metadata/Items/Amulets/FourAmulet8');
+  // The class union of a single base equals that base's families.
+  const single = getModsForClass(['Metadata/Items/Amulets/FourAmulet8']);
+  assert.equal(single.prefix.length, a.prefix.length);
+
+  // Unioning two amulet bases must not duplicate a shared family.
+  const multi = getModsForClass([
+    'Metadata/Items/Amulets/FourAmulet8',
+    'Metadata/Items/Amulets/Amulet1',
+  ]);
+  const types = multi.prefix.map((f) => f.type);
+  assert.equal(new Set(types).size, types.length, 'no duplicate prefix families');
+  assert.ok(multi.prefix.some((f) => f.type === 'IncreasedLife'));
+});
+
+test('getModsForClass returns empty for no known bases', () => {
+  assert.deepEqual(getModsForClass(['Metadata/Items/NotReal/Fake']), { prefix: [], suffix: [] });
 });

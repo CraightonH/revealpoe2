@@ -93,6 +93,22 @@ test('buildBaseItemViewModel returns null for unknown slug', () => {
   assert.equal(buildBaseItemViewModel('not-a-real-base'), null);
 });
 
+test('buildBaseItemViewModel surfaces innate implicit affixes', () => {
+  const vm = buildBaseItemViewModel('bombard-crossbow');
+  assert.ok(vm, 'bombard-crossbow should exist');
+  assert.ok(Array.isArray(vm.implicits));
+  assert.equal(vm.implicits.length, 1);
+  // Rendered as game-text HTML with keyword markup.
+  assert.match(vm.implicits[0].html, /Grenade/);
+  assert.match(vm.implicits[0].html, /additional/);
+});
+
+test('buildBaseItemViewModel implicits is empty for bases with no innate affix', () => {
+  const vm = buildBaseItemViewModel('crude-bow');
+  assert.ok(Array.isArray(vm.implicits));
+  assert.equal(vm.implicits.length, 0);
+});
+
 test('Energy Blade slug disambiguated by class', () => {
   // Energy Blade exists as both One Hand Sword and Two Hand Sword
   const b1 = getBaseItem('energy-blade--one-hand-sword');

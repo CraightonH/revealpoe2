@@ -1,5 +1,6 @@
 {% extends "base.njk" %}
 {% from "macros/nav.njk" import breadcrumb, pageHeader %}
+{% from "macros/affix-tables.njk" import affixTables %}
 {% block title %}{{ cls.name }} — Base Items — PoE2 Wiki{% endblock %}
 {% block content %}
 <div class="page page--column">
@@ -10,7 +11,7 @@
   {{ pageHeader(cls.name, cls.bases.length ~ ' base items') }}
   <div class="bases-list-grid">
     {% for b in cls.bases %}
-    <a class="bases-list-card" href="/base/{{ b.slug }}">
+    <a class="bases-list-card" href="/base/{{ b.slug }}" data-card-url="/base/{{ b.slug }}/card">
       {% if b.iconUrl %}
       <img src="{{ b.iconUrl }}" alt="{{ b.name }}" class="bases-list-icon"
            onerror="this.style.visibility='hidden'">
@@ -22,5 +23,12 @@
     </a>
     {% endfor %}
   </div>
+  {% if cls.affixes and (cls.affixes.prefix.length or cls.affixes.suffix.length) %}
+  <section class="affix-section">
+    <h2 class="affix-section-title">Rollable Affixes</h2>
+    <p class="affix-section-hint">Modifiers that can roll on any {{ cls.name }}. Click one to see its tiers.</p>
+    {{ affixTables(cls.affixes) }}
+  </section>
+  {% endif %}
 </div>
 {% endblock %}

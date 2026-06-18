@@ -2,7 +2,7 @@ import { loadJson } from './loader.js';
 import { slugify } from './slug.js';
 import { ddsUrl } from './images.js';
 import { listUniques } from './uniques.js';
-import { getModsForBase } from './mods.js';
+import { getModsForClass, resolveImplicits } from './mods.js';
 import { computeProperties } from './itemStats.js';
 import { ATTR_ABBR } from './attributes.js';
 import { hasDefinition } from './keywordDefs.js';
@@ -110,6 +110,7 @@ function buildIndex() {
       dropLevel: v.drop_level ?? null,
       inventorySize: { w: v.inventory_width, h: v.inventory_height },
       tags: v.tags ?? [],
+      implicits: resolveImplicits(v.implicits),
       requirements: buildRequirements(v.requirements, v.drop_level),
       properties: computeProperties(v.properties),
       rawProperties: v.properties ?? null,
@@ -146,7 +147,8 @@ export function getItemClass(classSlug) {
   for (const [classId, info] of _classInfo) {
     if (info.classSlug === classSlug) {
       const bases = _byClass.get(classId) ?? [];
-      return { ...info, classId, classSlug, bases };
+      const affixes = getModsForClass(bases.map((b) => b.metadataKey));
+      return { ...info, classId, classSlug, bases, affixes };
     }
   }
   return null;
@@ -172,7 +174,5 @@ export function buildBaseItemViewModel(slug) {
     .filter((u) => u.base === b.name)
     .map((u) => ({ slug: u.slug, name: u.name, iconUrl: u.iconUrl }));
 
-  const affixes = getModsForBase(b.metadataKey, b.className);
-
-  return { ...b, uniquesOnBase, affixes };
+  return { ...b, uniquesOnBase };
 }
