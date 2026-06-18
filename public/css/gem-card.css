@@ -413,23 +413,46 @@ a.lc.unique-type:hover {
   text-decoration: none;
 }
 
-/* Keystone browse cards — mirror .unique-index-card with keystone coloring */
+/* Keystone browse cards — condensed: a flat keystone-blue header banner (no
+   in-game texture exists for passives), then icon + the keystone's effect
+   lines. Full tooltip on hover. */
 .keystone-index-card {
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
+  flex-direction: column;
+  align-items: stretch;
   border-radius: 4px;
+  overflow: hidden;
   color: var(--color-keystone);
   font-family: var(--font-smallcaps);
-  font-size: 13px;
   transition: border-color 0.15s;
 }
 .keystone-index-card:hover {
   border-color: var(--color-keystone);
 }
+.keystone-index-header {
+  background: linear-gradient(180deg, rgba(136,136,255,0.13), rgba(0,0,0,0.35));
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 14px;
+  border-bottom: 1px solid rgba(0,0,0,0.5);
+}
+.keystone-index-name {
+  color: var(--color-keystone);
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.keystone-index-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 11px;
+}
 .keystone-index-icon {
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   object-fit: contain;
   flex-shrink: 0;
 }
@@ -442,11 +465,19 @@ a.lc.unique-type:hover {
   color: var(--color-keystone);
   font-size: 16px;
 }
-.keystone-index-name {
+.keystone-index-body {
   flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: center;
+}
+/* Effect lines — reuse the tooltip .explicitMod styling (centered), tightened */
+.keystone-index-card .explicitMod {
+  padding: 0;
+  font-size: 11.5px;
+  line-height: 1.35;
 }
 
 /* Base items have no rarity tint — a soft white glow/border instead of the
@@ -627,6 +658,7 @@ a.lc.unique-type:hover {
   display: flex;
   flex-direction: column;
   gap: 3px;
+  text-align: center;
 }
 
 .bases-list-name {
@@ -693,7 +725,6 @@ a.lc.unique-type:hover {
 /* Mod lines — reuse the tooltip .explicitMod styling but left-align and tighten
    for the dense card (the tooltip centers them). */
 .bases-list-card--unique .explicitMod {
-  text-align: left;
   padding: 0;
   font-size: 11.5px;
   line-height: 1.35;
