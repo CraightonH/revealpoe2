@@ -1,3 +1,38 @@
+{# Condensed card for the /bases/:class grid: one key stat per line with the
+   same keyword-linked labels unique cards use; full tooltip on hover. #}
+{% macro baseListCard(b) %}
+<a class="bases-list-card" href="/base/{{ b.slug }}" data-card-url="/base/{{ b.slug }}/card">
+  <div class="bases-list-header"><span class="bases-list-name">{{ b.name }}</span></div>
+  <div class="bases-list-main">
+    {% set sizeClass = 'bases-list-icon--' ~ b.inventorySize.w ~ 'x' ~ b.inventorySize.h %}
+    {% if b.iconUrl %}
+    <img src="{{ b.iconUrl }}" alt="{{ b.name }}" class="bases-list-icon {{ sizeClass }}" loading="lazy"
+         onerror="this.style.visibility='hidden'">
+    {% else %}
+    <div class="bases-list-icon bases-list-icon--placeholder {{ sizeClass }}">{{ b.name[0] }}</div>
+    {% endif %}
+    <div class="bases-list-body">
+      {% if b.properties.length %}
+      <div class="bases-list-stats">
+        {% for prop in b.properties %}
+        <div class="bases-list-stat">{{ prop.labelHtml | safe }}: <span class="v">{{ prop.value }}</span></div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% if b.properties.length and b.requirements.length %}
+      <div class="separator"></div>
+      {% endif %}
+      {% if b.requirements.length %}
+      <div class="bases-list-req">Requires: {{ b.requirements | join(', ') | safe }}</div>
+      {% endif %}
+      {% if b.implicits.length %}
+      <div class="bases-list-impl">{% for imp in b.implicits %}{{ imp.html | safe }}{% if not loop.last %}<br>{% endif %}{% endfor %}</div>
+      {% endif %}
+    </div>
+  </div>
+</a>
+{% endmacro %}
+
 {% macro baseCard(vm, full=false) %}
 <div class="unique-item-with-art">
   <div class="newItemPopup NormalPopup item-popup--poe2">

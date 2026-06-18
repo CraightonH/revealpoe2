@@ -1,5 +1,5 @@
 import { buildGemViewModel, listGems } from '../data/gems.js';
-import { buildUniqueViewModel, listUniques } from '../data/uniques.js';
+import { buildUniqueViewModel, listUniqueCards } from '../data/uniques.js';
 import { listItemClasses, getItemClass, buildBaseItemViewModel } from '../data/baseItems.js';
 import { listModGroups, getModGroup } from '../data/mods.js';
 import { listKeystones, getKeystone, listNotables, getNotable, getPassiveNode, listAscendancies, getAscendancy } from '../data/passiveTree.js';
@@ -43,7 +43,7 @@ export function registerPages(app) {
   cardRoute(app, '/gem/:slug/card', buildGemViewModel, 'partials/gem-card-fragment.njk');
 
   app.get('/uniques', (_req, res) => {
-    const uniques = listUniques().sort((a, b) => a.name.localeCompare(b.name));
+    const uniques = listUniqueCards().sort((a, b) => a.name.localeCompare(b.name));
     res.render('uniques.njk', { uniques });
   });
 

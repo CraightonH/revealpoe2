@@ -168,6 +168,33 @@ export function listUniques() {
   return [...index().values()];
 }
 
+// Condensed view models for the /uniques browse grid: enough to render the
+// at-a-glance card (name, base, icon, inventory size for the icon box, and the
+// parsed implicit/explicit mod lines). Lighter than the full detail VM — no
+// derived item stats or flavour.
+export function listUniqueCards() {
+  return [...index().values()].map((u) => {
+    const baseRecord = getBaseByName(u.base);
+    const parsed = u.stats.map(parseStatLine);
+    // Derived item stats (defences, damage) — base properties with the unique's
+    // local mods applied, same as the full tooltip. Keyword-linked labels.
+    const mods = parseLocalMods(u.stats);
+    const properties = baseRecord
+      ? computeProperties(baseRecord.rawProperties, mods).map((p) => ({ ...p, labelHtml: renderAffix(p.label) }))
+      : [];
+    return {
+      slug: u.slug,
+      name: u.name,
+      base: u.base,
+      iconUrl: u.iconUrl,
+      inventorySize: baseRecord?.inventorySize ?? null,
+      properties,
+      implicits: parsed.slice(0, u.implicitCount),
+      explicits: parsed.slice(u.implicitCount),
+    };
+  });
+}
+
 export function getUnique(slug) {
   return index().get(slug) ?? null;
 }

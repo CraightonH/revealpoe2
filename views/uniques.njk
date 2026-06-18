@@ -1,21 +1,13 @@
 {% extends "base.njk" %}
 {% from "macros/nav.njk" import pageHeader %}
+{% from "macros/unique-card.njk" import uniqueListCard %}
 {% block title %}Unique Items — PoE2 Wiki{% endblock %}
 {% block content %}
 <div class="page page--column">
   {{ pageHeader('Unique Items', uniques.length ~ ' unique items', '--color-unique') }}
-  <div class="unique-index-grid">
+  <div class="bases-list-grid">
     {% for u in uniques %}
-    <a class="unique-index-card" href="/unique/{{ u.slug }}" data-card-url="/unique/{{ u.slug }}/card">
-      {% if u.iconUrl %}
-      <img src="{{ u.iconUrl }}" alt="{{ u.name }}" class="unique-index-icon"
-           onerror="this.style.visibility='hidden'">
-      {% else %}
-      <div class="unique-index-icon unique-index-placeholder">{{ u.name[0] }}</div>
-      {% endif %}
-      <span class="unique-index-name">{{ u.name }}</span>
-      <span class="unique-index-base">{{ u.base }}</span>
-    </a>
+    {{ uniqueListCard(u) }}
     {% endfor %}
   </div>
 </div>

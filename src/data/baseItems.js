@@ -6,7 +6,7 @@ import { getModsForClass, resolveImplicits } from './mods.js';
 import { computeProperties } from './itemStats.js';
 import { ATTR_ABBR } from './attributes.js';
 import { hasDefinition } from './keywordDefs.js';
-import { linkifyRequirement } from './keywords.js';
+import { linkifyRequirement, linkifyPhrases } from './keywords.js';
 import { REPOE } from '../config.js';
 
 const GROUPS = [
@@ -112,7 +112,9 @@ function buildIndex() {
       tags: v.tags ?? [],
       implicits: resolveImplicits(v.implicits),
       requirements: buildRequirements(v.requirements, v.drop_level),
-      properties: computeProperties(v.properties),
+      properties: computeProperties(v.properties).map(
+        (p) => ({ ...p, labelHtml: linkifyPhrases(p.label, hasDefinition) }),
+      ),
       rawProperties: v.properties ?? null,
       iconUrl: ddsUrl(v.visual_identity?.dds_file),
     };

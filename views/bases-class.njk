@@ -1,6 +1,7 @@
 {% extends "base.njk" %}
 {% from "macros/nav.njk" import breadcrumb, pageHeader %}
 {% from "macros/affix-tables.njk" import affixTables %}
+{% from "macros/base-card.njk" import baseListCard %}
 {% block title %}{{ cls.name }} — Base Items — PoE2 Wiki{% endblock %}
 {% block content %}
 <div class="page page--column">
@@ -11,16 +12,7 @@
   {{ pageHeader(cls.name, cls.bases.length ~ ' base items') }}
   <div class="bases-list-grid">
     {% for b in cls.bases %}
-    <a class="bases-list-card" href="/base/{{ b.slug }}" data-card-url="/base/{{ b.slug }}/card">
-      {% if b.iconUrl %}
-      <img src="{{ b.iconUrl }}" alt="{{ b.name }}" class="bases-list-icon"
-           onerror="this.style.visibility='hidden'">
-      {% else %}
-      <div class="bases-list-icon bases-list-icon--placeholder">{{ b.name[0] }}</div>
-      {% endif %}
-      <span class="bases-list-name">{{ b.name }}</span>
-      {% if b.dropLevel %}<span class="bases-list-level">Lvl {{ b.dropLevel }}</span>{% endif %}
-    </a>
+    {{ baseListCard(b) }}
     {% endfor %}
   </div>
   {% if cls.affixes and (cls.affixes.prefix.length or cls.affixes.suffix.length) %}

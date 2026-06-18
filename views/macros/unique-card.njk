@@ -9,6 +9,52 @@
 </div>
 {% endmacro %}
 
+{# Like modLine, but renders the granted-skill name as plain text instead of a
+   gem link — the condensed card is itself an <a>, and a nested <a> is invalid
+   HTML (browsers auto-close the card anchor, spilling the rest of the card). #}
+{% macro modLineFlat(stat) %}
+<div class="explicitMod">
+  {%- if stat.gemSlug -%}
+  {%- if stat.iconUrl %}<img loading="lazy" src="{{ stat.iconUrl }}" class="grantsSkill" alt="" onerror="this.style.display='none'">{% endif -%}
+  {{ stat.prefixHtml | safe }}<span class="skill-grant-link">{{ stat.skillName }}</span>
+  {%- else -%}
+  {{ stat.html | safe }}
+  {%- endif -%}
+</div>
+{% endmacro %}
+
+{# Condensed card for the /uniques browse grid: same shell as baseListCard with
+   the unique-rarity skin (header texture, gold name, amber divider). Full
+   tooltip still loads on hover. Icon box tracks the base item's inventory size,
+   reusing the shared .bases-list-icon--WxH combo classes. #}
+{% macro uniqueListCard(u) %}
+{% set sizeClass = ('bases-list-icon--' ~ u.inventorySize.w ~ 'x' ~ u.inventorySize.h) if u.inventorySize else '' %}
+<a class="bases-list-card bases-list-card--unique" href="/unique/{{ u.slug }}" data-card-url="/unique/{{ u.slug }}/card">
+  <div class="bases-list-header"><span class="bases-list-name">{{ u.name }}</span></div>
+  <div class="bases-list-main">
+    {% if u.iconUrl %}
+    <img src="{{ u.iconUrl }}" alt="{{ u.name }}" class="bases-list-icon {{ sizeClass }}" loading="lazy"
+         onerror="this.style.visibility='hidden'">
+    {% else %}
+    <div class="bases-list-icon {{ sizeClass }} bases-list-icon--placeholder">{{ u.name[0] }}</div>
+    {% endif %}
+    <div class="bases-list-body">
+      {% if u.properties.length %}
+      <div class="bases-list-stats">
+        {% for prop in u.properties %}
+        <div class="bases-list-stat">{{ prop.labelHtml | safe }}: <span class="{{ prop.colorClass }}">{{ prop.value }}</span></div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% if u.properties.length and (u.implicits.length or u.explicits.length) %}<div class="separator"></div>{% endif %}
+      {% for s in u.implicits %}{{ modLineFlat(s) }}{% endfor %}
+      {% if u.implicits.length and u.explicits.length %}<div class="separator"></div>{% endif %}
+      {% for s in u.explicits %}{{ modLineFlat(s) }}{% endfor %}
+    </div>
+  </div>
+</a>
+{% endmacro %}
+
 {% macro uniqueCard(vm) %}
 <div class="unique-item-with-art">
   <div class="newItemPopup UniquePopup item-popup--poe2"
