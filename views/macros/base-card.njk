@@ -28,6 +28,9 @@
       {% if b.implicits.length %}
       <div class="bases-list-impl">{% for imp in b.implicits %}{{ imp.html | safe }}{% if not loop.last %}<br>{% endif %}{% endfor %}</div>
       {% endif %}
+      {% if b.grantedSkills.length %}
+      <div class="bases-list-impl">{% for s in b.grantedSkills %}Grants Skill: <span class="skill-grant-link" data-card-url="/gem/{{ s.slug }}/card">{{ s.name }}</span>{% if not loop.last %}<br>{% endif %}{% endfor %}</div>
+      {% endif %}
     </div>
   </div>
 </a>
@@ -59,6 +62,17 @@
       <div class="Stats">
         {% for imp in vm.implicits %}
         <div class="explicitMod">{{ imp.html | safe }}</div>
+        {% endfor %}
+      </div>
+      <div class="separator"></div>
+      {% endif %}
+      {% if vm.grantedSkills.length %}
+      <div class="Stats">
+        {% for s in vm.grantedSkills %}
+        <div class="explicitMod">
+          {%- if s.iconUrl %}<img loading="lazy" src="{{ s.iconUrl }}" class="grantsSkill" alt="" onerror="this.style.display='none'">{% endif -%}
+          Grants Skill: <a href="/gem/{{ s.slug }}" data-card-url="/gem/{{ s.slug }}/card" class="skill-grant-link">{{ s.name }}</a>
+        </div>
         {% endfor %}
       </div>
       <div class="separator"></div>

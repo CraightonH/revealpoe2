@@ -4,6 +4,7 @@ import { ddsUrl } from './images.js';
 import { listUniques } from './uniques.js';
 import { getModsForClass, getCorruptedForClass, getDesecratedForTags, resolveImplicits } from './mods.js';
 import { computeProperties } from './itemStats.js';
+import { getGemRefByKey } from './gems.js';
 import { ATTR_ABBR } from './attributes.js';
 import { hasDefinition } from './keywordDefs.js';
 import { linkifyRequirement, linkifyPhrases } from './keywords.js';
@@ -133,6 +134,11 @@ function buildIndex() {
       iconUrl: ddsUrl(v.visual_identity?.dds_file),
       attr: attrOf(v.tags ?? []),
       implicitIds: v.implicits ?? [],
+      // Item-granted skills (a separate field from `implicits`): wands/sceptres/
+      // staves grant a weapon-skill, shields/bucklers a block skill, etc. Resolve
+      // each Metadata key to a linkable gem ref; unresolved keys ([DNT] dev
+      // content) drop out so only real, browsable skills surface.
+      grantedSkills: (v.skills_granted ?? []).map(getGemRefByKey).filter(Boolean),
     };
 
     if (!_index.has(slug)) _index.set(slug, record);

@@ -771,6 +771,14 @@ details[open] > .bases-group-title::before {
   line-height: 1.3;
 }
 .bases-list-impl .kw { color: inherit; }
+/* Granted-skill name — gem teal with a dotted underline to read as a hoverable
+   keyword; hovering shows the skill's own card tooltip (data-card-url), so the
+   card → skill tooltip is one hop instead of card → item tooltip → skill. */
+.bases-list-impl .skill-grant-link {
+  color: var(--color-gem);
+  border-bottom: 1px dotted var(--color-gem);
+  cursor: help;
+}
 
 /* Unique skin for the condensed list card — same shell, unique-rarity dressing:
    the in-game unique header texture, gold name, amber divider. */

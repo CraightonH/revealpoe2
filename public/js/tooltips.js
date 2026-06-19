@@ -71,8 +71,31 @@
       onShown: function (instance) {
         if (instance.popperInstance) instance.popperInstance.update();
       },
+      // Returning from an inner tooltip to the card body (item > skill > item):
+      // the ancestor card tooltip was hidden when the inner one opened, and
+      // moving within the card fires no new mouseenter to re-trigger it. So when
+      // the inner one hides, re-show the nearest still-hovered ancestor card.
+      onHidden: function (instance) {
+        for (var p = instance.reference.parentElement; p; p = p.parentElement) {
+          if (p._tippy && p.matches && p.matches('[data-card-url]:hover')) {
+            p._tippy.show();
+            break;
+          }
+        }
+      },
       content: fallback,
       onShow: function (instance) {
+        var ref = instance.reference;
+        // Nested tooltips: a card-url target can sit inside another (e.g. a
+        // "Grants Skill" link inside a base-item card). Show only the innermost.
+        //  - If a descendant card-url target is currently hovered, this instance
+        //    is the ancestor — don't show it.
+        //  - Otherwise hide any already-open ancestor tooltip so the inner one
+        //    replaces it rather than stacking on top.
+        if (ref.querySelector && ref.querySelector('[data-card-url]:hover')) return false;
+        for (var p = ref.parentElement; p; p = p.parentElement) {
+          if (p._tippy && p._tippy !== instance) p._tippy.hide();
+        }
         var url = config.resolveUrl(instance.reference);
         if (!url) return false;
         if (cache.has(url)) {
