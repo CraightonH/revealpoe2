@@ -36,15 +36,41 @@ export const KEYWORD_PHRASES = [
 
 const PHRASE_TO_ID = new Map(KEYWORD_PHRASES.map(([p, id]) => [p, id]));
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+// Numeric values in stat text — a bare number ("10", "1.5"), a negative, or a
+// parenthesized range ("(100-150)"). Range separators allow hyphen / en / em
+// dash since the sources differ (mods use "-", skill per-level ranges use "—",
+// synthesized damage-conversion uses "–"). Highlighted white via .mod-value so
+// values stand out from the mod-color prose — the treatment uniques pioneered,
+// applied everywhere stat text is rendered (see highlightNumbers / linkifyPhrases).
+const NUM_RE = /\(?-?\d+(?:\.\d+)?(?:[-–—]-?\d+(?:\.\d+)?)?\)?/g;
+
+// Escape `text`, wrapping any numeric value in a white .mod-value span.
+function highlightNumbers(text) {
+  let out = '';
+  let last = 0;
+  let m;
+  NUM_RE.lastIndex = 0;
+  while ((m = NUM_RE.exec(text)) !== null) {
+    out += escapeHtml(text.slice(last, m.index));
+    out += `<span class="mod-value">${escapeHtml(m[0])}</span>`;
+    last = NUM_RE.lastIndex;
+  }
+  out += escapeHtml(text.slice(last));
+  return out;
+}
 const PHRASE_RE = new RegExp(
   `\\b(${KEYWORD_PHRASES.map(([p]) => p).sort((a, b) => b.length - a.length).map(escapeRe).join('|')})\\b`,
   'g',
 );
 
-// Escape `text` and wrap any curated keyword phrase in a hoverable .kw span.
-// hasDefinition(id) gates each match: unknown/dead keywords render as plain
-// escaped text. This is the universal surface-phrase linker used wherever a stat
-// is shown as plain (untokenized) text.
+// Wrap any curated keyword phrase in a hoverable .kw span, and any numeric value
+// in a white .mod-value span; all other text is escaped. hasDefinition(id) gates
+// each keyword match: unknown/dead keywords render as plain text. This is the
+// universal renderer for plain (untokenized) stat text — keyword phrases and
+// number highlighting reach every consumer (mods, gems, passives, base items,
+// uniques) through here. Keyword phrases never contain digits, so numbers only
+// ever appear in the gaps between phrases.
 export function linkifyPhrases(text, hasDefinition = () => true) {
   if (text == null) return '';
   let out = '';
@@ -52,7 +78,7 @@ export function linkifyPhrases(text, hasDefinition = () => true) {
   let m;
   PHRASE_RE.lastIndex = 0;
   while ((m = PHRASE_RE.exec(text)) !== null) {
-    out += escapeHtml(text.slice(last, m.index));
+    out += highlightNumbers(text.slice(last, m.index));
     const id = PHRASE_TO_ID.get(m[1]);
     if (id && hasDefinition(id)) {
       out += `<span class="kw" data-keyword="${escapeHtml(id)}">${escapeHtml(m[1])}</span>`;
@@ -61,7 +87,7 @@ export function linkifyPhrases(text, hasDefinition = () => true) {
     }
     last = PHRASE_RE.lastIndex;
   }
-  out += escapeHtml(text.slice(last));
+  out += highlightNumbers(text.slice(last));
   return out;
 }
 

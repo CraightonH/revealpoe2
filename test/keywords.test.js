@@ -2,8 +2,11 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { renderGameText } from '../src/data/keywords.js';
 
-test('plain text passes through escaped', () => {
-  assert.equal(renderGameText('100% more & cooler'), '100% more &amp; cooler');
+test('plain text is escaped and numeric values highlighted', () => {
+  assert.equal(
+    renderGameText('100% more & cooler'),
+    '<span class="mod-value">100</span>% more &amp; cooler'
+  );
 });
 
 test('token without pipe uses id as display', () => {

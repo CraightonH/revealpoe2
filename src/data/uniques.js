@@ -7,7 +7,7 @@ import { getBaseByName, listItemClasses } from './baseItems.js';
 import { parseLocalMods, computeProperties } from './itemStats.js';
 import { getFlavourLines } from './flavour.js';
 import { hasDefinition } from './keywordDefs.js';
-import { escapeHtml, linkifyPhrases } from './keywords.js';
+import { linkifyPhrases } from './keywords.js';
 import { REPOE } from '../config.js';
 
 const POB_DIR = 'pob-uniques';
@@ -24,28 +24,15 @@ const META_COLON_RE = /^(Variant|Implicits|League|Source|Corrupted|Limited to|Dr
 const META_NOCOLON_RE = /^Requires\b/;
 const isMetaLine = (line) => META_COLON_RE.test(line) || META_NOCOLON_RE.test(line);
 
-// "Grants Skill: Name" or "Grants Skill: Level (N-M) Name"
-const GRANTS_SKILL_RE = /^(Grants Skill: (?:Level \([^)]+\) )?)(.+)$/;
+// "Grants Skill: Name", "Grants Skill: Level (N-M) Name", or "Grants Skill:
+// Level N Name" (fixed level, no range — e.g. Adonia's Ego's Pinnacle of Power).
+const GRANTS_SKILL_RE = /^(Grants Skill: (?:Level (?:\([^)]+\)|\d+) )?)(.+)$/;
 
-// Numeric values in affix text, e.g. "10", "1.5", "(100-150)" — highlighted as
-// white .mod-value spans. Keyword phrases are handled by the shared linkifyPhrases.
-const NUM_RE = /\(?\d+(?:\.\d+)?(?:-\d+(?:\.\d+)?)?\)?/g;
-
-// Render affix text to safe HTML: numeric values → white .mod-value spans; the
-// text between numbers is run through the shared phrase linker so known glossary
-// terms become hoverable .kw spans (and everything else is escaped).
+// Render affix text to safe HTML. linkifyPhrases now handles both the numeric
+// value highlighting (white .mod-value spans) and keyword glossary hovers, so
+// this is a thin wrapper that pins hasDefinition for the unique-card callers.
 function renderAffix(text) {
-  let out = '';
-  let last = 0;
-  let m;
-  NUM_RE.lastIndex = 0;
-  while ((m = NUM_RE.exec(text)) !== null) {
-    out += linkifyPhrases(text.slice(last, m.index), hasDefinition);
-    out += `<span class="mod-value">${escapeHtml(m[0])}</span>`;
-    last = NUM_RE.lastIndex;
-  }
-  out += linkifyPhrases(text.slice(last), hasDefinition);
-  return out;
+  return linkifyPhrases(text, hasDefinition);
 }
 
 // Parse a stat line; for grant lines, attach a gemSlug + skill icon if the gem

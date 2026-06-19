@@ -232,9 +232,9 @@ html[data-card-size="xl"] .keystone-index-grid { zoom: 1.5; }
   padding: 1px 14px;
   text-align: center;
 }
-.explicitMod .mod-value,
-.qualityMod .mod-value,
-.secondaryQualityMod .mod-value { color: white; }
+/* Numeric values stand out white wherever stat text is rendered (mods, gems,
+   passives, base items, uniques) — emitted by linkifyPhrases across the board. */
+.mod-value { color: white; }
 .explicitMod a,
 .qualityMod a,
 .secondaryQualityMod a { text-decoration: none; }
@@ -248,9 +248,8 @@ html[data-card-size="xl"] .keystone-index-grid { zoom: 1.5; }
 .explicitMod a { color: var(--magic-color); border-bottom: 1px dotted var(--magic-color); }
 /* Granted-skill links render gem-teal to stand apart from the blue mod text */
 .explicitMod a.skill-grant-link { color: var(--color-gem); border-bottom-color: var(--color-gem); }
-/* Keywords in affix text keep the mod color, marked only by a dotted underline */
-.explicitMod .kw { color: inherit; }
-.explicitMod .kw:hover { color: var(--color-rare); }
+/* Keywords keep the standard teal glossary color (base .kw) for contrast against
+   the mod text — see global .kw / .kw:hover in app.css. */
 /* Inline skill icon preceding "Grants Skill:" (poe2db pattern) */
 .explicitMod .grantsSkill {
   width: 18px;
@@ -333,9 +332,6 @@ a.lc.unique-type:hover {
   color: var(--color-default);
   text-align: center;
 }
-/* Keywords in property labels keep the label color, marked by dotted underline */
-.UniquePopup .property .kw { color: inherit; }
-.UniquePopup .property .kw:hover { color: var(--color-rare); }
 
 /* Item art beside the card — matches poe2db .itemboximage pattern */
 .unique-item-with-art {
@@ -746,8 +742,6 @@ details[open] > .bases-group-title::before {
   color: var(--color-default);
 }
 .bases-list-stat .v { color: var(--normal-color); }
-.bases-list-stat .kw { color: inherit; }
-.bases-list-stat .kw:hover { color: var(--color-rare); }
 /* Derived property value colors (unique cards) — mirror the .property rules */
 .bases-list-stat .colourDefault,
 .bases-list-stat .colourPhysicalDamage { color: var(--normal-color); }
@@ -761,8 +755,6 @@ details[open] > .bases-group-title::before {
   font-size: 11px;
   color: var(--color-default);
 }
-.bases-list-req .kw { color: inherit; }
-.bases-list-req .kw:hover { color: var(--color-rare); }
 
 /* Innate implicit — magic blue, matching the tooltip mod text */
 .bases-list-impl {
@@ -770,7 +762,6 @@ details[open] > .bases-group-title::before {
   color: var(--magic-color);
   line-height: 1.3;
 }
-.bases-list-impl .kw { color: inherit; }
 /* Granted-skill name — gem teal with a dotted underline to read as a hoverable
    keyword; hovering shows the skill's own card tooltip (data-card-url), so the
    card → skill tooltip is one hop instead of card → item tooltip → skill. */
@@ -804,8 +795,14 @@ details[open] > .bases-group-title::before {
   font-size: 11.5px;
   line-height: 1.35;
 }
-/* Granted-skill name (rendered as a plain span here, not a link) — gem teal */
-.bases-list-card--unique .skill-grant-link { color: var(--color-gem); }
+/* Granted-skill name — gem teal with a dotted underline to read as hoverable
+   (carries data-card-url for the skill's own card tooltip), matching the
+   base-item grid card's granted-skill styling. */
+.bases-list-card--unique .skill-grant-link {
+  color: var(--color-gem);
+  border-bottom: 1px dotted var(--color-gem);
+  cursor: help;
+}
 
 /* Mod group browser */
 .mods-columns {
@@ -1083,9 +1080,10 @@ details[open] > .affix-origin-title::before { transform: rotate(90deg); }
   color: var(--color-default);
 }
 
-/* pre-line honors the \n between hybrid stat lines (e.g. Ev/ES + Ev + max ES),
-   so each rolls onto its own line instead of running together inline. */
-.affix-text { color: var(--normal-color); white-space: pre-line; }
+/* Magic-blue mod text (matching the in-game explicit-mod tooltip) so the white
+   .mod-value numbers stand out against it. pre-line honors the \n between hybrid
+   stat lines (e.g. Ev/ES + Ev + max ES) so each rolls onto its own line. */
+.affix-text { color: var(--magic-color); white-space: pre-line; }
 .affix-tag {
   --tag: var(--magic-color); /* fallback for any uncolored tag */
   display: inline-block;

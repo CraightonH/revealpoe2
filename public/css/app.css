@@ -252,18 +252,17 @@ body {
   gap: 4px;
   text-align: center;
 }
-/* Type + tags line; keywords keep the muted color, dotted underline marks them */
+/* Type + tags line. Keywords keep the standard teal glossary color (base .kw)
+   for contrast — dotted underline marks them. */
 .gem-browse-tags {
   font-size: 11.5px;
   color: var(--color-default);
   line-height: 1.3;
 }
-.gem-browse-tags .kw { color: inherit; }
 .gem-browse-req {
   font-size: 11px;
   color: var(--color-default);
 }
-.gem-browse-req .kw { color: inherit; }
 /* Skill effect lines — reuse the tooltip .explicitMod (magic blue, white
    values) but left-align and tighten for the dense card. */
 .gem-browse-effect { display: flex; flex-direction: column; gap: 2px; }
@@ -300,12 +299,12 @@ body {
 /* Keyword tooltips — styling matched to poe2db's live tooltip (term #e7b478,
    body #b7ab83, opaque black popup; Tippy box neutralized so the popup paints). */
 .kw {
-  color: var(--color-prop);
+  color: var(--kw-color);
   text-decoration: underline dotted;
   text-underline-offset: 0.2em;
   cursor: help;
 }
-.kw:hover { color: var(--color-rare); }
+.kw:hover { color: var(--kw-hover-color); }
 
 .tippy-box[data-theme~='poe2'] {
   background: #000;

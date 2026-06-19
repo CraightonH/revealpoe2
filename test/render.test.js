@@ -20,8 +20,9 @@ test('GET /gem/herald-of-ash renders the card', async () => {
   assert.match(res.text, /data-keyword="Herald"/);
   // section headers
   assert.match(res.text, /<span class="ItemType">Explosion<\/span>/);
-  // per-level range line
-  assert.match(res.text, /\(16\.67—23\)%/);
+  // per-level range line — numeric value highlighted white (em-dash range kept
+  // intact as one .mod-value span)
+  assert.match(res.text, /<span class="mod-value">\(16\.67—23\)<\/span>%/);
   // footer
   assert.match(res.text, /Skills can be managed in the Skills Panel\./);
   // requirements row: level range (always) + attribute (fixed display ranges)

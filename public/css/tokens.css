@@ -60,6 +60,13 @@
   --default-color: var(--color-default);
   --corrupted-color: var(--color-corrupted);
   --desecrated-color: var(--color-desecrated);
+
+  /* Glossary-keyword (.kw) color — the single knob for every hoverable keyword
+     across the site (mods, gems, items, affixes). Defaults to the prop teal but
+     is its own token so it can be retuned without touching other --color-prop
+     uses (card-size buttons, support headings, etc.). */
+  --kw-color: var(--color-prop);
+  --kw-hover-color: var(--color-rare);
 }
 
 :root,

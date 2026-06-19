@@ -26,7 +26,7 @@
       <tr class="mod-tier-row">
         <td class="mod-tier-num">{{ loop.index }}</td>
         <td class="mod-tier-name">{{ t.name }}</td>
-        <td class="mod-tier-text">{{ t.text }}</td>
+        <td class="mod-tier-text">{{ t.html | safe }}</td>
         <td class="mod-tier-level">{{ t.level }}</td>
       </tr>
       {% endfor %}

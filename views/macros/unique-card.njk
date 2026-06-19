@@ -9,14 +9,15 @@
 </div>
 {% endmacro %}
 
-{# Like modLine, but renders the granted-skill name as plain text instead of a
-   gem link — the condensed card is itself an <a>, and a nested <a> is invalid
-   HTML (browsers auto-close the card anchor, spilling the rest of the card). #}
+{# Like modLine, but for the condensed card (itself an <a>): the granted skill
+   stays a <span>, not a nested <a> (which is invalid HTML and spills the card),
+   while still carrying data-card-url so the shared card-tooltip delegation shows
+   the gem tooltip on hover — same pattern as baseListCard's granted skills. #}
 {% macro modLineFlat(stat) %}
 <div class="explicitMod">
   {%- if stat.gemSlug -%}
   {%- if stat.iconUrl %}<img loading="lazy" src="{{ stat.iconUrl }}" class="grantsSkill" alt="" onerror="this.style.display='none'">{% endif -%}
-  {{ stat.prefixHtml | safe }}<span class="skill-grant-link">{{ stat.skillName }}</span>
+  {{ stat.prefixHtml | safe }}<span class="skill-grant-link" data-card-url="/gem/{{ stat.gemSlug }}/card">{{ stat.skillName }}</span>
   {%- else -%}
   {{ stat.html | safe }}
   {%- endif -%}

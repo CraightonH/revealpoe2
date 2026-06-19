@@ -78,7 +78,7 @@ test('buildGemViewModel emits rich card fields for Herald of Ash', () => {
   const labels = vm.sections.map((s) => s.label);
   assert.deepEqual(labels, ['Buff', 'Explosion']);
   // section lines are rendered to safe HTML (bracket tokens -> spans)
-  assert.ok(vm.sections[1].lines.some((l) => /\(16\.67—23\)%/.test(l)));
+  assert.ok(vm.sections[1].lines.some((l) => /<span class="mod-value">\(16\.67—23\)<\/span>%/.test(l)));
   assert.ok(vm.sections[1].lines.some((l) => /<span class="kw"/.test(l)));
 });
 
