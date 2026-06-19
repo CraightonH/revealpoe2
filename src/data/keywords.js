@@ -23,6 +23,32 @@ export const KEYWORD_PHRASES = [
   ['Evasion Rating', 'Evasion'], ['Evasion', 'Evasion'], ['Armour', 'Armour'],
   ['all Attributes', 'Attributes'], ['Attributes', 'Attributes'],
   ['Strength', 'Strength'], ['Dexterity', 'Dexterity'], ['Intelligence', 'Intelligence'],
+  // Resistance phrases must precede the bare element names below so that an
+  // element in a resistance context links to the Resistances glossary (a defence
+  // stat) rather than its damage-type keyword. The game tokenizes most gear mods
+  // as [Resistances|Fire Resistance], but penetration/weapon/dual-resistance mods
+  // arrive as plain text ("Penetrate 20% Cold Resistance", "Fire and Chaos
+  // Resistances"), so we re-detect the phrases here. Longest-first sorting in
+  // PHRASE_RE makes "Maximum Fire Resistance" win over "Fire Resistance" win over
+  // "Fire". Plural and conjunction forms mirror the game's own display strings.
+  ['Maximum Fire Resistance', 'MaximumResistances'], ['Maximum Fire Resistances', 'MaximumResistances'],
+  ['Maximum Cold Resistance', 'MaximumResistances'], ['Maximum Cold Resistances', 'MaximumResistances'],
+  ['Maximum Lightning Resistance', 'MaximumResistances'], ['Maximum Lightning Resistances', 'MaximumResistances'],
+  ['Maximum Chaos Resistance', 'MaximumResistances'], ['Maximum Chaos Resistances', 'MaximumResistances'],
+  ['Maximum Elemental Resistances', 'MaximumResistances'], ['Maximum Elemental Resistance', 'MaximumResistances'],
+  ['Maximum Resistances', 'MaximumResistances'],
+  ['Fire and Cold Resistances', 'Resistances'], ['Fire and Cold Resistance', 'Resistances'],
+  ['Fire and Lightning Resistances', 'Resistances'], ['Fire and Lightning Resistance', 'Resistances'],
+  ['Fire and Chaos Resistances', 'Resistances'], ['Fire and Chaos Resistance', 'Resistances'],
+  ['Cold and Lightning Resistances', 'Resistances'], ['Cold and Lightning Resistance', 'Resistances'],
+  ['Cold and Chaos Resistances', 'Resistances'], ['Cold and Chaos Resistance', 'Resistances'],
+  ['Lightning and Chaos Resistances', 'Resistances'], ['Lightning and Chaos Resistance', 'Resistances'],
+  ['all Elemental Resistances', 'Resistances'], ['Elemental Resistances', 'Resistances'], ['Elemental Resistance', 'Resistances'],
+  ['Fire Resistance', 'Resistances'], ['Fire Resistances', 'Resistances'],
+  ['Cold Resistance', 'Resistances'], ['Cold Resistances', 'Resistances'],
+  ['Lightning Resistance', 'Resistances'], ['Lightning Resistances', 'Resistances'],
+  ['Chaos Resistance', 'Resistances'], ['Chaos Resistances', 'Resistances'],
+  ['all Resistances', 'Resistances'],
   ['Physical', 'Physical'], ['Fire', 'Fire'], ['Cold', 'Cold'],
   ['Lightning', 'Lightning'], ['Chaos', 'Chaos'],
   ['Attacks', 'Attack'], ['Attack', 'Attack'], ['Presence', 'Presence'],
@@ -34,8 +60,39 @@ export const KEYWORD_PHRASES = [
   ['Block', 'Block'], ['Curses', 'Curse'], ['Curse', 'Curse'], ['Auras', 'Aura'], ['Aura', 'Aura'],
 ];
 
-const PHRASE_TO_ID = new Map(KEYWORD_PHRASES.map(([p, id]) => [p, id]));
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+// Active phrase set = the curated seed above plus phrases derived from the game
+// data at startup (see keywordPhrases.js / registerDerivedPhrases). The seed is
+// kept for cases the game never tokenizes (resistance conjunctions) and for
+// deliberate disambiguation precedence; derived pairs only fill gaps. PHRASE_RE
+// and PHRASE_TO_ID are rebuilt whenever the set changes, so consumers that read
+// the module bindings at call time always see the merged set.
+const ACTIVE_PHRASES = KEYWORD_PHRASES.slice();
+const PHRASE_TO_ID = new Map(ACTIVE_PHRASES.map(([p, id]) => [p, id]));
+
+function buildPhraseRe(pairs) {
+  return new RegExp(
+    `\\b(${pairs.map(([p]) => p).sort((a, b) => b.length - a.length).map(escapeRe).join('|')})\\b`,
+    'g',
+  );
+}
+
+// Merge data-derived [phrase, id] pairs into the active set. A phrase already
+// present (seed or earlier registration) wins and is skipped, so the curated
+// seed is never overridden. Longest-match precedence is handled by buildPhraseRe
+// independent of insertion order. Idempotent for a given input.
+export function registerDerivedPhrases(pairs) {
+  const seen = new Set(ACTIVE_PHRASES.map(([p]) => p.toLowerCase()));
+  for (const [phrase, id] of pairs) {
+    const key = phrase.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    ACTIVE_PHRASES.push([phrase, id]);
+    PHRASE_TO_ID.set(phrase, id);
+  }
+  PHRASE_RE = buildPhraseRe(ACTIVE_PHRASES);
+}
 
 // Numeric values in stat text — a bare number ("10", "1.5"), a negative, or a
 // parenthesized range ("(100-150)"). Range separators allow hyphen / en / em
@@ -59,10 +116,7 @@ function highlightNumbers(text) {
   out += escapeHtml(text.slice(last));
   return out;
 }
-const PHRASE_RE = new RegExp(
-  `\\b(${KEYWORD_PHRASES.map(([p]) => p).sort((a, b) => b.length - a.length).map(escapeRe).join('|')})\\b`,
-  'g',
-);
+let PHRASE_RE = buildPhraseRe(ACTIVE_PHRASES);
 
 // Wrap any curated keyword phrase in a hoverable .kw span, and any numeric value
 // in a white .mod-value span; all other text is escaped. hasDefinition(id) gates

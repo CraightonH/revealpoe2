@@ -6,11 +6,15 @@ import { registerPages } from './routes/pages.js';
 import { registerSearch } from './routes/search.js';
 import { registerKeywords } from './routes/keywords.js';
 import { registerTheorycraft } from './routes/theorycraft.js';
+import { installKeywordPhrases } from './data/keywordPhrases.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
 
 export function createApp() {
+  // Derive keyword hovers from the game data before any page renders.
+  installKeywordPhrases();
+
   const app = express();
 
   nunjucks.configure(path.join(root, 'views'), {
