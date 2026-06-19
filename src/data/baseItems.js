@@ -2,7 +2,7 @@ import { loadJson } from './loader.js';
 import { slugify } from './slug.js';
 import { ddsUrl } from './images.js';
 import { listUniques } from './uniques.js';
-import { getModsForClass, resolveImplicits } from './mods.js';
+import { getModsForClass, getCorruptedForClass, getDesecratedForTags, resolveImplicits } from './mods.js';
 import { computeProperties } from './itemStats.js';
 import { ATTR_ABBR } from './attributes.js';
 import { hasDefinition } from './keywordDefs.js';
@@ -205,7 +205,15 @@ export function getItemClass(classSlug) {
   for (const [classId, info] of _classInfo) {
     if (info.classSlug === classSlug) {
       const bases = _byClass.get(classId) ?? [];
-      const affixes = getModsForClass(bases.map((b) => b.metadataKey));
+      // Affixes split by how they're obtained: Standard (basic currency),
+      // Corrupted (Vaal, flat list), Desecrated (Abyssal, via item-tag spawn weights).
+      const metaKeys = bases.map((b) => b.metadataKey);
+      const classTags = new Set(bases.flatMap((b) => b.tags));
+      const affixes = {
+        standard: getModsForClass(metaKeys),
+        corrupted: getCorruptedForClass(metaKeys),
+        desecrated: getDesecratedForTags(classTags),
+      };
       // Defence-subtype filter options (icon chips) — only when the class spans
       // more than one, so single-subtype classes (e.g. Foci) get no redundant filter.
       const subs = subtypesOf(bases);
@@ -216,13 +224,30 @@ export function getItemClass(classSlug) {
       // with the subtypes it can actually roll on (e.g. "increased Armour" only
       // on str/hybrid bases, never Evasion-only). The archetype filter then
       // restricts the affix list client-side in lockstep with the base cards.
+      // Applied uniformly across all three origins so the filter stays in sync.
       if (subs.length > 1) {
         const setsBySub = subs.map((s) => {
-          const m = getModsForClass(s.bases.map((b) => b.metadataKey));
-          return { key: s.key, prefix: new Set(m.prefix.map((f) => f.type)), suffix: new Set(m.suffix.map((f) => f.type)) };
+          const keys = s.bases.map((b) => b.metadataKey);
+          const tags = new Set(s.bases.flatMap((b) => b.tags));
+          const std = getModsForClass(keys);
+          const des = getDesecratedForTags(tags);
+          return {
+            key: s.key,
+            standardPrefix: new Set(std.prefix.map((f) => f.type)),
+            standardSuffix: new Set(std.suffix.map((f) => f.type)),
+            corrupted: new Set(getCorruptedForClass(keys).map((f) => f.type)),
+            desecratedPrefix: new Set(des.prefix.map((f) => f.type)),
+            desecratedSuffix: new Set(des.suffix.map((f) => f.type)),
+          };
         });
-        for (const f of affixes.prefix) f.attrs = setsBySub.filter((s) => s.prefix.has(f.type)).map((s) => s.key);
-        for (const f of affixes.suffix) f.attrs = setsBySub.filter((s) => s.suffix.has(f.type)).map((s) => s.key);
+        const tagFamilies = (families, field) => {
+          for (const f of families) f.attrs = setsBySub.filter((s) => s[field].has(f.type)).map((s) => s.key);
+        };
+        tagFamilies(affixes.standard.prefix, 'standardPrefix');
+        tagFamilies(affixes.standard.suffix, 'standardSuffix');
+        tagFamilies(affixes.corrupted, 'corrupted');
+        tagFamilies(affixes.desecrated.prefix, 'desecratedPrefix');
+        tagFamilies(affixes.desecrated.suffix, 'desecratedSuffix');
       }
       return { ...info, classId, classSlug, bases, affixes, attrSubtypes, topBases: topTierBases(bases) };
     }

@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   getMod, getModGroup, listModGroups, getModsForBase, getModsForClass,
+  getCorruptedForClass, getDesecratedForTags,
 } from '../src/data/mods.js';
 
 test('getMod returns a known mod by id', () => {
@@ -109,4 +110,33 @@ test('getModsForClass unions affixes across bases and dedupes by family', () => 
 
 test('getModsForClass returns empty for no known bases', () => {
   assert.deepEqual(getModsForClass(['Metadata/Items/NotReal/Fake']), { prefix: [], suffix: [] });
+});
+
+test('getCorruptedForClass returns a flat list of corruption families', () => {
+  const corrupted = getCorruptedForClass(['Metadata/Items/Armours/Boots/BootsDemigods1']);
+  assert.ok(Array.isArray(corrupted), 'corrupted is a flat array, not prefix/suffix');
+  assert.ok(corrupted.length >= 1, 'boots have corruption mods');
+  // Same family shape the affix tables consume.
+  const f = corrupted[0];
+  assert.ok(f.type && f.typeSlug && Array.isArray(f.tiers) && f.tiers.length >= 1);
+  assert.ok(corrupted.some((g) => g.type === 'FireResistance'));
+});
+
+test('getCorruptedForClass returns empty for unknown bases', () => {
+  assert.deepEqual(getCorruptedForClass(['Metadata/Items/NotReal/Fake']), []);
+});
+
+test('getDesecratedForTags maps Abyssal mods to boots via spawn weights', () => {
+  const des = getDesecratedForTags(['boots', 'armour']);
+  assert.ok(Array.isArray(des.prefix) && Array.isArray(des.suffix));
+  // In the data, Abyssal boots mods are all suffixes (the of-Ulaman/Amanamu/Kurgal set).
+  assert.equal(des.prefix.length, 0, 'no desecrated prefixes roll on boots');
+  assert.ok(des.suffix.length >= 10, 'desecrated suffixes present for boots');
+  // All carry one of the three Abyssal boss tags.
+  const boss = /Ulaman|Amanamu|Kurgal/;
+  assert.ok(des.suffix.every((f) => f.tiers.some((t) => boss.test(t.id))));
+});
+
+test('getDesecratedForTags returns empty when no tag matches', () => {
+  assert.deepEqual(getDesecratedForTags(['no_such_tag']), { prefix: [], suffix: [] });
 });

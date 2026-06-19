@@ -946,11 +946,66 @@ details[open] > .bases-group-title::before {
   margin: 0 0 14px;
 }
 
+/* Per-origin collapsible group within the Item Affixes section (Standard /
+   Corrupted / Desecrated). Color is set inline per origin; a left rule and the
+   caret echo that accent. Open by default; click the summary to collapse. */
+/* Per-origin accent (--origin-accent, set inline) runs as a left rule down the
+   whole section and tints the title; content is inset past the rule. Kept off
+   `color` so it doesn't inherit into the table cells (e.g. the iLvl column). */
+.affix-origin {
+  margin-top: 22px;
+  padding-left: 9px;
+  border-left: 3px solid var(--origin-accent);
+}
+.affix-origin:first-of-type { margin-top: 6px; }
+
+.affix-origin-title {
+  font-family: var(--font-smallcaps);
+  font-size: 15px;
+  margin: 0 0 10px;
+  color: var(--origin-accent);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  list-style: none;
+}
+.affix-origin-title::-webkit-details-marker { display: none; }
+.affix-origin-title::before {
+  content: "\25B8"; /* ▸ */
+  font-size: 11px;
+  transition: transform 0.15s;
+}
+details[open] > .affix-origin-title::before { transform: rotate(90deg); }
+
+/* In-game Abyssal mod band behind each desecrated affix row (poe2db-style),
+   vendored from the 281x28 decorator strip and stretched to the row. Hover still
+   highlights via the shared .affix-row:hover rule (which overrides this). */
+.affix-origin--desecrated .affix-row,
+.affix-origin--desecrated .affix-tier-row {
+  background-image: url('/static/img/mod-decorator-abyss.webp');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+}
+
+.affix-origin-note {
+  color: var(--color-default);
+  font-size: 12px;
+  font-style: italic;
+  margin-left: 6px;
+}
+
 .affix-tables {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
   align-items: start;
+}
+/* Single-origin (no prefix/suffix split, e.g. corrupted) spans the full width
+   as one column. */
+.affix-tables--single {
+  grid-template-columns: 1fr;
 }
 @media (max-width: 900px) {
   .affix-tables { grid-template-columns: 1fr; }
@@ -1086,6 +1141,10 @@ details[open] > .bases-group-title::before {
 .affix-tag--flask  { --tag: #d89a4a; }
 .affix-tag--charm  { --tag: #e088b8; }
 .affix-tag--drop   { --tag: #e0c84a; }
+/* Abyssal (desecrated) bosses — each Well-of-Souls source its own hue */
+.affix-tag--ulaman  { --tag: #e0a93c; } /* amber */
+.affix-tag--amanamu { --tag: #cc5ad6; } /* magenta */
+.affix-tag--kurgal  { --tag: #4fb4e8; } /* blue */
 
 /* "+N tiers" affordance on the collapsed T1 row; hidden once expanded. */
 .affix-more {

@@ -1,7 +1,7 @@
 {% extends "base.njk" %}
 {% from "macros/nav.njk" import breadcrumb, pageHeader %}
 {% from "macros/filter-bar.njk" import filterBar %}
-{% from "macros/affix-tables.njk" import affixTables %}
+{% from "macros/affix-tables.njk" import affixTables, affixFlat %}
 {% from "macros/base-card.njk" import baseListCard %}
 {% block title %}{{ cls.name }} — Base Items — PoE2 Wiki{% endblock %}
 {% block content %}
@@ -15,6 +15,7 @@
   {{ filterBar(
     groups=[{ key: "attr", match: "any", single: true, active: activeAttr, options: cls.attrSubtypes }],
     target=".bases-list-card, .affix-fam",
+    count=".affix-side",
     align="center"
   ) }}
   {% endif %}
@@ -37,11 +38,40 @@
     </div>
   </details>
   {% endif %}
-  {% if cls.affixes and (cls.affixes.prefix.length or cls.affixes.suffix.length) %}
+  {% set std = cls.affixes.standard %}
+  {% set corr = cls.affixes.corrupted %}
+  {% set des = cls.affixes.desecrated %}
+  {% if (std.prefix.length or std.suffix.length) or corr.length or (des.prefix.length or des.suffix.length) %}
   <section class="affix-section">
-    <h2 class="affix-section-title">Rollable Affixes</h2>
-    <p class="affix-section-hint">Modifiers that can roll on any {{ cls.name }}. Click one to see its tiers.</p>
-    {{ affixTables(cls.affixes) }}
+    <h2 class="affix-section-title">Item Affixes</h2>
+    <p class="affix-section-hint">Modifiers that can roll on a {{ cls.name }}, grouped by how they're obtained. Click one to see its tiers.</p>
+
+    {% if std.prefix.length or std.suffix.length %}
+    <details class="affix-origin" open style="--origin-accent:var(--magic-color)">
+      <summary class="affix-origin-title">Standard
+        <span class="affix-origin-note">from basic currency (Transmute, Augment, Regal, Exalt&hellip;)</span>
+      </summary>
+      {{ affixTables(std, '--magic-color') }}
+    </details>
+    {% endif %}
+
+    {% if des.prefix.length or des.suffix.length %}
+    <details class="affix-origin affix-origin--desecrated" open style="--origin-accent:var(--desecrated-color)">
+      <summary class="affix-origin-title">Desecrated
+        <span class="affix-origin-note">Abyssal modifiers from the Well of Souls (Ulaman, Amanamu, Kurgal)</span>
+      </summary>
+      {{ affixTables(des, '--desecrated-color') }}
+    </details>
+    {% endif %}
+
+    {% if corr.length %}
+    <details class="affix-origin" open style="--origin-accent:var(--corrupted-color)">
+      <summary class="affix-origin-title">Corrupted
+        <span class="affix-origin-note">implicit modifiers added by Vaal Orb corruption</span>
+      </summary>
+      {{ affixFlat('Corrupted', corr, '--corrupted-color') }}
+    </details>
+    {% endif %}
   </section>
   {% endif %}
 </div>

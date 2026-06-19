@@ -23,6 +23,9 @@
   --color-keystone-glow: rgba(136, 136, 255, 0.45);
   --color-notable: #d4a13a;
   --color-notable-glow: rgba(212, 161, 58, 0.45);
+  /* Affix origins — accent the per-source affix tables */
+  --color-corrupted: #d63b3b;
+  --color-desecrated: #39ff7a;
 }
 
 /* Derived surface shades for dark cards (passive/asc node shells, hovers) */
@@ -55,6 +58,8 @@
   --crafted-color: var(--color-crafted);
   --prop-color: var(--color-prop);
   --default-color: var(--color-default);
+  --corrupted-color: var(--color-corrupted);
+  --desecrated-color: var(--color-desecrated);
 }
 
 :root,

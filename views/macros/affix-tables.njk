@@ -4,7 +4,7 @@
 
 {% macro _affixSide(title, families, accentVar) %}
 <section class="affix-side">
-  <h2 class="affix-side-title" style="color:var({{ accentVar }})">{{ title }} <span class="affix-side-count">{{ families.length }}</span></h2>
+  <h2 class="affix-side-title" style="color:var({{ accentVar }})">{{ title }} <span class="affix-side-count" data-filter-count>{{ families.length }}</span></h2>
   {% if families.length %}
   <table class="affix-table">
     <thead>
@@ -54,9 +54,17 @@
 </section>
 {% endmacro %}
 
-{% macro affixTables(affixes) %}
+{% macro affixTables(affixes, accentVar='--magic-color') %}
 <div class="affix-tables">
-  {{ _affixSide('Prefix', affixes.prefix, '--magic-color') }}
-  {{ _affixSide('Suffix', affixes.suffix, '--magic-color') }}
+  {{ _affixSide('Prefix', affixes.prefix, accentVar) }}
+  {{ _affixSide('Suffix', affixes.suffix, accentVar) }}
+</div>
+{% endmacro %}
+
+{# Single full-width table — for origins with no prefix/suffix split (e.g. Vaal
+   corruption mods, which are applied directly as implicits). #}
+{% macro affixFlat(title, families, accentVar='--magic-color') %}
+<div class="affix-tables affix-tables--single">
+  {{ _affixSide(title, families, accentVar) }}
 </div>
 {% endmacro %}

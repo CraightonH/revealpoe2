@@ -81,7 +81,8 @@ test('GET /bases/amulet includes the class affix section', async () => {
   const app = createApp();
   const res = await request(app).get('/bases/amulet');
   assert.equal(res.status, 200);
-  assert.ok(res.text.includes('Rollable Affixes'), 'renders the affix section');
+  assert.ok(res.text.includes('Item Affixes'), 'renders the affix section');
+  assert.ok(res.text.includes('Standard'), 'renders the Standard (basic currency) origin');
   assert.ok(res.text.includes('affix-table'), 'renders the prefix/suffix tables');
   assert.ok(res.text.includes('affix-tier-row'), 'renders collapsible lower-tier rows');
   assert.ok(res.text.includes('aria-expanded="false"'), 'tier rows start collapsed');

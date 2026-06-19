@@ -20,11 +20,14 @@
   target  – CSS selector for the items to show/hide (e.g. ".gem-browse-card")
   section – CSS selector for parent containers to hide when all children are filtered (optional)
   align   – "center" centers the bar and its buttons on the page (default: left)
+  count   – CSS selector for containers whose [data-filter-count] badge should be
+            updated to the number of visible targets inside it (optional)
 #}
-{% macro filterBar(groups, target, section=null, align=null) %}
+{% macro filterBar(groups, target, section=null, align=null, count=null) %}
 <div class="filter-bar{% if align == 'center' %} filter-bar--center{% endif %}"
      data-target="{{ target }}"
-     {% if section %}data-section="{{ section }}"{% endif %}>
+     {% if section %}data-section="{{ section }}"{% endif %}
+     {% if count %}data-count="{{ count }}"{% endif %}>
   {% for group in groups %}
   <div class="filter-group" data-key="{{ group.key }}"{% if group.match %} data-match="{{ group.match }}"{% endif %}{% if group.single %} data-single{% endif %}>
     {% if group.label %}<span class="filter-label">{{ group.label }}</span>{% endif %}

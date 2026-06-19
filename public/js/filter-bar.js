@@ -20,10 +20,14 @@
 //   - AND across groups: an element must pass all groups to remain visible.
 //   - If data-section is set, any section container with no visible children
 //     is hidden automatically.
+//   - If data-count is set, each matching container's [data-filter-count] badge
+//     is updated to the number of currently-visible targets inside it, so count
+//     badges track the active filter instead of showing a static total.
 (function () {
   document.querySelectorAll('.filter-bar').forEach(function (bar) {
     var targetSel  = bar.dataset.target;
     var sectionSel = bar.dataset.section || null;
+    var countSel   = bar.dataset.count || null;
     var groups     = Array.from(bar.querySelectorAll('.filter-group'));
 
     bar.addEventListener('click', function (e) {
@@ -71,6 +75,15 @@
           var hasVisible = Array.from(section.querySelectorAll(targetSel))
             .some(function (el) { return el.style.display !== 'none'; });
           section.style.display = hasVisible ? '' : 'none';
+        });
+      }
+
+      if (countSel) {
+        document.querySelectorAll(countSel).forEach(function (container) {
+          var badge = container.querySelector('[data-filter-count]');
+          if (!badge) return;
+          badge.textContent = Array.from(container.querySelectorAll(targetSel))
+            .filter(function (el) { return el.style.display !== 'none'; }).length;
         });
       }
     }
