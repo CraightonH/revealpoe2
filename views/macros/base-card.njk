@@ -83,6 +83,18 @@
       </div>
       <div class="separator"></div>
       {% endif %}
+      {% if vm.runeVariants.length %}
+      <div class="Stats">
+        <div class="property" style="margin-bottom:4px;">Runeforged variants:</div>
+        {% for rv in vm.runeVariants %}
+        <div class="property" style="padding-left:8px;">{{ rv.name }}</div>
+        {% for opt in rv.options %}
+        <div class="explicitMod" style="padding-left:16px;">{% for imp in opt %}{{ imp.html | safe }}{% if not loop.last %}<br>{% endif %}{% endfor %}</div>
+        {% endfor %}
+        {% endfor %}
+      </div>
+      <div class="separator"></div>
+      {% endif %}
       {% if vm.uniquesOnBase.length %}
       <div class="Stats">
         <div class="property" style="margin-bottom:4px;">Unique versions:</div>

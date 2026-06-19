@@ -66,6 +66,7 @@ let _index = null;
 let _byClass = null;
 let _byName = null;
 let _classInfo = null;
+let _runeByParent = null;
 
 function buildIndex() {
   if (_index) return;
@@ -97,6 +98,7 @@ function buildIndex() {
   _byClass = new Map();
   _byName = new Map();
   _classInfo = new Map();
+  _runeByParent = new Map();
 
   for (const [classId, info] of Object.entries(classesRaw)) {
     if (!BROWSABLE_CLASSES.has(classId)) continue;
@@ -105,10 +107,17 @@ function buildIndex() {
   }
 
   const seenNameClass = new Set();
+  // Name+class → record, so rune variants can find their parent base below.
+  const byNameClass = new Map();
+  // Runeforged/Runemastered variants are collected here and folded onto their
+  // parent base in a second pass — they don't get their own grid card or page.
+  const runeRaw = [];
 
   for (const [metaKey, v] of Object.entries(raw)) {
     if (v.domain !== 'item' || v.release_state !== 'released') continue;
     if (!BROWSABLE_CLASSES.has(v.item_class)) continue;
+
+    if (RUNE_VARIANT_RE.test(v.name)) { runeRaw.push(v); continue; }
 
     const nameClassKey = `${v.name}|${v.item_class}`;
     if (seenNameClass.has(nameClassKey)) continue;
@@ -143,12 +152,46 @@ function buildIndex() {
 
     if (!_index.has(slug)) _index.set(slug, record);
     if (!_byName.has(v.name)) _byName.set(v.name, record);
+    byNameClass.set(nameClassKey, record);
     _byClass.get(v.item_class)?.push(record);
   }
 
   for (const [, list] of _byClass) {
     list.sort((a, b) => (a.dropLevel ?? 0) - (b.dropLevel ?? 0) || a.name.localeCompare(b.name));
   }
+
+  _runeByParent = buildRuneVariants(runeRaw, byNameClass);
+}
+
+// Fold rune-system reissues onto the base they're variants of. A variant like
+// "Runeforged Torment Club" maps to its parent ("Torment Club") by stripping the
+// prefix and matching within the same item class. Variants are grouped by name,
+// and each distinct rune-implicit option is collected (most have one; a few have
+// several) so the parent's page can list every reissue and what it grants.
+// Variants whose parent base doesn't exist (rare data quirks) are dropped.
+function buildRuneVariants(runeRaw, byNameClass) {
+  const byParent = new Map(); // parentSlug → Map(variantName → { name, seen, options })
+  for (const v of runeRaw) {
+    const parent = byNameClass.get(`${v.name.replace(RUNE_VARIANT_RE, '')}|${v.item_class}`);
+    if (!parent) continue;
+    if (!byParent.has(parent.slug)) byParent.set(parent.slug, new Map());
+    const variants = byParent.get(parent.slug);
+    if (!variants.has(v.name)) variants.set(v.name, { name: v.name, seen: new Set(), options: [] });
+    const entry = variants.get(v.name);
+    const ids = v.implicits ?? [];
+    const key = ids.join(',');
+    if (entry.seen.has(key)) continue;
+    entry.seen.add(key);
+    const lines = resolveImplicits(ids);
+    if (lines.length) entry.options.push(lines);
+  }
+  const out = new Map();
+  for (const [slug, variants] of byParent) {
+    out.set(slug, [...variants.values()]
+      .map((e) => ({ name: e.name, options: e.options }))
+      .sort((a, b) => a.name.localeCompare(b.name)));
+  }
+  return out;
 }
 
 export function listItemClasses() {
@@ -181,19 +224,50 @@ function subtypesOf(bases) {
   return ATTR_ORDER.filter((k) => bySub.has(k)).map((k) => ({ key: k, bases: bySub.get(k) }));
 }
 
+// Strip an implicit id's trailing tier number so its tiers collapse to one
+// archetype — QuarterstaffImplicitBaseLightningDamage 1/2/3 (Crackling/Arcing/
+// Bolting) are one "lightning" line, represented by its highest-tier member.
+const normImplicit = (id) => id.replace(/\d+$/, '');
+
+// Most common non-null value of a raw property across the class — the "default"
+// a named variant deviates from. Returns null when no base carries the property
+// (e.g. crit/attack-time on armour), so those classes get no stat-bias split.
+function modeProp(bases, key) {
+  const counts = new Map();
+  for (const b of bases) {
+    const val = b.rawProperties?.[key];
+    if (val == null) continue;
+    counts.set(val, (counts.get(val) ?? 0) + 1);
+  }
+  let best = null;
+  let bestN = -1;
+  for (const [val, n] of counts) if (n > bestN) { best = val; bestN = n; }
+  return best;
+}
+
 // Highest-tier ("crafting") base per archetype. An archetype is identified by
-// structured data — attribute subtype + implicit mod id(s) — not by parsing
-// implicit text: e.g. every talisman with TalismanImplicitAdditionalBlock1 is
-// the Block archetype, and its highest drop-level member (Alpha) is the endgame
-// base. Runeforged/Runemastered named variants are excluded — they're rune-system
-// reissues that carry one-off implicit ids and only add noise (the `runeforged`
-// tag is useless here: it's on most items).
+// structured data, not by parsing implicit text:
+//   - attribute subtype (armour defence types)
+//   - tier-normalized implicit mod ids (e.g. every talisman with
+//     TalismanImplicitAdditionalBlock is the Block archetype)
+//   - weapon stat bias: crit chance and attack time relative to the class's
+//     modal values, which is how weapon lines differ when implicits don't —
+//     the crit line (Sinister: 12% vs 10% default) vs the attack-speed line
+//     (Lunar: faster) vs the balanced line are otherwise indistinguishable.
+// Each archetype's highest drop-level member (Alpha) is its endgame base.
+// (Runeforged/Runemastered variants never reach here — they're folded onto
+// their parent base in buildIndex and excluded from the class list entirely.)
 const RUNE_VARIANT_RE = /^Rune(forged|mastered) /;
 function topTierBases(bases) {
+  const baseCrit = modeProp(bases, 'critical_strike_chance');
+  const baseAtk = modeProp(bases, 'attack_time');
+  const bias = (val, base) => (val == null || base == null || val === base ? '=' : (val > base ? '+' : '-'));
   const byArchetype = new Map();
   for (const b of bases) {
-    if (RUNE_VARIANT_RE.test(b.name)) continue;
-    const key = `${b.attr ?? '-'}::${b.implicitIds.join(',') || 'plain'}`;
+    const impl = b.implicitIds.map(normImplicit).join(',') || 'plain';
+    const crit = bias(b.rawProperties?.critical_strike_chance, baseCrit);
+    const spd = bias(b.rawProperties?.attack_time, baseAtk);
+    const key = `${b.attr ?? '-'}::${impl}::c${crit}s${spd}`;
     const cur = byArchetype.get(key);
     if (!cur || b.dropLevel > cur.dropLevel) byArchetype.set(key, b);
   }
@@ -345,5 +419,5 @@ export function buildBaseItemViewModel(slug) {
     .filter((u) => u.base === b.name)
     .map((u) => ({ slug: u.slug, name: u.name, iconUrl: u.iconUrl }));
 
-  return { ...b, uniquesOnBase };
+  return { ...b, uniquesOnBase, runeVariants: _runeByParent.get(b.slug) ?? [] };
 }

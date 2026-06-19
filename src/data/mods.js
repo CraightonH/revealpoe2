@@ -168,20 +168,93 @@ export function getMod(id) {
   return _byId.get(id) ?? null;
 }
 
+// Stat-id → its stat_descriptions entry, so an implicit with no mod `text` can
+// still be rendered from its stats. Lazily built (loaded on first implicit miss).
+let _statDescById = null;
+function statDescById() {
+  if (_statDescById) return _statDescById;
+  _statDescById = new Map();
+  for (const entry of loadJson(`${REPOE}/stat_translations/stat_descriptions.json`)) {
+    if (!entry.English?.[0]) continue;
+    for (const id of entry.ids ?? []) if (!_statDescById.has(id)) _statDescById.set(id, entry);
+  }
+  return _statDescById;
+}
+
+// Weapon "Adds X to Y <Element> Damage" implicits (e.g. Bolting Quarterstaff)
+// carry their effect on hidden stat ids with no visible translation. They map
+// 1:1 onto the ordinary added-damage stats, so unhide the id to reuse the
+// canonical "Adds {0} to {1} … Damage" string.
+function unhideStatId(id) {
+  return id.replace(/^local_weapon_implicit_hidden_added_(min|max)imum_(.+)_damage$/, 'local_$1imum_added_$2_damage');
+}
+
+// Elemental-weapon bases convert their physical damage to an element via a
+// hidden "%_base_damage_is_<element>" flag that has no stat_descriptions string,
+// so synthesize the canonical "N% of Physical Damage Converted to … Damage" line
+// (the element/physical wrapped as keywords so they link like every other line).
+const CONVERT_RE = /^local_weapon_implicit_hidden_%_base_damage_is_(fire|cold|lightning|chaos)$/;
+
+// Render a mod's stats to display lines. Damage-conversion flags are synthesized;
+// everything else goes through stat_descriptions, rendering only entries whose
+// values need no numeric transform (empty index_handlers) — anything requiring
+// unit conversion stays hidden rather than risk a wrong number. Returns [] when
+// no stat resolves (true internal mechanics, zero-roll placeholders).
+function renderStatLines(stats) {
+  const map = statDescById();
+  const values = new Map();
+  for (const s of stats) values.set(unhideStatId(s.id), s);
+  const out = [];
+  const used = new Set();
+  for (const s of stats) {
+    const conv = s.id.match(CONVERT_RE);
+    if (conv) {
+      if (s.min === 0 && s.max === 0) continue;
+      const pct = s.min === s.max ? String(s.min) : `(${s.min}–${s.max})`;
+      const el = conv[1][0].toUpperCase() + conv[1].slice(1);
+      out.push(`${pct}% of [Physical|Physical] Damage Converted to [${el}|${el}] Damage`);
+      continue;
+    }
+    const entry = map.get(unhideStatId(s.id));
+    if (!entry || used.has(entry)) continue;
+    if (!entry.ids.every((eid) => values.has(eid))) continue;
+    const eng = entry.English[0];
+    if ((eng.index_handlers ?? []).some((h) => h.length)) continue;
+    // Skip zero-roll placeholders (e.g. "Adds 0 to 0 Lightning Damage").
+    if (entry.ids.every((eid) => values.get(eid).min === 0 && values.get(eid).max === 0)) continue;
+    used.add(entry);
+    if (eng.format?.[0] === 'ignore') { out.push(eng.string); continue; }
+    let str = eng.string;
+    entry.ids.forEach((eid, i) => {
+      const v = values.get(eid);
+      const num = v.min === v.max ? String(v.min) : `(${v.min}–${v.max})`;
+      const sign = eng.format?.[i]?.startsWith('+') && v.min >= 0 ? '+' : '';
+      str = str.replace(`{${i}}`, sign + num);
+    });
+    out.push(str);
+  }
+  return out.map((t) => ({ html: renderGameText(t, hasDefinition) }));
+}
+
 // Resolve a base item's innate implicit mod ids (from base_items.json
 // `implicits`) to rendered display lines. Implicits are encoded with
 // generation_type "unique" in mods.json, so they sit outside the rollable
 // prefix/suffix index built above — look them up in the raw table directly.
-// Mods with no display text (hidden internal mechanics like
-// "%_base_damage_is_fire", or zero-roll placeholders) are skipped.
+// Mods with no display text fall back to rendering from their stats (the hidden
+// "Adds X to Y … Damage" and "N% of Physical Damage Converted to … Damage" weapon
+// implicits); true internal mechanics and zero-roll placeholders resolve to nothing.
 export function resolveImplicits(ids) {
   if (!ids || !ids.length) return [];
   const raw = loadJson(`${REPOE}/mods.json`);
   const out = [];
   for (const id of ids) {
-    const text = raw[id]?.text;
-    if (!text || !text.trim()) continue;
-    out.push({ id, html: renderGameText(text, hasDefinition) });
+    const mod = raw[id];
+    if (!mod) continue;
+    if (mod.text && mod.text.trim()) {
+      out.push({ id, html: renderGameText(mod.text, hasDefinition) });
+    } else if (mod.stats?.length) {
+      for (const line of renderStatLines(mod.stats)) out.push({ id, html: line.html });
+    }
   }
   return out;
 }
