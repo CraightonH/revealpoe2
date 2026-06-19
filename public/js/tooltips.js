@@ -93,8 +93,13 @@
         //  - Otherwise hide any already-open ancestor tooltip so the inner one
         //    replaces it rather than stacking on top.
         if (ref.querySelector && ref.querySelector('[data-card-url]:hover')) return false;
+        // Only collapse a genuinely nested card target (e.g. skill link inside a
+        // base-item card) — match on [data-card-url] in the page DOM, NOT any
+        // element with a _tippy. Tippy stamps _tippy on its popper too, so an
+        // unrestricted walk would hide the very tooltip a keyword lives inside
+        // (keyword tooltips render in a body-appended popper), cascading shut.
         for (var p = ref.parentElement; p; p = p.parentElement) {
-          if (p._tippy && p._tippy !== instance) p._tippy.hide();
+          if (p.matches && p.matches('[data-card-url]') && p._tippy && p._tippy !== instance) p._tippy.hide();
         }
         var url = config.resolveUrl(instance.reference);
         if (!url) return false;
