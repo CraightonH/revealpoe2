@@ -40,6 +40,56 @@ function toSortKey(text) {
     .replace(/^[^a-z]+/, '');
 }
 
+// Internal mod-family identifiers are CamelCase ("LifeRegeneration",
+// "AddedColdDamagePerFrenzyCharge"); split them into spaced words for display.
+// Handles digit runs ("Exceed100%" -> "Exceed 100%") and acronym boundaries.
+function humanizeType(type) {
+  return type
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+    .replace(/([a-zA-Z])(\d)/g, '$1 $2')
+    .trim();
+}
+
+// Plain-text generic form of a mod, for compact labels (e.g. the search bar):
+// rolled ranges collapsed to "#", keyword markup reduced to its display words,
+// multi-line mods joined. "+(31-33) to [Strength|Strength]" -> "+# to Strength".
+function toGenericDisplay(text) {
+  return toGenericText(text)
+    .replace(/\[[^\]|]*\|([^\]]*)\]/g, '$1')
+    .replace(/[[\]]/g, '')
+    .replace(/\s*\n\s*/g, '; ')
+    .trim();
+}
+
+const escapeRe = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+// Generic label for a whole mod family. A tier may pin a value as a single
+// number when min==max ("10% of Damage"), so collapsing parenthesised ranges
+// isn't enough — a value that varies *across tiers* is still a roll and should
+// read as "#". We detect which stat ids vary across the family, then blank their
+// pinned literals before the usual generic transform. Values constant across
+// every tier (e.g. "+1 Charm Slot") are genuine fixed values and kept.
+function familyGenericText(tiers) {
+  const seen = new Map();      // stat id -> the single value seen so far
+  const variable = new Set();  // stat ids whose value rolls across the family
+  for (const t of tiers) {
+    for (const s of t.stats) {
+      if (s.min !== s.max) { variable.add(s.id); continue; }
+      if (seen.has(s.id)) { if (seen.get(s.id) !== s.min) variable.add(s.id); }
+      else seen.set(s.id, s.min);
+    }
+  }
+  const base = tiers[0];
+  let text = base.text;
+  for (const s of base.stats) {
+    if (s.min === s.max && variable.has(s.id)) {
+      text = text.replace(new RegExp(`(?<![\\d.])${escapeRe(s.min)}(?![\\d.])`, 'g'), '#');
+    }
+  }
+  return toGenericDisplay(text);
+}
+
 let _byId = null;
 let _byType = null;          // standard (currency) prefix/suffix families, by type
 let _corruptedByType = null; // Vaal corruption mods (item domain), by type
@@ -70,6 +120,7 @@ function makeFamily(type, tiers) {
   const top = tiers[tiers.length - 1];
   return {
     type,
+    displayName: humanizeType(type),
     typeSlug: slugify(type),
     genericHtml: renderGameText(toGenericText(top.text), hasDefinition),
     sortKey: toSortKey(top.text),
@@ -259,19 +310,6 @@ export function resolveImplicits(ids) {
   return out;
 }
 
-export function getModGroup(type) {
-  buildIndex();
-  const tiers = _byType.get(type);
-  if (!tiers) return null;
-  const first = tiers[0];
-  return {
-    type,
-    typeSlug: slugify(type),
-    generation_type: first.generation_type,
-    tiers,
-  };
-}
-
 export function listModGroups() {
   buildIndex();
   const out = [];
@@ -279,6 +317,8 @@ export function listModGroups() {
     const first = tiers[0];
     out.push({
       type,
+      displayName: humanizeType(type),
+      genericText: familyGenericText(tiers),
       typeSlug: slugify(type),
       generation_type: first.generation_type,
       text: first.text,

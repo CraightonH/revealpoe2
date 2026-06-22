@@ -57,23 +57,23 @@ test('GET /base/not-a-real-base returns 404', async () => {
   assert.equal(res.status, 404);
 });
 
-test('GET /mods returns 200 with prefix/suffix headings', async () => {
-  const app = createApp();
-  const res = await request(app).get('/mods');
-  assert.equal(res.status, 200);
-  assert.ok(res.text.toLowerCase().includes('prefix'));
-});
-
-test('GET /mod/increasedlife returns 200 with tier names', async () => {
+test('GET /mod/:typeSlug (standalone mod page) is deprecated → 404', async () => {
   const app = createApp();
   const res = await request(app).get('/mod/increasedlife');
-  assert.equal(res.status, 200);
-  assert.ok(res.text.includes('Hale'));
+  assert.equal(res.status, 404);
 });
 
-test('GET /mod/not-a-real-mod returns 404', async () => {
+test('GET /mod/:typeSlug/card returns the base-target flyout with /bases links', async () => {
   const app = createApp();
-  const res = await request(app).get('/mod/not-a-real-mod');
+  const res = await request(app).get('/mod/increasedlife/card');
+  assert.equal(res.status, 200);
+  assert.match(res.text, /href="\/bases\//);
+  assert.doesNotMatch(res.text, /<html/); // fragment, not full page
+});
+
+test('GET /mod/not-a-real-mod/card returns 404', async () => {
+  const app = createApp();
+  const res = await request(app).get('/mod/not-a-real-mod/card');
   assert.equal(res.status, 404);
 });
 

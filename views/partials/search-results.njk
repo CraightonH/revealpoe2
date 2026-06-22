@@ -1,11 +1,23 @@
-{% if results.length %}
+{% if q %}
 <div class="search-results">
   {% for r in results %}
-  <a href="{{ r.url }}" class="search-result-row"
-     {% if r.category === 'Gem' or r.category === 'Unique' %}data-card-url="{{ r.url }}/card"{% endif %}>
+  {# Affixes have no page: a single base target links directly, multiple targets
+     open a hover flyout (data-card-url, focusable), none renders as plain text. #}
+  <a class="search-result-row"
+     {% if r.url %}href="{{ r.url }}"{% elif r.cardUrl %}tabindex="0" role="button"{% endif %}
+     {% if r.cardUrl %}data-card-url="{{ r.cardUrl }}"{% endif %}>
     <span class="search-result-name">{{ r.name }}</span>
     <span class="search-result-cat search-result-cat--{{ r.category | lower }}">{{ r.category }}</span>
+    {# Flyout cue: rows that open a flyout instead of navigating (affixes with
+       multiple base targets) get a chevron so the interaction is discoverable. #}
+    {% if r.cardUrl and not r.url %}<span class="search-result-caret" aria-hidden="true">&rsaquo;</span>{% endif %}
   </a>
   {% endfor %}
+  {# Persistent escalation row: always offer the full Theory Crafting query,
+     which searches stat text/tags/reqs the name-only dropdown above ignores. #}
+  <a href="/theorycraft?q={{ q | urlencode }}" class="search-result-row search-result-all">
+    <span class="search-result-name"><kbd>↵</kbd> Search everything for “{{ q }}”</span>
+    <span class="search-result-cat">→</span>
+  </a>
 </div>
 {% endif %}

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  getMod, getModGroup, listModGroups, getModsForBase, getModsForClass,
+  getMod, listModGroups, getModsForBase, getModsForClass,
   getCorruptedForClass, getDesecratedForTags,
 } from '../src/data/mods.js';
 
@@ -18,25 +18,6 @@ test('getMod returns a known mod by id', () => {
 
 test('getMod returns null for unknown id', () => {
   assert.equal(getMod('NotARealMod'), null);
-});
-
-test('getModGroup returns all tiers for IncreasedLife', () => {
-  const g = getModGroup('IncreasedLife');
-  assert.ok(g);
-  assert.equal(g.type, 'IncreasedLife');
-  assert.equal(g.typeSlug, 'increasedlife');
-  assert.equal(g.generation_type, 'prefix');
-  assert.ok(Array.isArray(g.tiers));
-  assert.ok(g.tiers.length >= 8); // 14 tiers total in the data
-  // Sorted by level — lowest first
-  const first = g.tiers.find((t) => t.id === 'IncreasedLife1');
-  assert.ok(first, 'IncreasedLife1 should be present');
-  assert.equal(first.name, 'Hale');
-  assert.equal(first.level, 1);
-});
-
-test('getModGroup returns null for unknown type', () => {
-  assert.equal(getModGroup('NotAType'), null);
 });
 
 test('listModGroups returns prefix and suffix groups', () => {

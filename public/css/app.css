@@ -20,7 +20,7 @@ body {
   text-decoration: none;
   font-size: 20px;
 }
-.search-box { flex: 1; max-width: 480px; }
+.search-box { flex: 1; max-width: 480px; position: relative; }
 
 /* Card size control (S/M/L) — scales the gem-detail unit, persisted in localStorage */
 .card-size { display: flex; gap: 2px; margin-left: auto; }
@@ -50,11 +50,23 @@ body {
   color: var(--text);
   font-size: 14px;
 }
+/* The htmx target: an overlay anchored to the search box so results float over
+   the page (drop-down) instead of pushing the header taller. */
+#search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 200;
+}
 .search-results {
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: 6px;
   margin-top: 4px;
+  max-height: 70vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 .search-results a {
   display: block;
@@ -63,6 +75,21 @@ body {
   text-decoration: none;
 }
 .search-results a:hover { background: var(--bg-base); }
+/* Escalation row — pinned to the bottom, set off from the named hits above. */
+.search-result-all {
+  border-top: 1px solid var(--border);
+  color: var(--color-prop);
+}
+.search-result-all .search-result-name { color: var(--color-prop); }
+.search-result-all kbd {
+  font-family: inherit;
+  font-size: 11px;
+  padding: 0 4px;
+  margin-right: 4px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--bg-base);
+}
 .search-result-row {
   display: flex;
   align-items: center;
@@ -76,6 +103,12 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.search-result-caret {
+  flex-shrink: 0;
+  color: var(--color-default);
+  font-size: 15px;
+  line-height: 1;
+}
 .search-result-cat {
   font-size: 10px;
   padding: 1px 5px;
@@ -85,7 +118,10 @@ body {
   white-space: nowrap;
   flex-shrink: 0;
 }
-.search-result-cat--gem { background: rgba(27, 162, 155, 0.2); color: var(--color-gem); }
+.search-result-cat--gem,
+.search-result-cat--skill,
+.search-result-cat--support,
+.search-result-cat--spirit { background: rgba(27, 162, 155, 0.2); color: var(--color-gem); }
 .search-result-cat--unique { background: rgba(175, 96, 37, 0.2); color: var(--color-unique); }
 .search-result-cat--keystone { background: rgba(200, 180, 100, 0.2); color: #c8b464; }
 .search-result-cat--notable { background: rgba(200, 180, 100, 0.15); color: #b8a454; }
@@ -320,6 +356,26 @@ body {
 }
 .tippy-box[data-theme~='poe2'] .tippy-content { padding: 0; }
 .tippy-box[data-theme~='poe2'] .tippy-arrow { color: #000; }
+
+/* Affix base-target flyout — the list of bases that can roll a mod. */
+.affix-bases { padding: 8px 10px; min-width: 160px; }
+.affix-bases-head {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-default);
+  margin-bottom: 6px;
+}
+.affix-bases-list { list-style: none; margin: 0; padding: 0; }
+.affix-bases-link {
+  display: block;
+  padding: 3px 6px;
+  border-radius: 3px;
+  color: var(--color-normal);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.affix-bases-link:hover { background: var(--bg-base); color: var(--color-prop); }
 
 /* Match the tooltip to the card size. Tooltips are appended to <body> (outside
    the zoomed .gem-detail), so without this they always render at base/M scale.

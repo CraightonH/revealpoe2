@@ -1,0 +1,11 @@
+{# Hover-flyout body for an affix: the bases that can roll it. Each links to the
+   relevant /bases/:class page (armour variants deep-link the defence filter).
+   Rendered inside the shared interactive card tooltip. #}
+<div class="affix-bases">
+  <div class="affix-bases-head">Can roll on</div>
+  <ul class="affix-bases-list">
+    {% for t in targets %}
+    <li><a class="affix-bases-link" href="{{ t.href }}">{{ t.label }}</a></li>
+    {% endfor %}
+  </ul>
+</div>

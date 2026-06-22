@@ -4,8 +4,10 @@ import { search } from '../src/data/search.js';
 
 test('search finds gems by case-insensitive substring', () => {
   const hits = search('herald');
-  assert.ok(hits.some((h) => h.name === 'Herald of Ash'));
-  assert.ok(hits.every((h) => h.slug && h.url));
+  const gem = hits.find((h) => h.name === 'Herald of Ash');
+  assert.ok(gem);
+  assert.ok(gem.slug && gem.url.startsWith('/gem/'));
+  assert.ok(hits.every((h) => h.slug)); // every result is addressable (url may be null for affixes)
 });
 
 test('search returns [] for blank query', () => {
@@ -50,10 +52,20 @@ test('search results include category field', () => {
   assert.ok(hits.every((h) => typeof h.category === 'string' && h.category.length > 0));
 });
 
-test('search finds keystones by stat text', () => {
+test('search finds gems by stat text, not just by name', () => {
+  // The point of backing the dropdown with the full-text doc set: a gem whose
+  // name says nothing about energy shield still surfaces via its stat lines.
   const hits = search('energy shield');
-  const zealots = hits.find((h) => h.url.includes('passive_keystone_zealots_oath'));
-  assert.ok(zealots, "Zealot's Oath not found by stat text 'energy shield'");
+  assert.ok(hits.some((h) => h.url.startsWith('/gem/')));
+});
+
+test('a broad stat query shows category variety, not 20 of one type', () => {
+  // Round-robin keeps the capped preview varied — keystones aren't buried under
+  // the 100+ uniques that also match. The full result set lives in Theory
+  // Crafting (the dropdown's "Search everything" row), not this preview.
+  const cats = new Set(search('energy shield').map((h) => h.category));
+  assert.ok(cats.size >= 4, `expected varied categories, got ${[...cats].join(', ')}`);
+  assert.ok(cats.has('Keystone'));
 });
 
 test('search finds notables by name', () => {
@@ -63,12 +75,18 @@ test('search finds notables by name', () => {
 
 test('search finds notables by stat text', () => {
   const hits = search('damaging ailments');
-  assert.ok(hits.some((h) => h.url.includes('ailments38')));
+  assert.ok(hits.some((h) => h.url && h.url.includes('ailments38')));
 });
 
-test('search finds mod groups by text', () => {
-  const hits = search('maximum life');
-  assert.ok(hits.some((h) => h.url.startsWith('/mod/')));
+test('affixes never link to a standalone mod page', () => {
+  // The deprecation guarantee: an affix either links to a /bases page (single
+  // base target) or carries a /mod/:slug/card flyout (multiple), never a mod page.
+  const affixes = search('maximum life').filter((h) => h.category === 'Affix');
+  assert.ok(affixes.length, 'expected affix hits for "maximum life"');
+  for (const a of affixes) {
+    if (a.url) assert.ok(a.url.startsWith('/bases/'), `affix url should be a base page, got ${a.url}`);
+    if (a.cardUrl) assert.match(a.cardUrl, /^\/mod\/.+\/card$/);
+  }
 });
 
 test('search returns category Keystone for keystones', () => {
@@ -85,9 +103,19 @@ test('search returns category Notable for notables', () => {
   assert.equal(n.category, 'Notable');
 });
 
-test('search returns category Gem for gems', () => {
+test('search labels gems by type (Skill/Support/Spirit), not a bare Gem', () => {
   const hits = search('herald of ash');
-  assert.ok(hits.some((h) => h.category === 'Gem'));
+  assert.ok(hits.some((h) => ['Skill', 'Support', 'Spirit'].includes(h.category)));
+  assert.ok(!hits.some((h) => h.category === 'Gem'));
+});
+
+test('search exposes a cardUrl for hover-card categories', () => {
+  // Notable cards live under /passive, not /notable — the distinction the
+  // search index has to bridge so the hover tooltip resolves.
+  const notable = search('fast acting toxins').find((h) => h.name === 'Fast Acting Toxins');
+  assert.match(notable.cardUrl, /^\/passive\/.+\/card$/);
+  const support = search('unleash').find((h) => h.category === 'Support');
+  assert.equal(support.cardUrl, '/gem/unleash-support/card');
 });
 
 test('search returns category Affix for mods', () => {

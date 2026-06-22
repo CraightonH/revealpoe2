@@ -1,6 +1,6 @@
 import { listGems, buildGemViewModel, getGem } from './gems.js';
 import { listUniques } from './uniques.js';
-import { listItemClasses, getItemClass } from './baseItems.js';
+import { listItemClasses, getItemClass, affixBaseTargets } from './baseItems.js';
 import { listKeystones, listNotables } from './passiveTree.js';
 import { listModGroups } from './mods.js';
 import { loadJson } from './loader.js';
@@ -147,18 +147,34 @@ function uniqueDocs() {
 function affixDocs() {
   return listModGroups()
     .filter((g) => g.text)
-    .map((g) => ({
-      name: g.type,
-      url: `/mod/${g.typeSlug}`,
-      category: 'affix',
-      iconUrl: null,
-      subtitle: g.text,
-      color: '',
-      tags: [g.generation_type].filter(Boolean),
-      req: [],
-      grants: [],
-      text: norm([g.type, g.text]),
-    }));
+    .map((g) => {
+      // No dedicated mod page: resolve where this affix can actually roll.
+      // One base target → direct link; several → hover flyout.
+      const targets = affixBaseTargets(g.typeSlug);
+      // Affixes that roll on no browsable base (unique-granted, weight-0,
+      // essence-only…) aren't meaningful in isolation — and the /bases affix
+      // tables don't list them either. Drop them rather than show a dead result.
+      if (!targets.length) return null;
+      return {
+        name: g.displayName,
+        genericText: g.genericText, // compact generic form, used as the search-bar label
+        typeSlug: g.typeSlug,
+        // Every affix gets the "Can roll on" flyout on hover. A single-base affix
+        // also links directly (click-through); multi-base has no direct url, so
+        // the flyout is the way to pick a base (and gets the chevron cue).
+        url: targets.length === 1 ? targets[0].href : null,
+        cardUrl: `/mod/${g.typeSlug}/card`,
+        category: 'affix',
+        iconUrl: null,
+        subtitle: g.text,
+        color: '',
+        tags: [g.generation_type].filter(Boolean),
+        req: [],
+        grants: [],
+        text: norm([g.displayName, g.text]),
+      };
+    })
+    .filter(Boolean);
 }
 
 function nodeDocs(list, category, urlBase) {

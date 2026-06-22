@@ -85,11 +85,21 @@ function classifyOrigin(rec, baseTags) {
 
 let _index = null;
 
+// When a gem name is shared across types (e.g. the active skill "Unleash" and
+// the support gem "Unleash"), this precedence decides who keeps the bare URL
+// slug; the others are suffixed with their type ("unleash" + "unleash-support").
+const SLUG_PRECEDENCE = ['active', 'support', 'spirit'];
+
 function index() {
   if (_index) return _index;
   const gems = loadJson(`${REPOE}/skill_gems.json`);
   const baseItems = loadJson(`${REPOE}/base_items.json`);
-  _index = new Map();
+
+  // Primary key is the name+type combo, not the name alone — a support gem that
+  // shares a name with an active skill must not be dropped. Same-name-same-type
+  // duplicates keep the first seen (prior behaviour).
+  const byCombo = new Map();     // `${baseSlug}|${gem_type}` -> record (+ baseSlug)
+  const typesBySlug = new Map(); // baseSlug -> Set<gem_type>
   for (const [key, rec] of Object.entries(gems)) {
     const name = rec?.base_item?.display_name;
     if (!name) continue;
@@ -97,16 +107,25 @@ function index() {
     // the game files but not playable. Exclude from the wiki (cf. passiveTree.js).
     if (name.includes('[DNT')) continue;
     if (GARBAGE_RE.test(name)) continue;
+    const baseSlug = slugify(name);
+    const combo = `${baseSlug}|${rec.gem_type}`;
+    if (byCombo.has(combo)) continue;
     const origin = classifyOrigin(rec, baseItems[rec.base_item.id]?.tags);
-    const slug = slugify(name);
-    if (!_index.has(slug)) {
-      _index.set(slug, { key, origin, ...rec });
-    } else if (_index.get(slug).gem_type !== rec.gem_type) {
-      const existing = _index.get(slug);
-      console.warn(
-        `[gems] cross-type slug collision: "${slug}" — keeping ${existing.base_item.display_name} (${existing.gem_type}), skipping ${name} (${rec.gem_type})`
-      );
+    byCombo.set(combo, { key, origin, baseSlug, ...rec });
+    if (!typesBySlug.has(baseSlug)) typesBySlug.set(baseSlug, new Set());
+    typesBySlug.get(baseSlug).add(rec.gem_type);
+  }
+
+  // Assign URL slugs, suffixing the lower-precedence type(s) on name collisions.
+  _index = new Map();
+  for (const rec of byCombo.values()) {
+    const types = typesBySlug.get(rec.baseSlug);
+    let slug = rec.baseSlug;
+    if (types.size > 1) {
+      const primary = SLUG_PRECEDENCE.find((t) => types.has(t)) ?? rec.gem_type;
+      if (rec.gem_type !== primary) slug = `${rec.baseSlug}-${rec.gem_type}`;
     }
+    _index.set(slug, rec);
   }
   return _index;
 }
@@ -222,16 +241,13 @@ export function attributeRequirements(weights) {
 }
 
 export function getRecommendedSupports(gem) {
-  const gems = loadJson(`${REPOE}/skill_gems.json`);
   const out = [];
   for (const key of gem.recommended_supports ?? []) {
-    const rec = gems[key];
-    if (!rec?.base_item?.display_name) continue;
-    out.push({
-      slug: slugify(rec.base_item.display_name),
-      name: rec.base_item.display_name,
-      color: rec.color,
-    });
+    // Resolve via the index so a support keeps its real (possibly suffixed) slug
+    // rather than colliding with a same-named active skill.
+    const ref = getGemRefByKey(key);
+    if (!ref) continue;
+    out.push({ slug: ref.slug, name: ref.name, color: index().get(ref.slug).color });
   }
   return out;
 }

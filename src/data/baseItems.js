@@ -335,6 +335,51 @@ export function getItemClass(classSlug) {
   return null;
 }
 
+// Reverse of the affix tables: for a mod family (by typeSlug), which browsable
+// bases can roll it. Mirrors getItemClass's per-class affix computation, then
+// inverts it. Armour classes split into defence subtypes — a mod that only rolls
+// on the str/hybrid bases lists "Armour Body Armour", never "Evasion ..." —
+// deep-linking the class page's defence filter (?attr=). Built once, cached.
+let _affixTargets = null;
+export function affixBaseTargets(typeSlug) {
+  if (!_affixTargets) _affixTargets = buildAffixTargets();
+  return _affixTargets.get(typeSlug) ?? [];
+}
+
+function buildAffixTargets() {
+  buildIndex();
+  const map = new Map(); // typeSlug -> [{ label, href }]
+  const add = (slug, entry) => {
+    if (!map.has(slug)) map.set(slug, []);
+    map.get(slug).push(entry);
+  };
+  for (const [, info] of _classInfo) {
+    const cls = getItemClass(info.classSlug);
+    if (!cls) continue;
+    const subKeys = cls.attrSubtypes.map((s) => s.value);
+    const subLabel = new Map(cls.attrSubtypes.map((s) => [s.value, s.label]));
+    const families = [...cls.affixes.standard.prefix, ...cls.affixes.standard.suffix];
+    for (const f of families) {
+      // f.attrs is populated only when the class spans >1 defence subtype; a
+      // family tagged with a strict subset rolls on just those bases, so list
+      // each defence variant separately. Otherwise it rolls class-wide.
+      if (subKeys.length > 1 && f.attrs && f.attrs.length && f.attrs.length < subKeys.length) {
+        for (const sub of f.attrs) {
+          add(f.typeSlug, { label: `${subLabel.get(sub)} ${cls.name}`, href: `/bases/${cls.classSlug}?attr=${sub}` });
+        }
+      } else {
+        add(f.typeSlug, { label: cls.name, href: `/bases/${cls.classSlug}` });
+      }
+    }
+  }
+  for (const [slug, entries] of map) {
+    const uniq = new Map();
+    for (const e of entries) uniq.set(e.href, e);
+    map.set(slug, [...uniq.values()].sort((a, b) => a.label.localeCompare(b.label)));
+  }
+  return map;
+}
+
 // Off-hand slot classes. PoE2 has no "offhand" tag, so this is a small explicit
 // taxonomy (the only hand-maintained list here). Order = display order.
 const OFFHAND_CLASSES = ['Shield', 'Buckler', 'Focus', 'Quiver'];

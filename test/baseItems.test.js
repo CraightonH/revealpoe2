@@ -1,8 +1,28 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  listItemClasses, getItemClass, getBaseItem, buildBaseItemViewModel,
+  listItemClasses, getItemClass, getBaseItem, buildBaseItemViewModel, affixBaseTargets,
 } from '../src/data/baseItems.js';
+
+test('affixBaseTargets: class-wide mod lists plain class links', () => {
+  const targets = affixBaseTargets('increasedlife');
+  assert.ok(targets.length > 1, 'IncreasedLife rolls on many classes');
+  assert.ok(targets.every((t) => t.href.startsWith('/bases/')));
+  // Rolls on all defence subtypes → not split, so a plain (no ?attr=) class link.
+  assert.ok(targets.some((t) => t.href === '/bases/body-armour'));
+});
+
+test('affixBaseTargets: defence-specific mod splits into deep-linked variants', () => {
+  // "increased Armour and Life" rolls only on str/hybrid bases — never Evasion-only.
+  const targets = affixBaseTargets('localincreasedarmourandlife');
+  assert.ok(targets.length, 'should map to armour bases');
+  assert.ok(targets.every((t) => t.href.includes('?attr=str_armour')));
+  assert.ok(targets.some((t) => t.label.startsWith('Armour ')));
+});
+
+test('affixBaseTargets: unknown family has no targets', () => {
+  assert.deepEqual(affixBaseTargets('not-a-real-affix'), []);
+});
 
 test('listItemClasses returns grouped categories with counts', () => {
   const groups = listItemClasses();

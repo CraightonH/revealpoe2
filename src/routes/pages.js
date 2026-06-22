@@ -1,7 +1,6 @@
 import { buildGemViewModel, listGems, listGemCards } from '../data/gems.js';
 import { buildUniqueViewModel, listUniqueCards, listUniqueClassFilters } from '../data/uniques.js';
-import { listBaseNav, getItemClass, buildBaseItemViewModel } from '../data/baseItems.js';
-import { listModGroups, getModGroup } from '../data/mods.js';
+import { listBaseNav, getItemClass, buildBaseItemViewModel, affixBaseTargets } from '../data/baseItems.js';
 import { listKeystones, getKeystone, listNotables, getNotable, getPassiveNode, listAscendancies, getAscendancy } from '../data/passiveTree.js';
 
 // Register a detail page: reads the single route param, runs the builder,
@@ -27,10 +26,6 @@ function cardRoute(app, path, builder, fragment) {
 }
 
 export function registerPages(app) {
-  app.get('/', (_req, res) => {
-    res.render('home.njk');
-  });
-
   app.get('/gems', (_req, res) => {
     const gems = listGemCards().sort((a, b) => a.name.localeCompare(b.name));
     const active = gems.filter((g) => g.gemType === 'active');
@@ -63,19 +58,13 @@ export function registerPages(app) {
   detailRoute(app, '/base/:slug', buildBaseItemViewModel, 'base-item.njk', 'vm');
   cardRoute(app, '/base/:slug/card', buildBaseItemViewModel, 'partials/base-card-fragment.njk');
 
-  app.get('/mods', (_req, res) => {
-    const groups = listModGroups();
-    const prefix = groups.filter((g) => g.generation_type === 'prefix');
-    const suffix = groups.filter((g) => g.generation_type === 'suffix');
-    res.render('mods.njk', { prefix, suffix });
-  });
-
-  app.get('/mod/:typeSlug', (req, res) => {
-    const groups = listModGroups();
-    const entry = groups.find((g) => g.typeSlug === req.params.typeSlug);
-    if (!entry) return res.status(404).render('home.njk', { notFound: req.params.typeSlug });
-    const group = getModGroup(entry.type);
-    res.render('mod-group.njk', { group });
+  // Mods have no standalone page — they aren't meaningful in isolation. Instead,
+  // affix search results link/flyout to the bases that can roll them. This serves
+  // the flyout fragment: the list of base targets for one mod family.
+  app.get('/mod/:typeSlug/card', (req, res) => {
+    const targets = affixBaseTargets(req.params.typeSlug);
+    if (!targets.length) return res.status(404).render('home.njk', { notFound: req.params.typeSlug });
+    res.render('partials/affix-bases-fragment.njk', { targets });
   });
 
   detailRoute(app, '/notable/:id', getNotable, 'notable.njk', 'n');

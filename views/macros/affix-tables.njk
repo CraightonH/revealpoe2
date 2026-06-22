@@ -20,7 +20,7 @@
     {% set more = tiers.length - 1 %}
     <tbody class="affix-fam"{% if f.attrs and f.attrs.length %} data-attr="{{ f.attrs | join(' ') }}"{% endif %}>
       <tr class="affix-row" tabindex="0" role="button" aria-expanded="false"
-          aria-label="{% if more %}Show {{ more }} lower tier{{ 's' if more != 1 }} for {{ f.type }}{% else %}{{ f.type }} (single tier){% endif %}">
+          aria-label="{% if more %}Show {{ more }} lower tier{{ 's' if more != 1 }} for {{ f.displayName }}{% else %}{{ f.displayName }} (single tier){% endif %}">
         <td class="affix-col-tier">
           <span class="affix-caret{% if not more %} affix-caret--empty{% endif %}" aria-hidden="true">▸</span>
           <span class="affix-tbadge">T1</span>
