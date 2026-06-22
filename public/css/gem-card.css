@@ -27,6 +27,13 @@ html[data-card-size="xl"] .gem-browse-grid,
 html[data-card-size="xl"] .asc-grid,
 html[data-card-size="xl"] .keystone-index-grid { zoom: 1.5; }
 
+/* The rollable-affix browser on /bases/:class scales with the same control.
+   Zoom the whole section as a unit so the heading, two-column layout, gaps and
+   the px-based table font sizes all scale proportionally. */
+html[data-card-size="s"] .affix-section { zoom: 0.85; }
+html[data-card-size="l"] .affix-section { zoom: 1.25; }
+html[data-card-size="xl"] .affix-section { zoom: 1.5; }
+
 .newItemPopup {
   font-family: var(--font-smallcaps);
   background-color: var(--bg-base);
@@ -959,8 +966,12 @@ details[open] > .bases-group-title::before {
    `color` so it doesn't inherit into the table cells (e.g. the iLvl column). */
 .affix-origin {
   margin-top: 22px;
-  padding-left: 9px;
+  padding: 10px 12px 10px 9px;
   border-left: 3px solid var(--origin-accent);
+  /* Faint wash of the origin's accent across the whole panel, so each section
+     reads as a distinct band at a glance — not just by the left rule. */
+  background: color-mix(in srgb, var(--origin-accent) 5%, transparent);
+  border-radius: 0 4px 4px 0;
 }
 .affix-origin:first-of-type { margin-top: 6px; }
 
