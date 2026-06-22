@@ -47,7 +47,8 @@
         {% endfor %}
       </div>
       {% endif %}
-      {% if u.properties.length and (u.implicits.length or u.explicits.length) %}<div class="separator"></div>{% endif %}
+      {% if u.properties.length and (u.requirements.length or u.implicits.length or u.explicits.length) %}<div class="separator"></div>{% endif %}
+      {% if u.requirements.length %}<div class="bases-list-req">Requires: {{ u.requirements | join(', ') | safe }}</div>{% endif %}
       {% for s in u.implicits %}{{ modLineFlat(s) }}{% endfor %}
       {% if u.implicits.length and u.explicits.length %}<div class="separator"></div>{% endif %}
       {% for s in u.explicits %}{{ modLineFlat(s) }}{% endfor %}

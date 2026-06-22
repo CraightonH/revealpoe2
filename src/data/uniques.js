@@ -238,6 +238,7 @@ export function listUniqueCards() {
       iconUrl: u.iconUrl,
       inventorySize: baseRecord?.inventorySize ?? null,
       properties,
+      requirements: baseRecord?.requirements ?? [],
       implicits: parsed.slice(0, u.implicitCount),
       explicits: parsed.slice(u.implicitCount),
     };
