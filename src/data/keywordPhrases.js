@@ -27,6 +27,13 @@ const TOKEN_BARE = /\[([A-Za-z0-9]+)\]/g;
 
 const norm = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
 
+// Equal up to a trailing plural "s" (so "minion" matches the term "Minions").
+function eqLoose(a, b) {
+  a = norm(a);
+  b = norm(b);
+  return a === b || a === `${b}s` || `${a}s` === b;
+}
+
 // A keyword surface phrase, not a sentence: short, word-like, no embedded numbers.
 function isPhraseLike(phrase) {
   if (/\d/.test(phrase)) return false;
@@ -124,9 +131,15 @@ export function deriveKeywordPhrases() {
     let candidates = [...ids].filter(hasDef);
     if (candidates.length === 0) continue;
     if (candidates.length > 1) {
-      // Tie-break: the id whose own name equals the phrase (e.g. "Frozen" → Frozen,
-      // not Freeze; "Rarity" → Rarity, not ItemRarity). Otherwise drop as ambiguous.
-      const exact = candidates.filter((id) => norm(id) === norm(display));
+      // Tie-break: keep the candidate whose own glossary TERM is the display
+      // (e.g. "Frozen" → Frozen [term "Frozen"], not Freeze; "minion(s)" → Minion
+      // [term "Minions"], not MonsterMinion). Matching the canonical term — not
+      // the internal id — is what filters generic verbs the game loosely tokenizes:
+      // "Gain" tokenizes to both Gain (term "Damage Gained as extra X") and
+      // StatGain (term "Gaining Stats…"), and since NEITHER term is "Gain", it
+      // drops as ambiguous instead of hijacking "Gain Life on Kill". Genuinely
+      // ambiguous displays (power, stun threshold) likewise drop. Otherwise drop.
+      const exact = candidates.filter((id) => eqLoose(term(id), display));
       if (exact.length !== 1) continue;
       candidates = exact;
     }

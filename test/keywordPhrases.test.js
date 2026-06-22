@@ -12,9 +12,18 @@ test('derives a clean phrase->id map from the game data', () => {
   assert.equal(byPhrase.get('fork'), 'Fork');
   assert.equal(byPhrase.get('culling strike'), 'CullingStrike');
 
-  // ambiguity tie-break: id whose name equals the phrase wins
+  // ambiguity tie-break resolves to the id whose glossary TERM is the phrase
   assert.equal(byPhrase.get('frozen'), 'Frozen'); // not Freeze
   assert.equal(byPhrase.get('rarity'), 'Rarity'); // not ItemRarity
+  assert.equal(byPhrase.get('minion'), 'Minion'); // term "Minions", plural-aware
+
+  // a generic verb the game loosely tokenizes to a specific mechanic must NOT
+  // link: "Gain" → both Gain ("Damage Gained as extra X") and StatGain, and
+  // neither term is "Gain", so it drops instead of hijacking "Gain Life on Kill".
+  assert.equal(byPhrase.has('gain'), false);
+  // genuinely ambiguous single words drop too (enemy vs player, charge vs monster)
+  assert.equal(byPhrase.has('power'), false);
+  assert.equal(byPhrase.has('stun threshold'), false);
 
   // hygiene: no numeric or sentence-length phrases, no dead (def-less) ids
   for (const [phrase] of pairs) {
