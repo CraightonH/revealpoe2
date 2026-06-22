@@ -795,12 +795,13 @@ details[open] > .bases-group-title::before {
   background-image: radial-gradient(ellipse at center, var(--color-unique-divider) 0%, var(--color-unique-divider) 10%, transparent 33%);
 }
 
-/* Mod lines — reuse the tooltip .explicitMod styling but left-align and tighten
-   for the dense card (the tooltip centers them). */
+/* Mod lines — reuse the tooltip .explicitMod styling, tightened to match the
+   base card's innate-implicit rhythm (.bases-list-impl); centered like the rest
+   of the card body. */
 .bases-list-card--unique .explicitMod {
   padding: 0;
   font-size: 11.5px;
-  line-height: 1.35;
+  line-height: 1.3;
 }
 /* Granted-skill name — gem teal with a dotted underline to read as hoverable
    (carries data-card-url for the skill's own card tooltip), matching the
