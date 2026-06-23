@@ -2,8 +2,13 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   getMod, listModGroups, getModsForBase, getModsForClass,
-  getCorruptedForClass, getDesecratedForTags,
+  getCorruptedForClass, getDesecratedForClass,
 } from '../src/data/mods.js';
+
+// A browsable boots base node (BootsDemigods1 is a non-browsable Demigod's item,
+// so it has no base node and no rolls_on edges — the app only ever queries
+// browsable base-node keys).
+const BOOTS = 'Metadata/Items/Armours/Boots/FourBootsStr1';
 
 test('getMod returns a known mod by id', () => {
   const m = getMod('IncreasedLife1');
@@ -94,7 +99,7 @@ test('getModsForClass returns empty for no known bases', () => {
 });
 
 test('getCorruptedForClass returns a flat list of corruption families', () => {
-  const corrupted = getCorruptedForClass(['Metadata/Items/Armours/Boots/BootsDemigods1']);
+  const corrupted = getCorruptedForClass([BOOTS]);
   assert.ok(Array.isArray(corrupted), 'corrupted is a flat array, not prefix/suffix');
   assert.ok(corrupted.length >= 1, 'boots have corruption mods');
   // Same family shape the affix tables consume.
@@ -107,8 +112,8 @@ test('getCorruptedForClass returns empty for unknown bases', () => {
   assert.deepEqual(getCorruptedForClass(['Metadata/Items/NotReal/Fake']), []);
 });
 
-test('getDesecratedForTags maps Abyssal mods to boots via spawn weights', () => {
-  const des = getDesecratedForTags(['boots', 'armour']);
+test('getDesecratedForClass maps Abyssal mods to boots via spawn weights', () => {
+  const des = getDesecratedForClass([BOOTS]);
   assert.ok(Array.isArray(des.prefix) && Array.isArray(des.suffix));
   // In the data, Abyssal boots mods are all suffixes (the of-Ulaman/Amanamu/Kurgal set).
   assert.equal(des.prefix.length, 0, 'no desecrated prefixes roll on boots');
@@ -118,6 +123,6 @@ test('getDesecratedForTags maps Abyssal mods to boots via spawn weights', () => 
   assert.ok(des.suffix.every((f) => f.tiers.some((t) => boss.test(t.id))));
 });
 
-test('getDesecratedForTags returns empty when no tag matches', () => {
-  assert.deepEqual(getDesecratedForTags(['no_such_tag']), { prefix: [], suffix: [] });
+test('getDesecratedForClass returns empty when no base matches', () => {
+  assert.deepEqual(getDesecratedForClass(['Metadata/Items/NotReal/Fake']), { prefix: [], suffix: [] });
 });
