@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "test": "node --test"
+    "test": "node --test",
+    "build:graph": "node scripts/graph/cli.js"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
