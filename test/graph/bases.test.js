@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { selectBaseRecords } from '../../scripts/graph/bases.js';
+import { selectBaseRecords, baseNodes, classNodes, tagNodes, baseEdges } from '../../scripts/graph/bases.js';
 
 test('selectBaseRecords keys bases by source id and resolves known slugs', () => {
   const { records } = selectBaseRecords();
@@ -28,8 +28,6 @@ test('selectBaseRecords disambiguates a name spanning multiple classes', () => {
   assert.ok(slugs.has('energy-blade--two-hand-sword'));
   assert.ok(!slugs.has('energy-blade'), 'undisambiguated slug must not exist');
 });
-
-import { baseNodes, classNodes, tagNodes } from '../../scripts/graph/bases.js';
 
 test('baseNodes carry resolved props for a known base', () => {
   const { nodes, records } = baseNodes();
@@ -87,8 +85,6 @@ test('tagNodes are distinct and synthetic-id keyed', () => {
   assert.ok(tnodes.every((n) => n.kind === 'tag' && n.id.startsWith('Tag/')));
   assert.ok(tnodes.some((n) => n.id === 'Tag/amulet'));
 });
-
-import { baseEdges } from '../../scripts/graph/bases.js';
 
 test('baseEdges link a base to its class and tags, with no dangling endpoints', () => {
   const { nodes, records } = baseNodes();
