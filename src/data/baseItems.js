@@ -4,7 +4,7 @@ import { getModsForClass, getCorruptedForClass, getDesecratedForTags, resolveImp
 import { getGemRefByKey } from './gems.js';
 import { hasDefinition } from './keywordDefs.js';
 import { linkifyRequirement, linkifyPhrases } from './keywords.js';
-import { nodesByKind, nodeBySlug } from './graph.js';
+import { nodesByKind } from './graph.js';
 
 // Presentation adapter over the graph artifact (build/graph.json). Base identity,
 // selection, slugs, props, and rune-variant folding live in the build-time graph
