@@ -88,6 +88,7 @@ export function gemNodes() {
 export function skillNodes(records) {
   const skills = loadJson(`${REPOE}/skills.json`);
   const seen = new Set();
+  const slugsSeen = new Set();
   const out = [];
   for (const r of records) {
     for (const key of r.raw.grants_skills ?? []) {
@@ -97,8 +98,13 @@ export function skillNodes(records) {
       seen.add(key);
       // empty display_name in source; fall back to key so makeNode doesn't throw
       const name = skill.active_skill?.display_name || key;
+      const nameSlug = slugify(name);
+      // Some internal skills share identical display_name (e.g. "Command: {0}"); fall back
+      // to slugifying the unique source key so validateGraph never sees duplicate slugs.
+      const slug = slugsSeen.has(nameSlug) ? slugify(key) : nameSlug;
+      slugsSeen.add(slug);
       out.push(makeNode({
-        id: key, kind: KINDS.SKILL, name, slug: slugify(name),
+        id: key, kind: KINDS.SKILL, name, slug,
         props: { types: skill.active_skill?.types ?? [], description: skill.active_skill?.description ?? null },
         search: name.toLowerCase(),
       }));
