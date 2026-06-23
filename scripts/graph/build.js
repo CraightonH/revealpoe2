@@ -13,7 +13,10 @@ const SOURCE_FILES = [
   `${REPOE}/base_items.json`,
 ];
 
-function hashSources() {
+// Hash of the source files this build reads. Reused by the app's boot-time
+// staleness guard (src/data/graph.js) to detect an artifact built against
+// different source. Requires $POE2DATADIR — call only when source is present.
+export function hashSources() {
   const h = crypto.createHash('sha256');
   for (const rel of SOURCE_FILES) h.update(fs.readFileSync(path.join(getDataDir(), rel)));
   return h.digest('hex');

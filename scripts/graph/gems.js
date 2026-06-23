@@ -62,9 +62,13 @@ function effectSections(skill) {
 export function gemNodes() {
   const records = selectGemRecords();
   const skills = loadJson(`${REPOE}/skills.json`);
+  const baseItems = loadJson(`${REPOE}/base_items.json`);
   const nodes = records.map((r) => {
     const skill = skills[r.raw.grants_skills?.[0]] ?? null;
     const sections = effectSections(skill);
+    // The faceted inventory-gem icon (distinct from icon_dds_file, the skill icon),
+    // looked up in base_items via the gem's item id.
+    const baseItem = baseItems[r.raw.base_item?.id];
     const props = {
       color: r.raw.color,
       gemType: r.raw.gem_type,
@@ -73,6 +77,8 @@ export function gemNodes() {
       requirementWeights: r.raw.requirement_weights ?? null,
       craftingLevel: r.raw.crafting_level ?? null,
       iconDds: r.raw.icon_dds_file ?? null,
+      gemIconDds: baseItem?.visual_identity?.dds_file ?? null,
+      hoverDds: r.raw.ui_image ?? null,
       grantsSkills: r.raw.grants_skills ?? [],
       effectSections: sections,
     };
@@ -104,9 +110,21 @@ export function skillNodes(records) {
       // validateGraph is the safety net — it would throw if even the key-based slug collides.
       const slug = slugsSeen.has(nameSlug) ? slugify(key) : nameSlug;
       slugsSeen.add(slug);
+      // Reservation is a fact of the granted skill (graph rule #5: per-node facts).
+      // Stored as resolved data {kind, amount}; the app maps kind -> display label.
+      const res = skill.static?.reservations;
+      const [resKind, resAmount] = res ? (Object.entries(res)[0] ?? []) : [];
+      const reservation = resKind != null ? { kind: resKind, amount: resAmount } : null;
       out.push(makeNode({
         id: key, kind: KINDS.SKILL, name, slug,
-        props: { types: skill.active_skill?.types ?? [], description: skill.active_skill?.description ?? null },
+        props: {
+          // Whether this skill appears in the Skills Panel (drives the gem footer).
+          // A granted skill can exist without an active_skill (e.g. support skills).
+          isActiveSkill: !!skill.active_skill,
+          types: skill.active_skill?.types ?? [],
+          description: skill.active_skill?.description ?? null,
+          reservation,
+        },
         search: name.toLowerCase(),
       }));
     }

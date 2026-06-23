@@ -1,13 +1,15 @@
-import { loadJson } from './loader.js';
-import { slugify } from './slug.js';
 import { renderGameText, linkifyRequirement } from './keywords.js';
 import { ddsUrl } from './images.js';
 import { displayTagTokens } from './gemTags.js';
 import { hasDefinition } from './keywordDefs.js';
-import { buildSections } from './statText.js';
 import { ATTR_ABBR, ATTR_KEY, ATTR_ORDER } from './attributes.js';
-import { grantedSkillNames } from './grantedSkills.js';
-import { REPOE } from '../config.js';
+import { getNode, nodeBySlug, nodesByKind, edgesFrom } from './graph.js';
+
+// Presentation adapter over the graph artifact (build/graph.json). All gem/skill
+// data resolution (identity, slugs, origins, effect sections, recommended
+// supports) lives in the build-time graph; this module reads nodes/edges and
+// owns *only* the view layer (renderGameText, borders, card layout). It performs
+// no reads of $POE2DATADIR. See scripts/graph/gems.js for the resolution logic.
 
 const TYPE_LABEL = { active: 'Skill', support: 'Support', spirit: 'Spirit' };
 
@@ -27,7 +29,7 @@ const ATTR_REQ_RANGE = { min: 4, max: 157 };
 // gem levels 1–20, shown for every gem as a deliberate display approximation.
 const CHAR_LEVEL_RANGE = { min: 1, max: 90 };
 
-// Player-facing primary skill categories. A granted skill's `active_skill.types`
+// Player-facing primary skill categories. A granted skill's `types`
 // interleaves internal mechanic/descriptor tokens (OngoingSkill, Trappable, Fire,
 // Area, ...) with its primary category; we take the first token that maps to a
 // category label here, preserving the game's own ordering. Verb-form categories
@@ -43,8 +45,8 @@ const SKILL_TYPE_CATEGORY = {
 };
 
 // First player-facing category among a skill's types, or null if none.
-function skillTypeLine(skill) {
-  for (const t of skill?.active_skill?.types ?? []) {
+function skillTypeLine(types) {
+  for (const t of types ?? []) {
     if (t in SKILL_TYPE_CATEGORY) return SKILL_TYPE_CATEGORY[t];
   }
   return null;
@@ -58,76 +60,29 @@ const BORDER = {
 };
 const REQ_BORDER_KEY = { str: 'r', dex: 'g', int: 'b' };
 
-// Non-skill placeholder entries in the game's gem table: unreleased ("Coming
-// Soon"), disabled ("Removed Skill"), dev ("Playtest …"), and templated stubs
-// ("Soul Crystal: {0}"). Never shown — same treatment as [DNT].
-const GARBAGE_RE = /Coming Soon|Removed Skill|Playtest|\{0\}/;
-
-// Origin = how a gem enters the game. Surfaced as a filter on /gems.
-//   gem   – obtainable as a socketable gem (cut from an uncut gem). The signal
-//           is crafting_types (the uncut-gem tag) OR a base-item progression tag
-//           (up_to_levelN_gem); the latter covers tiered/spirit supports whose
-//           crafting_types are unpopulated in the dataset.
-//   item  – not gem-obtainable, but granted by a unique item (matched via the
-//           unique's "Grants Skill:" text), or a weapon's default attack
-//           (SkillGemPlayerDefault*, e.g. "Bow Shot") — the equipped item
-//           determines availability either way.
-//   other – everything else: ascendancy/quest/boss-granted skills with no
-//           obtain method in the data. We can't reliably split ascendancy from
-//           monster skills (no field distinguishes them), so they share a bucket.
-function classifyOrigin(rec, baseTags) {
-  if (rec.crafting_types != null) return 'gem';
-  if (baseTags?.some((t) => t !== 'gem' && t.endsWith('_gem'))) return 'gem';
-  if (rec.base_item.id?.includes('SkillGemPlayerDefault')) return 'item';
-  if (grantedSkillNames().has(rec.base_item.display_name)) return 'item';
-  return 'other';
-}
-
-let _index = null;
-
-// When a gem name is shared across types (e.g. the active skill "Unleash" and
-// the support gem "Unleash"), this precedence decides who keeps the bare URL
-// slug; the others are suffixed with their type ("unleash" + "unleash-support").
-const SLUG_PRECEDENCE = ['active', 'support', 'spirit'];
-
-function index() {
-  if (_index) return _index;
-  const gems = loadJson(`${REPOE}/skill_gems.json`);
-  const baseItems = loadJson(`${REPOE}/base_items.json`);
-
-  // Primary key is the name+type combo, not the name alone — a support gem that
-  // shares a name with an active skill must not be dropped. Same-name-same-type
-  // duplicates keep the first seen (prior behaviour).
-  const byCombo = new Map();     // `${baseSlug}|${gem_type}` -> record (+ baseSlug)
-  const typesBySlug = new Map(); // baseSlug -> Set<gem_type>
-  for (const [key, rec] of Object.entries(gems)) {
-    const name = rec?.base_item?.display_name;
-    if (!name) continue;
-    // [DNT]/[DNT-UNUSED] = "do not translate" — unimplemented content present in
-    // the game files but not playable. Exclude from the wiki (cf. passiveTree.js).
-    if (name.includes('[DNT')) continue;
-    if (GARBAGE_RE.test(name)) continue;
-    const baseSlug = slugify(name);
-    const combo = `${baseSlug}|${rec.gem_type}`;
-    if (byCombo.has(combo)) continue;
-    const origin = classifyOrigin(rec, baseItems[rec.base_item.id]?.tags);
-    byCombo.set(combo, { key, origin, baseSlug, ...rec });
-    if (!typesBySlug.has(baseSlug)) typesBySlug.set(baseSlug, new Set());
-    typesBySlug.get(baseSlug).add(rec.gem_type);
-  }
-
-  // Assign URL slugs, suffixing the lower-precedence type(s) on name collisions.
-  _index = new Map();
-  for (const rec of byCombo.values()) {
-    const types = typesBySlug.get(rec.baseSlug);
-    let slug = rec.baseSlug;
-    if (types.size > 1) {
-      const primary = SLUG_PRECEDENCE.find((t) => types.has(t)) ?? rec.gem_type;
-      if (rec.gem_type !== primary) slug = `${rec.baseSlug}-${rec.gem_type}`;
-    }
-    _index.set(slug, rec);
-  }
-  return _index;
+// Normalize a gem node into the record shape the rest of the app reads. Field
+// names mirror the original raw record so existing consumers (uniques.js,
+// theorycraft.js) and tests need no change; values come from the graph node.
+function toGem(node) {
+  if (!node) return null;
+  const p = node.props;
+  return {
+    id: node.id,                 // source Metadata key (for edge traversal)
+    slug: node.slug,
+    name: node.name,
+    base_item: { display_name: node.name },
+    color: p.color,
+    gem_type: p.gemType,
+    origin: p.origin,
+    tags: p.tags ?? [],
+    requirement_weights: p.requirementWeights ?? null,
+    crafting_level: p.craftingLevel ?? null,
+    icon_dds_file: p.iconDds ?? null,
+    gem_icon_dds: p.gemIconDds ?? null,
+    ui_image: p.hoverDds ?? null,
+    grants_skills: p.grantsSkills ?? [],
+    effect_sections: p.effectSections ?? [],
+  };
 }
 
 function reqKeys(weights) {
@@ -152,17 +107,25 @@ function cardColor(req, socketColor) {
   return socketColor;
 }
 
+// The granted skill node for a gem record (the first grants_skills key that
+// resolved to a skill node), or null.
+function grantedSkillNode(gem) {
+  const key = gem.grants_skills?.[0];
+  return key ? getNode(key) : null;
+}
+
 export function listGems() {
-  return [...index().entries()].map(([slug, rec]) => {
-    const req = reqKeys(rec.requirement_weights);
+  return nodesByKind('gem').map((node) => {
+    const gem = toGem(node);
+    const req = reqKeys(gem.requirement_weights);
     return {
-      slug,
-      name: rec.base_item.display_name,
-      color: rec.color,
-      cardColor: cardColor(req, rec.color),
-      gemType: rec.gem_type,
-      origin: rec.origin,
-      iconUrl: ddsUrl(rec.icon_dds_file),
+      slug: gem.slug,
+      name: gem.name,
+      color: gem.color,
+      cardColor: cardColor(req, gem.color),
+      gemType: gem.gem_type,
+      origin: gem.origin,
+      iconUrl: ddsUrl(gem.icon_dds_file),
       req,
     };
   });
@@ -170,24 +133,23 @@ export function listGems() {
 
 // Condensed view models for the /gems browse grid: the at-a-glance fields
 // (type/tags, requirements, and the skill's effect lines) plus the filter
-// metadata. Builds sections like the full VM — cheap enough across ~1000 gems
-// (~70ms) — but skips quality lines and per-section labels.
+// metadata. Reads resolved effect sections from the graph; renders them here.
 export function listGemCards() {
-  const skills = loadJson(`${REPOE}/skills.json`);
-  return [...index().entries()].map(([slug, gem]) => {
-    const skill = skills[gem.grants_skills?.[0]] ?? null;
+  return nodesByKind('gem').map((node) => {
+    const gem = toGem(node);
+    const skill = grantedSkillNode(gem);
     const req = reqKeys(gem.requirement_weights);
     const typeLine =
       gem.gem_type === 'spirit'
         ? (TYPE_LABEL.spirit ?? 'Spirit')
-        : (skillTypeLine(skill) ?? (TYPE_LABEL[gem.gem_type] ?? 'Skill'));
+        : (skillTypeLine(skill?.props?.types) ?? (TYPE_LABEL[gem.gem_type] ?? 'Skill'));
     const tagTokens = displayTagTokens(gem.tags, [typeLine]);
-    const effect = buildSections(skill, GEM_LEVEL_CAP)
+    const effect = gem.effect_sections
       .flatMap((s) => s.lines)
       .map((t) => renderGameText(t, hasDefinition));
     return {
-      slug,
-      name: gem.base_item.display_name,
+      slug: gem.slug,
+      name: gem.name,
       cardColor: cardColor(req, gem.color),
       gemType: gem.gem_type,
       origin: gem.origin,
@@ -205,23 +167,16 @@ export function listGemCards() {
 }
 
 export function getGem(slug) {
-  return index().get(slug) ?? null;
+  return toGem(nodeBySlug('gem', slug));
 }
 
 // Resolve a gem by its raw Metadata key (e.g. a passive node's `granted_skill`
 // or a unique's grant) to a lightweight reference for linking. Returns null if
-// the key has no indexed gem. The reverse map is built once from the index, so
-// only the slug-winning record for each key resolves (no collision losers).
-let _byKey = null;
+// the key is not a gem node.
 export function getGemRefByKey(key) {
-  if (!_byKey) {
-    _byKey = new Map();
-    for (const [slug, rec] of index()) _byKey.set(rec.key, slug);
-  }
-  const slug = _byKey.get(key);
-  if (!slug) return null;
-  const rec = index().get(slug);
-  return { slug, name: rec.base_item.display_name, iconUrl: ddsUrl(rec.icon_dds_file) };
+  const node = getNode(key);
+  if (!node || node.kind !== 'gem') return null;
+  return { slug: node.slug, name: node.name, iconUrl: ddsUrl(node.props.iconDds) };
 }
 
 // Attribute requirement lines from requirement_weights, e.g. {strength:100} ->
@@ -240,14 +195,14 @@ export function attributeRequirements(weights) {
   return out;
 }
 
+// Recommended supports for a gem, resolved via recommends_support edges. Each
+// target gem node keeps its real (possibly collision-suffixed) slug.
 export function getRecommendedSupports(gem) {
   const out = [];
-  for (const key of gem.recommended_supports ?? []) {
-    // Resolve via the index so a support keeps its real (possibly suffixed) slug
-    // rather than colliding with a same-named active skill.
-    const ref = getGemRefByKey(key);
-    if (!ref) continue;
-    out.push({ slug: ref.slug, name: ref.name, color: index().get(ref.slug).color });
+  for (const edge of edgesFrom(gem.id, 'recommends_support')) {
+    const node = getNode(edge.to);
+    if (!node) continue;
+    out.push({ slug: node.slug, name: node.name, color: node.props.color });
   }
   return out;
 }
@@ -256,13 +211,8 @@ export function buildGemViewModel(slug) {
   const gem = getGem(slug);
   if (!gem) return null;
 
-  const skills = loadJson(`${REPOE}/skills.json`);
-  const skill = skills[gem.grants_skills?.[0]] ?? null;
-
-  // Gem item icon (the faceted inventory gem) — distinct from icon_dds_file,
-  // which is the skill's icon. Looked up in base_items via the gem's item id.
-  const baseItems = loadJson(`${REPOE}/base_items.json`);
-  const baseItem = baseItems[gem.base_item?.id];
+  const skill = grantedSkillNode(gem);
+  const sp = skill?.props ?? null;
 
   const req = reqKeys(gem.requirement_weights);
   const b  = BORDER[REQ_BORDER_KEY[req[0]] ?? gem.color] ?? BORDER.w;
@@ -275,22 +225,22 @@ export function buildGemViewModel(slug) {
   const typeLine =
     gem.gem_type === 'spirit'
       ? (TYPE_LABEL.spirit ?? 'Spirit')
-      : (skillTypeLine(skill) ?? (TYPE_LABEL[gem.gem_type] ?? 'Skill'));
+      : (skillTypeLine(sp?.types) ?? (TYPE_LABEL[gem.gem_type] ?? 'Skill'));
 
   // Tag tokens, excluding the one already shown as the type line; rendered to
   // gated keyword HTML so defined tags become hoverable.
   const tagTokens = displayTagTokens(gem.tags, [typeLine]);
 
-  // Reservation, e.g. { spirit: 30 } -> "30 Spirit".
+  // Reservation, e.g. { kind: 'spirit', amount: 30 } -> "30 Spirit".
   let reservation = null;
-  const res = skill?.static?.reservations;
-  if (res) {
-    const [kind, amount] = Object.entries(res)[0] ?? [];
-    if (kind != null) reservation = `${amount} ${RESERVATION_LABEL[kind] ?? kind}`;
+  if (sp?.reservation) {
+    const { kind, amount } = sp.reservation;
+    reservation = `${amount} ${RESERVATION_LABEL[kind] ?? kind}`;
   }
 
-  // Sections, with every line/quality string rendered to safe token HTML.
-  const sections = buildSections(skill, GEM_LEVEL_CAP).map((s) => ({
+  // Sections (resolved plain strings from the graph), each line/quality string
+  // rendered to safe token HTML here.
+  const sections = gem.effect_sections.map((s) => ({
     label: s.label,
     lines: s.lines.map((t) => renderGameText(t, hasDefinition)),
     quality: s.quality.map((t) => renderGameText(t, hasDefinition)),
@@ -298,7 +248,7 @@ export function buildGemViewModel(slug) {
 
   return {
     slug,
-    name: gem.base_item.display_name,
+    name: gem.name,
     attribute: gem.color,
     gemType: gem.gem_type,
     borderColor: b.border,
@@ -318,13 +268,13 @@ export function buildGemViewModel(slug) {
       ...attributeRequirements(gem.requirement_weights),
     ].map((r) => linkifyRequirement(r, hasDefinition)),
     skillIconUrl: ddsUrl(gem.icon_dds_file),
-    gemIconUrl: ddsUrl(baseItem?.visual_identity?.dds_file),
+    gemIconUrl: ddsUrl(gem.gem_icon_dds),
     hoverImageUrl: ddsUrl(gem.ui_image),
-    description: skill?.active_skill?.description
-      ? renderGameText(skill.active_skill.description, hasDefinition)
+    description: sp?.description
+      ? renderGameText(sp.description, hasDefinition)
       : null,
     sections,
-    footer: skill?.active_skill ? SKILL_PANEL_FOOTER : null,
+    footer: sp?.isActiveSkill ? SKILL_PANEL_FOOTER : null,
     recommendedSupports: getRecommendedSupports(gem),
   };
 }
