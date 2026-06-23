@@ -1,6 +1,6 @@
 {% macro gemSection(label, gems, modifier='') %}
 <section class="gem-list-section">
-  <h2 class="gem-list-heading gem-list-heading--{{ modifier }}">{{ label }} ({{ gems.length }})</h2>
+  <h2 class="gem-list-heading gem-list-heading--{{ modifier }}">{{ label }} (<span data-filter-count>{{ gems.length }}</span>)</h2>
   <div class="gem-browse-grid">
     {% for g in gems %}
     <a class="gem-browse-card gem-browse-card--{{ g.cardColor }}" href="/gem/{{ g.slug }}"
