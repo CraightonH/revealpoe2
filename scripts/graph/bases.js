@@ -4,16 +4,10 @@ import { slugify } from '../../src/data/slug.js';
 import { makeNode, makeEdge, KINDS, EDGE_TYPES } from './schema.js';
 import { computeProperties } from '../../src/data/itemStats.js';
 import { ATTR_ABBR } from '../../src/data/attributes.js';
+import { BROWSABLE_CLASSES, ATTR_SUBTYPE_ORDER } from '../../src/data/itemTaxonomy.js';
 
-// Browsable item classes — mirrors src/data/baseItems.js GROUPS (the only bases
-// that get pages/cards). Keep in sync with the app's GROUPS taxonomy.
-export const BROWSABLE_CLASSES = new Set([
-  'Bow', 'Claw', 'Crossbow', 'Dagger', 'Flail', 'FishingRod', 'One Hand Axe', 'One Hand Mace',
-  'One Hand Sword', 'Sceptre', 'Spear', 'Staff', 'TrapTool', 'Two Hand Axe', 'Two Hand Mace',
-  'Two Hand Sword', 'Wand', 'Warstaff',
-  'Body Armour', 'Boots', 'Buckler', 'Focus', 'Gloves', 'Helmet', 'Shield',
-  'Amulet', 'Belt', 'Quiver', 'Ring', 'Talisman',
-]);
+// Re-exported for consumers that reach the browsable-class set via this resolver.
+export { BROWSABLE_CLASSES };
 
 // Runeforged/Runemastered reissues are folded onto their parent base (Task 2),
 // never their own node — mirrors src/data/baseItems.js.
@@ -61,11 +55,8 @@ export function selectBaseRecords() {
 
 export { RUNE_VARIANT_RE };
 
-// Armour defence/attribute subtype, derived from base-item tags (no hand map) —
-// mirrors src/data/baseItems.js ATTR_ORDER/attrOf.
-const ATTR_SUBTYPE_ORDER = [
-  'str_armour', 'dex_armour', 'int_armour', 'str_dex_armour', 'str_int_armour', 'dex_int_armour',
-];
+// Armour defence/attribute subtype, derived from base-item tags (no hand map),
+// in the shared ATTR_SUBTYPE_ORDER (./itemTaxonomy.js).
 const attrOf = (tags) => ATTR_SUBTYPE_ORDER.find((t) => tags.includes(t)) ?? null;
 
 // Plain requirement display strings (pre-linkify; the app linkifies). Level from
