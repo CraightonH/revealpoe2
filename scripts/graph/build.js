@@ -5,6 +5,7 @@ import path from 'node:path';
 import { getDataDir, REPOE } from '../../src/config.js';
 import { gemNodes, skillNodes, gemEdges } from './gems.js';
 import { baseNodes, classNodes, tagNodes, baseEdges } from './bases.js';
+import { affixNodes, affixEdges } from './affixes.js';
 import { validateGraph } from './validate.js';
 
 // Source files this build reads — the sourceHash covers exactly these.
@@ -13,6 +14,9 @@ const SOURCE_FILES = [
   `${REPOE}/skills.json`,
   `${REPOE}/base_items.json`,
   `${REPOE}/item_classes.json`,
+  `${REPOE}/mods.json`,
+  `${REPOE}/mods_by_base.json`,
+  `${REPOE}/stat_translations/stat_descriptions.json`,
 ];
 
 // Hash of the source files this build reads. Reused by the app's boot-time
@@ -30,10 +34,15 @@ export function buildGraph() {
   const { nodes: bNodes, records: baseRecs } = baseNodes();
   const cNodes = classNodes();
   const tNodes = tagNodes(baseRecs);
+  const { nodes: aNodes, records: affixRecs } = affixNodes();
 
-  const nodes = [...gNodes, ...sNodes, ...bNodes, ...cNodes, ...tNodes];
+  const nodes = [...gNodes, ...sNodes, ...bNodes, ...cNodes, ...tNodes, ...aNodes];
   const nodeIds = new Set(nodes.map((n) => n.id));
-  const edges = [...gemEdges(gemRecs, nodeIds), ...baseEdges(baseRecs, nodeIds)];
+  const edges = [
+    ...gemEdges(gemRecs, nodeIds),
+    ...baseEdges(baseRecs, nodeIds),
+    ...affixEdges(affixRecs, baseRecs, nodeIds),
+  ];
 
   const errors = validateGraph({ nodes, edges });
   if (errors.length) throw new Error(`graph validation failed:\n${errors.join('\n')}`);

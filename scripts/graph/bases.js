@@ -5,6 +5,7 @@ import { makeNode, makeEdge, KINDS, EDGE_TYPES } from './schema.js';
 import { computeProperties } from '../../src/data/itemStats.js';
 import { ATTR_ABBR } from '../../src/data/attributes.js';
 import { BROWSABLE_CLASSES, ATTR_SUBTYPE_ORDER } from '../../src/data/itemTaxonomy.js';
+import { resolveImplicitTexts } from './affixes.js';
 
 // Re-exported for consumers that reach the browsable-class set via this resolver.
 export { BROWSABLE_CLASSES };
@@ -119,11 +120,19 @@ export function baseNodes() {
       attr: attrOf(tags),
       iconDds: v.visual_identity?.dds_file ?? null,
       implicitIds: v.implicits ?? [],
+      // Resolved implicit display text (keyword markup preserved; app renders).
+      // Replaces the former runtime resolveImplicits call in baseItems.js.
+      implicitTexts: resolveImplicitTexts(v.implicits ?? []),
       skillsGranted: v.skills_granted ?? [],
       requirements: requirementStrings(v.requirements, v.drop_level),
       properties: computeProperties(v.properties),
       rawProperties: v.properties ?? null,
-      runeVariants: runeByParent.get(r.id) ?? [],
+      // Rune-system reissues fold onto the parent base; each variant carries its
+      // resolved option texts (raw id-sets resolved here, empty options dropped).
+      runeVariants: (runeByParent.get(r.id) ?? []).map((rv) => ({
+        name: rv.name,
+        optionTexts: rv.optionIdSets.map((ids) => resolveImplicitTexts(ids)).filter((o) => o.length),
+      })),
     };
     const search = [v.name, className, ...tags].join(' ').toLowerCase();
     return makeNode({ id: r.id, kind: KINDS.BASE, name: v.name, slug: r.slug, props, search });

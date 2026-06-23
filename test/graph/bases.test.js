@@ -43,6 +43,10 @@ test('baseNodes carry resolved props for a known base', () => {
   assert.deepEqual(p.inventorySize, { w: 1, h: 1 });
   assert.ok(p.tags.includes('amulet'));
   assert.deepEqual(p.implicitIds, ['AmuletImplicitAllAttributes1']);
+  // Implicit display text is resolved on the node (app renders it; no source read).
+  assert.ok(Array.isArray(p.implicitTexts) && p.implicitTexts.length > 0, 'has resolved implicit text');
+  assert.equal(p.implicitTexts[0].id, 'AmuletImplicitAllAttributes1');
+  assert.match(p.implicitTexts[0].text, /Attributes/);
   assert.equal(p.iconDds, 'Art/2DItems/Amulets/Basetypes/StellarAmulet.dds');
   assert.ok(stellar.search.includes('stellar amulet'));
 });
@@ -56,7 +60,7 @@ test('baseNodes compute structured properties for a weapon', () => {
   assert.ok(club.props.properties.every((pr) => pr.labelHtml === undefined), 'no presentation labelHtml in the node');
 });
 
-test('baseNodes fold rune variants onto the parent base as raw id-sets', () => {
+test('baseNodes fold rune variants onto the parent base with resolved option text', () => {
   const { nodes } = baseNodes();
   // "Torment Club" (One Hand Mace) is the parent of "Runemastered Torment Club".
   const parent = nodes.find((n) => n.name === 'Torment Club' && n.props.itemClass === 'One Hand Mace');
@@ -64,7 +68,10 @@ test('baseNodes fold rune variants onto the parent base as raw id-sets', () => {
   const rv = parent.props.runeVariants;
   assert.ok(Array.isArray(rv) && rv.length > 0, 'has rune variants');
   assert.ok(rv.some((v) => /^Rune(forged|mastered) /.test(v.name)));
-  assert.ok(rv.every((v) => Array.isArray(v.optionIdSets) && v.optionIdSets.every(Array.isArray)));
+  // Each variant carries resolved option text: [[{ id, text }]] (empty options dropped).
+  assert.ok(rv.every((v) => Array.isArray(v.optionTexts)
+    && v.optionTexts.every((opt) => Array.isArray(opt) && opt.length > 0
+      && opt.every((l) => typeof l.id === 'string' && typeof l.text === 'string'))));
 });
 
 test('classNodes cover browsable classes with synthetic ids', () => {

@@ -1,18 +1,19 @@
 import { ddsUrl } from './images.js';
 import { listUniques } from './uniques.js';
-import { getModsForClass, getCorruptedForClass, getDesecratedForTags, resolveImplicits } from './mods.js';
+import { getModsForClass, getCorruptedForClass, getDesecratedForClass } from './mods.js';
 import { getGemRefByKey } from './gems.js';
 import { hasDefinition } from './keywordDefs.js';
-import { linkifyRequirement, linkifyPhrases } from './keywords.js';
+import { linkifyRequirement, linkifyPhrases, renderGameText } from './keywords.js';
 import { nodesByKind } from './graph.js';
 import { GROUPS, ATTR_SUBTYPE_ORDER } from './itemTaxonomy.js';
 
 // Presentation adapter over the graph artifact (build/graph.json). Base identity,
-// selection, slugs, props, and rune-variant folding live in the build-time graph
-// (scripts/graph/bases.js); this module reads nodes and owns the view layer. It
-// performs NO reads of base_items.json/item_classes.json. Mod/affix resolution
-// (resolveImplicits, the affix tables) and uniquesOnBase still read source — those
-// kinds are migrated in later plans (a deliberate partial cutover).
+// selection, slugs, props, rune-variant folding, and resolved implicit/affix data
+// live in the build-time graph (scripts/graph/bases.js, scripts/graph/affixes.js);
+// this module reads nodes/edges and owns the view layer. It performs NO reads of
+// $POE2DATADIR. Implicit and affix-table text arrive pre-resolved (the graph holds
+// the strings; this module renders them). uniquesOnBase still reads source via
+// uniques.js — that kind is migrated in a later plan (a deliberate partial cutover).
 
 // GROUPS and ATTR_SUBTYPE_ORDER are the shared item-class taxonomy (./itemTaxonomy.js).
 // Armour defence/attribute subtype display labels are presentation-only and stay here.
@@ -49,7 +50,8 @@ function toBase(node) {
     dropLevel: p.dropLevel,
     inventorySize: p.inventorySize,
     tags: p.tags ?? [],
-    implicits: resolveImplicits(p.implicitIds),
+    // Implicit lines arrive pre-resolved as text on the node; render to HTML here.
+    implicits: (p.implicitTexts ?? []).map(({ id, text }) => ({ id, html: renderGameText(text, hasDefinition) })),
     requirements: (p.requirements ?? []).map((r) => linkifyRequirement(r, hasDefinition)),
     properties: (p.properties ?? []).map((pr) => ({ ...pr, labelHtml: linkifyPhrases(pr.label, hasDefinition) })),
     rawProperties: p.rawProperties,
@@ -80,13 +82,13 @@ function buildIndex() {
     if (!_byName.has(rec.name)) _byName.set(rec.name, rec);
     _byClass.get(rec.itemClass)?.push(rec);
 
-    // Rune variants: resolve each raw implicit-id set to display lines now
-    // (resolveImplicits is the deferred mod path); drop sets that resolve empty.
+    // Rune variants: option texts arrive pre-resolved on the node (empty options
+    // already dropped at build); render each option's lines to HTML.
     const rv = bnode.props.runeVariants ?? [];
     if (rv.length) {
       _runeByParent.set(rec.slug, rv.map((v) => ({
         name: v.name,
-        options: v.optionIdSets.map((ids) => resolveImplicits(ids)).filter((o) => o.length),
+        options: v.optionTexts.map((opt) => opt.map(({ id, text }) => ({ id, html: renderGameText(text, hasDefinition) }))),
       })));
     }
   }
@@ -189,11 +191,10 @@ export function getItemClass(classSlug) {
       // Affixes split by how they're obtained: Standard (basic currency),
       // Corrupted (Vaal, flat list), Desecrated (Abyssal, via item-tag spawn weights).
       const metaKeys = bases.map((b) => b.metadataKey);
-      const classTags = new Set(bases.flatMap((b) => b.tags));
       const affixes = {
         standard: getModsForClass(metaKeys),
         corrupted: getCorruptedForClass(metaKeys),
-        desecrated: getDesecratedForTags(classTags),
+        desecrated: getDesecratedForClass(metaKeys),
       };
       // Defence-subtype filter options (icon chips) — only when the class spans
       // more than one, so single-subtype classes (e.g. Foci) get no redundant filter.
@@ -209,9 +210,8 @@ export function getItemClass(classSlug) {
       if (subs.length > 1) {
         const setsBySub = subs.map((s) => {
           const keys = s.bases.map((b) => b.metadataKey);
-          const tags = new Set(s.bases.flatMap((b) => b.tags));
           const std = getModsForClass(keys);
-          const des = getDesecratedForTags(tags);
+          const des = getDesecratedForClass(keys);
           return {
             key: s.key,
             standardPrefix: new Set(std.prefix.map((f) => f.type)),
