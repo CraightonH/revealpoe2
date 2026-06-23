@@ -3,7 +3,7 @@ import { ddsUrl } from './images.js';
 import { displayTagTokens } from './gemTags.js';
 import { hasDefinition } from './keywordDefs.js';
 import { ATTR_ABBR, ATTR_KEY, ATTR_ORDER } from './attributes.js';
-import { getNode, nodeBySlug, nodesByKind, edgesFrom } from './graph.js';
+import { getNode, nodeBySlug, nodesByKind, edgesFrom, edgesTo } from './graph.js';
 
 // Presentation adapter over the graph artifact (build/graph.json). All gem/skill
 // data resolution (identity, slugs, origins, effect sections, recommended
@@ -195,6 +195,14 @@ export function attributeRequirements(weights) {
   return out;
 }
 
+// Chip accent color for a gem node: the requirement-derived attribute color
+// (r/g/b or hybrid rg/rb/gb), falling back to the socket color. Matches the
+// browse-card accent so a support with an attribute requirement isn't shown as
+// a plain white chip just because its socket color is white.
+function chipColor(node) {
+  return cardColor(reqKeys(node.props.requirementWeights), node.props.color);
+}
+
 // Recommended supports for a gem, resolved via recommends_support edges. Each
 // target gem node keeps its real (possibly collision-suffixed) slug.
 export function getRecommendedSupports(gem) {
@@ -202,8 +210,23 @@ export function getRecommendedSupports(gem) {
   for (const edge of edgesFrom(gem.id, 'recommends_support')) {
     const node = getNode(edge.to);
     if (!node) continue;
-    out.push({ slug: node.slug, name: node.name, color: node.props.color });
+    out.push({ slug: node.slug, name: node.name, color: chipColor(node) });
   }
+  return out;
+}
+
+// The inverse of getRecommendedSupports: every gem that recommends THIS gem,
+// resolved by walking the same recommends_support edges backwards. Only support
+// gems have inbound edges, so this is empty for active skills. Sorted by name
+// (the list can be large — supports are recommended by up to ~100 skills).
+export function getRecommendedBy(gem) {
+  const out = [];
+  for (const edge of edgesTo(gem.id, 'recommends_support')) {
+    const node = getNode(edge.from);
+    if (!node) continue;
+    out.push({ slug: node.slug, name: node.name, color: chipColor(node) });
+  }
+  out.sort((a, b) => a.name.localeCompare(b.name));
   return out;
 }
 
@@ -276,5 +299,8 @@ export function buildGemViewModel(slug) {
     sections,
     footer: sp?.isActiveSkill ? SKILL_PANEL_FOOTER : null,
     recommendedSupports: getRecommendedSupports(gem),
+    // Reverse of recommendedSupports: skills that recommend this support gem.
+    // Same edges walked backwards — populated only for support gems.
+    recommendedBy: getRecommendedBy(gem),
   };
 }

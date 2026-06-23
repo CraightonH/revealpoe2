@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { getGem, buildGemViewModel, listGems, attributeRequirements } from '../src/data/gems.js';
+import { getGem, buildGemViewModel, listGems, attributeRequirements, getRecommendedBy } from '../src/data/gems.js';
 
 test('listGems returns active + support gems with slugs', () => {
   const gems = listGems();
@@ -102,6 +102,34 @@ test('typeLine resolves a player-facing category, not an internal token', () => 
   assert.equal(buildGemViewModel('shockwave-totem').typeLine, 'Totem');
   assert.equal(buildGemViewModel('raise-zombie').typeLine, 'Minion');
   assert.equal(buildGemViewModel('boneshatter').typeLine, 'Attack');
+});
+
+test('getRecommendedBy reverses recommends_support (supports only), sorted by name', () => {
+  // Find the support recommended by the most skills (inbound recommends_support edges).
+  const ranked = listGems()
+    .map((g) => ({ g, by: getRecommendedBy(getGem(g.slug)) }))
+    .filter((x) => x.by.length > 0)
+    .sort((a, b) => b.by.length - a.by.length);
+  assert.ok(ranked.length > 0, 'some gem has inbound recommends_support edges');
+
+  const { by } = ranked[0];
+  assert.ok(by.every((s) => s.slug && s.name && s.color), 'entries carry slug/name/color');
+  const names = by.map((s) => s.name);
+  assert.deepEqual(names, [...names].sort((a, b) => a.localeCompare(b)), 'sorted by name');
+
+  // The relationship is the exact inverse of the forward list: each recommender's
+  // recommendedSupports must include this support's slug.
+  const target = ranked[0].g.slug;
+  const recommender = buildGemViewModel(by[0].slug);
+  assert.ok(
+    recommender.recommendedSupports.some((s) => s.slug === target),
+    'forward list of a recommender contains the support',
+  );
+});
+
+test('active skill gems have an empty recommendedBy', () => {
+  // recommends_support edges only point AT supports, so active skills get nothing.
+  assert.deepEqual(buildGemViewModel('herald-of-ash').recommendedBy, []);
 });
 
 test('attributeRequirements splits the fixed range by weight', () => {

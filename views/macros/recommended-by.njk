@@ -1,0 +1,22 @@
+{% macro recommendedBy(vm, collapseAt=12) %}
+{% if vm.recommendedBy.length %}
+<section class="recommended-supports recommended-by">
+  <h2 class="recommended-supports__title">Recommended For</h2>
+  <div class="support-list">
+    {% for s in vm.recommendedBy.slice(0, collapseAt) %}
+    <a class="{{ s.color }}" href="/gem/{{ s.slug }}">{{ s.name }}</a>
+    {% endfor %}
+    {% if vm.recommendedBy.length > collapseAt %}
+    <details class="support-more">
+      <summary class="support-more__toggle">+{{ vm.recommendedBy.length - collapseAt }} more</summary>
+      <div class="support-list support-more__list">
+        {% for s in vm.recommendedBy.slice(collapseAt) %}
+        <a class="{{ s.color }}" href="/gem/{{ s.slug }}">{{ s.name }}</a>
+        {% endfor %}
+      </div>
+    </details>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+{% endmacro %}
