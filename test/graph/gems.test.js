@@ -1,7 +1,8 @@
 // test/graph/gems.test.js
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { selectGemRecords, gemNodes, skillNodes } from '../../scripts/graph/gems.js';
+import { selectGemRecords, gemNodes, skillNodes, gemEdges } from '../../scripts/graph/gems.js';
+import { getGem, getRecommendedSupports } from '../../src/data/gems.js';
 import { listGems } from '../../src/data/gems.js';
 import { buildSections } from '../../src/data/statText.js';
 import { loadJson } from '../../src/data/loader.js';
@@ -41,4 +42,31 @@ test('skillNodes are deduped and keyed by skill source key', () => {
   const ids = sNodes.map((n) => n.id);
   assert.equal(new Set(ids).size, ids.length, 'no duplicate skill ids');
   assert.ok(sNodes.every((n) => n.kind === 'skill'));
+});
+
+test('recommends_support edges match the current app resolution', () => {
+  const { nodes, records } = gemNodes();
+  const sNodes = skillNodes(records);
+  const all = [...nodes, ...sNodes];
+  const nodeIds = new Set(all.map((n) => n.id));
+  const idToSlug = new Map(all.map((n) => [n.id, n.slug]));
+  const edges = gemEdges(records, nodeIds);
+
+  // Pick a gem known to have recommended supports.
+  const rec = records.find((r) => (r.raw.recommended_supports ?? []).length);
+  const graphTargets = edges
+    .filter((e) => e.type === 'recommends_support' && e.from === rec.id)
+    .map((e) => idToSlug.get(e.to))
+    .sort();
+  const appTargets = getRecommendedSupports(getGem(rec.slug)).map((s) => s.slug).sort();
+  assert.deepEqual(graphTargets, appTargets);
+});
+
+test('every edge endpoint resolves to a node (no dangling)', () => {
+  const { nodes, records } = gemNodes();
+  const sNodes = skillNodes(records);
+  const nodeIds = new Set([...nodes, ...sNodes].map((n) => n.id));
+  const edges = gemEdges(records, nodeIds);
+  assert.ok(edges.length > 0);
+  assert.ok(edges.every((e) => nodeIds.has(e.from) && nodeIds.has(e.to)));
 });

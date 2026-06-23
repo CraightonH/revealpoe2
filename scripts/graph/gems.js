@@ -3,7 +3,7 @@ import { loadJson } from '../../src/data/loader.js';
 import { REPOE } from '../../src/config.js';
 import { slugify } from '../../src/data/slug.js';
 import { grantedSkillNames } from '../../src/data/grantedSkills.js';
-import { makeNode, KINDS } from './schema.js';
+import { makeNode, makeEdge, KINDS, EDGE_TYPES } from './schema.js';
 import { buildSections } from '../../src/data/statText.js';
 
 // Mirrors src/data/gems.js — placeholder/unreleased gem-table entries to drop.
@@ -105,4 +105,21 @@ export function skillNodes(records) {
     }
   }
   return out;
+}
+
+export function gemEdges(records, nodeIds) {
+  const edges = [];
+  for (const r of records) {
+    for (const skillKey of r.raw.grants_skills ?? []) {
+      if (nodeIds.has(skillKey)) {
+        edges.push(makeEdge({ type: EDGE_TYPES.GRANTS, from: r.id, to: skillKey }));
+      }
+    }
+    for (const supKey of r.raw.recommended_supports ?? []) {
+      if (nodeIds.has(supKey)) {
+        edges.push(makeEdge({ type: EDGE_TYPES.RECOMMENDS_SUPPORT, from: r.id, to: supKey }));
+      }
+    }
+  }
+  return edges;
 }
