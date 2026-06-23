@@ -2,8 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { selectGemRecords, gemNodes, skillNodes, gemEdges } from '../../scripts/graph/gems.js';
-import { getGem, getRecommendedSupports } from '../../src/data/gems.js';
-import { listGems } from '../../src/data/gems.js';
+import { getGem, getRecommendedSupports, listGems } from '../../src/data/gems.js';
 import { buildSections } from '../../src/data/statText.js';
 import { loadJson } from '../../src/data/loader.js';
 import { REPOE } from '../../src/config.js';
@@ -44,7 +43,7 @@ test('skillNodes are deduped and keyed by skill source key', () => {
   assert.ok(sNodes.every((n) => n.kind === 'skill'));
 });
 
-test('recommends_support edges match the current app resolution', () => {
+test('recommends_support edges match the current app resolution (first gem)', () => {
   const { nodes, records } = gemNodes();
   const sNodes = skillNodes(records);
   const all = [...nodes, ...sNodes];
@@ -60,6 +59,30 @@ test('recommends_support edges match the current app resolution', () => {
     .sort();
   const appTargets = getRecommendedSupports(getGem(rec.slug)).map((s) => s.slug).sort();
   assert.deepEqual(graphTargets, appTargets);
+});
+
+test('recommends_support edges match the current app resolution (all gems)', () => {
+  const { nodes, records } = gemNodes();
+  const sNodes = skillNodes(records);
+  const all = [...nodes, ...sNodes];
+  const nodeIds = new Set(all.map((n) => n.id));
+  const idToSlug = new Map(all.map((n) => [n.id, n.slug]));
+  const edges = gemEdges(records, nodeIds);
+
+  for (const rec of records) {
+    if (!(rec.raw.recommended_supports ?? []).length) continue;
+    const gem = getGem(rec.slug);
+    // If the app has no record for this slug (shouldn't happen given selectGemRecords
+    // parity test), skip rather than silently mask — the slug parity test above
+    // already guards this invariant.
+    if (!gem) continue;
+    const graphTargets = edges
+      .filter((e) => e.type === 'recommends_support' && e.from === rec.id)
+      .map((e) => idToSlug.get(e.to))
+      .sort();
+    const appTargets = getRecommendedSupports(gem).map((s) => s.slug).sort();
+    assert.deepEqual(graphTargets, appTargets, `recommends_support mismatch for ${rec.slug}`);
+  }
 });
 
 test('every edge endpoint resolves to a node (no dangling)', () => {

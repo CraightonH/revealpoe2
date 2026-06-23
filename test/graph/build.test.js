@@ -16,8 +16,11 @@ test('buildGraph validates clean and stamps meta', () => {
 test('toArtifact keys nodes by id and drops the inline id', () => {
   const g = buildGraph();
   const art = toArtifact(g);
-  const [id, node] = Object.entries(art.nodes)[0];
-  assert.ok(id.startsWith('Metadata/'));
-  assert.equal(node.id, undefined, 'id is the map key, not a field');
+  // Gem nodes use Metadata/ source keys; skill nodes use raw skill keys (e.g. 'AlchemistsBoonPlayer').
+  // Assert that every gem-kind node is keyed by its Metadata/ path, and that no node retains an
+  // inline id field (id is the map key, not duplicated in the value).
+  const gemKeys = Object.entries(art.nodes).filter(([, n]) => n.kind === 'gem').map(([k]) => k);
+  assert.ok(gemKeys.every((k) => k.startsWith('Metadata/')), 'every gem node key starts with Metadata/');
+  assert.ok(Object.values(art.nodes).every((n) => n.id === undefined), 'id is the map key, not a field');
   assert.equal(Object.keys(art.nodes).length, g.nodes.length);
 });

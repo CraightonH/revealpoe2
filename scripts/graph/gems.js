@@ -101,6 +101,7 @@ export function skillNodes(records) {
       const nameSlug = slugify(name);
       // Some internal skills share identical display_name (e.g. "Command: {0}"); fall back
       // to slugifying the unique source key so validateGraph never sees duplicate slugs.
+      // validateGraph is the safety net — it would throw if even the key-based slug collides.
       const slug = slugsSeen.has(nameSlug) ? slugify(key) : nameSlug;
       slugsSeen.add(slug);
       out.push(makeNode({
@@ -113,6 +114,9 @@ export function skillNodes(records) {
   return out;
 }
 
+// NOTE: gemEdges resolves support/skill keys directly against nodeIds (raw source keys),
+// which may differ from the app's getGemRefByKey path (slug-winner-only _byKey map) —
+// the two are not assumed identical; parity is validated by the all-gems test in gems.test.js.
 export function gemEdges(records, nodeIds) {
   const edges = [];
   for (const r of records) {
