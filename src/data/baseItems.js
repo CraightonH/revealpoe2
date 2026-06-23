@@ -5,6 +5,7 @@ import { getGemRefByKey } from './gems.js';
 import { hasDefinition } from './keywordDefs.js';
 import { linkifyRequirement, linkifyPhrases } from './keywords.js';
 import { nodesByKind } from './graph.js';
+import { GROUPS, ATTR_SUBTYPE_ORDER } from './itemTaxonomy.js';
 
 // Presentation adapter over the graph artifact (build/graph.json). Base identity,
 // selection, slugs, props, and rune-variant folding live in the build-time graph
@@ -13,29 +14,8 @@ import { nodesByKind } from './graph.js';
 // (resolveImplicits, the affix tables) and uniquesOnBase still read source — those
 // kinds are migrated in later plans (a deliberate partial cutover).
 
-const GROUPS = [
-  {
-    label: 'Weapons',
-    classes: ['Bow', 'Claw', 'Crossbow', 'Dagger', 'Flail', 'FishingRod',
-              'One Hand Axe', 'One Hand Mace', 'One Hand Sword', 'Sceptre',
-              'Spear', 'Staff', 'TrapTool', 'Two Hand Axe', 'Two Hand Mace',
-              'Two Hand Sword', 'Wand', 'Warstaff'],
-  },
-  {
-    label: 'Armour',
-    classes: ['Body Armour', 'Boots', 'Buckler', 'Focus', 'Gloves', 'Helmet', 'Shield'],
-  },
-  {
-    label: 'Accessories',
-    classes: ['Amulet', 'Belt', 'Quiver', 'Ring', 'Talisman'],
-  },
-];
-
-const BROWSABLE_CLASSES = new Set(GROUPS.flatMap((g) => g.classes));
-
-// Armour defence/attribute subtypes — player-facing labels and stable display
-// order (pure types, then hybrids). The per-base `attr` is resolved in the graph.
-const ATTR_ORDER = ['str_armour', 'dex_armour', 'int_armour', 'str_dex_armour', 'str_int_armour', 'dex_int_armour'];
+// GROUPS and ATTR_SUBTYPE_ORDER are the shared item-class taxonomy (./itemTaxonomy.js).
+// Armour defence/attribute subtype display labels are presentation-only and stay here.
 const ATTR_LABELS = {
   str_armour: 'Armour',
   dex_armour: 'Evasion',
@@ -143,7 +123,7 @@ function subtypesOf(bases) {
     if (!bySub.has(b.attr)) bySub.set(b.attr, []);
     bySub.get(b.attr).push(b);
   }
-  return ATTR_ORDER.filter((k) => bySub.has(k)).map((k) => ({ key: k, bases: bySub.get(k) }));
+  return ATTR_SUBTYPE_ORDER.filter((k) => bySub.has(k)).map((k) => ({ key: k, bases: bySub.get(k) }));
 }
 
 // Strip an implicit id's trailing tier number so its tiers collapse to one
@@ -193,8 +173,8 @@ function topTierBases(bases) {
     if (!cur || b.dropLevel > cur.dropLevel) byArchetype.set(key, b);
   }
   const attrIdx = (b) => {
-    const i = ATTR_ORDER.indexOf(b.attr);
-    return i < 0 ? ATTR_ORDER.length : i;
+    const i = ATTR_SUBTYPE_ORDER.indexOf(b.attr);
+    return i < 0 ? ATTR_SUBTYPE_ORDER.length : i;
   };
   return [...byArchetype.values()].sort(
     (a, b) => attrIdx(a) - attrIdx(b) || b.dropLevel - a.dropLevel || a.name.localeCompare(b.name),
