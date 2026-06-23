@@ -87,3 +87,21 @@ test('tagNodes are distinct and synthetic-id keyed', () => {
   assert.ok(tnodes.every((n) => n.kind === 'tag' && n.id.startsWith('Tag/')));
   assert.ok(tnodes.some((n) => n.id === 'Tag/amulet'));
 });
+
+import { baseEdges } from '../../scripts/graph/bases.js';
+
+test('baseEdges link a base to its class and tags, with no dangling endpoints', () => {
+  const { nodes, records } = baseNodes();
+  const allNodes = [...nodes, ...classNodes(), ...tagNodes(records)];
+  const nodeIds = new Set(allNodes.map((n) => n.id));
+  const edges = baseEdges(records, nodeIds);
+  assert.ok(edges.length > 0);
+  assert.ok(edges.every((e) => nodeIds.has(e.from) && nodeIds.has(e.to)), 'no dangling');
+
+  const stellarId = 'Metadata/Items/Amulets/FourAmulet8';
+  const inClass = edges.filter((e) => e.type === 'in_class' && e.from === stellarId);
+  assert.equal(inClass.length, 1);
+  assert.equal(inClass[0].to, 'Class/Amulet');
+  const tagged = edges.filter((e) => e.type === 'tagged' && e.from === stellarId).map((e) => e.to);
+  assert.ok(tagged.includes('Tag/amulet'));
+});

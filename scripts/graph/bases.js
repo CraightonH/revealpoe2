@@ -1,7 +1,7 @@
 import { loadJson } from '../../src/data/loader.js';
 import { REPOE } from '../../src/config.js';
 import { slugify } from '../../src/data/slug.js';
-import { makeNode, KINDS } from './schema.js';
+import { makeNode, makeEdge, KINDS, EDGE_TYPES } from './schema.js';
 import { computeProperties } from '../../src/data/itemStats.js';
 import { ATTR_ABBR } from '../../src/data/attributes.js';
 
@@ -166,4 +166,21 @@ export function tagNodes(records) {
     }
   }
   return nodes;
+}
+
+export function baseEdges(records, nodeIds) {
+  const edges = [];
+  for (const r of records) {
+    const classId = `Class/${r.itemClass}`;
+    if (nodeIds.has(classId)) {
+      edges.push(makeEdge({ type: EDGE_TYPES.IN_CLASS, from: r.id, to: classId }));
+    }
+    for (const tag of r.raw.tags ?? []) {
+      const tagId = `Tag/${tag}`;
+      if (nodeIds.has(tagId)) {
+        edges.push(makeEdge({ type: EDGE_TYPES.TAGGED, from: r.id, to: tagId }));
+      }
+    }
+  }
+  return edges;
 }
