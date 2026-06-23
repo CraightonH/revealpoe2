@@ -3,6 +3,8 @@ import { loadJson } from '../../src/data/loader.js';
 import { REPOE } from '../../src/config.js';
 import { slugify } from '../../src/data/slug.js';
 import { grantedSkillNames } from '../../src/data/grantedSkills.js';
+import { makeNode, KINDS } from './schema.js';
+import { buildSections } from '../../src/data/statText.js';
 
 // Mirrors src/data/gems.js — placeholder/unreleased gem-table entries to drop.
 const GARBAGE_RE = /Coming Soon|Removed Skill|Playtest|\{0\}/;
@@ -46,6 +48,61 @@ export function selectGemRecords() {
       if (rec.raw.gem_type !== primary) slug = `${rec.baseSlug}-${rec.raw.gem_type}`;
     }
     out.push({ id: rec.id, slug, origin: rec.origin, raw: rec.raw });
+  }
+  return out;
+}
+
+const GEM_LEVEL_CAP = 20; // matches src/data/gems.js display cap
+
+function effectSections(skill) {
+  return buildSections(skill, GEM_LEVEL_CAP)
+    .map((s) => ({ label: s.label, lines: s.lines, quality: s.quality }));
+}
+
+export function gemNodes() {
+  const records = selectGemRecords();
+  const skills = loadJson(`${REPOE}/skills.json`);
+  const nodes = records.map((r) => {
+    const skill = skills[r.raw.grants_skills?.[0]] ?? null;
+    const sections = effectSections(skill);
+    const props = {
+      color: r.raw.color,
+      gemType: r.raw.gem_type,
+      origin: r.origin,
+      tags: r.raw.tags ?? [],
+      requirementWeights: r.raw.requirement_weights ?? null,
+      craftingLevel: r.raw.crafting_level ?? null,
+      iconDds: r.raw.icon_dds_file ?? null,
+      grantsSkills: r.raw.grants_skills ?? [],
+      effectSections: sections,
+    };
+    const search = [r.raw.base_item.display_name, r.raw.gem_type, ...sections.flatMap((s) => s.lines)]
+      .join(' ').toLowerCase();
+    return makeNode({
+      id: r.id, kind: KINDS.GEM, name: r.raw.base_item.display_name, slug: r.slug, props, search,
+    });
+  });
+  return { nodes, records };
+}
+
+export function skillNodes(records) {
+  const skills = loadJson(`${REPOE}/skills.json`);
+  const seen = new Set();
+  const out = [];
+  for (const r of records) {
+    for (const key of r.raw.grants_skills ?? []) {
+      if (seen.has(key)) continue;
+      const skill = skills[key];
+      if (!skill) continue;
+      seen.add(key);
+      // empty display_name in source; fall back to key so makeNode doesn't throw
+      const name = skill.active_skill?.display_name || key;
+      out.push(makeNode({
+        id: key, kind: KINDS.SKILL, name, slug: slugify(name),
+        props: { types: skill.active_skill?.types ?? [], description: skill.active_skill?.description ?? null },
+        search: name.toLowerCase(),
+      }));
+    }
   }
   return out;
 }
