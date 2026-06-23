@@ -86,6 +86,22 @@ the affixes plan.
   `scripts/graph/gems.js`) that an edge could diverge on. Resolving through `getGemRefByKey`
   preserves exact parity. Promotion to an edge is deferred.
 
+### Rune variants: property now, nodes later (deliberate deferral)
+
+Runeforged/Runemastered variants *are* distinct source records (own Metadata key), so by the
+"one node per source record" rule they could be nodes. They are kept as a **parent base prop**
+this slice because nothing **traverses** to them — the UI renders them only as an inline
+mention on the parent base page, deliberately excluded from the `/bases` grid, the class index,
+and search (matching current behavior exactly). Promoting them now would be the speculative
+promotion the style guide forbids and would buy no parity.
+
+This does not lock us out: the builder always re-reads source, so when a feature needs to
+navigate variants (anticipated: a runes/affixes-era query like "all Runeforged Quarterstaves"),
+promote each to its own node keyed by source Metadata id — as a `base` node with `props.variantOf`
++ a `variant_of` edge to the parent, or a dedicated `variant` kind — and the parent's inline list
+becomes an edge traversal. Until then, the raw `optionIdSets` prop carries the data with no
+lock-in.
+
 ### Net result
 
 After cutover, `baseItems.js` reads **zero** `base_items.json`/`item_classes.json`. It still
