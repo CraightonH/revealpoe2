@@ -29,6 +29,7 @@ const SOURCE_FILES = [
   `${REPOE}/stat_translations/gem_stat_descriptions.json`,
   `${REPOE}/stat_translations/active_skill_gem_stat_descriptions.json`,
   `${REPOE}/stat_translations/skill_stat_descriptions.json`,
+  `${REPOE}/gem_tags.json`,
 ];
 
 // Hash of the source files this build reads. Reused by the app's boot-time
