@@ -1,0 +1,14 @@
+{% from "macros/unique-card.njk" import uniqueListCard %}
+{% macro grantedBy(vm) %}
+{% if vm.grantedBy.length %}
+<details class="rec-group" open style="--rec-accent:var(--color-unique)">
+  <summary class="rec-group-title">Granted by <span class="rec-group-count">{{ vm.grantedBy.length }}</span></summary>
+  <p class="rec-group-hint">Unique items that grant this skill — hover any card for its full tooltip.</p>
+  <div class="bases-list-grid">
+    {% for u in vm.grantedBy %}
+    {{ uniqueListCard(u) }}
+    {% endfor %}
+  </div>
+</details>
+{% endif %}
+{% endmacro %}

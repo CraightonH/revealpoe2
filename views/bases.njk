@@ -1,5 +1,6 @@
 {% extends "base.njk" %}
 {% from "macros/nav.njk" import pageHeader %}
+{% from "macros/base-card.njk" import basesClassCard %}
 {% block title %}Base Items — PoE2 Wiki{% endblock %}
 {% block content %}
 <div class="page page--column">
@@ -12,14 +13,7 @@
     {% if section.title %}<h3 class="bases-subgroup-title">{{ section.title }}</h3>{% endif %}
     <div class="bases-class-grid">
       {% for c in section.cards %}
-      <a class="bases-class-card" href="{{ c.href }}"
-         title="{{ c.name }}" aria-label="{{ c.name }} ({{ c.count }} bases)">
-        <span class="bases-class-name">{{ c.name }}</span>
-        {% if c.iconUrl %}
-        <img class="bases-class-icon" src="{{ c.iconUrl }}" alt="" loading="lazy" onerror="this.remove()">
-        {% endif %}
-        <span class="bases-class-count">{{ c.count }}</span>
-      </a>
+      {{ basesClassCard(c) }}
       {% endfor %}
     </div>
     {% endif %}

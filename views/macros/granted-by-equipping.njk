@@ -1,0 +1,14 @@
+{% from "macros/base-card.njk" import basesClassCard %}
+{% macro grantedByEquipping(vm) %}
+{% if vm.defaultSkillClasses.length %}
+<details class="rec-group" open style="--rec-accent:var(--color-normal)">
+  <summary class="rec-group-title">Granted by Equipping <span class="rec-group-count">{{ vm.defaultSkillClasses.length }}</span></summary>
+  <p class="rec-group-hint">The default attack of these weapon classes — equipping any weapon of the class grants this skill.</p>
+  <div class="bases-class-grid">
+    {% for c in vm.defaultSkillClasses %}
+    {{ basesClassCard(c) }}
+    {% endfor %}
+  </div>
+</details>
+{% endif %}
+{% endmacro %}

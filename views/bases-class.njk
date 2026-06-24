@@ -3,6 +3,7 @@
 {% from "macros/filter-bar.njk" import filterBar %}
 {% from "macros/affix-tables.njk" import affixTables, affixFlat %}
 {% from "macros/base-card.njk" import baseListCard %}
+{% from "macros/gem-card.njk" import gemBrowseCard %}
 {% block title %}{{ cls.name }} — Base Items — PoE2 Wiki{% endblock %}
 {% block content %}
 <div class="page page--column">
@@ -11,6 +12,19 @@
     { label: cls.name }
   ]) }}
   {{ pageHeader(cls.name) }}
+
+  {% if cls.defaultSkillGems.length %}
+  <details class="bases-group">
+    <summary class="bases-group-title">Default Attack <span class="bases-group-count">{{ cls.defaultSkillGems.length }}</span></summary>
+    <p class="bases-top-hint">Equipping any weapon of this class grants this skill by default.</p>
+    <div class="gem-browse-grid">
+      {% for g in cls.defaultSkillGems %}
+      {{ gemBrowseCard(g) }}
+      {% endfor %}
+    </div>
+  </details>
+  {% endif %}
+
   {% if cls.attrSubtypes.length %}
   {{ filterBar(
     groups=[{ key: "attr", match: "any", single: true, active: activeAttr, options: cls.attrSubtypes }],

@@ -3,6 +3,7 @@ import { ddsUrl } from './images.js';
 import { hasDefinition } from './keywordDefs.js';
 import { ATTR_ABBR, ATTR_KEY, ATTR_ORDER } from './attributes.js';
 import { getNode, nodeBySlug, nodesByKind, edgesFrom, edgesTo } from './graph.js';
+import { getUniqueCard } from './uniques.js';
 
 // Presentation adapter over the graph artifact (build/graph.json). All gem/skill
 // data resolution (identity, slugs, origins, effect sections, recommended
@@ -235,6 +236,77 @@ export function getRecommendedBy(gem) {
   return out;
 }
 
+// Uniques whose grant resolves to one of this gem's granted skills. The graph
+// models item grants the same way as gem grants — a `grants` edge from the
+// source (gem OR unique) to the shared skill node — so the reverse lookup is
+// free: walk the gem's grants edges to its skill(s), then walk grants edges
+// backwards from each skill to find unique sources. Returns full browse cards,
+// deduped by slug and sorted by name. Empty for the common (gem-only) case.
+export function getGrantingUniques(gem) {
+  const skillIds = edgesFrom(gem.id, 'grants').map((e) => e.to);
+  const seen = new Set();
+  const out = [];
+  for (const skillId of skillIds) {
+    for (const edge of edgesTo(skillId, 'grants')) {
+      const node = getNode(edge.from);
+      if (!node || node.kind !== 'unique' || seen.has(node.slug)) continue;
+      seen.add(node.slug);
+      const card = getUniqueCard(node.slug);
+      if (card) out.push(card);
+    }
+  }
+  out.sort((a, b) => a.name.localeCompare(b.name));
+  return out;
+}
+
+// Weapon classes whose default attack is this skill gem — the reverse of the
+// derived `default_skill` overlay edge (see CLAUDE.md "Data Provenance" policy;
+// this relationship is hand-authored in data/manual, not from source). Equipping
+// any weapon of these classes grants the skill. Rather than list every base, we
+// roll the edges up to /bases class nav cards (name, icon, base count, link).
+// Empty for non-default gems.
+export function getDefaultSkillClasses(gem) {
+  const byClass = new Map(); // classSlug -> { name, slug, href, iconUrl, count }
+  for (const edge of edgesTo(gem.id, 'default_skill')) {
+    const node = getNode(edge.from);
+    if (!node || node.kind !== 'base') continue;
+    const slug = node.props.classSlug;
+    if (!byClass.has(slug)) {
+      byClass.set(slug, {
+        name: node.props.className,
+        slug,
+        href: `/bases/${slug}`,
+        // Representative class icon: the first base seen, mirroring /bases.
+        iconUrl: ddsUrl(node.props.iconDds),
+        count: 0,
+      });
+    }
+    byClass.get(slug).count += 1;
+  }
+  return [...byClass.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+// Forward side of the default_skill overlay edge, for the /bases/:class page:
+// the default-attack gem(s) granted by equipping any weapon of the class. Walks
+// class -> in_class -> bases -> default_skill -> gem, deduped. Returns gem browse
+// cards so the class page renders them identically to /gems. Empty for classes
+// with no default-attack mapping (armour, caster weapons, etc.).
+export function getDefaultSkillGemsForClass(classSlug) {
+  const classNode = nodeBySlug('class', classSlug);
+  if (!classNode) return [];
+  const gemIds = new Set();
+  for (const e of edgesTo(classNode.id, 'in_class')) {
+    for (const ds of edgesFrom(e.from, 'default_skill')) gemIds.add(ds.to);
+  }
+  const out = [];
+  for (const gemId of gemIds) {
+    const node = getNode(gemId);
+    if (node && node.kind === 'gem') out.push(gemBrowseCardVM(node));
+  }
+  out.sort((a, b) => a.name.localeCompare(b.name));
+  return out;
+}
+
 export function buildGemViewModel(slug) {
   const gem = getGem(slug);
   if (!gem) return null;
@@ -303,6 +375,12 @@ export function buildGemViewModel(slug) {
       : null,
     sections,
     footer: sp?.isActiveSkill ? SKILL_PANEL_FOOTER : null,
+    // Uniques that grant this gem's skill (reverse of the grants edge). Usually
+    // empty — only skills with a unique-item source populate it.
+    grantedBy: getGrantingUniques(gem),
+    // Weapon classes whose default attack is this gem (reverse of the derived
+    // default_skill overlay edge). Populated only for default weapon skills.
+    defaultSkillClasses: getDefaultSkillClasses(gem),
     recommendedSupports: getRecommendedSupports(gem),
     // Reverse of recommendedSupports: skills that recommend this support gem.
     // Same edges walked backwards — populated only for support gems.

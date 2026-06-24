@@ -1,3 +1,17 @@
+{# Compact class nav card used on the /bases index grid (and reused wherever we
+   want to point at a whole item class rather than list every base): name, icon,
+   base count, links to /bases/:classSlug. #}
+{% macro basesClassCard(c) %}
+<a class="bases-class-card" href="{{ c.href }}"
+   title="{{ c.name }}" aria-label="{{ c.name }} ({{ c.count }} bases)">
+  <span class="bases-class-name">{{ c.name }}</span>
+  {% if c.iconUrl %}
+  <img class="bases-class-icon" src="{{ c.iconUrl }}" alt="" loading="lazy" onerror="this.remove()">
+  {% endif %}
+  <span class="bases-class-count">{{ c.count }}</span>
+</a>
+{% endmacro %}
+
 {# Condensed card for the /bases/:class grid: one key stat per line with the
    same keyword-linked labels unique cards use; full tooltip on hover. #}
 {% macro baseListCard(b) %}

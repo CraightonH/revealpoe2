@@ -119,30 +119,43 @@ export function listUniqueClassFilters() {
   return [...ordered, ...extras];
 }
 
+// Condensed view model for a single unique node: the /uniques browse-grid card,
+// also reused for the "Granted by" section on a gem page (uniques that grant a
+// gem's skill) and theorycraft results.
+function uniqueCardVM(node) {
+  const u = toUnique(node);
+  const baseRecord = getBaseByName(u.base);
+  const parsed = u.stats.map(parseStatLine);
+  const mods = parseLocalMods(u.stats);
+  const properties = baseRecord
+    ? computeProperties(baseRecord.rawProperties, mods).map((p) => ({ ...p, labelHtml: renderAffix(p.label) }))
+    : [];
+  return {
+    slug: u.slug,
+    name: u.name,
+    base: u.base,
+    itemClass: node.props.className,
+    itemClassSlug: node.props.classSlug,
+    iconUrl: u.iconUrl,
+    inventorySize: baseRecord?.inventorySize ?? null,
+    properties,
+    requirements: baseRecord?.requirements ?? [],
+    implicits: parsed.slice(0, u.implicitCount),
+    explicits: parsed.slice(u.implicitCount),
+  };
+}
+
 // Condensed view models for the /uniques browse grid.
 export function listUniqueCards() {
-  return nodesByKind('unique').map((node) => {
-    const u = toUnique(node);
-    const baseRecord = getBaseByName(u.base);
-    const parsed = u.stats.map(parseStatLine);
-    const mods = parseLocalMods(u.stats);
-    const properties = baseRecord
-      ? computeProperties(baseRecord.rawProperties, mods).map((p) => ({ ...p, labelHtml: renderAffix(p.label) }))
-      : [];
-    return {
-      slug: u.slug,
-      name: u.name,
-      base: u.base,
-      itemClass: node.props.className,
-      itemClassSlug: node.props.classSlug,
-      iconUrl: u.iconUrl,
-      inventorySize: baseRecord?.inventorySize ?? null,
-      properties,
-      requirements: baseRecord?.requirements ?? [],
-      implicits: parsed.slice(0, u.implicitCount),
-      explicits: parsed.slice(u.implicitCount),
-    };
-  });
+  return nodesByKind('unique').map(uniqueCardVM);
+}
+
+// The browse-grid card for one unique by slug, or null if unknown. Lets other
+// modules (e.g. gems.js "Granted by") render a real unique card without
+// rebuilding the whole list.
+export function getUniqueCard(slug) {
+  const node = nodeBySlug('unique', slug);
+  return node ? uniqueCardVM(node) : null;
 }
 
 export function buildUniqueViewModel(slug) {

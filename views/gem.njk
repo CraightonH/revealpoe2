@@ -1,5 +1,7 @@
 {% extends "base.njk" %}
 {% from "macros/gem-card.njk" import gemCard %}
+{% from "macros/granted-by.njk" import grantedBy %}
+{% from "macros/granted-by-equipping.njk" import grantedByEquipping %}
 {% from "macros/recommended-supports.njk" import recommendedSupports %}
 {% from "macros/recommended-by.njk" import recommendedBy %}
 {% block title %}{{ vm.name }} — PoE2 Wiki{% endblock %}
@@ -9,6 +11,8 @@
     {{ gemCard(vm) }}
     {{ recommendedSupports(vm) }}
     {{ recommendedBy(vm) }}
+    {{ grantedBy(vm) }}
+    {{ grantedByEquipping(vm) }}
   </div>
 </div>
 {% endblock %}
