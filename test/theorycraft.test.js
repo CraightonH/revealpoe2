@@ -1,6 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseQuery } from '../src/data/theorycraft.js';
+import { getGem } from '../src/data/gems.js';
+import { getNode } from '../src/data/graph.js';
 
 test('parseQuery: bare words become free-text terms', () => {
   assert.deepEqual(parseQuery('cold chaos').terms, [
@@ -177,4 +179,19 @@ test('GET /theorycraft renders the search help panel with clickable examples', a
   assert.match(res.text, /class="tc-example" data-q="color:green"/);
   // page-scoped script is referenced
   assert.match(res.text, /\/static\/js\/theorycraft\.js/);
+});
+
+test('gem search docs include granted-skill display names from the graph', () => {
+  // find a gem whose first granted skill resolves to a named skill node
+  const docs = allDocs().filter((d) => d.category === 'gem' || d.category === 'support' || d.category === 'spirit');
+  const sample = docs.find((d) => {
+    const gem = getGem(d.url.replace('/gem/', ''));
+    const key = gem?.grants_skills?.[0];
+    const node = key ? getNode(key) : null;
+    return node && node.name && node.name !== key;
+  });
+  assert.ok(sample, 'expected at least one gem with a named granted skill');
+  const gem = getGem(sample.url.replace('/gem/', ''));
+  const skillName = getNode(gem.grants_skills[0]).name.toLowerCase();
+  assert.ok(sample.text.includes(skillName), 'granted skill name should be in the doc text');
 });

@@ -3,8 +3,7 @@ import { listUniques } from './uniques.js';
 import { listItemClasses, getItemClass, affixBaseTargets } from './baseItems.js';
 import { listKeystones, listNotables } from './passiveTree.js';
 import { listModGroups } from './mods.js';
-import { loadJson } from '../../scripts/graph/loader.js';
-import { REPOE } from '../../scripts/graph/source.js';
+import { getNode } from './graph.js';
 
 const FIELDS = new Set(['type', 'color', 'tag', 'req', 'grants']);
 
@@ -98,11 +97,10 @@ function gemCategory(gemType) {
 }
 
 function gemDocs() {
-  const skills = loadJson(`${REPOE}/skills.json`);
   return listGems().map((g) => {
     const raw = getGem(g.slug) ?? {};
     const grants = (raw.grants_skills ?? [])
-      .map((k) => skills[k]?.active_skill?.display_name)
+      .map((k) => getNode(k)?.name)
       .filter(Boolean);
     let textParts = [g.name];
     let subtitle = '';
