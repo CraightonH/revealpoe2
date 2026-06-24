@@ -1,7 +1,8 @@
-import { KINDS, EDGE_TYPES } from './schema.js';
+import { KINDS, EDGE_TYPES, SOURCES } from './schema.js';
 
 const KIND_SET = new Set(Object.values(KINDS));
 const EDGE_SET = new Set(Object.values(EDGE_TYPES));
+const SOURCE_SET = new Set(Object.values(SOURCES));
 
 export function validateGraph({ nodes, edges }) {
   const errors = [];
@@ -14,6 +15,7 @@ export function validateGraph({ nodes, edges }) {
     if (!KIND_SET.has(n.kind)) errors.push(`unknown kind '${n.kind}' on node ${n.id}`);
     if (!n.name) errors.push(`missing name on node ${n.id}`);
     if (!n.slug) errors.push(`missing slug on node ${n.id}`);
+    if (!SOURCE_SET.has(n.source)) errors.push(`invalid/missing source '${n.source}' on node ${n.id}`);
     const key = `${n.kind}|${n.slug}`;
     if (slugByKind.has(key)) {
       errors.push(`duplicate slug '${n.slug}' for kind ${n.kind} (${n.id} & ${slugByKind.get(key)})`);
@@ -24,6 +26,7 @@ export function validateGraph({ nodes, edges }) {
 
   for (const e of edges) {
     if (!EDGE_SET.has(e.type)) errors.push(`unknown edge type '${e.type}'`);
+    if (!SOURCE_SET.has(e.source)) errors.push(`invalid/missing source '${e.source}' on edge ${e.type} ${e.from}->${e.to}`);
     if (!ids.has(e.from)) errors.push(`dangling edge ${e.type}: from '${e.from}' not a node`);
     if (!ids.has(e.to)) errors.push(`dangling edge ${e.type}: to '${e.to}' not a node`);
   }

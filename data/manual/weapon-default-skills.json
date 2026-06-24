@@ -1,0 +1,24 @@
+{
+  "kind": "weapon-default-skills",
+  "description": "Default attack skill granted by equipping a weapon of a given class. This relationship is NOT in RePoE source (base nodes carry skillsGranted: [] and item_classes.json has no default-skill field) — it is a hand-authored game fact. The map is the irreducible rule (default-skill gem metadata key -> class slug, or an array of slugs when one default attack serves several classes); the builder expands it into a derived `default_skill` edge from every base in each class to the gem, so new bases from a re-scrape pick it up automatically. 2H weapons inherit the 1H default attack (only the animation differs).",
+  "map": {
+    "Metadata/Items/Gem/SkillGemPlayerDefault1HAxe": ["one-hand-axe", "two-hand-axe"],
+    "Metadata/Items/Gem/SkillGemPlayerDefault1HMace": ["one-hand-mace", "two-hand-mace"],
+    "Metadata/Items/Gem/SkillGemPlayerDefault1HSword": ["one-hand-sword", "two-hand-sword"],
+    "Metadata/Items/Gem/SkillGemPlayerDefaultBow": "bow",
+    "Metadata/Items/Gem/SkillGemPlayerDefaultClaw": "claw",
+    "Metadata/Items/Gem/SkillGemPlayerDefaultCrossbow": "crossbow",
+    "Metadata/Items/Gem/SkillGemPlayerDefaultDagger": "dagger",
+    "Metadata/Items/Gem/SkillGemPlayerDefaultFlail": "flail",
+    "Metadata/Items/Gem/SkillGemPlayerDefaultQuarterstaff": "warstaff",
+    "Metadata/Items/Gem/SkillGemPlayerDefaultSpear": "spear",
+    "Metadata/Items/Gem/SkillGemPlayerDefaultSpearThrow": "spear"
+  },
+  "_deferred": {
+    "note": "Intentionally unmapped pending confirmation of PoE2 mechanics — do not guess. Add to `map` once verified.",
+    "cases": {
+      "staff / sceptre / wand / focus": "Caster/off-hand weapons — unclear if they grant a weapon default attack.",
+      "SkillGemPlayerDefaultGrenadeLauncher": "Grants 'Grenade' but there is no grenade-launcher base class to attach it to."
+    }
+  }
+}

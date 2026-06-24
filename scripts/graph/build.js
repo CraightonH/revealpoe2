@@ -9,6 +9,7 @@ import { affixNodes, affixEdges } from './affixes.js';
 import { uniqueNodes, uniqueEdges } from './uniques.js';
 import { passiveNodes, ascendancyNodes, passiveEdges } from './passives.js';
 import { keywordNodes } from './keywords.js';
+import { manualOverlay, hashManual } from './manual.js';
 import { validateGraph } from './validate.js';
 
 // Source files this build reads — the sourceHash covers exactly these.
@@ -64,11 +65,11 @@ export function buildGraph() {
   const ascNodes = ascendancyNodes();
   const { nodes: kNodes } = keywordNodes();
 
-  const nodes = [...gNodes, ...sNodes, ...bNodes, ...cNodes, ...tNodes, ...aNodes, ...uNodes, ...pNodes, ...ascNodes, ...kNodes];
-  const nodeIds = new Set(nodes.map((n) => n.id));
+  const srcNodes = [...gNodes, ...sNodes, ...bNodes, ...cNodes, ...tNodes, ...aNodes, ...uNodes, ...pNodes, ...ascNodes, ...kNodes];
+  const nodeIds = new Set(srcNodes.map((n) => n.id));
   const gemIds = new Set(gNodes.map((n) => n.id));
   const ascIds = new Set(ascNodes.map((n) => n.id));
-  const edges = [
+  const srcEdges = [
     ...gemEdges(gemRecs, nodeIds),
     ...baseEdges(baseRecs, nodeIds),
     ...affixEdges(affixRecs, baseRecs, nodeIds),
@@ -76,10 +77,37 @@ export function buildGraph() {
     ...passiveEdges(passiveRecs, gemIds, ascIds),
   ];
 
+  // Hand-crafted overlay, applied LAST so its rules expand against the full
+  // source graph. Referential failures fail the build; retirement notices warn.
+  const overlay = manualOverlay({ nodes: srcNodes, edges: srcEdges });
+  if (overlay.errors.length) throw new Error(`manual overlay failed:\n${overlay.errors.join('\n')}`);
+  for (const w of overlay.warnings) console.warn(`[manual overlay] ${w}`);
+
+  const nodes = [...srcNodes, ...overlay.nodes];
+  const edges = [...srcEdges, ...overlay.edges];
+
   const errors = validateGraph({ nodes, edges });
   if (errors.length) throw new Error(`graph validation failed:\n${errors.join('\n')}`);
 
-  return { meta: { sourceHash: hashSources(), schema: 1 }, nodes, edges };
+  return {
+    meta: {
+      schema: 2,
+      sourceHash: hashSources(),
+      manualHash: hashManual(),
+      provenance: provenanceSummary(nodes, edges),
+    },
+    nodes,
+    edges,
+  };
+}
+
+// Counts of nodes/edges by provenance tier, recorded in meta for auditability.
+function provenanceSummary(nodes, edges) {
+  const tally = (arr) => arr.reduce((m, x) => {
+    m[x.source] = (m[x.source] ?? 0) + 1;
+    return m;
+  }, {});
+  return { nodes: tally(nodes), edges: tally(edges) };
 }
 
 export function toArtifact(graph) {

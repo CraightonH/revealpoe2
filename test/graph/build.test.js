@@ -5,12 +5,34 @@ import { buildGraph, toArtifact } from '../../scripts/graph/build.js';
 
 test('buildGraph validates clean and stamps meta', () => {
   const g = buildGraph(); // throws if validation fails
-  assert.equal(g.meta.schema, 1);
+  assert.equal(g.meta.schema, 2);
   assert.match(g.meta.sourceHash, /^[0-9a-f]{64}$/);
+  assert.match(g.meta.manualHash, /^[0-9a-f]{64}$/);
   assert.ok(g.nodes.some((n) => n.kind === 'gem'));
   assert.ok(g.nodes.some((n) => n.kind === 'skill'));
   assert.ok(g.edges.some((e) => e.type === 'grants'));
   assert.ok(g.edges.some((e) => e.type === 'recommends_support'));
+});
+
+test('buildGraph stamps provenance on every node/edge and summarizes it in meta', () => {
+  const g = buildGraph();
+  assert.ok(g.nodes.every((n) => n.source), 'every node carries a source');
+  assert.ok(g.edges.every((e) => e.source), 'every edge carries a source');
+  // Source-derived elements dominate; the meta summary tallies by tier.
+  assert.ok(g.meta.provenance.nodes.repoe > 0);
+  assert.ok(g.meta.provenance.edges.repoe > 0);
+});
+
+test('manual overlay emits derived default_skill edges with a via pointer', () => {
+  const g = buildGraph();
+  const ds = g.edges.filter((e) => e.type === 'default_skill');
+  assert.ok(ds.length > 0, 'default_skill edges present');
+  assert.ok(ds.every((e) => e.source === 'derived' && e.via?.startsWith('manual:')), 'derived + via stamped');
+  // The driving example: bow bases point at the Bow Shot default-skill gem.
+  const bowGem = 'Metadata/Items/Gem/SkillGemPlayerDefaultBow';
+  const bows = ds.filter((e) => e.to === bowGem);
+  assert.ok(bows.length > 0, 'bow bases grant Bow Shot');
+  assert.ok(bows.every((e) => g.nodes.find((n) => n.id === e.from)?.kind === 'base'), 'edges originate at base nodes');
 });
 
 test('buildGraph includes base, class, and tag nodes with base edges', () => {

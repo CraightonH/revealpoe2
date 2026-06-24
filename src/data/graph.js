@@ -12,6 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildGraph, toArtifact, hashSources } from '../../scripts/graph/build.js';
+import { hashManual } from '../../scripts/graph/manual.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const ARTIFACT_PATH = path.join(ROOT, 'build', 'graph.json');
@@ -31,6 +32,13 @@ function warnIfStale(meta) {
   if (fresh !== meta.sourceHash) {
     console.warn(
       'src/data/graph.js: build/graph.json is stale relative to source — rebuild with `npm run build:graph`',
+    );
+  }
+  // Overlay drift is independent of source — the data/manual/* files live in-repo
+  // and are always available, so this check runs even when $POE2DATADIR is absent.
+  if (meta.manualHash !== undefined && hashManual() !== meta.manualHash) {
+    console.warn(
+      'src/data/graph.js: build/graph.json is stale relative to data/manual overlay — rebuild with `npm run build:graph`',
     );
   }
 }

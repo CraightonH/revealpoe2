@@ -38,6 +38,50 @@ For skill gems: `icon_dds_file` directly on `skill_gems.json` records.
 
 Offline fallback: render a placeholder using `visual_identity.id`/`name` — deterministic color from hash, initials as label. See `$POE2DATADIR/docs/image-assets.md` for the full pattern including CSS and onerror handling.
 
+## Data Architecture: the Graph
+
+`src/` **never reads `$POE2DATADIR` at runtime.** The build compiles all source files into one artifact, `build/graph.json` (a `{ meta, nodes, edges }` property graph), and the app reads only that.
+
+- **Build**: `npm run build:graph` → `scripts/graph/cli.js` → `build.js`. Each domain module (`gems.js`, `bases.js`, `uniques.js`, `passives.js`, `affixes.js`, `keywords.js`) returns nodes + edges from source; `build.js` merges them, validates against `schema.js` (`validate.js`), and stamps `meta.sourceHash`.
+- **Runtime**: `src/data/graph.js` loads the artifact and exposes `getNode`, `nodeBySlug`, `nodesByKind`, `edgesFrom`, `edgesTo`. The `src/data/*` modules are presentation adapters — they read nodes/edges and own *only* rendering. No data resolution at runtime.
+- **Nodes** are keyed by source Metadata id and carry `kind`, `name`, `slug`, `props`. **Edges** carry `type`, `from`, `to`. Relationships (`grants`, `recommends_support`, `rolls_on`, `has_base`, `in_class`, `default_skill`, …) are edges — **traverse them, don't recompute**. A reverse lookup is `edgesTo(id, type)`.
+- A boot-time staleness guard compares `meta.sourceHash` to the source so a stale artifact is caught.
+
+## Data Provenance & Hand-Crafted Data Policy
+
+**The wiki's value is relationships, and not all of them exist in RePoE source.** Expect recurring "add this relationship/data that isn't in repoe" requests. This policy is **critical and not optional**: hand-crafted data MUST stay isolated from, and auditable against, source-generated data.
+
+### Decide first: curate, or accept the hole
+
+Not every gap should be filled. Judge on two axes:
+- **Value** — relationships are the core UX; a missing relationship matters more than a missing scalar.
+- **Churn & derivability** — prefer stable game facts expressible as a compact *rule*, not a sprawling hand table.
+
+Curate high-value, low-churn, rule-compressible facts (e.g. "default attack skill per weapon class"). Accept the hole for low-value or high-churn data (e.g. per-base tuning numbers) — wait for source instead. When unsure, surface the trade-off rather than silently fabricating data.
+
+### Where hand-crafted data lives
+
+- **NEVER edit `$POE2DATADIR`** — it is a re-scrapeable mirror; hand edits die on the next `scrape.py`.
+- Hand-authored overlays live in THIS repo under `data/manual/*.json` — declarative, schema-validated data files (not code) so game knowledge can be edited without touching build logic.
+- The builder merges overlays via `scripts/graph/manual.js`, applied **last** so it can reference source nodes.
+
+### Provenance is mandatory — three tiers
+
+Every node and edge carries a `source`:
+- `repoe` — straight from scraped source files.
+- `manual` — irreducible hand-authored facts (the overlay input itself).
+- `derived` — computed by the builder, from source OR from manual rules; carries a `via` pointer to its basis (e.g. `manual:weapon-default-skills`).
+
+### Author rules, not enumerations
+
+Keep the hand-maintained surface as small as the irreducible fact; let the builder expand it. Don't hand-write 27 bow→skill edges — write one `gem→class` line and have `manual.js` emit a `derived` edge for every base in that class. New bases from a future scrape pick up the relationship automatically.
+
+### Guardrails (enforced in the build)
+
+- **Referential integrity** — every manual reference must resolve to a live source node. A patch that renames a key must **fail the build**, never silently drop the relationship.
+- **Retirement detection** — if source later ships a relationship we hand-authored, the build **warns** on the overlap so the manual copy can be deleted. Source wins.
+- **Provenance summary** — `meta.provenance` records counts by source; `meta.manualHash` lets the staleness guard distinguish "source changed" from "overlay changed".
+
 ## UI Fidelity Goal
 
 Item and gem tooltips should imitate the in-game look and feel as closely as possible. The reference implementation is **poe2db.tw** — inspect its HTML/CSS for layout patterns before building new popup styles.
@@ -51,10 +95,10 @@ Key layout patterns already established (do not drift from these):
 
 ## Architecture Decisions
 
-This wiki is a greenfield project — no framework has been chosen yet. When building:
+Stack: Express + Nunjucks server-rendered pages, reading the pre-built `build/graph.json` artifact (see **Data Architecture: the Graph**). When building:
 
-- **Data access layer** should be a thin module that reads the JSON files from `POE2DATADIR` and exposes typed query functions (by name, by tag, by item class, etc.) rather than raw JSON access scattered through the codebase.
-- **Relationships** are the primary UX value — skill gem → recommended supports → what those supports do → which weapon types they apply to. Make these traversable.
+- **Data access layer** is the graph: `src/data/graph.js` plus per-domain presentation adapters (`src/data/gems.js`, `uniques.js`, …). All resolution happens at build time in `scripts/graph/*`; runtime code only reads nodes/edges and renders. Never reintroduce `$POE2DATADIR` reads into `src/`.
+- **Relationships** are the primary UX value — skill gem → recommended supports → what those supports do → which weapon types they apply to. Model them as graph edges and make them traversable (and reverse-traversable via `edgesTo`).
 - **Beginner-first**: surface `gem_tags.json` display names, `keywords.json` glossary, and stat translation text so users never see raw stat IDs.
 - **Search** needs to work across gem names, item names, and stat descriptions — the data is local so full-text search over pre-indexed JSON is feasible without a backend.
 
