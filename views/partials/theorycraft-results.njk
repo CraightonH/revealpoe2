@@ -1,3 +1,38 @@
+{% from "macros/gem-card.njk" import gemBrowseCard %}
+{% from "macros/unique-card.njk" import uniqueListCard %}
+{% from "macros/base-card.njk" import baseListCard %}
+{% from "macros/passive.njk" import passiveBrowseCard %}
+
+{# Compact fallback card — used for affixes (no browse card) and for the rare
+   card-backed result that has no card object resolved. Affixes have no page:
+   their cardUrl is the base-target flyout, and it.url is set only for a lone
+   base. #}
+{% macro compactCard(it, category) %}
+{% set cardUrl = it.cardUrl if it.cardUrl else (it.url + '/card' if it.url else null) %}
+<a class="tc-result-card tc-result-card--{{ category }}"
+   {% if it.url %}href="{{ it.url }}"{% elif cardUrl %}tabindex="0" role="button"{% endif %}
+   {% if cardUrl %}data-card-url="{{ cardUrl }}"{% endif %}>
+  {% if it.iconUrl %}
+  <img class="tc-result-icon" src="{{ it.iconUrl }}" alt="{{ it.name }}" loading="lazy"
+       onerror="this.style.visibility='hidden'">
+  {% endif %}
+  <span class="tc-result-name">{{ it.name }}</span>
+  {% if it.subtitle %}<span class="tc-result-sub">{{ it.subtitle }}</span>{% endif %}
+</a>
+{% endmacro %}
+
+{# Render one result item using the same card the item's browse page uses. #}
+{% macro resultCard(it, category) %}
+{% if it.card %}
+  {% if category in ['gem', 'support', 'spirit'] %}{{ gemBrowseCard(it.card) }}
+  {% elif category == 'unique' %}{{ uniqueListCard(it.card) }}
+  {% elif category == 'base' %}{{ baseListCard(it.card) }}
+  {% elif category == 'keystone' %}{{ passiveBrowseCard(it.card, 'keystone') }}
+  {% elif category == 'notable' %}{{ passiveBrowseCard(it.card, 'notable') }}
+  {% else %}{{ compactCard(it, category) }}{% endif %}
+{% else %}{{ compactCard(it, category) }}{% endif %}
+{% endmacro %}
+
 {% if result.empty %}
 <div class="tc-empty">
   <p>Search across gems, supports, uniques, affixes, keystones, notables and bases.</p>
@@ -10,24 +45,15 @@
 {% else %}
 <div class="tc-summary">{{ result.total }} result{{ 's' if result.total != 1 }} for <code>{{ result.query }}</code></div>
 {% for g in result.groups %}
+{# Each group lays its cards out on the same grid its browse page uses. #}
+{% if g.category in ['gem', 'support', 'spirit'] %}{% set gridClass = 'gem-browse-grid' %}
+{% elif g.category in ['unique', 'base'] %}{% set gridClass = 'bases-list-grid' %}
+{% elif g.category in ['keystone', 'notable'] %}{% set gridClass = 'keystone-index-grid' %}
+{% else %}{% set gridClass = 'tc-result-grid' %}{% endif %}
 <section class="tc-group">
   <h2 class="tc-group-heading">{{ g.label }} ({{ g.total }})</h2>
-  <div class="tc-result-grid">
-    {% for it in g.items %}
-    {# Most cards link to their page (+ hover card). Affixes have no page: their
-       cardUrl is the base-target flyout, and it.url is set only for a lone base. #}
-    {% set cardUrl = it.cardUrl if it.cardUrl else (it.url + '/card' if g.category in ['gem', 'support', 'spirit', 'unique', 'base'] else null) %}
-    <a class="tc-result-card tc-result-card--{{ g.category }}"
-       {% if it.url %}href="{{ it.url }}"{% elif cardUrl %}tabindex="0" role="button"{% endif %}
-       {% if cardUrl %}data-card-url="{{ cardUrl }}"{% endif %}>
-      {% if it.iconUrl %}
-      <img class="tc-result-icon" src="{{ it.iconUrl }}" alt="{{ it.name }}" loading="lazy"
-           onerror="this.style.visibility='hidden'">
-      {% endif %}
-      <span class="tc-result-name">{{ it.name }}</span>
-      {% if it.subtitle %}<span class="tc-result-sub">{{ it.subtitle }}</span>{% endif %}
-    </a>
-    {% endfor %}
+  <div class="{{ gridClass }}">
+    {% for it in g.items %}{{ resultCard(it, g.category) }}{% endfor %}
   </div>
   {% if g.shown < g.total %}<p class="tc-more">Showing {{ g.shown }} of {{ g.total }}</p>{% endif %}
 </section>

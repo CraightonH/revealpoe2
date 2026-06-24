@@ -68,6 +68,7 @@ export function registerPages(app) {
   });
 
   detailRoute(app, '/notable/:id', getNotable, 'notable.njk', 'n');
+  cardRoute(app, '/notable/:id/card', getNotable, 'partials/passive-card-fragment.njk');
 
   // Generic passive-node detail + hover card — covers ascendancy notables,
   // which getNotable/getKeystone exclude.

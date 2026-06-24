@@ -1,32 +1,40 @@
+{# A single condensed card for the /gems browse grid. Also reused on the
+   /theorycraft results page so gem matches render identically to /gems.
+   `modifier` feeds the filter-bar data-type; defaults to the gem's own type. #}
+{% macro gemBrowseCard(g, modifier='') %}
+{% set dataType = modifier if modifier else g.gemType %}
+<a class="gem-browse-card gem-browse-card--{{ g.cardColor }}" href="/gem/{{ g.slug }}"
+   data-card-url="/gem/{{ g.slug }}/card"
+   data-type="{{ dataType }}"
+   data-origin="{{ g.origin }}"
+   data-req="{{ g.req | join(' ') }}">
+  <div class="gem-browse-header"><span class="gem-browse-name">{{ g.name }}</span></div>
+  <div class="gem-browse-main">
+    {% if g.iconUrl %}
+    <img class="gem-browse-icon" src="{{ g.iconUrl }}" alt="{{ g.name }}" loading="lazy" onerror="this.style.visibility='hidden'">
+    {% endif %}
+    <div class="gem-browse-body">
+      <div class="gem-browse-tags">{{ g.typeLineHtml | safe }}{% if g.tags.length %} · {{ g.tags | join(', ') | safe }}{% endif %}</div>
+      {% if g.requirements.length %}
+      <div class="gem-browse-req">Requires: {{ g.requirements | join(', ') | safe }}</div>
+      {% endif %}
+      {% if g.effect.length %}
+      <div class="separator"></div>
+      <div class="gem-browse-effect">
+        {% for line in g.effect %}<div class="explicitMod">{{ line | safe }}</div>{% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</a>
+{% endmacro %}
+
 {% macro gemSection(label, gems, modifier='') %}
 <section class="gem-list-section">
   <h2 class="gem-list-heading gem-list-heading--{{ modifier }}">{{ label }} (<span data-filter-count>{{ gems.length }}</span>)</h2>
   <div class="gem-browse-grid">
     {% for g in gems %}
-    <a class="gem-browse-card gem-browse-card--{{ g.cardColor }}" href="/gem/{{ g.slug }}"
-       data-card-url="/gem/{{ g.slug }}/card"
-       data-type="{{ modifier }}"
-       data-origin="{{ g.origin }}"
-       data-req="{{ g.req | join(' ') }}">
-      <div class="gem-browse-header"><span class="gem-browse-name">{{ g.name }}</span></div>
-      <div class="gem-browse-main">
-        {% if g.iconUrl %}
-        <img class="gem-browse-icon" src="{{ g.iconUrl }}" alt="{{ g.name }}" loading="lazy" onerror="this.style.visibility='hidden'">
-        {% endif %}
-        <div class="gem-browse-body">
-          <div class="gem-browse-tags">{{ g.typeLineHtml | safe }}{% if g.tags.length %} · {{ g.tags | join(', ') | safe }}{% endif %}</div>
-          {% if g.requirements.length %}
-          <div class="gem-browse-req">Requires: {{ g.requirements | join(', ') | safe }}</div>
-          {% endif %}
-          {% if g.effect.length %}
-          <div class="separator"></div>
-          <div class="gem-browse-effect">
-            {% for line in g.effect %}<div class="explicitMod">{{ line | safe }}</div>{% endfor %}
-          </div>
-          {% endif %}
-        </div>
-      </div>
-    </a>
+    {{ gemBrowseCard(g, modifier) }}
     {% endfor %}
   </div>
 </section>

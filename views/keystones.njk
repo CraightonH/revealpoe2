@@ -1,25 +1,13 @@
 {% extends "base.njk" %}
 {% from "macros/nav.njk" import pageHeader %}
+{% from "macros/passive.njk" import passiveBrowseCard %}
 {% block title %}Keystones — PoE2 Wiki{% endblock %}
 {% block content %}
 <div class="page page--column">
   {{ pageHeader('Keystones', keystones.length ~ ' keystones', '--color-keystone') }}
   <div class="keystone-index-grid">
     {% for k in keystones %}
-    <a class="keystone-index-card" href="/keystone/{{ k.id }}" data-card-url="/keystone/{{ k.id }}/card">
-      <div class="keystone-index-header"><span class="keystone-index-name">{{ k.name }}</span></div>
-      <div class="keystone-index-main">
-        {% if k.iconUrl %}
-        <img src="{{ k.iconUrl }}" alt="{{ k.name }}" class="keystone-index-icon" loading="lazy"
-             onerror="this.style.visibility='hidden'">
-        {% else %}
-        <div class="keystone-index-icon keystone-index-placeholder">{{ k.name[0] }}</div>
-        {% endif %}
-        <div class="keystone-index-body">
-          {% for line in k.statLines %}<div class="explicitMod">{{ line | safe }}</div>{% endfor %}
-        </div>
-      </div>
-    </a>
+    {{ passiveBrowseCard(k, 'keystone') }}
     {% endfor %}
   </div>
 </div>

@@ -1,5 +1,5 @@
-import { listGems, buildGemViewModel, getGem } from './gems.js';
-import { listUniques } from './uniques.js';
+import { listGems, listGemCards, buildGemViewModel, getGem } from './gems.js';
+import { listUniques, listUniqueCards } from './uniques.js';
 import { listItemClasses, getItemClass, affixBaseTargets } from './baseItems.js';
 import { listKeystones, listNotables } from './passiveTree.js';
 import { listModGroups } from './mods.js';
@@ -67,6 +67,35 @@ export function docMatches(doc, terms) {
   return terms.every((t) => termMatches(doc, t));
 }
 
+// Per-category slug → browse-card lookup. The same condensed card objects the
+// /gems, /uniques, /bases and /keystones pages render, so theorycraft results
+// can reuse those macros verbatim instead of a bespoke result card. Built once
+// (same cost the browse pages pay) and cached. gem/support/spirit share one map.
+let _cardMaps = null;
+function cardMaps() {
+  if (_cardMaps) return _cardMaps;
+  const bySlug = (list) => new Map(list.map((c) => [c.slug, c]));
+  const byId = (list) => new Map(list.map((c) => [c.id, c]));
+  const bases = listItemClasses().flatMap((group) =>
+    group.classes.flatMap((cls) => getItemClass(cls.classSlug)?.bases ?? [])
+  );
+  _cardMaps = {
+    gem: bySlug(listGemCards()),
+    unique: bySlug(listUniqueCards()),
+    base: bySlug(bases),
+    keystone: byId(listKeystones()),
+    notable: byId(listNotables()),
+  };
+  return _cardMaps;
+}
+
+// Which lookup map serves a result category (gem/support/spirit all map to gems).
+function cardMapFor(category) {
+  const maps = cardMaps();
+  if (category === 'support' || category === 'spirit') return maps.gem;
+  return maps[category] ?? null;
+}
+
 export function runQuery(q, { docs = allDocs(), capPerGroup = 100 } = {}) {
   const { terms } = parseQuery(q);
   const query = (q ?? '').trim();
@@ -76,12 +105,20 @@ export function runQuery(q, { docs = allDocs(), capPerGroup = 100 } = {}) {
   for (const g of GROUPS) {
     const items = matched.filter((d) => d.category === g.category);
     if (!items.length) continue;
+    // Attach the full browse-card object to each shown item so the template can
+    // render the real /gems, /uniques, /bases, /keystones card. Affixes have no
+    // browse card (card stays null → template keeps the compact fallback).
+    const map = cardMapFor(g.category);
+    const shown = items.slice(0, capPerGroup).map((it) => ({
+      ...it,
+      card: map && it.slug ? map.get(it.slug) ?? null : null,
+    }));
     groups.push({
       category: g.category,
       label: g.label,
       total: items.length,
-      shown: Math.min(items.length, capPerGroup),
-      items: items.slice(0, capPerGroup),
+      shown: shown.length,
+      items: shown,
     });
   }
   return { empty: false, groups, total: matched.length, query };
@@ -121,6 +158,7 @@ function gemDocs() {
     }
     return {
       name: g.name,
+      slug: g.slug,
       url: `/gem/${g.slug}`,
       category: gemCategory(g.gemType),
       iconUrl: g.iconUrl || null,
@@ -137,6 +175,7 @@ function gemDocs() {
 function uniqueDocs() {
   return listUniques().map((u) => ({
     name: u.name,
+    slug: u.slug,
     url: `/unique/${u.slug}`,
     category: 'unique',
     iconUrl: u.iconUrl || null,
@@ -185,6 +224,7 @@ function affixDocs() {
 function nodeDocs(list, category, urlBase) {
   return list.map((n) => ({
     name: n.name,
+    slug: n.id,
     url: `/${urlBase}/${n.id}`,
     category,
     iconUrl: n.iconUrl || null,
@@ -203,6 +243,7 @@ function baseDocs() {
       const c = getItemClass(cls.classSlug);
       return (c?.bases ?? []).map((b) => ({
         name: b.name,
+        slug: b.slug,
         url: `/base/${b.slug}`,
         category: 'base',
         iconUrl: b.iconUrl || null,
