@@ -1,42 +1,33 @@
-import path from 'node:path';
-import { loadJson, listDataDir } from './loader.js';
 import { slugify } from './slug.js';
 import { ddsUrl } from './images.js';
 import { getGem } from './gems.js';
 import { getBaseByName, listItemClasses } from './baseItems.js';
 import { parseLocalMods, computeProperties } from './itemStats.js';
-import { getFlavourLines } from './flavour.js';
 import { hasDefinition } from './keywordDefs.js';
 import { linkifyPhrases } from './keywords.js';
-import { REPOE } from '../config.js';
+import { nodesByKind, nodeBySlug, edgesTo, getNode } from './graph.js';
 
-const POB_DIR = 'pob-uniques';
+// Presentation adapter over the build-time graph (build/graph.json). Unique
+// identity, variant resolution, resolved class/icon/flavour, and the has_base /
+// grants relationships live in the graph (scripts/graph/uniques.js); this module
+// reads `unique` nodes + edges and owns all rendering. It performs NO reads of
+// $POE2DATADIR. The detail tooltip still derives item stats from the linked base
+// (getBaseByName + parseLocalMods/computeProperties — already graph-backed).
 
 const UNIQUE_BORDER = 'rgba(175,96,37,0.8)';
 const UNIQUE_GLOW = 'rgba(175,96,37,0.45)';
 
-// PoB metadata line prefixes — not item stats. These appear interspersed before
-// the mod block; every one must be filtered or it leaks into `stats` and throws
-// off the implicit/explicit split (which slices the first `Implicits: N` lines).
-// NOTE: "Grants Skill:" is intentionally NOT here — it's a real granted-skill stat.
-const META_COLON_RE = /^(Variant|Implicits|League|Source|Corrupted|Limited to|Drop level|Drop|Unreleased|Sockets|Radius|Has Alt Variant(?: Two| Three)?|Selected (?:Alt )?Variant(?: Two| Three)?|Left ring slot|Right ring slot):/;
-// "Requires Level N" / "Requires N Str" appear WITHOUT a trailing colon.
-const META_NOCOLON_RE = /^Requires\b/;
-const isMetaLine = (line) => META_COLON_RE.test(line) || META_NOCOLON_RE.test(line);
-
-// "Grants Skill: Name", "Grants Skill: Level (N-M) Name", or "Grants Skill:
-// Level N Name" (fixed level, no range — e.g. Adonia's Ego's Pinnacle of Power).
+// "Grants Skill: Name", "Grants Skill: Level (N-M) Name", or "Grants Skill: Level N Name".
 const GRANTS_SKILL_RE = /^(Grants Skill: (?:Level (?:\([^)]+\)|\d+) )?)(.+)$/;
 
-// Render affix text to safe HTML. linkifyPhrases now handles both the numeric
-// value highlighting (white .mod-value spans) and keyword glossary hovers, so
-// this is a thin wrapper that pins hasDefinition for the unique-card callers.
+// Render affix text to safe HTML (value highlighting + keyword glossary hovers).
 function renderAffix(text) {
   return linkifyPhrases(text, hasDefinition);
 }
 
 // Parse a stat line; for grant lines, attach a gemSlug + skill icon if the gem
-// exists. `html`/`prefixHtml` carry value-highlighted markup for | safe render.
+// exists (rendering intentionally stays on the existing getGem(slug) lookup —
+// the 70-linked / 2-unlinked split is unchanged from before the cutover).
 function parseStatLine(text) {
   const m = text.match(GRANTS_SKILL_RE);
   if (!m) return { text, html: renderAffix(text) };
@@ -55,109 +46,35 @@ function parseStatLine(text) {
   };
 }
 
-// Count Variant: lines to determine the "current" variant index (last one = highest).
-function currentVariantIndex(lines) {
-  return lines.filter((l) => l.startsWith('Variant:')).length;
-}
-
-// Extract variant numbers from a {variant:N,M} prefix, or null if absent.
-function variantSpec(line) {
-  const m = line.match(/^\{variant:([^}]+)\}/);
-  return m ? m[1].split(',').map(Number) : null;
-}
-
-// Strip all {…} tokens from a stat line to get clean display text.
-function stripBraces(line) {
-  return line.replace(/\{[^}]*\}/g, '').trim();
-}
-
-// Parse a pob-unique text block into a structured object, or null if invalid.
-function parsePob(text) {
-  const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
-  if (lines.length < 2) return null;
-
-  const name = lines[0];
-  const base = lines[1];
-
-  // Reject manifest-artifact keys and anything that looks like a metadata field
-  if (name.includes(':') || name === 'source' || name === 'base_url') return null;
-
-  const curVariant = currentVariantIndex(lines);
-
-  // PoB marks how many leading stat lines are implicits ("Implicits: N").
-  const implicitsLine = lines.find((l) => /^Implicits:\s*\d+/.test(l));
-  const implicitCount = implicitsLine ? Number(implicitsLine.match(/\d+/)[0]) : 0;
-
-  const stats = [];
-  for (const line of lines.slice(2)) {
-    if (isMetaLine(line)) continue;
-    const spec = variantSpec(line);
-    // If this line is variant-gated and the current variant isn't listed, skip it.
-    if (spec && !spec.includes(curVariant)) continue;
-    const cleaned = stripBraces(line);
-    if (cleaned) stats.push(cleaned);
-  }
-
-  return { name, base, stats, implicitCount };
-}
-
-// Build name → uniques.json entry mapping (skip alternate art).
-function buildMetaByName() {
-  const raw = loadJson(`${REPOE}/uniques.json`);
-  const out = {};
-  for (const v of Object.values(raw)) {
-    if (!v.name || v.is_alternate_art) continue;
-    if (!out[v.name]) out[v.name] = v;
-  }
-  return out;
-}
-
-let _index = null;
-
-function index() {
-  if (_index) return _index;
-
-  const metaByName = buildMetaByName();
-  _index = new Map();
-
-  const files = listDataDir(POB_DIR);
-  for (const file of files) {
-    if (file === '_manifest.json' || !file.endsWith('.json')) continue;
-
-    const entries = loadJson(`${POB_DIR}/${file}`);
-    if (!Array.isArray(entries)) continue;
-
-    for (const text of entries) {
-      const parsed = parsePob(text);
-      if (!parsed) continue;
-
-      const slug = slugify(parsed.name);
-      if (_index.has(slug)) continue;
-
-      const meta = metaByName[parsed.name] ?? null;
-      _index.set(slug, {
-        slug,
-        name: parsed.name,
-        base: parsed.base,
-        stats: parsed.stats,
-        itemClass: meta?.item_class ?? path.basename(file, '.json'),
-        iconUrl: ddsUrl(meta?.visual_identity?.dds_file),
-        flavour: getFlavourLines(meta?.visual_identity?.id),
-        implicitCount: parsed.implicitCount,
-      });
-    }
-  }
-
-  return _index;
+// Reconstruct the legacy flat record from a unique graph node: current-variant
+// stats + implicitCount, plus identity/icon/flavour. Keeps listUniques()/
+// getUnique() stable for theorycraft.js and the card/VM builders.
+function toUnique(node) {
+  const p = node.props;
+  const cur = p.variants[p.currentIndex];
+  return {
+    slug: node.slug,
+    name: node.name,
+    base: p.base,
+    stats: [...cur.implicits, ...cur.explicits],
+    itemClass: p.itemClass,
+    iconUrl: ddsUrl(p.iconDds),
+    flavour: p.flavour,
+    implicitCount: cur.implicits.length,
+  };
 }
 
 export function listUniques() {
-  return [...index().values()];
+  return nodesByKind('unique').map(toUnique);
 }
 
-// Canonical item-class lookup (clean in-game class names + stable slugs),
-// keyed by class slug. Built from the base-item layer so unique filters line up
-// with the /bases class taxonomy. Lazily memoized.
+export function getUnique(slug) {
+  const node = nodeBySlug('unique', slug);
+  return node ? toUnique(node) : null;
+}
+
+// Canonical item-class lookup keyed by class slug, built from the base-item layer
+// so unique filters line up with the /bases class taxonomy. Lazily memoized.
 let _canonClassBySlug = null;
 function canonClassBySlug() {
   if (_canonClassBySlug) return _canonClassBySlug;
@@ -170,32 +87,20 @@ function canonClassBySlug() {
   return _canonClassBySlug;
 }
 
-// Resolve a unique's filterable item class. Prefer the base item's canonical
-// class (clean plural name, e.g. "Two Hand Maces"); fall back to the unique's
-// own item_class for bases that aren't browsable (charms, flasks, jewels) or
-// whose base name doesn't resolve, normalizing to the canonical class when one
-// matches by slug.
-function classifyUnique(baseRecord, rawItemClass) {
-  if (baseRecord) return { label: baseRecord.className, slug: baseRecord.classSlug };
-  const slug = slugify(rawItemClass);
-  return canonClassBySlug().get(slug) ?? { label: rawItemClass, slug };
-}
-
 // Distinct item-class filter options present among the uniques, ordered by the
-// canonical /bases group order (Weapons → Armour → Accessories), with any
-// non-browsable extras (Charm, Flask, Jewel, …) appended alphabetically.
+// canonical /bases group order (Weapons -> Armour -> Accessories), with any
+// non-browsable extras (Charm, Flask, Jewel, …) appended alphabetically. The
+// class is read straight off the node (resolved at build).
 export function listUniqueClassFilters() {
   const canon = canonClassBySlug();
-  const present = new Map(); // slug -> { value, label, icon }  (filterBar option schema)
-  for (const u of index().values()) {
-    const { label, slug } = classifyUnique(getBaseByName(u.base), u.itemClass);
+  const present = new Map(); // slug -> { value, label, icon }
+  for (const node of nodesByKind('unique')) {
+    const { className: label, classSlug: slug } = node.props;
+    const iconUrl = ddsUrl(node.props.iconDds);
     if (!present.has(slug)) {
-      // Generic class glyph: the canonical base-item rep icon when the class is
-      // browsable, else fall back to a member unique's own art (charms, flasks,
-      // jewels — classes with no browsable base).
-      present.set(slug, { value: slug, label, icon: canon.get(slug)?.iconUrl ?? u.iconUrl ?? null });
-    } else if (!present.get(slug).icon && u.iconUrl) {
-      present.get(slug).icon = u.iconUrl;
+      present.set(slug, { value: slug, label, icon: canon.get(slug)?.iconUrl ?? iconUrl ?? null });
+    } else if (!present.get(slug).icon && iconUrl) {
+      present.get(slug).icon = iconUrl;
     }
   }
   const ordered = [];
@@ -214,17 +119,12 @@ export function listUniqueClassFilters() {
   return [...ordered, ...extras];
 }
 
-// Condensed view models for the /uniques browse grid: enough to render the
-// at-a-glance card (name, base, icon, inventory size for the icon box, and the
-// parsed implicit/explicit mod lines). Lighter than the full detail VM — no
-// derived item stats or flavour.
+// Condensed view models for the /uniques browse grid.
 export function listUniqueCards() {
-  return [...index().values()].map((u) => {
+  return nodesByKind('unique').map((node) => {
+    const u = toUnique(node);
     const baseRecord = getBaseByName(u.base);
-    const itemClass = classifyUnique(baseRecord, u.itemClass);
     const parsed = u.stats.map(parseStatLine);
-    // Derived item stats (defences, damage) — base properties with the unique's
-    // local mods applied, same as the full tooltip. Keyword-linked labels.
     const mods = parseLocalMods(u.stats);
     const properties = baseRecord
       ? computeProperties(baseRecord.rawProperties, mods).map((p) => ({ ...p, labelHtml: renderAffix(p.label) }))
@@ -233,8 +133,8 @@ export function listUniqueCards() {
       slug: u.slug,
       name: u.name,
       base: u.base,
-      itemClass: itemClass.label,
-      itemClassSlug: itemClass.slug,
+      itemClass: node.props.className,
+      itemClassSlug: node.props.classSlug,
       iconUrl: u.iconUrl,
       inventorySize: baseRecord?.inventorySize ?? null,
       properties,
@@ -245,29 +145,17 @@ export function listUniqueCards() {
   });
 }
 
-export function getUnique(slug) {
-  return index().get(slug) ?? null;
-}
-
 export function buildUniqueViewModel(slug) {
   const u = getUnique(slug);
   if (!u) return null;
 
-  // Derive in-game item stats from the base item with the unique's local mods
-  // applied (e.g. base phys × increased phys%). Bases whose class isn't
-  // browsable (jewels, flasks) have no record — properties/requirements stay empty.
   const baseRecord = getBaseByName(u.base);
   const mods = parseLocalMods(u.stats);
-  // Keyword-link the property labels too (e.g. "Physical" in Physical Damage,
-  // "Critical Hit" in Critical Hit Chance) — same .kw glossary treatment.
   const properties = baseRecord
     ? computeProperties(baseRecord.rawProperties, mods).map((p) => ({ ...p, labelHtml: renderAffix(p.label) }))
     : [];
   const requirements = baseRecord?.requirements ?? [];
 
-  // Implicits (the leading PoB-flagged lines — granted skills, base implicit
-  // mods) are shown above the explicit affixes, separated by a divider, as in
-  // the in-game / poe2db layout.
   const parsedStats = u.stats.map(parseStatLine);
   const implicits = parsedStats.slice(0, u.implicitCount);
   const explicits = parsedStats.slice(u.implicitCount);

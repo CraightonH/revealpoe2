@@ -1,10 +1,9 @@
 import { ddsUrl } from './images.js';
-import { listUniques } from './uniques.js';
 import { getModsForClass, getCorruptedForClass, getDesecratedForClass } from './mods.js';
 import { getGemRefByKey } from './gems.js';
 import { hasDefinition } from './keywordDefs.js';
 import { linkifyRequirement, linkifyPhrases, renderGameText } from './keywords.js';
-import { nodesByKind } from './graph.js';
+import { nodesByKind, edgesTo, getNode } from './graph.js';
 import { GROUPS, ATTR_SUBTYPE_ORDER } from './itemTaxonomy.js';
 
 // Presentation adapter over the graph artifact (build/graph.json). Base identity,
@@ -12,8 +11,8 @@ import { GROUPS, ATTR_SUBTYPE_ORDER } from './itemTaxonomy.js';
 // live in the build-time graph (scripts/graph/bases.js, scripts/graph/affixes.js);
 // this module reads nodes/edges and owns the view layer. It performs NO reads of
 // $POE2DATADIR. Implicit and affix-table text arrive pre-resolved (the graph holds
-// the strings; this module renders them). uniquesOnBase still reads source via
-// uniques.js — that kind is migrated in a later plan (a deliberate partial cutover).
+// the strings; this module renders them). uniquesOnBase is resolved via the
+// has_base reverse edge (unique -> base) — no source read, no uniques.js import.
 
 // GROUPS and ATTR_SUBTYPE_ORDER are the shared item-class taxonomy (./itemTaxonomy.js).
 // Armour defence/attribute subtype display labels are presentation-only and stay here.
@@ -361,9 +360,12 @@ export function buildBaseItemViewModel(slug) {
   const b = getBaseItem(slug);
   if (!b) return null;
 
-  const uniquesOnBase = listUniques()
-    .filter((u) => u.base === b.name)
-    .map((u) => ({ slug: u.slug, name: u.name, iconUrl: u.iconUrl }));
+  // "Uniques on this base" — the reverse of the unique's has_base edge. Replaces
+  // the former listUniques().filter(u.base === b.name) source scan.
+  const uniquesOnBase = edgesTo(b.metadataKey, 'has_base')
+    .map((e) => getNode(e.from))
+    .filter(Boolean)
+    .map((n) => ({ slug: n.slug, name: n.name, iconUrl: ddsUrl(n.props.iconDds) }));
 
   return { ...b, uniquesOnBase, runeVariants: _runeByParent.get(b.slug) ?? [] };
 }
