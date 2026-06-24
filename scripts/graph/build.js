@@ -7,6 +7,7 @@ import { gemNodes, skillNodes, gemEdges } from './gems.js';
 import { baseNodes, classNodes, tagNodes, baseEdges } from './bases.js';
 import { affixNodes, affixEdges } from './affixes.js';
 import { uniqueNodes, uniqueEdges } from './uniques.js';
+import { passiveNodes, ascendancyNodes, passiveEdges } from './passives.js';
 import { validateGraph } from './validate.js';
 
 // Source files this build reads — the sourceHash covers exactly these.
@@ -18,8 +19,11 @@ const SOURCE_FILES = [
   `${REPOE}/mods.json`,
   `${REPOE}/mods_by_base.json`,
   `${REPOE}/stat_translations/stat_descriptions.json`,
+  `${REPOE}/stat_translations/passive_skill_stat_descriptions.json`,
   `${REPOE}/uniques.json`,
   `${REPOE}/flavour.json`,
+  `${REPOE}/passive_skill_trees/Default.json`,
+  `${REPOE}/ascendancies.json`,
 ];
 
 // Hash of the source files this build reads. Reused by the app's boot-time
@@ -47,14 +51,19 @@ export function buildGraph() {
   const tNodes = tagNodes(baseRecs);
   const { nodes: aNodes, records: affixRecs } = affixNodes();
   const { nodes: uNodes, records: uniqueRecs } = uniqueNodes();
+  const { nodes: pNodes, records: passiveRecs } = passiveNodes();
+  const ascNodes = ascendancyNodes();
 
-  const nodes = [...gNodes, ...sNodes, ...bNodes, ...cNodes, ...tNodes, ...aNodes, ...uNodes];
+  const nodes = [...gNodes, ...sNodes, ...bNodes, ...cNodes, ...tNodes, ...aNodes, ...uNodes, ...pNodes, ...ascNodes];
   const nodeIds = new Set(nodes.map((n) => n.id));
+  const gemIds = new Set(gNodes.map((n) => n.id));
+  const ascIds = new Set(ascNodes.map((n) => n.id));
   const edges = [
     ...gemEdges(gemRecs, nodeIds),
     ...baseEdges(baseRecs, nodeIds),
     ...affixEdges(affixRecs, baseRecs, nodeIds),
     ...uniqueEdges(uniqueRecs, baseRecs, sNodes),
+    ...passiveEdges(passiveRecs, gemIds, ascIds),
   ];
 
   const errors = validateGraph({ nodes, edges });

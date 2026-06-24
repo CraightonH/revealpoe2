@@ -1,77 +1,20 @@
-import { loadJson } from './loader.js';
 import { ddsUrl } from './images.js';
 import { renderGameText, stripGameText } from './keywords.js';
 import { hasDefinition } from './keywordDefs.js';
 import { getGemRefByKey } from './gems.js';
-import { REPOE } from '../config.js';
+import { nodesByKind, nodeBySlug, edgesFrom, edgesTo, getNode } from './graph.js';
 
-let _passives = null;
-let _statMap = null;
-let _ascData = null;
-
-function buildStatMap() {
-  if (_statMap) return;
-  const passive = loadJson(`${REPOE}/stat_translations/passive_skill_stat_descriptions.json`);
-  const general = loadJson(`${REPOE}/stat_translations/stat_descriptions.json`);
-  _statMap = new Map();
-  // load general first so passive-specific entries override
-  for (const entry of general) {
-    const eng = entry.English?.[0];
-    if (!eng) continue;
-    for (const id of entry.ids ?? []) {
-      _statMap.set(id, eng);
-    }
-  }
-  for (const entry of passive) {
-    const eng = entry.English?.[0];
-    if (!eng) continue;
-    for (const id of entry.ids ?? []) {
-      _statMap.set(id, eng);
-    }
-  }
-}
-
-function rawString(entry, val) {
-  return entry.format?.[0] === 'ignore'
-    ? entry.string
-    : entry.string.replace('{0}', val);
-}
-
-function translateStats(stats) {
-  buildStatMap();
-  const lines = [];
-  for (const [id, val] of Object.entries(stats ?? {})) {
-    const entry = _statMap.get(id);
-    if (!entry) continue;
-    for (const line of rawString(entry, val).split('\n')) {
-      if (line.trim()) lines.push(renderGameText(line, hasDefinition));
-    }
-  }
-  return lines;
-}
-
-function translateStatsRaw(stats) {
-  buildStatMap();
-  const parts = [];
-  for (const [id, val] of Object.entries(stats ?? {})) {
-    const entry = _statMap.get(id);
-    if (!entry) continue;
-    for (const line of rawString(entry, val).split('\n')) {
-      if (line.trim()) parts.push(stripGameText(line));
-    }
-  }
-  return parts.join(' ');
-}
-
-function buildPassiveIndex() {
-  if (_passives) return;
-  const tree = loadJson(`${REPOE}/passive_skill_trees/Default.json`);
-  _passives = tree.passives;
-}
+// Presentation adapter over the build-time graph (build/graph.json). Passive
+// identity, resolved stat strings, flavour/reminder text, and the grants /
+// in_ascendancy relationships live in the graph (scripts/graph/passives.js);
+// this module reads `passive` + `ascendancy` nodes/edges and owns all rendering.
+// It performs NO reads of $POE2DATADIR. Stat strings arrive pre-resolved (stat-id
+// -> English with values substituted); keyword linkification stays here.
 
 // Per-ascendancy accent colors, keyed by ascendancy id. Chosen to evoke each
 // ascendancy's in-game theme; drives the header accent and card background tint
-// on the ascendancy pages. Fallback used for any future/unknown id.
+// on the ascendancy pages. Presentation styling (graph rule #8) — stays app-side.
+// Fallback used for any future/unknown id.
 const ASC_COLORS = {
   Druid1: '#4fa3a3', // Oracle — divinatory teal
   Druid2: '#8a9a5b', // Shaman — mossy green
@@ -99,64 +42,48 @@ const ASC_COLORS = {
 };
 const ASC_COLOR_DEFAULT = '#9a8fd6';
 
-function buildAscIndex() {
-  if (_ascData) return;
-  const raw = loadJson(`${REPOE}/ascendancies.json`);
-  _ascData = new Map();
-  for (const [id, v] of Object.entries(raw)) {
-    if (v.disabled || (v.name && v.name.includes('[DNT'))) continue;
-    _ascData.set(id, {
-      id,
-      name: v.name,
-      charClass: v.character[1],
-      color: ASC_COLORS[id] || ASC_COLOR_DEFAULT,
-    });
-  }
-}
-
-function nodeRecord(p) {
+// Reconstruct the legacy flat record from a passive graph node: stat lines
+// rendered to HTML, plain statRaw for search, identity/icon/flavour, and the
+// granted skill resolved from the `grants` edge (gem ref, or null).
+function nodeRecord(node) {
+  const p = node.props;
+  const grant = edgesFrom(node.id, 'grants')[0];
   return {
-    id: p.id,
-    name: p.name,
-    iconUrl: ddsUrl(p.icon),
-    statLines: translateStats(p.stats),
-    statRaw: translateStatsRaw(p.stats),
-    flavourText: p.flavour_text || '',
-    reminderText: Array.isArray(p.reminder_text) ? p.reminder_text : [],
-    ascendancy: p.ascendancy ?? null,
-    kind: p.is_keystone ? 'keystone' : 'notable',
-    // Some nodes (esp. ascendancy) have no stats — their effect is a granted
-    // skill. Resolve it to a gem reference so the card can link to the skill.
-    grantedSkill: p.granted_skill ? getGemRefByKey(p.granted_skill) : null,
+    id: node.slug,
+    name: node.name,
+    iconUrl: ddsUrl(p.iconDds),
+    statLines: p.statLines.map((line) => renderGameText(line, hasDefinition)),
+    statRaw: p.statLines.map((line) => stripGameText(line)).join(' '),
+    flavourText: p.flavourText,
+    reminderText: p.reminderText,
+    ascendancy: p.ascendancy,
+    kind: p.kind,
+    grantedSkill: grant ? getGemRefByKey(grant.to) : null,
   };
 }
 
 export function listKeystones() {
-  buildPassiveIndex();
-  return Object.values(_passives)
-    .filter((p) => p.is_keystone)
+  return nodesByKind('passive')
+    .filter((n) => n.props.kind === 'keystone')
     .map(nodeRecord)
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export function getKeystone(id) {
-  buildPassiveIndex();
-  const p = Object.values(_passives).find((n) => n.is_keystone && n.id === id);
-  return p ? nodeRecord(p) : null;
+  const n = nodeBySlug('passive', id);
+  return n && n.props.kind === 'keystone' ? nodeRecord(n) : null;
 }
 
 export function listNotables() {
-  buildPassiveIndex();
-  return Object.values(_passives)
-    .filter((p) => p.is_notable && !p.ascendancy)
+  return nodesByKind('passive')
+    .filter((n) => n.props.kind === 'notable' && !n.props.ascendancy)
     .map(nodeRecord)
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export function getNotable(id) {
-  buildPassiveIndex();
-  const p = Object.values(_passives).find((n) => n.is_notable && !n.ascendancy && n.id === id);
-  return p ? nodeRecord(p) : null;
+  const n = nodeBySlug('passive', id);
+  return n && n.props.kind === 'notable' && !n.props.ascendancy ? nodeRecord(n) : null;
 }
 
 // Generic lookup for any passive node (keystone or notable, including
@@ -164,46 +91,46 @@ export function getNotable(id) {
 // For ascendancy nodes it also attaches the ascendancy's display name, base
 // class, and colorway so the detail page / hover card can theme to match.
 export function getPassiveNode(id) {
-  buildPassiveIndex();
-  const p = Object.values(_passives).find((n) => (n.is_notable || n.is_keystone) && n.id === id);
-  if (!p) return null;
-  const rec = nodeRecord(p);
+  const n = nodeBySlug('passive', id);
+  if (!n) return null;
+  const rec = nodeRecord(n);
   if (rec.ascendancy) {
-    buildAscIndex();
-    const a = _ascData.get(rec.ascendancy);
+    const a = nodeBySlug('ascendancy', rec.ascendancy);
     if (a) {
       rec.ascendancyName = a.name;
-      rec.charClass = a.charClass;
-      rec.ascColor = a.color;
+      rec.charClass = a.props.charClass;
+      rec.ascColor = ASC_COLORS[rec.ascendancy] || ASC_COLOR_DEFAULT;
     }
   }
   return rec;
 }
 
+// Notables that sit in an ascendancy — the reverse of the in_ascendancy edge.
+function ascNotables(ascNode) {
+  return edgesTo(ascNode.id, 'in_ascendancy')
+    .map((e) => getNode(e.from))
+    .filter(Boolean)
+    .map(nodeRecord)
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function ascRecord(node) {
+  return {
+    id: node.slug,
+    name: node.name,
+    charClass: node.props.charClass,
+    color: ASC_COLORS[node.slug] || ASC_COLOR_DEFAULT,
+    notables: ascNotables(node),
+  };
+}
+
 export function listAscendancies() {
-  buildAscIndex();
-  buildPassiveIndex();
-  return Array.from(_ascData.values())
-    .map((a) => ({
-      ...a,
-      notables: Object.values(_passives)
-        .filter((p) => p.is_notable && p.ascendancy === a.id)
-        .map(nodeRecord)
-        .sort((x, y) => x.name.localeCompare(y.name)),
-    }))
+  return nodesByKind('ascendancy')
+    .map(ascRecord)
     .sort((a, b) => a.charClass.localeCompare(b.charClass) || a.name.localeCompare(b.name));
 }
 
 export function getAscendancy(ascId) {
-  buildAscIndex();
-  buildPassiveIndex();
-  const a = _ascData.get(ascId);
-  if (!a) return null;
-  return {
-    ...a,
-    notables: Object.values(_passives)
-      .filter((p) => p.is_notable && p.ascendancy === ascId)
-      .map(nodeRecord)
-      .sort((x, y) => x.name.localeCompare(y.name)),
-  };
+  const n = nodeBySlug('ascendancy', ascId);
+  return n ? ascRecord(n) : null;
 }
