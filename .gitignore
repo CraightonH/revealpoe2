@@ -5,3 +5,6 @@ dist/
 .cache/
 .superpowers/
 build/
+# Scraped game data — large, regenerable via scripts/scrape.py. Not committed.
+# (data/manual/ IS committed — hand-authored overlays.)
+data/source/

@@ -3,20 +3,31 @@ import 'dotenv/config';
 import os from 'node:os';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export function expandHome(p) {
   if (p && p.startsWith('~')) return path.join(os.homedir(), p.slice(1));
   return p;
 }
 
+// Scraped source data lives in-repo under data/source/ (gitignored). The legacy
+// POE2DATADIR env var still works as an override (points at a dir containing a
+// `data/` subdir) for anyone keeping the data in a sibling location.
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+
 export function getDataDir() {
-  const raw = process.env.POE2DATADIR;
-  if (!raw) throw new Error('POE2DATADIR is not set (check .env)');
-  const dir = path.join(expandHome(raw), 'data');
-  if (!fs.existsSync(dir)) {
-    throw new Error(`POE2DATADIR data dir not found: ${dir}`);
+  const inRepo = path.join(REPO_ROOT, 'data', 'source');
+  // Legacy sibling-dir override — honored only if it actually has data, so a
+  // stale POE2DATADIR left in the environment can't shadow the in-repo source.
+  const override = process.env.POE2DATADIR;
+  if (override) {
+    const dir = path.join(expandHome(override), 'data');
+    if (fs.existsSync(path.join(dir, REPOE))) return dir;
   }
-  return dir;
+  if (!fs.existsSync(inRepo)) {
+    throw new Error(`source data dir not found: ${inRepo} (run scripts/scrape.py)`);
+  }
+  return inRepo;
 }
 
 export const REPOE = 'repoe-poe2';

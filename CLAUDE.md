@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Goal
 
-A modern, beginner-friendly Path of Exile 2 wiki. The target experience is the opposite of poe2db.tw — surfaces relationships between data (e.g. which support gems work with a skill gem) without requiring the user to already know those relationships. Data lives in a sibling repo (`~/git/poe2data`, path set via `POE2DATADIR` in `.env`).
+A modern, beginner-friendly Path of Exile 2 wiki. The target experience is the opposite of poe2db.tw — surfaces relationships between data (e.g. which support gems work with a skill gem) without requiring the user to already know those relationships. Game data lives in-repo under `data/source/` (gitignored — large and regenerable; see **Data Sources**).
 
 ## Data Sources
 
-All game data is in `$POE2DATADIR/data/` — never committed to this repo.
+All game data is in `data/source/` — gitignored (large, ~250M, regenerable via `scripts/scrape.py`), so never committed. Paths below are relative to `data/source/`. (Hand-authored overlays under `data/manual/` *are* committed — see **Data Provenance**.)
 
 ### Primary tables (most-used)
 
@@ -36,11 +36,11 @@ CDN pattern (online, lazy-loaded): `https://image.ggpk.exposed/poe2/{dds_file}?f
 For items: `visual_identity.dds_file` on `base_items.json` records.
 For skill gems: `icon_dds_file` directly on `skill_gems.json` records.
 
-Offline fallback: render a placeholder using `visual_identity.id`/`name` — deterministic color from hash, initials as label. See `$POE2DATADIR/docs/image-assets.md` for the full pattern including CSS and onerror handling.
+Offline fallback: render a placeholder using `visual_identity.id`/`name` — deterministic color from hash, initials as label. See `docs/image-assets.md` for the full pattern including CSS and onerror handling.
 
 ## Data Architecture: the Graph
 
-`src/` **never reads `$POE2DATADIR` at runtime.** The build compiles all source files into one artifact, `build/graph.json` (a `{ meta, nodes, edges }` property graph), and the app reads only that.
+`src/` **never reads `data/source/` at runtime.** The build compiles all source files into one artifact, `build/graph.json` (a `{ meta, nodes, edges }` property graph), and the app reads only that.
 
 - **Build**: `npm run build:graph` → `scripts/graph/cli.js` → `build.js`. Each domain module (`gems.js`, `bases.js`, `uniques.js`, `passives.js`, `affixes.js`, `keywords.js`) returns nodes + edges from source; `build.js` merges them, validates against `schema.js` (`validate.js`), and stamps `meta.sourceHash`.
 - **Runtime**: `src/data/graph.js` loads the artifact and exposes `getNode`, `nodeBySlug`, `nodesByKind`, `edgesFrom`, `edgesTo`. The `src/data/*` modules are presentation adapters — they read nodes/edges and own *only* rendering. No data resolution at runtime.
@@ -61,7 +61,7 @@ Curate high-value, low-churn, rule-compressible facts (e.g. "default attack skil
 
 ### Where hand-crafted data lives
 
-- **NEVER edit `$POE2DATADIR`** — it is a re-scrapeable mirror; hand edits die on the next `scrape.py`.
+- **NEVER edit `data/source/`** — it is a re-scrapeable mirror; hand edits die on the next `scripts/scrape.py`.
 - Hand-authored overlays live in THIS repo under `data/manual/*.json` — declarative, schema-validated data files (not code) so game knowledge can be edited without touching build logic.
 - The builder merges overlays via `scripts/graph/manual.js`, applied **last** so it can reference source nodes.
 
@@ -97,7 +97,7 @@ Key layout patterns already established (do not drift from these):
 
 Stack: Express + Nunjucks server-rendered pages, reading the pre-built `build/graph.json` artifact (see **Data Architecture: the Graph**). When building:
 
-- **Data access layer** is the graph: `src/data/graph.js` plus per-domain presentation adapters (`src/data/gems.js`, `uniques.js`, …). All resolution happens at build time in `scripts/graph/*`; runtime code only reads nodes/edges and renders. Never reintroduce `$POE2DATADIR` reads into `src/`.
+- **Data access layer** is the graph: `src/data/graph.js` plus per-domain presentation adapters (`src/data/gems.js`, `uniques.js`, …). All resolution happens at build time in `scripts/graph/*`; runtime code only reads nodes/edges and renders. Never reintroduce `data/source/` reads into `src/`.
 - **Relationships** are the primary UX value — skill gem → recommended supports → what those supports do → which weapon types they apply to. Model them as graph edges and make them traversable (and reverse-traversable via `edgesTo`).
 - **Beginner-first**: surface `gem_tags.json` display names, `keywords.json` glossary, and stat translation text so users never see raw stat IDs.
 - **Search** needs to work across gem names, item names, and stat descriptions — the data is local so full-text search over pre-indexed JSON is feasible without a backend.
@@ -107,13 +107,8 @@ Stack: Express + Nunjucks server-rendered pages, reading the pre-built `build/gr
 - `pob-uniques/*.json` format: each file is a list of strings. Each string is a multi-line block where line 1 = unique name, rest = PoB text format with `{tags:...}` and `{variant:...}` annotations.
 - `stat_translations/specific_skill_stat_descriptions/` has 559 per-skill files — load on demand, not at startup.
 - The passive skill trees are in `repoe-poe2/passive_skill_trees/` — the Default tree is the character passive tree; Atlas/EndgameMap are endgame.
-- Data was scraped 2026-06-03 from RePoE-fork. Re-scrape with `$POE2DATADIR/scrape.py` after game patches.
+- Data was scraped 2026-06-03 from RePoE-fork. Re-scrape with `python scripts/scrape.py` after game patches (writes to `data/source/`).
 
 ## Environment
 
-```bash
-# .env
-POE2DATADIR=~/git/poe2data
-```
-
-Load `.env` in any scripts/tooling before referencing the data path.
+No environment setup is required for the data path — `scripts/graph/source.js` resolves game data from the in-repo `data/source/` directory automatically. The legacy `POE2DATADIR` env var (in `.env`) is still honored as an override pointing at a sibling location with a `data/` subdir, but is only used when that location actually contains the scraped data; otherwise the in-repo `data/source/` wins.
