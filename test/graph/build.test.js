@@ -33,3 +33,14 @@ test('toArtifact keys nodes by id and drops the inline id', () => {
   assert.ok(Object.values(art.nodes).every((n) => n.id === undefined), 'id is the map key, not a field');
   assert.equal(Object.keys(art.nodes).length, g.nodes.length);
 });
+
+test('buildGraph includes unique nodes with has_base and grants edges', () => {
+  const g = buildGraph();
+  assert.ok(g.nodes.some((n) => n.kind === 'unique'), 'unique nodes present');
+  assert.ok(g.edges.some((e) => e.type === 'has_base'), 'has_base edges present');
+  // grants edges now come from both gems and uniques; assert a unique-sourced one.
+  assert.ok(
+    g.edges.some((e) => e.type === 'grants' && String(e.from).startsWith('Unique/')),
+    'a grants edge originates from a unique node',
+  );
+});
