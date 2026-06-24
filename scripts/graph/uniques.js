@@ -230,11 +230,12 @@ export function uniqueNodes() {
 // ---------------------------------------------------------------------------
 
 export function uniqueEdges(records, baseRecords, skillNodes) {
-  // Mirror getBaseByName's name index (last write wins) so has_base targets the
-  // same browsable base the app resolves; non-browsable bases (jewels/flasks/
-  // charms) are simply absent -> no edge.
+  // Mirror getBaseByName's name index (FIRST write wins, per baseItems.js) so the
+  // has_base reverse edge resolves to the same browsable base the forward
+  // getBaseByName path does; non-browsable bases (jewels/flasks/charms) are
+  // simply absent -> no edge.
   const baseIdByName = new Map();
-  for (const r of baseRecords) baseIdByName.set(r.raw.name, r.id);
+  for (const r of baseRecords) if (!baseIdByName.has(r.raw.name)) baseIdByName.set(r.raw.name, r.id);
   const skillIdBySlug = new Map(skillNodes.map((n) => [n.slug, n.id]));
 
   const edges = [];

@@ -33,7 +33,7 @@ export function hashSources() {
   // re-scrape of any unique block invalidates the artifact. Subdirs (Special/)
   // are non-.json entries and fall out of the filter.
   const pobDir = path.join(dir, 'pob-uniques');
-  for (const f of fs.readdirSync(pobDir).filter((f) => f.endsWith('.json')).sort()) {
+  for (const f of fs.readdirSync(pobDir).filter((name) => name.endsWith('.json')).sort()) {
     h.update(fs.readFileSync(path.join(pobDir, f)));
   }
   return h.digest('hex');

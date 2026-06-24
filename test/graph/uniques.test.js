@@ -1,6 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { grantedSkillNames, uniqueNodes } from '../../scripts/graph/uniques.js';
+import { grantedSkillNames, uniqueNodes, uniqueEdges } from '../../scripts/graph/uniques.js';
+import { baseNodes } from '../../scripts/graph/bases.js';
+import { skillNodes, selectGemRecords } from '../../scripts/graph/gems.js';
 
 test('grantedSkillNames is a non-empty Set of skill display names', () => {
   const names = grantedSkillNames();
@@ -67,10 +69,6 @@ test('uniqueNodes: search is current-variant only, lowercased', () => {
   assert.ok(!anvil.search.includes('20% increased block chance'), 'legacy roll not searchable');
   assert.ok(anvil.search.includes('the anvil') && anvil.search.includes('bloodstone amulet'));
 });
-
-import { uniqueEdges } from '../../scripts/graph/uniques.js';
-import { baseNodes } from '../../scripts/graph/bases.js';
-import { skillNodes, selectGemRecords } from '../../scripts/graph/gems.js';
 
 test('uniqueEdges: has_base only targets browsable base nodes', () => {
   const { records } = uniqueNodes();
