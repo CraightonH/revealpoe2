@@ -1,6 +1,5 @@
 import { renderGameText, linkifyRequirement } from './keywords.js';
 import { ddsUrl } from './images.js';
-import { displayTagTokens } from './gemTags.js';
 import { hasDefinition } from './keywordDefs.js';
 import { ATTR_ABBR, ATTR_KEY, ATTR_ORDER } from './attributes.js';
 import { getNode, nodeBySlug, nodesByKind, edgesFrom, edgesTo } from './graph.js';
@@ -82,7 +81,16 @@ function toGem(node) {
     ui_image: p.hoverDds ?? null,
     grants_skills: p.grantsSkills ?? [],
     effect_sections: p.effectSections ?? [],
+    tagTokens: p.tagTokens ?? [],
   };
+}
+
+// Token strings for a gem's displayable tags, dropping any whose display name is
+// in `exclude` (e.g. the one already shown as the type line). Tokens are now
+// resolved at build time onto the node (formerly a runtime read of gem_tags.json).
+function tagTokensExcluding(tagTokens, exclude = []) {
+  const skip = new Set(exclude);
+  return (tagTokens ?? []).filter((t) => !skip.has(t.display)).map((t) => t.token);
 }
 
 function reqKeys(weights) {
@@ -143,7 +151,7 @@ export function listGemCards() {
       gem.gem_type === 'spirit'
         ? (TYPE_LABEL.spirit ?? 'Spirit')
         : (skillTypeLine(skill?.props?.types) ?? (TYPE_LABEL[gem.gem_type] ?? 'Skill'));
-    const tagTokens = displayTagTokens(gem.tags, [typeLine]);
+    const tagTokens = tagTokensExcluding(gem.tagTokens, [typeLine]);
     const effect = gem.effect_sections
       .flatMap((s) => s.lines)
       .map((t) => renderGameText(t, hasDefinition));
@@ -252,7 +260,7 @@ export function buildGemViewModel(slug) {
 
   // Tag tokens, excluding the one already shown as the type line; rendered to
   // gated keyword HTML so defined tags become hoverable.
-  const tagTokens = displayTagTokens(gem.tags, [typeLine]);
+  const tagTokens = tagTokensExcluding(gem.tagTokens, [typeLine]);
 
   // Reservation, e.g. { kind: 'spirit', amount: 30 } -> "30 Spirit".
   let reservation = null;
