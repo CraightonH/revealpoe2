@@ -22,6 +22,18 @@ test('buildGraph includes base, class, and tag nodes with base edges', () => {
   assert.ok(g.edges.some((e) => e.type === 'tagged'));
 });
 
+test('buildGraph includes passive + ascendancy nodes with in_ascendancy edges', () => {
+  const g = buildGraph();
+  assert.ok(g.nodes.some((n) => n.kind === 'passive'), 'passive nodes present');
+  assert.ok(g.nodes.some((n) => n.kind === 'ascendancy'), 'ascendancy nodes present');
+  assert.ok(g.edges.some((e) => e.type === 'in_ascendancy'), 'in_ascendancy edges present');
+  // grants edges now also originate from passives (granted_skill).
+  assert.ok(
+    g.edges.some((e) => e.type === 'grants' && String(e.from).startsWith('Passive/')),
+    'a grants edge originates from a passive node',
+  );
+});
+
 test('toArtifact keys nodes by id and drops the inline id', () => {
   const g = buildGraph();
   const art = toArtifact(g);
