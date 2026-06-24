@@ -67,3 +67,45 @@ test('uniqueNodes: search is current-variant only, lowercased', () => {
   assert.ok(!anvil.search.includes('20% increased block chance'), 'legacy roll not searchable');
   assert.ok(anvil.search.includes('the anvil') && anvil.search.includes('bloodstone amulet'));
 });
+
+import { uniqueEdges } from '../../scripts/graph/uniques.js';
+import { baseNodes } from '../../scripts/graph/bases.js';
+import { skillNodes, selectGemRecords } from '../../scripts/graph/gems.js';
+
+test('uniqueEdges: has_base only targets browsable base nodes', () => {
+  const { records } = uniqueNodes();
+  const { nodes: bNodes, records: baseRecs } = baseNodes();
+  const baseIds = new Set(bNodes.map((n) => n.id));
+  const skl = skillNodes(selectGemRecords());
+
+  const edges = uniqueEdges(records, baseRecs, skl);
+  const hasBase = edges.filter((e) => e.type === 'has_base');
+  assert.ok(hasBase.length > 200, `most uniques sit on a browsable base, got ${hasBase.length}`);
+  for (const e of hasBase) assert.ok(baseIds.has(e.to), `has_base target ${e.to} is a base node`);
+
+  // Astramentis (Stellar Amulet) has a has_base edge; a jewel unique does not.
+  const astra = records.find((r) => r.slug === 'astramentis');
+  assert.ok(hasBase.some((e) => e.from === astra.id), 'Astramentis -> Stellar Amulet');
+  const adorned = records.find((r) => r.slug === 'the-adorned'); // jewel base, not browsable
+  assert.ok(adorned, 'fixture present');
+  assert.ok(!hasBase.some((e) => e.from === adorned.id), 'jewel unique has no has_base');
+});
+
+test('uniqueEdges: grants resolve to skill nodes with zero dangling', () => {
+  const { records } = uniqueNodes();
+  const { records: baseRecs } = baseNodes();
+  const skl = skillNodes(selectGemRecords());
+  const skillIds = new Set(skl.map((n) => n.id));
+  const skillBySlug = new Map(skl.map((n) => [n.slug, n.id]));
+
+  const edges = uniqueEdges(records, baseRecs, skl);
+  const grants = edges.filter((e) => e.type === 'grants');
+  assert.ok(grants.length > 50, `many grants edges, got ${grants.length}`);
+  for (const e of grants) assert.ok(skillIds.has(e.to), `grants target ${e.to} is a skill node`);
+
+  // Guiding Palm's current (Lightning) variant grants Purity of Lightning.
+  const gp = records.find((r) => r.slug === 'guiding-palm');
+  const want = skillBySlug.get('purity-of-lightning');
+  assert.ok(want, 'Purity of Lightning skill node exists');
+  assert.ok(grants.some((e) => e.from === gp.id && e.to === want), 'Guiding Palm -> Purity of Lightning');
+});
