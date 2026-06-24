@@ -10,8 +10,8 @@
 //
 // src/data/passiveTree.js consumes these nodes/edges and owns all rendering; it
 // no longer reads $POE2DATADIR.
-import { loadJson } from '../../src/data/loader.js';
-import { REPOE } from '../../src/config.js';
+import { loadJson } from './loader.js';
+import { REPOE } from './source.js';
 import { makeNode, makeEdge, KINDS, EDGE_TYPES } from './schema.js';
 
 // ---------------------------------------------------------------------------

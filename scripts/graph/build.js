@@ -2,12 +2,13 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { getDataDir, REPOE } from '../../src/config.js';
+import { getDataDir, REPOE } from './source.js';
 import { gemNodes, skillNodes, gemEdges } from './gems.js';
 import { baseNodes, classNodes, tagNodes, baseEdges } from './bases.js';
 import { affixNodes, affixEdges } from './affixes.js';
 import { uniqueNodes, uniqueEdges } from './uniques.js';
 import { passiveNodes, ascendancyNodes, passiveEdges } from './passives.js';
+import { keywordNodes } from './keywords.js';
 import { validateGraph } from './validate.js';
 
 // Source files this build reads — the sourceHash covers exactly these.
@@ -24,6 +25,11 @@ const SOURCE_FILES = [
   `${REPOE}/flavour.json`,
   `${REPOE}/passive_skill_trees/Default.json`,
   `${REPOE}/ascendancies.json`,
+  `${REPOE}/keywords.json`,
+  `${REPOE}/stat_translations/gem_stat_descriptions.json`,
+  `${REPOE}/stat_translations/active_skill_gem_stat_descriptions.json`,
+  `${REPOE}/stat_translations/skill_stat_descriptions.json`,
+  `${REPOE}/gem_tags.json`,
 ];
 
 // Hash of the source files this build reads. Reused by the app's boot-time
@@ -32,7 +38,10 @@ const SOURCE_FILES = [
 export function hashSources() {
   const h = crypto.createHash('sha256');
   const dir = getDataDir();
-  for (const rel of SOURCE_FILES) h.update(fs.readFileSync(path.join(dir, rel)));
+  for (const rel of SOURCE_FILES) {
+    const p = path.join(dir, rel);
+    if (fs.existsSync(p)) h.update(fs.readFileSync(p));
+  }
   // pob-uniques is a directory of per-class files; hash all of them sorted so a
   // re-scrape of any unique block invalidates the artifact. Subdirs (Special/)
   // are non-.json entries and fall out of the filter.
@@ -53,8 +62,9 @@ export function buildGraph() {
   const { nodes: uNodes, records: uniqueRecs } = uniqueNodes();
   const { nodes: pNodes, records: passiveRecs } = passiveNodes();
   const ascNodes = ascendancyNodes();
+  const { nodes: kNodes } = keywordNodes();
 
-  const nodes = [...gNodes, ...sNodes, ...bNodes, ...cNodes, ...tNodes, ...aNodes, ...uNodes, ...pNodes, ...ascNodes];
+  const nodes = [...gNodes, ...sNodes, ...bNodes, ...cNodes, ...tNodes, ...aNodes, ...uNodes, ...pNodes, ...ascNodes, ...kNodes];
   const nodeIds = new Set(nodes.map((n) => n.id));
   const gemIds = new Set(gNodes.map((n) => n.id));
   const ascIds = new Set(ascNodes.map((n) => n.id));

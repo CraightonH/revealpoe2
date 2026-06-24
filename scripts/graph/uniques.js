@@ -11,10 +11,10 @@
 // folds in here as a pure source parse used by scripts/graph/gems.js origin
 // classification — ported verbatim (same regex) to keep gem nodes byte-identical.
 import path from 'node:path';
-import { loadJson, listDataDir } from '../../src/data/loader.js';
-import { REPOE } from '../../src/config.js';
+import { loadJson, listDataDir } from './loader.js';
+import { REPOE } from './source.js';
 import { slugify } from '../../src/data/slug.js';
-import { getFlavourLines } from '../../src/data/flavour.js';
+import { getFlavourLines } from './flavour.js';
 import { makeNode, makeEdge, KINDS, EDGE_TYPES } from './schema.js';
 import { baseNodes } from './bases.js';
 

@@ -1,6 +1,6 @@
 // scripts/graph/gems.js
-import { loadJson } from '../../src/data/loader.js';
-import { REPOE } from '../../src/config.js';
+import { loadJson } from './loader.js';
+import { REPOE } from './source.js';
 import { slugify } from '../../src/data/slug.js';
 import { grantedSkillNames } from './uniques.js';
 import { makeNode, makeEdge, KINDS, EDGE_TYPES } from './schema.js';
@@ -8,6 +8,20 @@ import { buildSections } from '../../src/data/statText.js';
 
 // Mirrors src/data/gems.js — placeholder/unreleased gem-table entries to drop.
 const GARBAGE_RE = /Coming Soon|Removed Skill|Playtest|\{0\}/;
+
+// gem_tags.json maps a tag id to "[Display]", "[Id|Display]", or null. Resolve a
+// gem's tag ids to displayable {token, display} entries (null-valued tags dropped).
+function resolveTagTokens(tagIds, tagMap) {
+  const out = [];
+  for (const id of tagIds ?? []) {
+    const raw = tagMap[id];
+    if (!raw) continue;
+    const inner = raw.replace(/^\[/, '').replace(/\]$/, '');
+    const pipe = inner.indexOf('|');
+    out.push({ token: raw, display: pipe === -1 ? inner : inner.slice(pipe + 1) });
+  }
+  return out;
+}
 const SLUG_PRECEDENCE = ['active', 'support', 'spirit'];
 
 // How a gem enters the game (see src/data/gems.js classifyOrigin for rationale).
@@ -63,6 +77,7 @@ export function gemNodes() {
   const records = selectGemRecords();
   const skills = loadJson(`${REPOE}/skills.json`);
   const baseItems = loadJson(`${REPOE}/base_items.json`);
+  const gemTags = loadJson(`${REPOE}/gem_tags.json`);
   const nodes = records.map((r) => {
     const skill = skills[r.raw.grants_skills?.[0]] ?? null;
     const sections = effectSections(skill);
@@ -74,6 +89,7 @@ export function gemNodes() {
       gemType: r.raw.gem_type,
       origin: r.origin,
       tags: r.raw.tags ?? [],
+      tagTokens: resolveTagTokens(r.raw.tags ?? [], gemTags),
       requirementWeights: r.raw.requirement_weights ?? null,
       craftingLevel: r.raw.crafting_level ?? null,
       iconDds: r.raw.icon_dds_file ?? null,

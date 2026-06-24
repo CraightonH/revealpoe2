@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { loadJson, listDataDir } from '../src/data/loader.js';
+import { loadJson, listDataDir } from '../../scripts/graph/loader.js';
 
 test('listDataDir returns filenames in a data subdirectory', () => {
   const files = listDataDir('pob-uniques');

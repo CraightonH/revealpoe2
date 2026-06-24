@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { rangeMerge, resolveQuality, buildSections } from '../src/data/statText.js';
-import { loadJson } from '../src/data/loader.js';
+import { loadJson } from '../scripts/graph/loader.js';
 
 test('rangeMerge combines differing numbers into a range', () => {
   assert.equal(

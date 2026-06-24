@@ -1,10 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { deriveKeywordPhrases, installKeywordPhrases } from '../src/data/keywordPhrases.js';
+import { keywordPhrasePairs, installKeywordPhrases } from '../src/data/keywordPhrases.js';
 import { registerDerivedPhrases, renderGameText } from '../src/data/keywords.js';
 
 test('derives a clean phrase->id map from the game data', () => {
-  const pairs = deriveKeywordPhrases();
+  const pairs = keywordPhrasePairs();
   const byPhrase = new Map(pairs.map(([p, id]) => [p.toLowerCase(), id]));
 
   // terms the game tokenizes somewhere but writes plain in mods — the holes

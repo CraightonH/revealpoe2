@@ -1,22 +1,21 @@
-import { loadJson } from './loader.js';
-import { REPOE } from '../config.js';
+import { getNode } from './graph.js';
 
-function entry(key) {
-  const map = loadJson(`${REPOE}/keywords.json`);
-  return map[key] ?? null;
-}
+// KEYWORD nodes exist ONLY for keywords with a non-empty definition (built by
+// scripts/graph/keywords.js), so node presence IS "has a definition". The app
+// reads glossary text from the graph artifact and never touches $POE2DATADIR.
 
-// True only when the keyword exists and has a non-empty definition. Gates out
-// the ~257 entries whose definition is "" so they never become dead hovers.
+// True only when a KEYWORD node exists for this key (i.e. it has a non-empty
+// definition). Gates out the empty-definition keywords so they never become
+// dead hovers.
 export function hasDefinition(key) {
-  const e = entry(key);
-  return !!(e && typeof e.definition === 'string' && e.definition.trim());
+  const n = getNode(key);
+  return !!(n && n.kind === 'keyword');
 }
 
 // { term, definition } for a defined keyword, or null for empty/missing.
-// term falls back to the key when the data has no display term.
+// term comes from the node name (which already falls back to the key at build time).
 export function getDefinition(key) {
-  if (!hasDefinition(key)) return null;
-  const e = entry(key);
-  return { term: e.term || key, definition: e.definition };
+  const n = getNode(key);
+  if (!n || n.kind !== 'keyword') return null;
+  return { term: n.name, definition: n.props.definition };
 }
