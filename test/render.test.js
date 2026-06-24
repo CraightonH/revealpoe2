@@ -31,14 +31,16 @@ test('GET /gem/herald-of-ash renders the card', async () => {
   // "Str" abbreviation is linked to the Strength glossary keyword
   assert.match(res.text, /\(4—157\) <span class="kw" data-keyword="Strength">Str<\/span>/);
   // Recommended Supports must NOT be inside the in-game card popup...
-  const supIdx = res.text.indexOf('recommended-supports');
+  const supIdx = res.text.indexOf('Recommended Supports');
   assert.ok(supIdx > -1, 'recommended-supports section should be present on the page');
   const popupToSupports = res.text.slice(res.text.indexOf('newItemPopup'), supIdx);
   assert.ok(!/Recommended Supports/.test(popupToSupports), 'supports must be rendered outside the card');
-  // ...but they ARE rendered (below the card) with support links
+  // ...but they ARE rendered (below the card) as browse cards, identical to
+  // /gems (with the hover tooltip via data-card-url)
   const sectionHtml = res.text.slice(supIdx);
   assert.match(sectionHtml, /Recommended Supports/);
-  assert.match(sectionHtml, /<a class="[rgbw]" href="\/gem\//);
+  assert.match(sectionHtml, /<a class="gem-browse-card gem-browse-card--[rgbw]+" href="\/gem\//);
+  assert.match(sectionHtml, /data-card-url="\/gem\/[^"]+\/card"/);
 });
 
 test('GET /gem/unknown returns 404', async () => {

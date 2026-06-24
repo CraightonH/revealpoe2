@@ -314,43 +314,56 @@ body {
 .page--column { flex-direction: column; align-items: center; }
 /* Page titles use the display face; per-page color stays inline on the element. */
 .page-title { font-family: var(--font-display); }
-.gem-detail { display: flex; flex-direction: column; align-items: center; gap: 14px; }
-.recommended-supports { width: 100%; max-width: 390px; }
-.recommended-supports__title { margin: 0 0 8px; font-size: 14px; font-weight: 600; text-align: center; color: var(--color-prop); }
-.support-list { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
-.support-list a {
-  position: relative;
-  overflow: hidden;
-  font-size: 11px;
-  padding: 3px 9px;
-  border-radius: 4px;
-  text-decoration: none;
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  color: var(--color-normal);
+/* Full page width (up to a cap) so the recommended-supports grid can wrap into
+   many columns; align-items:center keeps the gem card itself centered. */
+.gem-detail { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; max-width: 1400px; }
+
+/* Recommended Supports / Recommended For: collapsible accent bands modeled on
+   the /bases mod-table sections (.affix-origin). A left rule and faint wash of
+   the per-section accent (--rec-accent, set inline) make each read as a distinct
+   band; the smallcaps title carries a count badge and a rotating caret. The
+   card grid inside renders the same browse cards as /gems. */
+.rec-group {
+  width: 100%;
+  margin-top: 8px;
+  padding: 12px 14px 14px 11px;
+  border-left: 3px solid var(--rec-accent);
+  background: color-mix(in srgb, var(--rec-accent) 6%, transparent);
+  border-radius: 0 4px 4px 0;
 }
-.support-list a.r { border-left: 2px solid var(--color-gem-r); }
-.support-list a.g { border-left: 2px solid var(--color-gem-g); }
-.support-list a.b { border-left: 2px solid var(--color-gem-b); }
-.support-list a.w { border-left: 2px solid var(--color-gem-w); }
-/* Hybrid (two-attribute) gems: a gradient accent bar, matching the browse cards. */
-.support-list a.rg::before,
-.support-list a.rb::before,
-.support-list a.gb::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 2px;
+.rec-group-title {
+  font-family: var(--font-smallcaps);
+  font-size: 18px;
+  margin: 0;
+  color: var(--rec-accent);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
 }
-.support-list a.rg::before { background: linear-gradient(to bottom, var(--color-gem-r), var(--color-gem-g)); }
-.support-list a.rb::before { background: linear-gradient(to bottom, var(--color-gem-r), var(--color-gem-b)); }
-.support-list a.gb::before { background: linear-gradient(to bottom, var(--color-gem-g), var(--color-gem-b)); }
+.rec-group-title::-webkit-details-marker { display: none; }
+.rec-group-title::before {
+  content: "\25B8"; /* ▸ */
+  font-size: 12px;
+  transition: transform 0.15s;
+}
+.rec-group[open] > .rec-group-title::before { transform: rotate(90deg); }
+.rec-group-count {
+  font-family: var(--font-smallcaps);
+  font-size: 13px;
+  font-weight: normal;
+  color: var(--color-default);
+}
+.rec-group-hint {
+  color: var(--color-default);
+  font-size: 12.5px;
+  margin: 4px 0 12px;
+}
 
 /* Progressive disclosure for long "Recommended For" lists (some supports are
-   recommended by ~100 skills). First N chips show inline; the rest collapse. */
-.support-more { width: 100%; text-align: center; }
+   recommended by ~100 skills). First N cards show inline; the rest collapse. */
+.support-more { width: 100%; text-align: center; margin-top: 8px; }
 .support-more__toggle {
   display: inline-block;
   cursor: pointer;
@@ -365,7 +378,7 @@ body {
 .support-more__toggle::-webkit-details-marker { display: none; }
 /* Once expanded, drop the toggle entirely — it's a one-way "show all". */
 .support-more[open] .support-more__toggle { display: none; }
-.support-more__list { margin-top: 0; }
+.support-more__list { margin-top: 8px; }
 
 /* Keyword tooltips — styling matched to poe2db's live tooltip (term #e7b478,
    body #b7ab83, opaque black popup; Tippy box neutralized so the popup paints). */

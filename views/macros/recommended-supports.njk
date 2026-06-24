@@ -1,12 +1,14 @@
+{% from "macros/gem-card.njk" import gemBrowseCard %}
 {% macro recommendedSupports(vm) %}
 {% if vm.recommendedSupports.length %}
-<section class="recommended-supports">
-  <h2 class="recommended-supports__title">Recommended Supports</h2>
-  <div class="support-list">
+<details class="rec-group" open style="--rec-accent:var(--color-gem)">
+  <summary class="rec-group-title">Recommended Supports <span class="rec-group-count">{{ vm.recommendedSupports.length }}</span></summary>
+  <p class="rec-group-hint">Support gems suggested for this skill — hover any card for its full tooltip.</p>
+  <div class="gem-browse-grid">
     {% for s in vm.recommendedSupports %}
-    <a class="{{ s.color }}" href="/gem/{{ s.slug }}">{{ s.name }}</a>
+    {{ gemBrowseCard(s) }}
     {% endfor %}
   </div>
-</section>
+</details>
 {% endif %}
 {% endmacro %}

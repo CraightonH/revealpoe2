@@ -113,7 +113,7 @@ test('getRecommendedBy reverses recommends_support (supports only), sorted by na
   assert.ok(ranked.length > 0, 'some gem has inbound recommends_support edges');
 
   const { by } = ranked[0];
-  assert.ok(by.every((s) => s.slug && s.name && s.color), 'entries carry slug/name/color');
+  assert.ok(by.every((s) => s.slug && s.name && s.cardColor), 'entries carry browse-card fields');
   const names = by.map((s) => s.name);
   assert.deepEqual(names, [...names].sort((a, b) => a.localeCompare(b)), 'sorted by name');
 

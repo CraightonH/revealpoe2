@@ -139,39 +139,43 @@ export function listGems() {
   });
 }
 
-// Condensed view models for the /gems browse grid: the at-a-glance fields
+// Condensed view model for a single gem node: the at-a-glance fields
 // (type/tags, requirements, and the skill's effect lines) plus the filter
-// metadata. Reads resolved effect sections from the graph; renders them here.
+// metadata. Drives the /gems browse grid and any other gemBrowseCard usage
+// (e.g. recommended supports on the gem detail page).
+function gemBrowseCardVM(node) {
+  const gem = toGem(node);
+  const skill = grantedSkillNode(gem);
+  const req = reqKeys(gem.requirement_weights);
+  const typeLine =
+    gem.gem_type === 'spirit'
+      ? (TYPE_LABEL.spirit ?? 'Spirit')
+      : (skillTypeLine(skill?.props?.types) ?? (TYPE_LABEL[gem.gem_type] ?? 'Skill'));
+  const tagTokens = tagTokensExcluding(gem.tagTokens, [typeLine]);
+  const effect = gem.effect_sections
+    .flatMap((s) => s.lines)
+    .map((t) => renderGameText(t, hasDefinition));
+  return {
+    slug: gem.slug,
+    name: gem.name,
+    cardColor: cardColor(req, gem.color),
+    gemType: gem.gem_type,
+    origin: gem.origin,
+    req,
+    iconUrl: ddsUrl(gem.icon_dds_file),
+    typeLineHtml: renderGameText(`[${typeLine}]`, hasDefinition),
+    tags: tagTokens.map((t) => renderGameText(t, hasDefinition)),
+    requirements: [
+      `Level (${CHAR_LEVEL_RANGE.min}—${CHAR_LEVEL_RANGE.max})`,
+      ...attributeRequirements(gem.requirement_weights),
+    ].map((r) => linkifyRequirement(r, hasDefinition)),
+    effect,
+  };
+}
+
+// Condensed view models for the /gems browse grid.
 export function listGemCards() {
-  return nodesByKind('gem').map((node) => {
-    const gem = toGem(node);
-    const skill = grantedSkillNode(gem);
-    const req = reqKeys(gem.requirement_weights);
-    const typeLine =
-      gem.gem_type === 'spirit'
-        ? (TYPE_LABEL.spirit ?? 'Spirit')
-        : (skillTypeLine(skill?.props?.types) ?? (TYPE_LABEL[gem.gem_type] ?? 'Skill'));
-    const tagTokens = tagTokensExcluding(gem.tagTokens, [typeLine]);
-    const effect = gem.effect_sections
-      .flatMap((s) => s.lines)
-      .map((t) => renderGameText(t, hasDefinition));
-    return {
-      slug: gem.slug,
-      name: gem.name,
-      cardColor: cardColor(req, gem.color),
-      gemType: gem.gem_type,
-      origin: gem.origin,
-      req,
-      iconUrl: ddsUrl(gem.icon_dds_file),
-      typeLineHtml: renderGameText(`[${typeLine}]`, hasDefinition),
-      tags: tagTokens.map((t) => renderGameText(t, hasDefinition)),
-      requirements: [
-        `Level (${CHAR_LEVEL_RANGE.min}—${CHAR_LEVEL_RANGE.max})`,
-        ...attributeRequirements(gem.requirement_weights),
-      ].map((r) => linkifyRequirement(r, hasDefinition)),
-      effect,
-    };
-  });
+  return nodesByKind('gem').map(gemBrowseCardVM);
 }
 
 export function getGem(slug) {
@@ -203,22 +207,15 @@ export function attributeRequirements(weights) {
   return out;
 }
 
-// Chip accent color for a gem node: the requirement-derived attribute color
-// (r/g/b or hybrid rg/rb/gb), falling back to the socket color. Matches the
-// browse-card accent so a support with an attribute requirement isn't shown as
-// a plain white chip just because its socket color is white.
-function chipColor(node) {
-  return cardColor(reqKeys(node.props.requirementWeights), node.props.color);
-}
-
-// Recommended supports for a gem, resolved via recommends_support edges. Each
-// target gem node keeps its real (possibly collision-suffixed) slug.
+// Recommended supports for a gem, resolved via recommends_support edges.
+// Returns full browse-card view models so they render identically to /gems
+// (with the same hover tooltip via data-card-url).
 export function getRecommendedSupports(gem) {
   const out = [];
   for (const edge of edgesFrom(gem.id, 'recommends_support')) {
     const node = getNode(edge.to);
     if (!node) continue;
-    out.push({ slug: node.slug, name: node.name, color: chipColor(node) });
+    out.push(gemBrowseCardVM(node));
   }
   return out;
 }
@@ -232,7 +229,7 @@ export function getRecommendedBy(gem) {
   for (const edge of edgesTo(gem.id, 'recommends_support')) {
     const node = getNode(edge.from);
     if (!node) continue;
-    out.push({ slug: node.slug, name: node.name, color: chipColor(node) });
+    out.push(gemBrowseCardVM(node));
   }
   out.sort((a, b) => a.name.localeCompare(b.name));
   return out;
