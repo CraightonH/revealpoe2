@@ -132,3 +132,95 @@ function grantNamesOf(variant) {
   }
   return out;
 }
+
+// ---------------------------------------------------------------------------
+// uniqueNodes — Task 2
+// ---------------------------------------------------------------------------
+
+// uniques.json metadata keyed by display name (skip alternate art; first wins).
+function buildMetaByName() {
+  const raw = loadJson(`${REPOE}/uniques.json`);
+  const out = {};
+  for (const v of Object.values(raw)) {
+    if (!v.name || v.is_alternate_art) continue;
+    if (!out[v.name]) out[v.name] = v;
+  }
+  return out;
+}
+
+// Base-class lookup derived from the base nodes: display name -> canonical
+// {className, classSlug}, plus classSlug -> className for the non-browsable
+// normalization fallback. Computed once.
+let _baseClass = null;
+function baseClassIndex() {
+  if (_baseClass) return _baseClass;
+  const { nodes } = baseNodes();
+  const byName = new Map();
+  const canonBySlug = new Map();
+  for (const n of nodes) {
+    if (!byName.has(n.name)) byName.set(n.name, { className: n.props.className, classSlug: n.props.classSlug });
+    if (!canonBySlug.has(n.props.classSlug)) canonBySlug.set(n.props.classSlug, n.props.className);
+  }
+  _baseClass = { byName, canonBySlug };
+  return _baseClass;
+}
+
+// Filterable item class (graph rule: resolved at build). Browsable base -> the
+// base's canonical class; otherwise the unique's own item_class normalized to a
+// canonical class by slug when one matches, else raw (charms, flasks, jewels).
+function classify(baseName, rawItemClass) {
+  const { byName, canonBySlug } = baseClassIndex();
+  const b = byName.get(baseName);
+  if (b) return { className: b.className, classSlug: b.classSlug };
+  const slug = slugify(rawItemClass);
+  const canon = canonBySlug.get(slug);
+  return canon ? { className: canon, classSlug: slug } : { className: rawItemClass, classSlug: slug };
+}
+
+export function uniqueNodes() {
+  const metaByName = buildMetaByName();
+  const nodes = [];
+  const records = [];
+  const seenSlug = new Set();
+  for (const file of listDataDir(POB_DIR)) {
+    if (file === '_manifest.json' || !file.endsWith('.json')) continue;
+    const entries = loadJson(`${POB_DIR}/${file}`);
+    if (!Array.isArray(entries)) continue;
+    for (const text of entries) {
+      const parsed = parseBlock(text);
+      if (!parsed) continue;
+      const slug = slugify(parsed.name);
+      if (seenSlug.has(slug)) continue; // same-name dedup: keep first
+      seenSlug.add(slug);
+
+      const meta = metaByName[parsed.name] ?? null;
+      const id = meta?.id ? `Unique/${meta.id}` : `Unique/${slug}`;
+      const rawItemClass = meta?.item_class ?? path.basename(file, '.json');
+      const { className, classSlug } = classify(parsed.base, rawItemClass);
+      const variants = resolveVariants(parsed);
+      const currentIndex = currentIndexOf(variants);
+      const flavour = getFlavourLines(meta?.visual_identity?.id);
+
+      const props = {
+        base: parsed.base,
+        itemClass: rawItemClass,
+        className,
+        classSlug,
+        iconDds: meta?.visual_identity?.dds_file ?? null,
+        flavour,
+        inventorySize: meta ? { w: meta.inventory_width, h: meta.inventory_height } : null,
+        currentIndex,
+        variants,
+      };
+
+      const cur = variants[currentIndex];
+      const search = [parsed.name, parsed.base, className, ...cur.implicits, ...cur.explicits, ...(flavour ?? [])]
+        .join(' ')
+        .toLowerCase();
+
+      nodes.push(makeNode({ id, kind: KINDS.UNIQUE, name: parsed.name, slug, props, search }));
+      records.push({ id, slug, name: parsed.name, base: parsed.base, grantNames: grantNamesOf(cur) });
+    }
+  }
+  return { nodes, records };
+}
