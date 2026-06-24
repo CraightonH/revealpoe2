@@ -1,12 +1,13 @@
 export const KINDS = {
   GEM: 'gem', SKILL: 'skill', BASE: 'base', UNIQUE: 'unique', AFFIX: 'affix',
   TAG: 'tag', KEYWORD: 'keyword', CLASS: 'class', PASSIVE: 'passive',
+  ASCENDANCY: 'ascendancy',
 };
 
 export const EDGE_TYPES = {
   GRANTS: 'grants', RECOMMENDS_SUPPORT: 'recommends_support', ROLLS_ON: 'rolls_on',
   HAS_BASE: 'has_base', TAGGED: 'tagged', REFERENCES_KEYWORD: 'references_keyword',
-  IN_CLASS: 'in_class',
+  IN_CLASS: 'in_class', IN_ASCENDANCY: 'in_ascendancy',
 };
 
 const KIND_SET = new Set(Object.values(KINDS));
