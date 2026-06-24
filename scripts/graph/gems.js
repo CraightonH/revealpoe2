@@ -2,7 +2,7 @@
 import { loadJson } from '../../src/data/loader.js';
 import { REPOE } from '../../src/config.js';
 import { slugify } from '../../src/data/slug.js';
-import { grantedSkillNames } from '../../src/data/grantedSkills.js';
+import { grantedSkillNames } from './uniques.js';
 import { makeNode, makeEdge, KINDS, EDGE_TYPES } from './schema.js';
 import { buildSections } from '../../src/data/statText.js';
 

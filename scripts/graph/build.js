@@ -6,6 +6,7 @@ import { getDataDir, REPOE } from '../../src/config.js';
 import { gemNodes, skillNodes, gemEdges } from './gems.js';
 import { baseNodes, classNodes, tagNodes, baseEdges } from './bases.js';
 import { affixNodes, affixEdges } from './affixes.js';
+import { uniqueNodes, uniqueEdges } from './uniques.js';
 import { validateGraph } from './validate.js';
 
 // Source files this build reads — the sourceHash covers exactly these.
@@ -17,6 +18,8 @@ const SOURCE_FILES = [
   `${REPOE}/mods.json`,
   `${REPOE}/mods_by_base.json`,
   `${REPOE}/stat_translations/stat_descriptions.json`,
+  `${REPOE}/uniques.json`,
+  `${REPOE}/flavour.json`,
 ];
 
 // Hash of the source files this build reads. Reused by the app's boot-time
@@ -24,7 +27,15 @@ const SOURCE_FILES = [
 // different source. Requires $POE2DATADIR — call only when source is present.
 export function hashSources() {
   const h = crypto.createHash('sha256');
-  for (const rel of SOURCE_FILES) h.update(fs.readFileSync(path.join(getDataDir(), rel)));
+  const dir = getDataDir();
+  for (const rel of SOURCE_FILES) h.update(fs.readFileSync(path.join(dir, rel)));
+  // pob-uniques is a directory of per-class files; hash all of them sorted so a
+  // re-scrape of any unique block invalidates the artifact. Subdirs (Special/)
+  // are non-.json entries and fall out of the filter.
+  const pobDir = path.join(dir, 'pob-uniques');
+  for (const f of fs.readdirSync(pobDir).filter((name) => name.endsWith('.json')).sort()) {
+    h.update(fs.readFileSync(path.join(pobDir, f)));
+  }
   return h.digest('hex');
 }
 
@@ -35,13 +46,15 @@ export function buildGraph() {
   const cNodes = classNodes();
   const tNodes = tagNodes(baseRecs);
   const { nodes: aNodes, records: affixRecs } = affixNodes();
+  const { nodes: uNodes, records: uniqueRecs } = uniqueNodes();
 
-  const nodes = [...gNodes, ...sNodes, ...bNodes, ...cNodes, ...tNodes, ...aNodes];
+  const nodes = [...gNodes, ...sNodes, ...bNodes, ...cNodes, ...tNodes, ...aNodes, ...uNodes];
   const nodeIds = new Set(nodes.map((n) => n.id));
   const edges = [
     ...gemEdges(gemRecs, nodeIds),
     ...baseEdges(baseRecs, nodeIds),
     ...affixEdges(affixRecs, baseRecs, nodeIds),
+    ...uniqueEdges(uniqueRecs, baseRecs, sNodes),
   ];
 
   const errors = validateGraph({ nodes, edges });
