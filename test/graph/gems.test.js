@@ -4,8 +4,8 @@ import assert from 'node:assert/strict';
 import { selectGemRecords, gemNodes, skillNodes, gemEdges } from '../../scripts/graph/gems.js';
 import { getGem, getRecommendedSupports, listGems } from '../../src/data/gems.js';
 import { buildSections } from '../../src/data/statText.js';
-import { loadJson } from '../../src/data/loader.js';
-import { REPOE } from '../../src/config.js';
+import { loadJson } from '../../scripts/graph/loader.js';
+import { REPOE } from '../../scripts/graph/source.js';
 
 test('selectGemRecords reproduces the current gem slug set', () => {
   const graphSlugs = new Set(selectGemRecords().map((r) => r.slug));

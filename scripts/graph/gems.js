@@ -1,6 +1,6 @@
 // scripts/graph/gems.js
-import { loadJson } from '../../src/data/loader.js';
-import { REPOE } from '../../src/config.js';
+import { loadJson } from './loader.js';
+import { REPOE } from './source.js';
 import { slugify } from '../../src/data/slug.js';
 import { grantedSkillNames } from './uniques.js';
 import { makeNode, makeEdge, KINDS, EDGE_TYPES } from './schema.js';

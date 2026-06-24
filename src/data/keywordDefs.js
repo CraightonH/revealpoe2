@@ -1,5 +1,5 @@
-import { loadJson } from './loader.js';
-import { REPOE } from '../config.js';
+import { loadJson } from '../../scripts/graph/loader.js';
+import { REPOE } from '../../scripts/graph/source.js';
 
 function entry(key) {
   const map = loadJson(`${REPOE}/keywords.json`);

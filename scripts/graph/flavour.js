@@ -1,5 +1,6 @@
+// scripts/graph/flavour.js — build-time unique flavour-text resolver. Builder-only.
 import { loadJson } from './loader.js';
-import { REPOE } from '../config.js';
+import { REPOE } from './source.js';
 
 let _flavour = null;
 

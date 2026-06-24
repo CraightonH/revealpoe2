@@ -1,6 +1,7 @@
+// scripts/graph/loader.js — build-time JSON reader over the source data dir. Builder-only.
 import fs from 'node:fs';
 import path from 'node:path';
-import { getDataDir } from '../config.js';
+import { getDataDir } from './source.js';
 
 const cache = new Map();
 

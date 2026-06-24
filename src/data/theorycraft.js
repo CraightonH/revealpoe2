@@ -3,8 +3,8 @@ import { listUniques } from './uniques.js';
 import { listItemClasses, getItemClass, affixBaseTargets } from './baseItems.js';
 import { listKeystones, listNotables } from './passiveTree.js';
 import { listModGroups } from './mods.js';
-import { loadJson } from './loader.js';
-import { REPOE } from '../config.js';
+import { loadJson } from '../../scripts/graph/loader.js';
+import { REPOE } from '../../scripts/graph/source.js';
 
 const FIELDS = new Set(['type', 'color', 'tag', 'req', 'grants']);
 

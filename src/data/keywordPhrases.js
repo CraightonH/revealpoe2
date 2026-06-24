@@ -1,5 +1,5 @@
-import { loadJson } from './loader.js';
-import { REPOE } from '../config.js';
+import { loadJson } from '../../scripts/graph/loader.js';
+import { REPOE } from '../../scripts/graph/source.js';
 import { registerDerivedPhrases } from './keywords.js';
 
 // Derives the surface-phrase → keyword-id map from the game's OWN markup rather

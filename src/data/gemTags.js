@@ -1,5 +1,5 @@
-import { loadJson } from './loader.js';
-import { REPOE } from '../config.js';
+import { loadJson } from '../../scripts/graph/loader.js';
+import { REPOE } from '../../scripts/graph/source.js';
 
 // Parse a raw gem-tag token ("[Display]" or "[Id|Display]") into its bracket
 // key (`token`) and human-readable `display` name. Returns null for falsy raw.

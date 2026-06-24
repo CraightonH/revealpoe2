@@ -1,3 +1,4 @@
+// scripts/graph/source.js — build-time source-path resolution. Builder-only.
 import 'dotenv/config';
 import os from 'node:os';
 import fs from 'node:fs';

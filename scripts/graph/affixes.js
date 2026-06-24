@@ -15,8 +15,8 @@
 // Also exports resolveImplicitTexts(ids): base/rune implicit mods (generation_type
 // "unique") resolved to display *text* (keyword markup preserved, no HTML) so the
 // base resolver can store them on base nodes and retire mods.js's source reads.
-import { loadJson } from '../../src/data/loader.js';
-import { REPOE } from '../../src/config.js';
+import { loadJson } from './loader.js';
+import { REPOE } from './source.js';
 import { slugify } from '../../src/data/slug.js';
 import { makeNode, makeEdge, KINDS, EDGE_TYPES } from './schema.js';
 import { abyssBoss, humanizeType, toGenericDisplay } from '../../src/data/affixText.js';
