@@ -195,3 +195,22 @@ test('gem search docs include granted-skill display names from the graph', () =>
   const skillName = getNode(gem.grants_skills[0]).name.toLowerCase();
   assert.ok(sample.text.includes(skillName), 'granted skill name should be in the doc text');
 });
+
+test('gem search docs exclude key-fallback grant names (no raw skill keys in index)', () => {
+  // Skills with an empty source display_name resolve to a node whose name IS
+  // its key; those must not appear in grants/search text.
+  const docs = allDocs().filter((d) => ['gem', 'support', 'spirit'].includes(d.category));
+  for (const d of docs) {
+    const gem = getGem(d.url.replace('/gem/', ''));
+    for (const key of gem?.grants_skills ?? []) {
+      const node = getNode(key);
+      if (node && node.name === node.id) {
+        // key-fallback node: its key must not have been added to grants
+        assert.ok(
+          !d.grants.includes(key.toLowerCase()),
+          `raw key leaked into grants for ${d.url}: ${key}`,
+        );
+      }
+    }
+  }
+});

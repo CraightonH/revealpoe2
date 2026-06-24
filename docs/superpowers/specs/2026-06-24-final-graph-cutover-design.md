@@ -68,7 +68,7 @@ producing one node per keyword that has a **non-empty definition**:
   id:   <keywordId>,            // e.g. "Critical", "Resistances", "EnergyShield"
   kind: 'keyword',
   name: <term>,                 // keywords.json entry.term, falls back to id
-  slug: slugify(term),
+  slug: slugify(id),
   props: {
     definition: <string>,       // non-empty (empty-def keywords get no node)
     phrases: [<surface phrase>, ...]  // derived; may be empty
@@ -164,11 +164,11 @@ const grants = (raw.grants_skills ?? [])
 `active_skill.display_name || key` (confirmed in `scripts/graph/gems.js`
 `skillNodes`).
 
-**Documented drift:** a skill key whose source `display_name` was empty currently
-drops (via `.filter(Boolean)`); the node falls back to the key string, so it
-would now contribute the key to the hidden search text. This affects only the
-search-index text (never a visible label) and only the rare empty-`display_name`
-skills. Accepted as immaterial.
+**Documented drift:** Skill nodes fall back to `name = key` when the source
+`display_name` is empty — this affects a majority of grant keys, not a rare few.
+To preserve the prior `.filter(Boolean)` behavior, `gemDocs()` drops any grant
+whose resolved node name equals its key, so internal keys never enter the search
+index. No behavioral drift remains.
 
 ## Part B — Relocate build-only source I/O out of `src/`
 

@@ -100,7 +100,14 @@ function gemDocs() {
   return listGems().map((g) => {
     const raw = getGem(g.slug) ?? {};
     const grants = (raw.grants_skills ?? [])
-      .map((k) => getNode(k)?.name)
+      .map((k) => {
+        const n = getNode(k);
+        // Skill nodes fall back to name = key when the source display_name is
+        // empty; those are not real names — drop them (matches the prior
+        // skills.json `.filter(Boolean)` behavior) so internal keys never enter
+        // the search index.
+        return n && n.name !== n.id ? n.name : null;
+      })
       .filter(Boolean);
     let textParts = [g.name];
     let subtitle = '';
