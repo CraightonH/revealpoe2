@@ -15,10 +15,11 @@
 //   /gem/spark/card    -> dist/gem/spark/card.html   (data-card-url fragment)
 
 import { createApp } from '../src/server.js';
+import { allDocs } from '../src/data/theorycraft.js';
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
@@ -27,6 +28,19 @@ const PUBLIC = path.join(root, 'public');
 
 // Where the crawl starts. Everything else is discovered from links on these.
 const SEEDS = ['/', '/gems', '/uniques', '/bases', '/keystones', '/ascendancies'];
+
+// Affix flyout fragments (/mod/:typeSlug/card) are the one card type the link
+// crawl can't reach: mods have no page, so their data-card-url lives ONLY in
+// search dropdown rows — and search is excluded from the crawl (/search is
+// dynamic; the static dropdown is client-rendered from search-index.json). Seed
+// them from the same doc set that backs that client dropdown (allDocs), so every
+// flyout the user can open is prerendered and none 404s. Divergence-proof: same
+// source the client reads, so the seeds can't drift from what search surfaces.
+export function affixCardSeeds() {
+  return allDocs()
+    .map((d) => d.cardUrl)
+    .filter((u) => typeof u === 'string' && u.startsWith('/mod/'));
+}
 
 // Attributes whose "/..." values are internal links worth following.
 const LINK_ATTRS = ['href', 'hx-get', 'data-card-url'];
@@ -108,6 +122,8 @@ async function run() {
   const stats = { ok: 0, written: 0, failed: [] };
   const enqueue = (p) => { if (!seen.has(p)) { seen.add(p); queue.push(p); } };
   SEEDS.forEach(enqueue);
+  // Affix flyout fragments aren't link-reachable (see affixCardSeeds); seed them.
+  for (const u of affixCardSeeds()) { const n = normalize(u); if (n) enqueue(n); }
 
   async function handle(urlPath) {
     let res;
@@ -163,4 +179,5 @@ async function run() {
   }
 }
 
-run();
+// Only crawl when run as a script; importing (e.g. tests) must not boot a server.
+if (import.meta.url === pathToFileURL(process.argv[1]).href) run();
