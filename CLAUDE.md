@@ -31,12 +31,11 @@ All game data is in `data/source/` — gitignored (large, ~250M, regenerable via
 
 ### Icons
 
-CDN pattern (online, lazy-loaded): `https://image.ggpk.exposed/poe2/{dds_file}?format=webp`
+**Images are self-hosted, not hotlinked.** `src/data/images.js` `ddsUrl(dds)` returns a same-origin path `/static/img/{dds without .dds}.webp`. The build step `build:images` (`scripts/fetch-images.js`) mirrors every referenced `.dds` from ggpk.exposed into `public/img/` (gitignored, ~120M) as webp, so the live site has **no runtime third-party CDN dependency**. Source `dds_file` fields: `visual_identity.dds_file` (items), `icon_dds_file` (skill gems).
 
-For items: `visual_identity.dds_file` on `base_items.json` records.
-For skill gems: `icon_dds_file` directly on `skill_gems.json` records.
+Drift is handled by the fetcher: the referenced set comes from `build/graph.json` (new content → new fetch); changed art is caught via ggpk ETags + `If-None-Match` (304 = skip, 200 = re-download); orphans are pruned. It's idempotent and rate-limit-aware (concurrency 8 + backoff) — safe to run every deploy. A few assets 500 upstream on ggpk's side; those fall back to the placeholder.
 
-Offline fallback: render a placeholder using `visual_identity.id`/`name` — deterministic color from hash, initials as label. See `docs/image-assets.md` for the full pattern including CSS and onerror handling.
+Offline/missing fallback: render a placeholder using `visual_identity.id`/`name` — deterministic color from hash, initials as label, wired via `onerror` on every icon `<img>`. See `docs/image-assets.md` for the full pattern including CSS.
 
 ## Data Architecture: the Graph
 

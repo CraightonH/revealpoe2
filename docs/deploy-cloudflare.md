@@ -26,10 +26,11 @@ Only two features are genuinely dynamic — the global **search** dropdown and
 ```
 npm run deploy
   └─ npm run build:static
-       ├─ npm run build:graph    scripts/graph/cli.js   → build/graph.json
-       ├─ npm run build:index    scripts/build-index.js → public/generated/*.json
-       └─ node scripts/prerender.js                     → dist/
-  └─ wrangler pages deploy                              → Cloudflare Pages
+       ├─ npm run build:graph    scripts/graph/cli.js     → build/graph.json
+       ├─ npm run build:images   scripts/fetch-images.js  → public/img/*.webp
+       ├─ npm run build:index    scripts/build-index.js   → public/generated/*.json
+       └─ node scripts/prerender.js                       → dist/
+  └─ wrangler pages deploy                                → Cloudflare Pages
 ```
 
 Each stage:
@@ -37,11 +38,17 @@ Each stage:
 1. **`build:graph`** — compiles `data/source/` into `build/graph.json` (the
    property graph the app reads). Unchanged by the static work; see CLAUDE.md
    *Data Architecture: the Graph*.
-2. **`build:index`** — emits the two client artifacts (search index + browse
+2. **`build:images`** — mirrors every `.dds` referenced by the graph (+ the
+   UI-chrome paths in the CSS) from ggpk.exposed into `public/img/` as webp, so
+   images ship same-origin with no runtime CDN. Idempotent and ETag-driven
+   (unchanged images return 304 — re-syncs in seconds); rate-limit-aware. See
+   CLAUDE.md *Icons* and `docs/image-assets.md`.
+3. **`build:index`** — emits the two client artifacts (search index + browse
    cards) into `public/generated/`. See **Client artifacts**.
-3. **`prerender`** — boots the real app and crawls it into `dist/`. See
-   **The prerender crawler**.
-4. **`wrangler pages deploy`** — uploads `dist/` to Pages.
+4. **`prerender`** — boots the real app and crawls it into `dist/`. See
+   **The prerender crawler**. `copyPublic()` mirrors `public/` (including
+   `img/`) into `dist/static/`, so the fetched images deploy automatically.
+5. **`wrangler pages deploy`** — uploads `dist/` to Pages.
 
 `build:index` also runs on `predev`/`prestart`, so the dev server has the same
 artifacts the static build does (dev ≈ prod parity — see **Dev vs prod**).
@@ -203,10 +210,14 @@ npm run deploy            # build:static + wrangler pages deploy
 
 ```bash
 python scripts/scrape.py   # refresh data/source/
-npm run deploy             # rebuild graph + index + pages, upload
+npm run deploy             # rebuild graph + images + index + pages, upload
 ```
 
-That's the whole content-update loop: re-scrape → rebuild → upload.
+That's the whole content-update loop: re-scrape → rebuild → upload. `build:images`
+inside `build:static` reconciles `public/img/` against the refreshed data — new
+icons are fetched, re-arted icons are caught by ETag, orphans pruned — so images
+stay in sync with each patch automatically. (Most images return 304, so this adds
+only seconds to a normal deploy.)
 
 ### Rollback
 

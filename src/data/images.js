@@ -1,9 +1,19 @@
-const GGPK = 'https://image.ggpk.exposed/poe2';
+// Local, self-hosted image base. Game art is fetched at build time from
+// ggpk.exposed into public/img/ (see scripts/fetch-images.js) and served
+// same-origin, so the live site has no runtime dependency on a third-party CDN.
+const IMG_BASE = '/static/img';
 
-// Convert an in-game dds asset path to a renderable ggpk webp URL.
-export function ddsUrl(ddsPath, format = 'webp') {
+// Map an in-game .dds asset path to its self-hosted webp file path, mirroring
+// the dds directory tree. Shared by the renderer (ddsUrl) and the build-time
+// fetcher so the two can never disagree on where an image lives.
+export function imageRelPath(ddsPath) {
+  return `${ddsPath.replace(/\.dds$/i, '')}.webp`;
+}
+
+// Renderable URL for an in-game dds asset path.
+export function ddsUrl(ddsPath) {
   if (!ddsPath) return null;
-  return `${GGPK}/${ddsPath}?format=${format}`;
+  return `${IMG_BASE}/${imageRelPath(ddsPath)}`;
 }
 
 const GEM_HUE = { r: 0, g: 120, b: 240, w: 0 };

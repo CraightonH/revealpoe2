@@ -86,7 +86,7 @@ html[data-card-size="xl"] .affix-section { zoom: 1.5; }
 
 /* Header: GemHoverTitle banner, height 54px, skill icon left-anchored */
 .itemHeader.doubleLine {
-  background: url(https://image.ggpk.exposed/poe2/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SmartHover/GemHoverTitle.dds?format=webp) top left no-repeat;
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SmartHover/GemHoverTitle.webp) top left no-repeat;
   background-size: contain;
   height: 54px;
   position: relative;
@@ -293,10 +293,10 @@ html[data-card-size="xl"] .affix-section { zoom: 1.5; }
    re-hosts. Corners scale to header height; middle repeats across. */
 .UniquePopup .itemHeader.doubleLine {
   background:
-    url(https://image.ggpk.exposed/poe2/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderUniqueLeft.dds?format=webp) top left no-repeat,
-    url(https://image.ggpk.exposed/poe2/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderUniqueRight.dds?format=webp) top right no-repeat,
-    url(https://image.ggpk.exposed/poe2/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderUniqueMiddle.dds?format=webp) 0 top repeat-x,
-    url(https://image.ggpk.exposed/poe2/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderUniqueMiddle.dds?format=webp) 23px top repeat-x;
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderUniqueLeft.webp) top left no-repeat,
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderUniqueRight.webp) top right no-repeat,
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderUniqueMiddle.webp) 0 top repeat-x,
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderUniqueMiddle.webp) 23px top repeat-x;
   /* Corners scale to height and sit on top. The middle is tiled at native
      horizontal scale to keep its filigree crisp; the GGPK slice has a 1px
      transparent trim edge, so it's layered twice at a half-tile offset — each
@@ -518,10 +518,10 @@ a.lc.unique-type:hover {
    fills the other's 1px transparent trim seam. */
 .NormalPopup .itemHeader.doubleLine {
   background:
-    url(https://image.ggpk.exposed/poe2/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderWhiteLeft.dds?format=webp) top left no-repeat,
-    url(https://image.ggpk.exposed/poe2/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderWhiteRight.dds?format=webp) top right no-repeat,
-    url(https://image.ggpk.exposed/poe2/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderWhiteMiddle.dds?format=webp) 0 top repeat-x,
-    url(https://image.ggpk.exposed/poe2/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderWhiteMiddle.dds?format=webp) 24px top repeat-x;
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderWhiteLeft.webp) top left no-repeat,
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderWhiteRight.webp) top right no-repeat,
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderWhiteMiddle.webp) 0 top repeat-x,
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderWhiteMiddle.webp) 24px top repeat-x;
   background-size: auto 100%, auto 100%, auto 100%, auto 100%;
   height: 56px;
   padding: 4px 14px;
@@ -675,10 +675,10 @@ details[open] > .bases-group-title::before {
    name centered in white. */
 .bases-list-header {
   background:
-    url(https://image.ggpk.exposed/poe2/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderWhiteLeft.dds?format=webp) top left no-repeat,
-    url(https://image.ggpk.exposed/poe2/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderWhiteRight.dds?format=webp) top right no-repeat,
-    url(https://image.ggpk.exposed/poe2/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderWhiteMiddle.dds?format=webp) 0 top repeat-x,
-    url(https://image.ggpk.exposed/poe2/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderWhiteMiddle.dds?format=webp) 24px top repeat-x;
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderWhiteLeft.webp) top left no-repeat,
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderWhiteRight.webp) top right no-repeat,
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderWhiteMiddle.webp) 0 top repeat-x,
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderWhiteMiddle.webp) 24px top repeat-x;
   background-size: auto 100%, auto 100%, auto 100%, auto 100%;
   height: 34px;
   display: flex;
@@ -784,10 +784,10 @@ details[open] > .bases-group-title::before {
 .bases-list-card--unique:hover { border-color: var(--unique-color); }
 .bases-list-card--unique .bases-list-header {
   background:
-    url(https://image.ggpk.exposed/poe2/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderUniqueLeft.dds?format=webp) top left no-repeat,
-    url(https://image.ggpk.exposed/poe2/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderUniqueRight.dds?format=webp) top right no-repeat,
-    url(https://image.ggpk.exposed/poe2/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderUniqueMiddle.dds?format=webp) 0 top repeat-x,
-    url(https://image.ggpk.exposed/poe2/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderUniqueMiddle.dds?format=webp) 23px top repeat-x;
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderUniqueLeft.webp) top left no-repeat,
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderUniqueRight.webp) top right no-repeat,
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderUniqueMiddle.webp) 0 top repeat-x,
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderUniqueMiddle.webp) 23px top repeat-x;
   background-size: auto 100%, auto 100%, auto 100%, auto 100%;
 }
 .bases-list-card--unique .bases-list-name { color: var(--unique-color); }

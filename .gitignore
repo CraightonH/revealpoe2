@@ -8,6 +8,9 @@ build/
 # Generated client artifacts (search index + browse-card HTML), built from the
 # graph by scripts/build-index.js. Regenerable; not committed.
 public/generated/
+# Self-hosted game art, mirrored from ggpk.exposed by scripts/fetch-images.js.
+# Large (~80M) and regenerable; not committed.
+public/img/
 # Scraped game data — large, regenerable via scripts/scrape.py. Not committed.
 # (data/manual/ IS committed — hand-authored overlays.)
 data/source/

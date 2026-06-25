@@ -1,11 +1,18 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ddsUrl, placeholder } from '../src/data/images.js';
+import { ddsUrl, imageRelPath, placeholder } from '../src/data/images.js';
 
-test('ddsUrl builds a ggpk webp url from a dds path', () => {
+test('ddsUrl builds a self-hosted webp url from a dds path', () => {
   assert.equal(
     ddsUrl('Art/2DArt/SkillIcons/4k/HeraldOfAshSkill.dds'),
-    'https://image.ggpk.exposed/poe2/Art/2DArt/SkillIcons/4k/HeraldOfAshSkill.dds?format=webp'
+    '/static/img/Art/2DArt/SkillIcons/4k/HeraldOfAshSkill.webp'
+  );
+});
+
+test('imageRelPath maps a dds path to its mirrored webp file path', () => {
+  assert.equal(
+    imageRelPath('Art/2DArt/SkillIcons/4k/HeraldOfAshSkill.dds'),
+    'Art/2DArt/SkillIcons/4k/HeraldOfAshSkill.webp'
   );
 });
 

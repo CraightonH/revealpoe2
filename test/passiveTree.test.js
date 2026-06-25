@@ -32,9 +32,10 @@ describe('passiveTree', () => {
       const joined = k.statLines.join('\n');
       assert.ok(joined.includes('Energy Shield') || joined.includes('[EnergyShield|Energy Shield]'));
     });
-    it('iconUrl resolves to CDN URL', () => {
+    it('iconUrl resolves to a self-hosted image path', () => {
       const k = getKeystone('passive_keystone_zealots_oath');
-      assert.ok(k.iconUrl.startsWith('https://'));
+      assert.ok(k.iconUrl.startsWith('/static/img/'));
+      assert.ok(k.iconUrl.endsWith('.webp'));
     });
     it("Zealot's Oath has statRaw plain text without HTML tags", () => {
       const k = getKeystone('passive_keystone_zealots_oath');

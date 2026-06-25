@@ -1,18 +1,22 @@
 # Referencing image assets (icons / art)
 
-This repo deliberately **does not** mirror the `Art/` tree from upstream — it's
+The `scrape.py` data mirror deliberately **skips** the `Art/` tree — it's
 hundreds of MB of `.png` / `.webp` / `.dds` image assets, not data.
 
-**Offline-first plan:** render a **placeholder** for every icon. If the device
-is online, the real icon loads from **ggpk-exposed** (the CDN RePoE points at)
-*over* the placeholder; offline, the placeholder just stays. No build step, no
-pre-fetch, nothing breaks on a plane.
+**Implemented approach — self-hosted, fetched at build time.** The build step
+`build:images` (`scripts/fetch-images.js`) downloads every referenced `.dds`
+from ggpk.exposed as webp into `public/img/` (gitignored), and the renderer
+(`src/data/images.js` → `ddsUrl`) emits same-origin `/static/img/...webp` paths.
+**The live site never touches a third-party CDN at runtime** — ggpk.exposed is a
+build-time dependency only. See *Self-hosting* below; the placeholder/`onerror`
+pattern in this doc remains the fallback for the handful of assets that fail
+upstream or haven't been fetched.
 
 Why this works cleanly: every art-bearing record carries a stable
 `visual_identity.id` and a deterministic `dds_file` path (verified **100%**
 coverage on `base_items.json` and `uniques.json`). So a placeholder keyed on
-`id`/`name` and its eventual real icon are 1:1 — the same item always maps to
-the same placeholder *and* the same CDN URL.
+`id`/`name` and its self-hosted icon are 1:1 — the same item always maps to the
+same placeholder *and* the same image file.
 
 ## The join key: `visual_identity.dds_file`
 
@@ -36,27 +40,30 @@ Most data records that have art carry a `visual_identity` object:
 
 The `dds_file` value is the in-game asset path. That's what you feed to the CDN.
 
-## URL pattern
+## Runtime path (what the app emits)
+
+`ddsUrl(dds)` maps a `dds_file` to its self-hosted webp:
 
 ```
-https://image.ggpk.exposed/{game}/{dds_file}?format={png|webp}
+Art/2DItems/Currency/CurrencyWeaponQuality.dds
+  -> /static/img/Art/2DItems/Currency/CurrencyWeaponQuality.webp
 ```
 
-- `{game}` — use **`poe2`** for everything in this repo.
-- `{dds_file}` — the `visual_identity.dds_file` value, verbatim (it already
-  starts with `Art/...`).
-- `?format=` — the upstream assets are `.dds`. Add `?format=png` (lossless,
-  wider support) or `?format=webp` (smaller) to get a web-renderable image.
-  Without the query param, content negotiation decides.
+The `.dds` extension is replaced with `.webp` and the file is served from
+`public/img/` (mirrored into `dist/static/img/` by the prerender). No query
+string, no external host. `imageRelPath()` in `src/data/images.js` is the single
+source of truth for this mapping, shared by the renderer and the fetcher.
 
-### Verified example
+## Build-time source URL (ggpk.exposed)
+
+`scripts/fetch-images.js` fetches each asset once from:
 
 ```
-visual_identity.dds_file = "Art/2DItems/Currency/CurrencyWeaponQuality.dds"
-
--> https://image.ggpk.exposed/poe2/Art/2DItems/Currency/CurrencyWeaponQuality.dds?format=png
-   200 OK, content-type: image/png (~17 KB)
+https://image.ggpk.exposed/{game}/{dds_file}?format=webp     # {game} = poe2
 ```
+
+`?format=webp` converts the upstream `.dds` to a web-renderable image. This URL
+appears **only** in the fetcher, never in shipped pages.
 
 ## Placeholder-first wiki helper (drop-in)
 
@@ -160,37 +167,40 @@ def placeholder(record: dict) -> dict:
   send `poe2`.
 - Other art-bearing files (skill gems, buffs, passives) follow the same
   `visual_identity.dds_file` convention where present.
-- If you *later* decide you want real icons offline too, the pre-fetch sketch
-  below caches them locally — but with the placeholder pattern you don't need
-  it for the flight.
 
-## Pre-fetch script sketch (optional, for true offline)
+## Self-hosting (`scripts/fetch-images.js`)
 
-If you later decide you want the icons local, this collects every distinct
-`dds_file` and downloads the PNGs into `assets/`:
+This is the implemented version of what used to be an "optional pre-fetch" — now
+a build step, not a sketch. It is the reason the live site has no runtime CDN
+dependency.
 
-```bash
-python3 - <<'PY'
-import json, os, urllib.request
-from pathlib import Path
+**What it does:** reads the referenced `.dds` set from `build/graph.json` (plus
+the UI-chrome paths baked into `public/css/`), and for each one fetches
+`?format=webp` from ggpk.exposed into `public/img/<path>.webp`. Run via
+`npm run build:images`, wired into `build:static` ahead of `build:index`.
 
-dds = set()
-for f in ["data/repoe-poe2/base_items.json", "data/repoe-poe2/uniques.json"]:
-    for rec in json.load(open(f)).values():
-        vi = (rec or {}).get("visual_identity") or {}
-        if vi.get("dds_file"):
-            dds.add(vi["dds_file"])
+**Drift handling** — the whole point of doing this as a reconciler rather than a
+one-shot download:
 
-print(f"{len(dds)} distinct icons")
-for d in sorted(dds):
-    out = Path("assets") / (d[:-4] + ".png")   # Art/.../X.dds -> assets/Art/.../X.png
-    out.parent.mkdir(parents=True, exist_ok=True)
-    if out.exists():
-        continue
-    url = f"https://image.ggpk.exposed/poe2/{d}?format=png"
-    try:
-        urllib.request.urlretrieve(url, out)
-    except Exception as e:
-        print("!", d, e)
-PY
-```
+| Change | Mechanism |
+|--------|-----------|
+| New images (game adds content) | New `.dds` paths appear in the graph after re-scrape → not on disk → fetched. |
+| Re-arted icon, **same path** | ggpk serves nginx ETags (`"{mtime}-{size}"`); the fetcher stores them and sends `If-None-Match`. `304` = unchanged (skip), `200` = changed → re-download. |
+| Removed images | On-disk files no longer referenced are pruned (`--no-prune` to keep). |
+
+**Operational properties:**
+
+- **Idempotent + cheap to re-run.** After the first sync (~3 min for ~3k images),
+  unchanged images return `304` — re-validating the whole set takes seconds, so
+  it's safe inside every `npm run deploy`.
+- **Rate-limit-aware.** ggpk.exposed is one person's free Cloudflare Worker and
+  rate-limits sustained load (HTTP 429). Default concurrency is 8 with
+  exponential backoff honoring `Retry-After`. Tune with `--workers N`.
+- **Resilient.** A fetch failure keeps any existing local copy so the build still
+  succeeds; only never-seen images are left to the placeholder. A few assets 500
+  upstream on ggpk's side (bad/spaced source paths) — those just fall back.
+- **Manifest:** `public/img/_manifest.json` stores `{ ddsPath: { etag, bytes } }`
+  for conditional requests. Delete it (or pass `--force`) to force a full
+  re-download.
+
+Flags: `--workers N`, `--no-prune`, `--force`.
