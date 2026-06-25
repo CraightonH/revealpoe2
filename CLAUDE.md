@@ -119,12 +119,12 @@ game patch? ─► python scripts/scrape.py ─► npm run build:images   (refre
                                   │
 ready to ship ─► npm run build:static                (full local build; catches static-only breakage)
                                   │
-                          npm run deploy              (build:static + wrangler; non-main branch ⇒ PREVIEW)
+                          npm run deploy              (build:static + wrangler ⇒ PRODUCTION)
                                   │
-                          verify on the .pages.dev URL (Node fetch, not curl)
-                                  │
-                          merge to main ─► npm run deploy   (⇒ PRODUCTION)
+                          verify on poe2wiki.pages.dev (Node fetch, not curl)
 ```
+
+**`npm run deploy` always publishes to PRODUCTION** (`--branch main`) regardless of the current git branch — assume a production deploy whenever a deploy is requested unless a **preview** is *explicitly* asked for. For a preview, use `npm run deploy:preview` (publishes to a `preview-<branch>` Pages branch → a `<hash>.poe2wiki.pages.dev` URL, leaving production untouched).
 
 The content-update loop after a game patch is just: `scrape.py` → `npm run deploy` (deploy runs `build:images` itself, so icons sync automatically — the manual `build:images` above is only for seeing them in `dev` first).
 
@@ -132,7 +132,7 @@ The content-update loop after a game patch is just: `scrape.py` → `npm run dep
 
 Production is a **static prerender** of the app, hosted on **Cloudflare Pages** (free tier). The full reference is `docs/deploy-cloudflare.md`; the essentials:
 
-- **One command:** `npm run deploy` → `build:static` (`build:graph` → `build:index` → `scripts/prerender.js` into `dist/`) → `wrangler pages deploy`.
+- **One command:** `npm run deploy` → `build:static` (`build:graph` → `build:index` → `scripts/prerender.js` into `dist/`) → `wrangler pages deploy dist --branch main` (**always PRODUCTION**; `npm run deploy:preview` for a preview).
 - **Build locally, upload `dist/`** — never Git-integration CI. `data/source/` is gitignored, so Cloudflare's build box has no data to compile; the local machine that has the data is the build box. Content update loop after a patch: `python scripts/scrape.py` → `npm run deploy`.
 - **Prerender is a link crawler** (`scripts/prerender.js`): it boots the real app and walks every internally reachable URL (`href`, `hx-get`, `data-card-url`, and `data-keyword` → `/api/keyword/*`), so it renders exactly what's linked and a dead internal link **fails the build**.
 - **⚠️ New client-fetched endpoints must be crawler-discoverable.** The crawler only finds URLs present in those attributes. JS that fetches a URL built another way (bare id, computed path) won't be prerendered and will 404 on the static site (this is the bug that hit keyword popups). Expose it via a crawlable attribute, or extend `extractLinks()` in `prerender.js`.

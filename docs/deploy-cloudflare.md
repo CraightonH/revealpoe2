@@ -201,14 +201,17 @@ npx wrangler pages project create poe2wiki --production-branch main
 ### Deploy
 
 ```bash
-npm run deploy            # build:static + wrangler pages deploy
+npm run deploy            # build:static + wrangler pages deploy dist --branch main  => PRODUCTION
+npm run deploy:preview    # same build, --branch preview-<git branch>                => PREVIEW
 ```
 
-- Deploying from a non-`main` git branch creates a **preview** deployment
-  (`https://<hash>.poe2wiki.pages.dev`), not production.
-- Production `poe2wiki.pages.dev` updates only from the `main` branch:
-  `wrangler pages deploy dist --branch main`, or merge to `main` then
-  `npm run deploy`.
+- **`npm run deploy` always targets PRODUCTION** (`--branch main`), regardless of
+  the current git branch. Wrangler's branch *inference* (running `wrangler pages
+  deploy` with no `--branch`) is unreliable — it once published a preview from
+  `main`, leaving production stale — so the script pins `--branch main` explicitly.
+- A deploy request means production unless a preview is explicitly asked for.
+- For a preview that leaves production untouched, `npm run deploy:preview` pins a
+  non-production branch name → a `https://<hash>.poe2wiki.pages.dev` URL.
 
 ### Update after a game patch
 
