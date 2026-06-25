@@ -184,6 +184,9 @@ export function buildUniqueViewModel(slug) {
     className: baseRecord?.className ?? u.itemClass,
     borderColor: UNIQUE_BORDER,
     glowColor: UNIQUE_GLOW,
-    baseSlug: slugify(u.base),
+    // Canonical slug of the linked base, or null when the base isn't a browsable
+    // node (charms/flasks/jewels and PoB variant-parse artifacts). The macro
+    // renders the base as plain text rather than a dead link when this is null.
+    baseSlug: baseRecord?.slug ?? null,
   };
 }

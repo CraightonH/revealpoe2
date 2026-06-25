@@ -64,7 +64,7 @@
        style="--card-border: {{ vm.borderColor }}; --card-glow: {{ vm.glowColor }};">
     <div class="itemHeader doubleLine">
       <div class="itemName"><span class="lc unique-name">{{ vm.name }}</span></div>
-      <div class="itemName typeLine"><a class="lc unique-type" href="/base/{{ vm.baseSlug }}" data-card-url="/base/{{ vm.baseSlug }}/card">{{ vm.base }}</a></div>
+      <div class="itemName typeLine">{% if vm.baseSlug %}<a class="lc unique-type" href="/base/{{ vm.baseSlug }}" data-card-url="/base/{{ vm.baseSlug }}/card">{{ vm.base }}</a>{% else %}<span class="lc unique-type">{{ vm.base }}</span>{% endif %}</div>
     </div>
     <div class="content">
       <div class="Stats">
