@@ -107,3 +107,37 @@ test('uniqueEdges: grants resolve to skill nodes with zero dangling', () => {
   assert.ok(want, 'Purity of Lightning skill node exists');
   assert.ok(grants.some((e) => e.from === gp.id && e.to === want), 'Guiding Palm -> Purity of Lightning');
 });
+
+test('uniqueEdges: grants carry the variant index that grants each skill', () => {
+  const { records } = uniqueNodes();
+  const { records: baseRecs } = baseNodes();
+  const skl = skillNodes(selectGemRecords());
+  const skillBySlug = new Map(skl.map((n) => [n.slug, n.id]));
+
+  const edges = uniqueEdges(records, baseRecs, skl);
+  const grants = edges.filter((e) => e.type === 'grants');
+  for (const e of grants) {
+    assert.equal(typeof e.props?.variantIndex, 'number', `grants edge ${e.from}->${e.to} has a variantIndex`);
+  }
+
+  // The Unborn Lich: His Vile Intrusion is gated to a single non-default variant;
+  // the edge must point at that variant, not the default (which grants only Feast
+  // of Flesh). Feast of Flesh is granted by every variant including the default,
+  // so its edge keeps the default (currentIndex).
+  const lich = records.find((r) => r.slug === 'the-unborn-lich');
+  const node = uniqueNodes().nodes.find((n) => n.slug === 'the-unborn-lich');
+  const vile = skillBySlug.get('his-vile-intrusion');
+  const vileEdge = grants.find((e) => e.from === lich.id && e.to === vile);
+  assert.ok(vileEdge, 'The Unborn Lich -> His Vile Intrusion edge exists');
+  const vileVariant = node.props.variants[vileEdge.props.variantIndex];
+  assert.ok(
+    [...vileVariant.implicits, ...vileVariant.explicits].some((l) => l.includes('His Vile Intrusion')),
+    'the edge variant actually grants His Vile Intrusion',
+  );
+
+  const feast = skillBySlug.get('feast-of-flesh');
+  const feastEdge = grants.find((e) => e.from === lich.id && e.to === feast);
+  assert.ok(feastEdge, 'The Unborn Lich -> Feast of Flesh edge exists');
+  assert.equal(feastEdge.props.variantIndex, node.props.currentIndex,
+    'Feast of Flesh (granted by the default variant) keeps the default variant');
+});

@@ -49,9 +49,13 @@ function parseStatLine(text) {
 // Reconstruct the legacy flat record from a unique graph node: current-variant
 // stats + implicitCount, plus identity/icon/flavour. Keeps listUniques()/
 // getUnique() stable for theorycraft.js and the card/VM builders.
-function toUnique(node) {
+function toUnique(node, variantIndex) {
   const p = node.props;
-  const cur = p.variants[p.currentIndex];
+  // Default to the live variant; a reverse "granted by" lookup passes the index
+  // of the variant that grants the looked-up skill. Guard against an out-of-range
+  // index falling back to the default.
+  const idx = (variantIndex != null && p.variants[variantIndex]) ? variantIndex : p.currentIndex;
+  const cur = p.variants[idx];
   return {
     slug: node.slug,
     name: node.name,
@@ -122,8 +126,8 @@ export function listUniqueClassFilters() {
 // Condensed view model for a single unique node: the /uniques browse-grid card,
 // also reused for the "Granted by" section on a gem page (uniques that grant a
 // gem's skill) and theorycraft results.
-function uniqueCardVM(node) {
-  const u = toUnique(node);
+function uniqueCardVM(node, variantIndex) {
+  const u = toUnique(node, variantIndex);
   const baseRecord = getBaseByName(u.base);
   const parsed = u.stats.map(parseStatLine);
   const mods = parseLocalMods(u.stats);
@@ -152,10 +156,12 @@ export function listUniqueCards() {
 
 // The browse-grid card for one unique by slug, or null if unknown. Lets other
 // modules (e.g. gems.js "Granted by") render a real unique card without
-// rebuilding the whole list.
-export function getUniqueCard(slug) {
+// rebuilding the whole list. `variantIndex` selects a non-default variant — used
+// by reverse "granted by" lookups so the card shows the variant that grants the
+// looked-up skill rather than the item's default variant.
+export function getUniqueCard(slug, variantIndex) {
   const node = nodeBySlug('unique', slug);
-  return node ? uniqueCardVM(node) : null;
+  return node ? uniqueCardVM(node, variantIndex) : null;
 }
 
 export function buildUniqueViewModel(slug) {

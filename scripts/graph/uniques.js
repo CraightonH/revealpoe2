@@ -133,6 +133,26 @@ function grantNamesOf(variant) {
   return out;
 }
 
+// For each skill this unique grants, the variant index whose card best
+// represents the grant in a reverse "granted by" lookup: the current/default
+// variant when it grants the skill (so always-granted skills keep the canonical
+// item view), else the first variant that does (so a variant-gated grant — e.g.
+// The Unborn Lich's per-variant skills — renders the variant that actually
+// grants the looked-up skill, not the unrelated default). Returns [{name, variantIndex}].
+function grantsWithVariant(variants, currentIndex) {
+  const idxsByName = new Map(); // skill name -> [variant indices that grant it]
+  variants.forEach((v, i) => {
+    for (const name of grantNamesOf(v)) {
+      if (!idxsByName.has(name)) idxsByName.set(name, []);
+      idxsByName.get(name).push(i);
+    }
+  });
+  return [...idxsByName].map(([name, idxs]) => ({
+    name,
+    variantIndex: idxs.includes(currentIndex) ? currentIndex : idxs[0],
+  }));
+}
+
 // ---------------------------------------------------------------------------
 // uniqueNodes — Task 2
 // ---------------------------------------------------------------------------
@@ -220,12 +240,13 @@ export function uniqueNodes() {
 
       // Grant edges span EVERY variant, not just the live one: a variant-gated
       // unique (e.g. The Unborn Lich, one granted skill per variant) genuinely
-      // *can* grant each, so "what grants this skill" must see them all. Deduped,
-      // source order preserved.
-      const grantNames = [...new Set(variants.flatMap(grantNamesOf))];
+      // *can* grant each, so "what grants this skill" must see them all. Each
+      // grant also carries the variant index that grants it, so a reverse lookup
+      // can render the matching variant rather than the default.
+      const grants = grantsWithVariant(variants, currentIndex);
 
       nodes.push(makeNode({ id, kind: KINDS.UNIQUE, name: parsed.name, slug, props, search }));
-      records.push({ id, slug, name: parsed.name, base: parsed.base, grantNames });
+      records.push({ id, slug, name: parsed.name, base: parsed.base, grants });
     }
   }
   return { nodes, records };
@@ -248,9 +269,9 @@ export function uniqueEdges(records, baseRecords, skillNodes) {
   for (const r of records) {
     const baseId = baseIdByName.get(r.base);
     if (baseId) edges.push(makeEdge({ type: EDGE_TYPES.HAS_BASE, from: r.id, to: baseId }));
-    for (const name of r.grantNames) {
+    for (const { name, variantIndex } of r.grants) {
       const skillId = skillIdBySlug.get(slugify(name));
-      if (skillId) edges.push(makeEdge({ type: EDGE_TYPES.GRANTS, from: r.id, to: skillId }));
+      if (skillId) edges.push(makeEdge({ type: EDGE_TYPES.GRANTS, from: r.id, to: skillId, props: { variantIndex } }));
     }
   }
   return edges;

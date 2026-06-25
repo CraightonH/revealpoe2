@@ -262,13 +262,24 @@ function getGrantingSourceNodes(gem) {
 
 // Unique items that grant this gem's skill. Returns full browse cards, deduped
 // by slug and sorted by name. Empty for the common (gem-only) case.
+//
+// Uniques grant the shared *skill* node (gem -> skill <- unique), so we walk the
+// gem's forward grants edges to each skill, then the inbound grants on that
+// skill. Each grants edge carries the variant index that grants THIS skill, so a
+// variant-gated unique (The Unborn Lich) renders the variant that won the reverse
+// lookup rather than its default variant (which may grant a different skill).
 export function getGrantingUniques(gem) {
-  const seen = new Set();
+  const bySlug = new Map(); // slug -> { node, variantIndex } (first edge wins)
+  for (const e of edgesFrom(gem.id, 'grants')) {
+    for (const ge of edgesTo(e.to, 'grants')) {
+      const node = getNode(ge.from);
+      if (!node || node.kind !== 'unique' || bySlug.has(node.slug)) continue;
+      bySlug.set(node.slug, { node, variantIndex: ge.props?.variantIndex });
+    }
+  }
   const out = [];
-  for (const node of getGrantingSourceNodes(gem)) {
-    if (node.kind !== 'unique' || seen.has(node.slug)) continue;
-    seen.add(node.slug);
-    const card = getUniqueCard(node.slug);
+  for (const { node, variantIndex } of bySlug.values()) {
+    const card = getUniqueCard(node.slug, variantIndex);
     if (card) out.push(card);
   }
   out.sort((a, b) => a.name.localeCompare(b.name));

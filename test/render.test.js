@@ -146,6 +146,19 @@ test('a granted-skill node surfaces a Grants Skill link to the gem', async () =>
   assert.match(res.text, /Hollow Resonance<\/a>/);
 });
 
+test('granted-by passive card carries its Grants Skill line (Inevitable Agony <- Inevitability)', async () => {
+  // Inevitability (Chronomancer notable) grants only a skill — no stat lines —
+  // so its browse card previously rendered icon+title only in the Granted by
+  // section. It must show the same "Grants Skill:" line the ascendancy page does.
+  const res = await request(createApp()).get('/gem/inevitable-agony');
+  assert.equal(res.status, 200);
+  const grantedIdx = res.text.indexOf('Granted by');
+  assert.ok(grantedIdx > -1, 'Granted by section present');
+  const section = res.text.slice(grantedIdx);
+  assert.match(section, /Inevitability/);
+  assert.match(section, /Grants Skill:/);
+});
+
 test('ascendancies list tints each card to its colorway', async () => {
   const res = await request(createApp()).get('/ascendancies');
   assert.equal(res.status, 200);

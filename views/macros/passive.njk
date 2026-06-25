@@ -1,17 +1,23 @@
 {# A single condensed passive node card for the /keystones index grid. Also
    reused on /theorycraft for keystone/notable matches. `urlBase` selects the
    detail/card route ('keystone' or 'notable'); full tooltip loads on hover. #}
-{% macro passiveBrowseCard(node, urlBase='keystone') %}
-<a class="keystone-index-card" href="/{{ urlBase }}/{{ node.id }}" data-card-url="/{{ urlBase }}/{{ node.id }}/card">
+{% macro passiveBrowseCard(node, urlBase='keystone', variant='') %}
+<a class="keystone-index-card{% if variant %} {{ variant }}-card{% endif %}" href="/{{ urlBase }}/{{ node.id }}" data-card-url="/{{ urlBase }}/{{ node.id }}/card">
   <div class="keystone-index-header"><span class="keystone-index-name">{{ node.name }}</span></div>
   <div class="keystone-index-main">
     {% if node.iconUrl %}
     <img src="{{ node.iconUrl }}" alt="{{ node.name }}" class="keystone-index-icon" loading="lazy"
          onerror="this.style.visibility='hidden'">
     {% else %}
-    <div class="keystone-index-icon keystone-index-placeholder">{{ node.name[0] }}</div>
+    <div class="keystone-index-icon keystone-index-placeholder{% if variant %} {{ variant }}-placeholder{% endif %}">{{ node.name[0] }}</div>
     {% endif %}
     <div class="keystone-index-body">
+      {% if node.grantedSkill %}
+      <div class="explicitMod">
+        {%- if node.grantedSkill.iconUrl %}<img loading="lazy" src="{{ node.grantedSkill.iconUrl }}" class="grantsSkill" alt="" onerror="this.style.display='none'">{% endif -%}
+        Grants Skill: <span class="skill-grant-link">{{ node.grantedSkill.name }}</span>
+      </div>
+      {% endif %}
       {% for line in node.statLines %}<div class="explicitMod">{{ line | safe }}</div>{% endfor %}
     </div>
   </div>

@@ -105,6 +105,23 @@ test('grantedBy surfaces variant-gated unique grants (His Vile Intrusion <- The 
   assert.ok(vm.grantedBy.some((u) => u.name === 'The Unborn Lich'), 'The Unborn Lich should grant His Vile Intrusion');
 });
 
+test('grantedBy renders the variant that grants the looked-up skill (The Unborn Lich -> His Vile Intrusion)', () => {
+  // The Unborn Lich's default variant grants only Feast of Flesh; His Vile
+  // Intrusion is granted by one specific variant. The reverse-lookup card must
+  // render THAT variant, not the default, so the page isn't showing an item
+  // that appears to grant a different skill.
+  const vm = buildGemViewModel('his-vile-intrusion');
+  const card = vm.grantedBy.find((u) => u.name === 'The Unborn Lich');
+  assert.ok(card, 'The Unborn Lich present in Granted by');
+  const grantedSkills = [...card.implicits, ...card.explicits]
+    .map((s) => s.skillName)
+    .filter(Boolean);
+  assert.ok(
+    grantedSkills.includes('His Vile Intrusion'),
+    `card should render the variant granting His Vile Intrusion, got: ${grantedSkills.join(', ')}`,
+  );
+});
+
 test('grantedByPassives surfaces ascendancy-notable grant sources (Inevitable Agony <- Inevitability)', () => {
   // Inevitability (Chronomancer notable) grants the Inevitable Agony gem node
   // directly — the reverse lookup must include non-unique sources.
