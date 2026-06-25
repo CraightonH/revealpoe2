@@ -51,7 +51,31 @@ test('buildGemViewModel produces card fields', () => {
   assert.ok(vm.tags.some((t) => /data-keyword="Fire"/.test(t))); // tag is hoverable
   assert.match(vm.description, /<span class="kw"/); // tokens rendered
   assert.ok(vm.recommendedSupports.length > 0);
-  assert.ok(vm.recommendedSupports[0].slug);
+  assert.ok(vm.recommendedSupports[0].roman);
+  assert.ok(vm.recommendedSupports[0].supports[0].slug);
+});
+
+test('getRecommendedSupports groups into ascending tiers by crafting_level', () => {
+  // herald-of-ash has a populated recommendation list spanning multiple tiers.
+  const vm = buildGemViewModel('herald-of-ash');
+  const groups = vm.recommendedSupports;
+  assert.ok(groups.length > 0, 'has recommended supports');
+  // Tiers appear in ascending order; the "Other" (tier 0) bucket, if present,
+  // is always last.
+  const tiers = groups.map((g) => g.tier);
+  const ordered = [...tiers].sort((a, b) => (a === 0) - (b === 0) || a - b);
+  assert.deepEqual(tiers, ordered, 'tiers ascending with Other (0) last');
+  for (const g of groups) {
+    assert.ok(g.supports.length > 0, 'no empty tier groups');
+    assert.equal(g.roman, { 1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V' }[g.tier] ?? '—');
+    // Every card in a 1–5 group must actually be that crafting level.
+    if (g.tier >= 1 && g.tier <= 5) {
+      for (const s of g.supports) {
+        const sup = getGem(s.slug);
+        assert.equal(sup.crafting_level, g.tier, `${s.slug} belongs in tier ${g.tier}`);
+      }
+    }
+  }
 });
 
 test('getGem returns null for unknown slug', () => {
@@ -161,7 +185,7 @@ test('getRecommendedBy reverses recommends_support (supports only), sorted by na
   const target = ranked[0].g.slug;
   const recommender = buildGemViewModel(by[0].slug);
   assert.ok(
-    recommender.recommendedSupports.some((s) => s.slug === target),
+    recommender.recommendedSupports.flatMap((g) => g.supports).some((s) => s.slug === target),
     'forward list of a recommender contains the support',
   );
 });

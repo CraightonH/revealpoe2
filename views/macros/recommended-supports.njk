@@ -1,14 +1,21 @@
 {% from "macros/gem-card.njk" import gemBrowseCard %}
 {% macro recommendedSupports(vm) %}
 {% if vm.recommendedSupports.length %}
-<details class="rec-group" open style="--rec-accent:var(--color-gem)">
-  <summary class="rec-group-title">Recommended Supports <span class="rec-group-count">{{ vm.recommendedSupports.length }}</span></summary>
-  <p class="rec-group-hint">Support gems suggested for this skill — hover any card for its full tooltip.</p>
-  <div class="gem-browse-grid">
-    {% for s in vm.recommendedSupports %}
-    {{ gemBrowseCard(s) }}
-    {% endfor %}
+{% set total = 0 %}
+{% for g in vm.recommendedSupports %}{% set total = total + g.supports.length %}{% endfor %}
+<details class="rec-group" style="--rec-accent:var(--color-gem)">
+  <summary class="rec-group-title">Recommended Supports <span class="rec-group-count">{{ total }}</span></summary>
+  <p class="rec-group-hint">Support gems suggested for this skill, grouped by the uncut support level needed to create them — hover any card for its full tooltip.</p>
+  {% for g in vm.recommendedSupports %}
+  <div class="rec-tier">
+    <div class="rec-tier-label" title="{% if g.tier %}Level {{ g.tier }} support{% else %}Other{% endif %}">{{ g.roman }}</div>
+    <div class="gem-browse-grid">
+      {% for s in g.supports %}
+      {{ gemBrowseCard(s) }}
+      {% endfor %}
+    </div>
   </div>
+  {% endfor %}
 </details>
 {% endif %}
 {% endmacro %}

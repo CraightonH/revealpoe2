@@ -57,7 +57,10 @@ test('recommends_support edges match the current app resolution (first gem)', ()
     .filter((e) => e.type === 'recommends_support' && e.from === rec.id)
     .map((e) => idToSlug.get(e.to))
     .sort();
-  const appTargets = getRecommendedSupports(getGem(rec.slug)).map((s) => s.slug).sort();
+  const appTargets = getRecommendedSupports(getGem(rec.slug))
+    .flatMap((g) => g.supports)
+    .map((s) => s.slug)
+    .sort();
   assert.deepEqual(graphTargets, appTargets);
 });
 
@@ -80,7 +83,10 @@ test('recommends_support edges match the current app resolution (all gems)', () 
       .filter((e) => e.type === 'recommends_support' && e.from === rec.id)
       .map((e) => idToSlug.get(e.to))
       .sort();
-    const appTargets = getRecommendedSupports(gem).map((s) => s.slug).sort();
+    const appTargets = getRecommendedSupports(gem)
+      .flatMap((g) => g.supports)
+      .map((s) => s.slug)
+      .sort();
     assert.deepEqual(graphTargets, appTargets, `recommends_support mismatch for ${rec.slug}`);
   }
 });

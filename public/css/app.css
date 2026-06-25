@@ -383,6 +383,33 @@ body {
   font-size: 12.5px;
   margin: 4px 0 12px;
 }
+/* One tier row: a Roman-numeral label gutter + that tier's card grid. */
+.rec-tier {
+  display: grid;
+  grid-template-columns: 2.25rem 1fr;
+  gap: 12px;
+  align-items: start;
+}
+.rec-tier + .rec-tier {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--rec-accent) 22%, transparent);
+}
+.rec-tier-label {
+  font-family: var(--font-smallcaps);
+  font-size: 22px;
+  line-height: 1;
+  color: var(--rec-accent);
+  text-align: center;
+  padding-top: 4px;
+  user-select: none;
+}
+/* Center each tier's cards rather than pinning them left when a row isn't full.
+   Fixed-width columns (not 1fr) keep cards from stretching so centering reads. */
+.rec-tier .gem-browse-grid {
+  grid-template-columns: repeat(auto-fit, 250px);
+  justify-content: center;
+}
 
 /* Progressive disclosure for long "Recommended For" lists (some supports are
    recommended by ~100 skills). First N cards show inline; the rest collapse. */

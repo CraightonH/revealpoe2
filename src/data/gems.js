@@ -209,17 +209,34 @@ export function attributeRequirements(weights) {
   return out;
 }
 
-// Recommended supports for a gem, resolved via recommends_support edges.
-// Returns full browse-card view models so they render identically to /gems
-// (with the same hover tooltip via data-card-url).
+// Roman numerals for support gem tiers (crafting_level 1–5).
+const TIER_ROMAN = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V' };
+
+// Recommended supports for a gem, resolved via recommends_support edges and
+// grouped into tiers by the support's crafting_level (the uncut-support level
+// needed to create it), mirroring the in-game I–V layout. Card VMs are the same
+// full browse cards used on /gems, so hover tooltips/links render identically.
+// Returns ordered tier groups: [{ tier, roman, supports: [cardVM, …] }, …].
+// Levels 1–5 sort ascending; anything outside that range (crafting_level 0 or
+// null — rare uncut/lineage placeholders) collects into a trailing tier:0
+// "Other" group, emitted only when non-empty.
 export function getRecommendedSupports(gem) {
-  const out = [];
+  const byTier = new Map();
   for (const edge of edgesFrom(gem.id, 'recommends_support')) {
     const node = getNode(edge.to);
     if (!node) continue;
-    out.push(gemBrowseCardVM(node));
+    const lvl = node.props?.craftingLevel;
+    const tier = lvl >= 1 && lvl <= 5 ? lvl : 0;
+    if (!byTier.has(tier)) byTier.set(tier, []);
+    byTier.get(tier).push(gemBrowseCardVM(node));
   }
-  return out;
+  const groups = [];
+  for (const tier of [1, 2, 3, 4, 5, 0]) {
+    const supports = byTier.get(tier);
+    if (!supports || !supports.length) continue;
+    groups.push({ tier, roman: TIER_ROMAN[tier] ?? '—', supports });
+  }
+  return groups;
 }
 
 // The inverse of getRecommendedSupports: every gem that recommends THIS gem,
