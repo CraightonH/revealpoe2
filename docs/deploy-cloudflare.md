@@ -51,7 +51,11 @@ Each stage:
 5. **`wrangler pages deploy`** — uploads `dist/` to Pages.
 
 `build:index` also runs on `predev`/`prestart`, so the dev server has the same
-artifacts the static build does (dev ≈ prod parity — see **Dev vs prod**).
+graph + client artifacts the static build does (dev ≈ prod parity). Note
+`build:images` is **not** in `predev` — run `npm run build:images` once on a
+fresh checkout to populate `public/img/` for the dev server, else icons fall
+back to placeholders. The full inner-loop / lifecycle guidance lives in
+CLAUDE.md → **Development Workflow**.
 
 ## Why we build locally and upload (not Git-integration CI)
 

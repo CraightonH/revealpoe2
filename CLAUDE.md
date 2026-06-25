@@ -101,6 +101,33 @@ Stack: Express + Nunjucks server-rendered pages, reading the pre-built `build/gr
 - **Beginner-first**: surface `gem_tags.json` display names, `keywords.json` glossary, and stat translation text so users never see raw stat IDs.
 - **Search** works across gem names, item names, and stat descriptions via a pre-built full-text index — no backend. The matching/ranking engine (`public/js/query-core.js`) is a pure module imported by **both** the server (`src/data/search.js`, `theorycraft.js`) and the browser, so the static site's client-rendered search can't diverge from the server. Change matching there, once.
 
+## Development Workflow
+
+**Develop on the server. The static build is a packaging + verification step, not a second dev surface.** The prerenderer doesn't render anything itself — it boots the real Express app (`createApp()`) and crawls it, so what you see at `localhost` is exactly what gets frozen into `dist/`. Iterating against the running server is the fast loop; you only invoke the static build to *release* and to catch the handful of static-only failure modes (below).
+
+- **Inner loop:** `npm run dev` (`node --watch src/index.js`; `predev` rebuilds graph + client artifacts). Edit templates / CSS / `src/data/*` / `data/manual/*` and refresh. `--watch` restarts on save.
+- **Tests:** `npm test` (`pretest` rebuilds the graph). 284+ node:test cases; keep them green.
+- **⚠️ Images in dev:** `ddsUrl()` returns `/static/img/...webp`, which the dev server serves from `public/img/` — **but `predev` does NOT run `build:images`** (no network round-trip / rate-limited CDN on every start). On a fresh checkout or after a scrape, run `npm run build:images` **once** so real icons appear. Skip it and you get the deterministic placeholder fallback — by design, fine for most UI work; only run it when working on icon layout.
+- **Static-only failure modes** — verify via `npm run build:static` (or a preview deploy) before promoting, because they don't exist on the dev server: (1) client-rendered `/search` & `/theorycraft` (dev uses live htmx routes; static strips `hx-*` and renders from `public/generated/*.json` — divergence risk); (2) a new client-fetched URL not being crawler-discoverable (404s only on static — see Deployment); (3) Pages routing / MIME / TLS.
+
+### Complete lifecycle
+
+```
+edit code/templates/data  ─► npm run dev            (iterate on localhost)
+                                  │
+game patch? ─► python scripts/scrape.py ─► npm run build:images   (refresh data + icons)
+                                  │
+ready to ship ─► npm run build:static                (full local build; catches static-only breakage)
+                                  │
+                          npm run deploy              (build:static + wrangler; non-main branch ⇒ PREVIEW)
+                                  │
+                          verify on the .pages.dev URL (Node fetch, not curl)
+                                  │
+                          merge to main ─► npm run deploy   (⇒ PRODUCTION)
+```
+
+The content-update loop after a game patch is just: `scrape.py` → `npm run deploy` (deploy runs `build:images` itself, so icons sync automatically — the manual `build:images` above is only for seeing them in `dev` first).
+
 ## Deployment: Static Site
 
 Production is a **static prerender** of the app, hosted on **Cloudflare Pages** (free tier). The full reference is `docs/deploy-cloudflare.md`; the essentials:
