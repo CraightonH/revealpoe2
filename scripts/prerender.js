@@ -83,6 +83,13 @@ function extractLinks(html) {
 async function copyPublic() {
   // The app serves public/ at /static; mirror that into dist/static.
   await fsp.cp(PUBLIC, path.join(DIST, 'static'), { recursive: true });
+  // Cloudflare Pages reads _headers / _redirects only from the deploy root, so
+  // they live at the repo root (not public/, which maps to dist/static/) and
+  // are copied straight into dist/.
+  for (const f of ['_headers', '_redirects']) {
+    const src = path.join(root, f);
+    if (fs.existsSync(src)) await fsp.cp(src, path.join(DIST, f));
+  }
 }
 
 async function run() {

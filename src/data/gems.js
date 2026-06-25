@@ -4,6 +4,7 @@ import { hasDefinition } from './keywordDefs.js';
 import { ATTR_ABBR, ATTR_KEY, ATTR_ORDER } from './attributes.js';
 import { getNode, nodeBySlug, nodesByKind, edgesFrom, edgesTo } from './graph.js';
 import { getUniqueCard } from './uniques.js';
+import { getPassiveNode } from './passiveTree.js';
 
 // Presentation adapter over the graph artifact (build/graph.json). All gem/skill
 // data resolution (identity, slugs, origins, effect sections, recommended
@@ -236,24 +237,53 @@ export function getRecommendedBy(gem) {
   return out;
 }
 
-// Uniques whose grant resolves to one of this gem's granted skills. The graph
-// models item grants the same way as gem grants — a `grants` edge from the
-// source (gem OR unique) to the shared skill node — so the reverse lookup is
-// free: walk the gem's grants edges to its skill(s), then walk grants edges
-// backwards from each skill to find unique sources. Returns full browse cards,
-// deduped by slug and sorted by name. Empty for the common (gem-only) case.
-export function getGrantingUniques(gem) {
-  const skillIds = edgesFrom(gem.id, 'grants').map((e) => e.to);
+// Every non-gem node that grants this skill (the reverse of the `grants` edge).
+// Two edge topologies converge here and both must be walked:
+//   • unique items grant the shared *skill* node — gem→skill→source
+//   • passives grant the *gem* node directly       — source→gem
+// so we collect inbound grants on the gem itself AND on each skill it grants.
+// Gems are excluded — a gem granting its own skill is not an external source.
+// Deduped by node id. Callers filter by kind and build the appropriate card.
+function getGrantingSourceNodes(gem) {
   const seen = new Set();
   const out = [];
-  for (const skillId of skillIds) {
-    for (const edge of edgesTo(skillId, 'grants')) {
+  const collect = (id) => {
+    for (const edge of edgesTo(id, 'grants')) {
       const node = getNode(edge.from);
-      if (!node || node.kind !== 'unique' || seen.has(node.slug)) continue;
-      seen.add(node.slug);
-      const card = getUniqueCard(node.slug);
-      if (card) out.push(card);
+      if (!node || node.kind === 'gem' || seen.has(node.id)) continue;
+      seen.add(node.id);
+      out.push(node);
     }
+  };
+  collect(gem.id); // passives grant the gem node directly
+  for (const e of edgesFrom(gem.id, 'grants')) collect(e.to); // uniques grant the skill node
+  return out;
+}
+
+// Unique items that grant this gem's skill. Returns full browse cards, deduped
+// by slug and sorted by name. Empty for the common (gem-only) case.
+export function getGrantingUniques(gem) {
+  const seen = new Set();
+  const out = [];
+  for (const node of getGrantingSourceNodes(gem)) {
+    if (node.kind !== 'unique' || seen.has(node.slug)) continue;
+    seen.add(node.slug);
+    const card = getUniqueCard(node.slug);
+    if (card) out.push(card);
+  }
+  out.sort((a, b) => a.name.localeCompare(b.name));
+  return out;
+}
+
+// Passive nodes (keystones, notables, ascendancy notables) that grant this gem.
+// Returns passive browse records (name, icon, stat lines, ascendancy theming),
+// sorted by name. Empty unless the skill has a passive-tree source.
+export function getGrantingPassives(gem) {
+  const out = [];
+  for (const node of getGrantingSourceNodes(gem)) {
+    if (node.kind !== 'passive') continue;
+    const rec = getPassiveNode(node.slug);
+    if (rec) out.push(rec);
   }
   out.sort((a, b) => a.name.localeCompare(b.name));
   return out;
@@ -375,9 +405,10 @@ export function buildGemViewModel(slug) {
       : null,
     sections,
     footer: sp?.isActiveSkill ? SKILL_PANEL_FOOTER : null,
-    // Uniques that grant this gem's skill (reverse of the grants edge). Usually
-    // empty — only skills with a unique-item source populate it.
+    // Sources that grant this gem's skill (reverse of the grants edge). Usually
+    // empty; uniques and passive-tree nodes are rendered as separate groups.
     grantedBy: getGrantingUniques(gem),
+    grantedByPassives: getGrantingPassives(gem),
     // Weapon classes whose default attack is this gem (reverse of the derived
     // default_skill overlay edge). Populated only for default weapon skills.
     defaultSkillClasses: getDefaultSkillClasses(gem),

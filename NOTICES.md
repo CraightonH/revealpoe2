@@ -57,6 +57,15 @@ https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2
 Community asset gateway used to source game icon and art images.
 https://www.ggpk.exposed/
 
+### PoE2DB
+
+Fallback source for the small number of game art images that ggpk.exposed cannot
+serve (its webp proxy 500s on a handful of assets). Images are fetched at build
+time and self-hosted, not hotlinked. PoE2DB's own wiki text is licensed
+CC BY-NC-SA 3.0; the game art itself remains the property of Grinding Gear Games
+(see above) and is used here under the same fan-content terms.
+https://poe2db.tw/
+
 ## Fonts
 
 - **Fontin / Fontin SmallCaps** — by Jos Buivenga (exljbris), https://www.exljbris.com/ —

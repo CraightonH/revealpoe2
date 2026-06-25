@@ -93,6 +93,28 @@ test('buildGemViewModel handles a support gem (no active skill)', () => {
   assert.ok(Array.isArray(vm.sections)); // support skills still expose stat sections
 });
 
+test('grantedBy surfaces a unique whose grant lives on the live skill node (Mist Raven <- The Auspex)', () => {
+  const vm = buildGemViewModel('mist-raven');
+  assert.ok(vm.grantedBy.some((u) => u.name === 'The Auspex'), 'The Auspex should grant Mist Raven');
+});
+
+test('grantedBy surfaces variant-gated unique grants (His Vile Intrusion <- The Unborn Lich)', () => {
+  // The Unborn Lich grants His Vile Intrusion only on {variant:5}; the builder
+  // must edge grants from EVERY variant, not just the "current" one.
+  const vm = buildGemViewModel('his-vile-intrusion');
+  assert.ok(vm.grantedBy.some((u) => u.name === 'The Unborn Lich'), 'The Unborn Lich should grant His Vile Intrusion');
+});
+
+test('grantedByPassives surfaces ascendancy-notable grant sources (Inevitable Agony <- Inevitability)', () => {
+  // Inevitability (Chronomancer notable) grants the Inevitable Agony gem node
+  // directly — the reverse lookup must include non-unique sources.
+  const vm = buildGemViewModel('inevitable-agony');
+  assert.ok(
+    vm.grantedByPassives.some((p) => p.name === 'Inevitability'),
+    'Inevitability notable should grant Inevitable Agony',
+  );
+});
+
 test('typeLine resolves a player-facing category, not an internal token', () => {
   // archmage's types[0] is the internal token "OngoingSkill"; the category is "Buff".
   assert.equal(buildGemViewModel('archmage').typeLine, 'Buff');

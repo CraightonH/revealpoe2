@@ -1,14 +1,24 @@
 {% from "macros/unique-card.njk" import uniqueListCard %}
+{% from "macros/passive.njk" import passiveBrowseCard %}
 {% macro grantedBy(vm) %}
-{% if vm.grantedBy.length %}
+{% if vm.grantedBy.length or vm.grantedByPassives.length %}
 <details class="rec-group" open style="--rec-accent:var(--color-unique)">
-  <summary class="rec-group-title">Granted by <span class="rec-group-count">{{ vm.grantedBy.length }}</span></summary>
-  <p class="rec-group-hint">Unique items that grant this skill — hover any card for its full tooltip.</p>
+  <summary class="rec-group-title">Granted by <span class="rec-group-count">{{ vm.grantedBy.length + vm.grantedByPassives.length }}</span></summary>
+  <p class="rec-group-hint">Items and passives that grant this skill — hover any card for its full tooltip.</p>
+  {% if vm.grantedBy.length %}
   <div class="bases-list-grid">
     {% for u in vm.grantedBy %}
     {{ uniqueListCard(u) }}
     {% endfor %}
   </div>
+  {% endif %}
+  {% if vm.grantedByPassives.length %}
+  <div class="keystone-index-grid">
+    {% for p in vm.grantedByPassives %}
+    {{ passiveBrowseCard(p, 'passive') }}
+    {% endfor %}
+  </div>
+  {% endif %}
 </details>
 {% endif %}
 {% endmacro %}

@@ -33,6 +33,11 @@ const CSS_DIR = path.join(root, 'public', 'css');
 const IMG_DIR = path.join(root, 'public', 'img');
 const MANIFEST = path.join(IMG_DIR, '_manifest.json');
 const CDN = 'https://image.ggpk.exposed/poe2';
+// poe2db mirrors the same art tree pre-converted to webp. Used ONLY as a
+// fallback for the handful of assets ggpk's webp proxy 500s on (its backend
+// 302-errors on art it can't convert). Same path layout as imageRelPath.
+const FALLBACK_CDN = 'https://cdn.poe2db.tw/image';
+const FALLBACK_REFERER = 'https://poe2db.tw/';
 const USER_AGENT = 'poe2wiki-image-sync/1.0 (+self-hosting referenced art)';
 const TIMEOUT = 30_000;
 const RETRIES = 5;
@@ -132,9 +137,18 @@ async function run() {
   const manifest = FORCE ? {} : await loadManifest();
   const desiredFiles = new Set(); // relative img paths we should keep
 
-  const stats = { fresh: 0, updated: 0, added: 0, failed: [], missing: 0 };
+  const stats = { fresh: 0, updated: 0, added: 0, recovered: 0, failed: [], missing: 0 };
   const items = [...dds];
   let cursor = 0;
+
+  // poe2db origin hotlink-protects on cache miss, so a Referer is required.
+  // Path is per-segment encoded (spaces, apostrophes in unique names).
+  async function fetchFallback(rel, etag) {
+    const url = `${FALLBACK_CDN}/${rel.split('/').map(encodeURIComponent).join('/')}`;
+    const headers = { 'User-Agent': USER_AGENT, Referer: FALLBACK_REFERER };
+    if (!FORCE && etag) headers['If-None-Match'] = etag;
+    return fetchWithRetry(url, headers);
+  }
 
   async function syncOne(ddsPath) {
     const rel = imageRelPath(ddsPath);          // e.g. Art/.../Foo.webp
@@ -143,30 +157,42 @@ async function run() {
     const onDisk = fs.existsSync(dest);
     const prev = manifest[ddsPath];
 
-    const headers = { 'User-Agent': USER_AGENT };
-    if (!FORCE && onDisk && prev?.etag) headers['If-None-Match'] = prev.etag;
+    const commit = async (buf, etag, source) => {
+      await fsp.mkdir(path.dirname(dest), { recursive: true });
+      await fsp.writeFile(dest, buf);
+      manifest[ddsPath] = { etag: etag || null, bytes: buf.length, ...(source ? { source } : {}) };
+      if (onDisk) stats.updated++; else stats.added++;
+      if (source === 'poe2db') stats.recovered++;
+    };
 
-    let res;
+    // Primary: ggpk webp proxy, revalidated against our stored ETag when we
+    // already hold a ggpk-sourced copy. (A poe2db-sourced ETag means ggpk was
+    // failing last run — skip the conditional so a recovered ggpk serves 200.)
+    let primary = 'no response';
     try {
-      res = await fetchWithRetry(`${CDN}/${ddsPath}?format=webp`, headers);
+      const headers = { 'User-Agent': USER_AGENT };
+      if (!FORCE && onDisk && prev?.etag && prev.source !== 'poe2db') headers['If-None-Match'] = prev.etag;
+      const res = await fetchWithRetry(`${CDN}/${ddsPath}?format=webp`, headers);
+      if (res.status === 304) { stats.fresh++; return; }
+      if (res.status === 200) return commit(Buffer.from(await res.arrayBuffer()), res.headers.get('etag'));
+      primary = `HTTP ${res.status}`;
     } catch (err) {
-      if (onDisk) { stats.failed.push([ddsPath, `kept stale: ${err.message}`]); }
-      else { stats.missing++; stats.failed.push([ddsPath, `no copy: ${err.message}`]); }
-      return;
+      primary = err.message;
     }
 
-    if (res.status === 304) { stats.fresh++; return; }
-    if (res.status !== 200) {
-      if (!onDisk) stats.missing++;
-      stats.failed.push([ddsPath, `HTTP ${res.status}`]);
-      return;
+    // Fallback: poe2db. Recovers assets ggpk can't convert; revalidated against
+    // our stored ETag when the prior copy already came from poe2db.
+    try {
+      const fbEtag = onDisk && prev?.source === 'poe2db' ? prev.etag : null;
+      const fb = await fetchFallback(rel, fbEtag);
+      if (fb.status === 304) { stats.fresh++; return; }
+      if (fb.status === 200) return commit(Buffer.from(await fb.arrayBuffer()), fb.headers.get('etag'), 'poe2db');
+      if (onDisk) stats.failed.push([ddsPath, `kept stale: ggpk ${primary}, poe2db HTTP ${fb.status}`]);
+      else { stats.missing++; stats.failed.push([ddsPath, `ggpk ${primary}, poe2db HTTP ${fb.status}`]); }
+    } catch (err) {
+      if (onDisk) stats.failed.push([ddsPath, `kept stale: ggpk ${primary}, poe2db ${err.message}`]);
+      else { stats.missing++; stats.failed.push([ddsPath, `ggpk ${primary}, poe2db ${err.message}`]); }
     }
-
-    const buf = Buffer.from(await res.arrayBuffer());
-    await fsp.mkdir(path.dirname(dest), { recursive: true });
-    await fsp.writeFile(dest, buf);
-    manifest[ddsPath] = { etag: res.headers.get('etag') || null, bytes: buf.length };
-    if (onDisk) stats.updated++; else stats.added++;
   }
 
   async function worker() {
@@ -195,7 +221,8 @@ async function run() {
   console.log(
     `fetch-images: ${dds.size} referenced | ` +
     `${stats.added} added, ${stats.updated} updated, ${stats.fresh} unchanged, ` +
-    `${pruned} pruned${stats.missing ? `, ${stats.missing} MISSING` : ''}`,
+    `${pruned} pruned${stats.recovered ? `, ${stats.recovered} via poe2db` : ''}` +
+    `${stats.missing ? `, ${stats.missing} MISSING` : ''}`,
   );
   if (stats.failed.length) {
     console.warn(`fetch-images: ${stats.failed.length} fetch issue(s):`);

@@ -1,0 +1,15 @@
+# Cloudflare Pages headers. Read only from the deploy root (dist/_headers);
+# scripts/prerender.js copies this file there. Path patterns match deployed URLs.
+
+# Self-hosted game art (/static/img/*). Paths are NOT content-hashed — the image
+# fetcher updates art in place (same filename) when ggpk's ETag changes on a
+# re-scrape — so we must NOT mark these immutable. A day of browser caching with
+# a week of background revalidation eliminates the per-icon revalidation roundtrip
+# Cloudflare Pages otherwise forces (its default is max-age=0, must-revalidate),
+# while the strong ETag still guarantees correctness once the TTL lapses.
+/static/img/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+# Fonts effectively never change; cache them hard for a year.
+/static/fonts/*
+  Cache-Control: public, max-age=31536000

@@ -250,11 +250,32 @@ up in unit tests.
   and fails TLS to Cloudflare. Use Node's `fetch` or Chrome (own TLS stacks)
   for verification, not `curl`.
 
+## Caching headers (`_headers`)
+
+Cloudflare Pages defaults every asset to `Cache-Control: public, max-age=0,
+must-revalidate` — correct (a strong ETag is emitted, so conditional requests
+get `304`) but it forces a revalidation roundtrip per asset on every page view.
+The repo-root **`_headers`** file overrides this for static art and fonts;
+`prerender.js`'s `copyPublic()` copies it (and `_redirects`, if present) to
+`dist/_headers`, the only location Pages reads.
+
+- It lives at the **repo root**, not `public/` — `public/` maps to `dist/static/`,
+  and Pages ignores `_headers` anywhere but the deploy root.
+- Art (`/static/img/*`) uses `max-age=86400, stale-while-revalidate=604800`, **not
+  `immutable`**: image paths are *not* content-hashed and the fetcher rewrites art
+  in place (same filename) when ggpk's ETag changes on a re-scrape, so a long
+  immutable TTL would pin stale icons. The ETag still enforces correctness once
+  the TTL lapses.
+- Verify post-deploy with a Node `fetch` against a `/static/img/...webp` URL and
+  assert the `Cache-Control` header (it can't be checked locally — Pages applies
+  `_headers` at the edge).
+
 ## File map
 
 | Path | Role |
 |------|------|
 | `scripts/prerender.js` | crawl the app → `dist/` |
+| `_headers` | Cloudflare Pages cache policy (copied to `dist/_headers`) |
 | `scripts/build-index.js` | emit `public/generated/{search-index,browse-cards}.json` |
 | `public/js/query-core.js` | shared pure query engine (server + browser) |
 | `public/js/search-client.js` | client search dropdown |

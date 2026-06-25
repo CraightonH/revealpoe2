@@ -218,8 +218,14 @@ export function uniqueNodes() {
         .join(' ')
         .toLowerCase();
 
+      // Grant edges span EVERY variant, not just the live one: a variant-gated
+      // unique (e.g. The Unborn Lich, one granted skill per variant) genuinely
+      // *can* grant each, so "what grants this skill" must see them all. Deduped,
+      // source order preserved.
+      const grantNames = [...new Set(variants.flatMap(grantNamesOf))];
+
       nodes.push(makeNode({ id, kind: KINDS.UNIQUE, name: parsed.name, slug, props, search }));
-      records.push({ id, slug, name: parsed.name, base: parsed.base, grantNames: grantNamesOf(cur) });
+      records.push({ id, slug, name: parsed.name, base: parsed.base, grantNames });
     }
   }
   return { nodes, records };
