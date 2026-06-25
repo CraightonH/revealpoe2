@@ -95,12 +95,23 @@ Key layout patterns already established (do not drift from these):
 
 ## Architecture Decisions
 
-Stack: Express + Nunjucks server-rendered pages, reading the pre-built `build/graph.json` artifact (see **Data Architecture: the Graph**). When building:
+Stack: Express + Nunjucks server-rendered pages, reading the pre-built `build/graph.json` artifact (see **Data Architecture: the Graph**). **Production ships as a pure static prerender of this same app to Cloudflare Pages** — the server runs at build time, not at runtime (see **Deployment: Static Site**). When building:
 
 - **Data access layer** is the graph: `src/data/graph.js` plus per-domain presentation adapters (`src/data/gems.js`, `uniques.js`, …). All resolution happens at build time in `scripts/graph/*`; runtime code only reads nodes/edges and renders. Never reintroduce `data/source/` reads into `src/`.
 - **Relationships** are the primary UX value — skill gem → recommended supports → what those supports do → which weapon types they apply to. Model them as graph edges and make them traversable (and reverse-traversable via `edgesTo`).
 - **Beginner-first**: surface `gem_tags.json` display names, `keywords.json` glossary, and stat translation text so users never see raw stat IDs.
-- **Search** needs to work across gem names, item names, and stat descriptions — the data is local so full-text search over pre-indexed JSON is feasible without a backend.
+- **Search** works across gem names, item names, and stat descriptions via a pre-built full-text index — no backend. The matching/ranking engine (`public/js/query-core.js`) is a pure module imported by **both** the server (`src/data/search.js`, `theorycraft.js`) and the browser, so the static site's client-rendered search can't diverge from the server. Change matching there, once.
+
+## Deployment: Static Site
+
+Production is a **static prerender** of the app, hosted on **Cloudflare Pages** (free tier). The full reference is `docs/deploy-cloudflare.md`; the essentials:
+
+- **One command:** `npm run deploy` → `build:static` (`build:graph` → `build:index` → `scripts/prerender.js` into `dist/`) → `wrangler pages deploy`.
+- **Build locally, upload `dist/`** — never Git-integration CI. `data/source/` is gitignored, so Cloudflare's build box has no data to compile; the local machine that has the data is the build box. Content update loop after a patch: `python scripts/scrape.py` → `npm run deploy`.
+- **Prerender is a link crawler** (`scripts/prerender.js`): it boots the real app and walks every internally reachable URL (`href`, `hx-get`, `data-card-url`, and `data-keyword` → `/api/keyword/*`), so it renders exactly what's linked and a dead internal link **fails the build**.
+- **⚠️ New client-fetched endpoints must be crawler-discoverable.** The crawler only finds URLs present in those attributes. JS that fetches a URL built another way (bare id, computed path) won't be prerendered and will 404 on the static site (this is the bug that hit keyword popups). Expose it via a crawlable attribute, or extend `extractLinks()` in `prerender.js`.
+- **Dynamic features are client-rendered.** `/search` and `/theorycraft/results` are excluded from the crawl; `search-client.js` / `theorycraft-client.js` render from prebuilt artifacts in `public/generated/` (`search-index.json` = `allDocs()`; `browse-cards.json` = real macro-rendered cards) using the shared `query-core.js`. They strip the `hx-*` attributes at load so htmx never fires. The server routes + `hx-get` attributes stay (tests, dev parity, no-JS fallback) — do not remove them.
+- **Verify against the deployed site, not just unit tests** — Pages routing, module MIME types, and client rendering don't show up in `npm test`. Use Node `fetch` or headless Chrome, **not `curl`** (the corporate `SSL_CERT_FILE` breaks TLS to Cloudflare).
 
 ## Data Notes
 
