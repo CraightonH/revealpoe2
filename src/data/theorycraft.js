@@ -4,68 +4,12 @@ import { listItemClasses, getItemClass, affixBaseTargets } from './baseItems.js'
 import { listKeystones, listNotables } from './passiveTree.js';
 import { listModGroups } from './mods.js';
 import { getNode } from './graph.js';
+import { parseQuery, docMatches, groupQuery } from '../../public/js/query-core.js';
 
-const FIELDS = new Set(['type', 'color', 'tag', 'req', 'grants']);
-
-// Tokenize a raw query into terms, honoring "quoted phrases", -exclusion,
-// and field:value. Bare words, quoted phrases, and unknown field names all
-// become free-text terms (the unknown field name is dropped). Never throws.
-export function parseQuery(q) {
-  const terms = [];
-  const re = /(-?)(?:([a-zA-Z]+):)?(?:"([^"]*)"|(\S+))/g;
-  let m;
-  while ((m = re.exec(q ?? '')) !== null) {
-    if (m[0].trim() === '') { re.lastIndex++; continue; }
-    const negate = m[1] === '-';
-    const rawField = m[2] ? m[2].toLowerCase() : null;
-    const value = (m[3] !== undefined ? m[3] : (m[4] ?? '')).toLowerCase();
-    if (!value) continue;
-    if (rawField && FIELDS.has(rawField)) {
-      terms.push({ kind: 'field', field: rawField, value, negate });
-    } else {
-      terms.push({ kind: 'text', value, negate });
-    }
-  }
-  return { terms };
-}
-
-const GROUPS = [
-  { category: 'gem',      label: 'Skill Gems' },
-  { category: 'support',  label: 'Support Gems' },
-  { category: 'spirit',   label: 'Spirit Skills' },
-  { category: 'unique',   label: 'Unique Items' },
-  { category: 'affix',    label: 'Affixes' },
-  { category: 'keystone', label: 'Keystones' },
-  { category: 'notable',  label: 'Notables' },
-  { category: 'base',     label: 'Base Items' },
-];
-
-const COLOR_WORDS = { red: 'r', green: 'g', blue: 'b', white: 'w' };
-
-function termMatches(doc, term) {
-  let hit;
-  if (term.kind === 'text') {
-    hit = doc.text.includes(term.value);
-  } else {
-    switch (term.field) {
-      case 'type':   hit = doc.category.includes(term.value); break;
-      case 'color': {
-        const v = COLOR_WORDS[term.value] ?? term.value;
-        hit = (doc.color || '').includes(v);
-        break;
-      }
-      case 'tag':    hit = doc.tags.some((t) => t.includes(term.value)); break;
-      case 'req':    hit = doc.req.some((r) => r.includes(term.value)); break;
-      case 'grants': hit = doc.grants.some((g) => g.includes(term.value)); break;
-      default:       hit = doc.text.includes(term.value);
-    }
-  }
-  return term.negate ? !hit : hit;
-}
-
-export function docMatches(doc, terms) {
-  return terms.every((t) => termMatches(doc, t));
-}
+// Query parsing/matching/grouping live in the pure, browser-shared core so
+// client-side Theory Crafting can't diverge from the server. Re-export the
+// pieces the tests and routes import from here.
+export { parseQuery, docMatches };
 
 // Per-category slug → browse-card lookup. The same condensed card objects the
 // /gems, /uniques, /bases and /keystones pages render, so theorycraft results
@@ -97,31 +41,23 @@ function cardMapFor(category) {
 }
 
 export function runQuery(q, { docs = allDocs(), capPerGroup = 100 } = {}) {
-  const { terms } = parseQuery(q);
-  const query = (q ?? '').trim();
-  if (!terms.length) return { empty: true, groups: [], total: 0, query };
-  const matched = docs.filter((d) => docMatches(d, terms));
-  const groups = [];
-  for (const g of GROUPS) {
-    const items = matched.filter((d) => d.category === g.category);
-    if (!items.length) continue;
-    // Attach the full browse-card object to each shown item so the template can
-    // render the real /gems, /uniques, /bases, /keystones card. Affixes have no
-    // browse card (card stays null → template keeps the compact fallback).
+  const base = groupQuery(q, { docs, capPerGroup });
+  if (base.empty || !base.groups.length) return base;
+  // Attach the full browse-card object to each shown item so the template can
+  // render the real /gems, /uniques, /bases, /keystones card. Affixes have no
+  // browse card (card stays null → template keeps the compact fallback). The
+  // browser path does the same lookup against browse-cards.json.
+  const groups = base.groups.map((g) => {
     const map = cardMapFor(g.category);
-    const shown = items.slice(0, capPerGroup).map((it) => ({
-      ...it,
-      card: map && it.slug ? map.get(it.slug) ?? null : null,
-    }));
-    groups.push({
-      category: g.category,
-      label: g.label,
-      total: items.length,
-      shown: shown.length,
-      items: shown,
-    });
-  }
-  return { empty: false, groups, total: matched.length, query };
+    return {
+      ...g,
+      items: g.items.map((it) => ({
+        ...it,
+        card: map && it.slug ? map.get(it.slug) ?? null : null,
+      })),
+    };
+  });
+  return { ...base, groups };
 }
 
 const stripHtml = (s) => String(s ?? '').replace(/<[^>]*>/g, ' ');

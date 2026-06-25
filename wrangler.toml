@@ -1,0 +1,11 @@
+# Cloudflare Pages config. The site is a pure static upload — `data/source/` is
+# gitignored (~250M) so the graph + pages MUST be built locally (where the data
+# lives) and the prebuilt dist/ uploaded directly. Cloudflare's Git-integration
+# build cannot run here (no source data in the repo), so we deploy via:
+#   npm run deploy        ->  wrangler pages deploy
+#
+# Free tier: unlimited requests/bandwidth, 20,000 files/deploy (we use ~5.5k),
+# 25 MiB/file max, 500 builds/month.
+name = "poe2wiki"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-06-25"

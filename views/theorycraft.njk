@@ -85,5 +85,8 @@
     {% include "partials/theorycraft-results.njk" %}
   </div>
   <script src="/static/js/theorycraft.js" defer></script>
+  <!-- Client-side results: renders from the prebuilt index + browse cards,
+       taking over from the /theorycraft/results route on the static build. -->
+  <script type="module" src="/static/js/theorycraft-client.js"></script>
 </div>
 {% endblock %}
