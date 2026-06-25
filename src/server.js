@@ -17,11 +17,14 @@ export function createApp() {
 
   const app = express();
 
-  nunjucks.configure(path.join(root, 'views'), {
+  const env = nunjucks.configure(path.join(root, 'views'), {
     autoescape: true,
     express: app,
     noCache: process.env.NODE_ENV !== 'production',
   });
+  // Absolute origin for og:image/twitter:image URLs (scrapers need absolute).
+  // Overridable for preview deploys; defaults to production.
+  env.addGlobal('SITE_URL', (process.env.SITE_URL || 'https://poe2wiki.pages.dev').replace(/\/$/, ''));
   app.set('view engine', 'njk');
 
   app.use('/static', express.static(path.join(root, 'public')));

@@ -2,6 +2,10 @@
 {% from "macros/base-card.njk" import baseCard %}
 {% from "macros/nav.njk" import breadcrumb %}
 {% block title %}{{ vm.name }} — PoE2 Wiki{% endblock %}
+{% block og_type %}article{% endblock %}
+{% block og_title %}{{ vm.name }} — PoE2 Wiki{% endblock %}
+{% block og_desc %}{{ vm.className }} base item{% endblock %}
+{% block og_image %}/static/og/base/{{ vm.slug }}.png{% endblock %}
 {% block content %}
 <div class="page">
   <div class="gem-detail">

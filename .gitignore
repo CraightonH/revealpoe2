@@ -11,6 +11,9 @@ public/generated/
 # Self-hosted game art, mirrored from ggpk.exposed by scripts/fetch-images.js.
 # Large (~80M) and regenerable; not committed.
 public/img/
+# OG preview-card PNGs, rendered from the graph by scripts/build-og.js.
+# Regenerable; not committed.
+public/og/
 # Scraped game data — large, regenerable via scripts/scrape.py. Not committed.
 # (data/manual/ IS committed — hand-authored overlays.)
 data/source/

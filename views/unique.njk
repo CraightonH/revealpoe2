@@ -1,6 +1,10 @@
 {% extends "base.njk" %}
 {% from "macros/unique-card.njk" import uniqueCard %}
 {% block title %}{{ vm.name }} — PoE2 Wiki{% endblock %}
+{% block og_type %}article{% endblock %}
+{% block og_title %}{{ vm.name }} — PoE2 Wiki{% endblock %}
+{% block og_desc %}{{ vm.className or vm.base }}{% if vm.flavour %} — {{ vm.flavour | join(' ') }}{% endif %}{% endblock %}
+{% block og_image %}/static/og/unique/{{ vm.slug }}.png{% endblock %}
 {% block content %}
 <div class="page">
   <div class="gem-detail">

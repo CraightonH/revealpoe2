@@ -13,7 +13,8 @@
     "build:graph": "node scripts/graph/cli.js",
     "build:index": "node scripts/build-index.js",
     "build:images": "node scripts/fetch-images.js",
-    "build:static": "npm run build:graph && npm run build:images && npm run build:index && node scripts/prerender.js",
+    "build:og": "node scripts/build-og.js",
+    "build:static": "npm run build:graph && npm run build:images && npm run build:index && npm run build:og && node scripts/prerender.js",
     "deploy": "npm run build:static && wrangler pages deploy dist --branch main",
     "deploy:preview": "npm run build:static && wrangler pages deploy dist --branch \"preview-$(git rev-parse --abbrev-ref HEAD)\"",
     "prestart": "npm run build:graph && npm run build:index",
@@ -21,9 +22,12 @@
     "pretest": "npm run build:graph"
   },
   "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "dotenv": "^16.4.5",
     "express": "^5.1.0",
-    "nunjucks": "^3.2.4"
+    "nunjucks": "^3.2.4",
+    "satori": "^0.26.0",
+    "sharp": "^0.35.2"
   },
   "devDependencies": {
     "supertest": "^7.0.0",
