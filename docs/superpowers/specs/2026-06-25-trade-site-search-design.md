@@ -15,21 +15,30 @@ Official site, GET-prefilled search:
 https://www.pathofexile.com/trade2/search/poe2/<League>?q=<url-encoded JSON>
 ```
 
-`<League>` is `Runes of Aldur` (URL-encoded `Runes%20of%20Aldur`) — see **League handling** below. The `q` payload is the standard trade query object. Every query carries the **Instant Buyout Only** trade filter (`sale_type: "priced"`):
+`<League>` is `Runes of Aldur` (URL-encoded `Runes%20of%20Aldur`) — see **League handling** below. The `q` payload is the standard trade query object. Every query uses `status: { option: "securable" }`:
 
-- **unique:** `{"query":{"status":{"option":"online"},"name":"<unique name>","type":"<base type>","filters":{"trade_filters":{"filters":{"sale_type":{"option":"priced"}}}},"stats":[{"type":"and","filters":[]}]}}`
-- **base:** `{"query":{"status":{"option":"online"},"type":"<base name>","filters":{"trade_filters":{"filters":{"sale_type":{"option":"priced"}}}},"stats":[{"type":"and","filters":[]}]}}`
-- **gem:** `{"query":{"status":{"option":"online"},"type":"<gem name>","filters":{"trade_filters":{"filters":{"sale_type":{"option":"priced"}}}},"stats":[{"type":"and","filters":[]}]}}`
+- **unique:** `{"query":{"status":{"option":"securable"},"name":"<unique name>","type":"<base type>","stats":[{"type":"and","filters":[]}]}}`
+- **base:** `{"query":{"status":{"option":"securable"},"type":"<base name>","stats":[{"type":"and","filters":[]}]}}`
+- **gem:** see **Gem default filters** below — gems add misc filters on top of `type`.
 
-Uniques pin both `name` and base `type` for precision; bases and gems search by `type` alone.
+Uniques pin both `name` and base `type` for precision; bases search by `type` alone.
 
-### Instant Buyout Only (not plain Online)
+### Status: `securable` (Instant Buyout)
 
-`sale_type: "priced"` restricts results to listings with a real buyout / fixed price — i.e. immediately purchasable. A plain Online search (no sale-type filter) also surfaces *no-listed-price* / whisper-for-price listings, which are dominated by AFK price-fixers and scammers. `status: online` is still set (you want live sellers for an instant buy); the buyout filter is what excludes the junk. Encoding confirmed against a working PoE2 trade-link tool (`05K4R/poe-2-pricer`).
+`status: { option: "securable" }` restricts results to listings purchasable through PoE2's secured/instant-buy trade system — i.e. immediately buyable, excluding the no-price / whisper-for-price listings that a plain "online" search surfaces (dominated by AFK price-fixers and scammers). This value is taken directly from a live PoE2 saved search on the current trade site, and supersedes the older `online` + `sale_type: "priced"` combo (from a pre-secured-trade third-party tool).
 
-### Gem caveat
+### Gem default filters
 
-In PoE2, specific skill/support gems generally aren't tradeable as distinct items — players trade generic *Uncut* gems. A gem trade-search by name will often return **empty**. We include the icon anyway: the affordance is consistent across all card kinds, the failure mode is a harmless empty result page, and the cost is near-zero. Documented in `docs/trade-integration.md`; trivially droppable if it proves noisy.
+Cut skill gems **are** tradeable as distinct Listed Items (search by `type` = gem name). Rather than a bare name search, the gem trade link defaults to the setup players actually price-check: **level 20, 20% quality, corrupted, +1**. Canonical filter ids (from `/api/trade2/data/filters`):
+
+- `gem_level` → `misc_filters` (minMax)
+- `corrupted` → `misc_filters`, `{ "option": "true" }`
+- `quality` → `type_filters` (minMax) — note: general Item Quality, not gem-specific
+- **+1** → a `stats` filter (stat id from `/api/trade2/data/stats`); "corrupted +1" exact encoding (gem level → 21 vs a discrete +1 stat mod) **to be pinned from a fully-filtered saved search** (see below).
+
+**Exact gem query encoding is lifted from a user-provided filtered saved-search hash during implementation** — same method already proven on the unfiltered `9ljByw8uK` hash (the API returns the raw `query` object verbatim). This avoids hand-guessing the `gem_level` value and the `+1` stat id.
+
+Open product note: applying the endgame 20/20/corrupted/+1 default to *every* gem link is great for price-checking the ideal version but may surface only expensive/rare listings — a mismatch for a beginner-first wiki. Using **min-bounds** (level ≥ 20, quality ≥ 20) rather than exact values softens this; final call captured with the user before implementation.
 
 ## League handling — why it's a hardcoded constant, not derived
 
