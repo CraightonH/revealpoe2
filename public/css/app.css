@@ -684,7 +684,7 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
   gap: 4px;
 }
 /* Popups get a bit more right inset than the condensed cards. */
-.newItemPopup .card-actions { right: 40px; }
+.newItemPopup .card-actions { right: 50px; }
 /* Gem popup headers are busy — a skill icon (left) and gem icon (right) are both
    pinned in the header — so there's no room there. Center the action on the card
    body's empty right margin instead. */
