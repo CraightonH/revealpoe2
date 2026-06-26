@@ -29,16 +29,14 @@ Uniques pin both `name` and base `type` for precision; bases search by `type` al
 
 ### Gem default filters
 
-Cut skill gems **are** tradeable as distinct Listed Items (search by `type` = gem name). Rather than a bare name search, the gem trade link defaults to the setup players actually price-check: **level 20, 20% quality, corrupted, +1**. Canonical filter ids (from `/api/trade2/data/filters`):
+Cut skill gems **are** tradeable as distinct Listed Items (search by `type` = gem name). Rather than a bare name search, the gem trade link defaults to the setup players actually price-check, using **min-bounds** (decided): **level ≥ 20, quality ≥ 20, corrupted, +1**. Min-bounds (not exact values) surfaces the ideal setup *and* better-than-baseline listings — fewer empty results, friendlier for a beginner-first wiki, still price-checks the good version. Canonical filter ids (from `/api/trade2/data/filters`):
 
-- `gem_level` → `misc_filters` (minMax)
+- `gem_level` → `misc_filters` (minMax) → `{ "min": 20 }`
 - `corrupted` → `misc_filters`, `{ "option": "true" }`
-- `quality` → `type_filters` (minMax) — note: general Item Quality, not gem-specific
-- **+1** → a `stats` filter (stat id from `/api/trade2/data/stats`); "corrupted +1" exact encoding (gem level → 21 vs a discrete +1 stat mod) **to be pinned from a fully-filtered saved search** (see below).
+- `quality` → `type_filters` (minMax) → `{ "min": 20 }` (general Item Quality, not gem-specific)
+- **+1** → a `stats` filter — exact stat id (and whether "corrupted +1" is a discrete stat vs `gem_level` → 21) **to be pinned from a fully-filtered saved search** during implementation.
 
-**Exact gem query encoding is lifted from a user-provided filtered saved-search hash during implementation** — same method already proven on the unfiltered `9ljByw8uK` hash (the API returns the raw `query` object verbatim). This avoids hand-guessing the `gem_level` value and the `+1` stat id.
-
-Open product note: applying the endgame 20/20/corrupted/+1 default to *every* gem link is great for price-checking the ideal version but may surface only expensive/rare listings — a mismatch for a beginner-first wiki. Using **min-bounds** (level ≥ 20, quality ≥ 20) rather than exact values softens this; final call captured with the user before implementation.
+**The +1 stat id is lifted from a user-provided filtered saved-search hash during implementation** — same method already proven on the unfiltered `9ljByw8uK` hash (the trade API returns the raw `query` object verbatim). This avoids hand-guessing the `+1` stat id. The other three filters are pinned above.
 
 ## League handling — why it's a hardcoded constant, not derived
 
