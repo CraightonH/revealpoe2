@@ -68,12 +68,15 @@ test('affixEdges: rolls_on points only to browsable base nodes, with valid tier 
     assert.equal(e.type, 'rolls_on');
     assert.ok(baseIds.has(e.to), `edge target ${e.to} is a base node`);
     assert.ok(tierCount.has(e.from), `edge source ${e.from} is an affix node`);
-    if (originOf.get(e.from) === 'desecrated') {
-      assert.ok(!e.props, 'desecrated edges carry no tier restriction');
-    } else {
-      assert.ok(Array.isArray(e.props.tiers) && e.props.tiers.length > 0, 'standard/corrupted edge carries tier indices');
+    // Tier restriction only exists for the mods_by_base join (item-domain standard
+    // + corrupted). Tag-gated eligibility (desecrated, plus flask/jewel standard)
+    // is all-tiers, so it carries no props — never desecrated specifically.
+    if (e.props) {
+      assert.ok(Array.isArray(e.props.tiers) && e.props.tiers.length > 0, 'tier-restricted edge carries indices');
       const max = tierCount.get(e.from);
       assert.ok(e.props.tiers.every((i) => i >= 0 && i < max), 'tier indices are in range');
+    } else {
+      assert.notEqual(originOf.get(e.from), undefined, 'all-tiers edge still resolves to an affix node');
     }
   }
 });

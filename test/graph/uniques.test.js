@@ -81,12 +81,15 @@ test('uniqueEdges: has_base only targets browsable base nodes', () => {
   assert.ok(hasBase.length > 200, `most uniques sit on a browsable base, got ${hasBase.length}`);
   for (const e of hasBase) assert.ok(baseIds.has(e.to), `has_base target ${e.to} is a base node`);
 
-  // Astramentis (Stellar Amulet) has a has_base edge; a jewel unique does not.
+  // Astramentis (Stellar Amulet) has a has_base edge; so does a jewel unique now
+  // that charm/flask/jewel bases are browsable (The Adorned -> Diamond).
   const astra = records.find((r) => r.slug === 'astramentis');
   assert.ok(hasBase.some((e) => e.from === astra.id), 'Astramentis -> Stellar Amulet');
-  const adorned = records.find((r) => r.slug === 'the-adorned'); // jewel base, not browsable
+  const adorned = records.find((r) => r.slug === 'the-adorned'); // Diamond (jewel) base
   assert.ok(adorned, 'fixture present');
-  assert.ok(!hasBase.some((e) => e.from === adorned.id), 'jewel unique has no has_base');
+  const adornedBase = hasBase.find((e) => e.from === adorned.id);
+  assert.ok(adornedBase, 'jewel unique now has a has_base edge');
+  assert.ok(baseIds.has(adornedBase.to), 'and it targets a real base node');
 });
 
 test('uniqueEdges: grants resolve to skill nodes with zero dangling', () => {

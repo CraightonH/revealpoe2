@@ -24,10 +24,19 @@ import { originSlug } from '../../src/data/affixOrigins.js';
 
 const ROLLABLE = new Set(['prefix', 'suffix']);
 
+// Domains whose rollable mods are "standard" craftable affixes (applied via basic
+// currency). Equipment is `item`; flasks/charms live in `flask`; jewels in `misc`.
+// flask/misc eligibility is spawn-weight (item-tag) gated rather than the
+// mods_by_base join, and is resolved in affixEdges scoped to the matching base
+// domain (so a `default`-tagged flask charge mod can't leak onto weapons).
+const STANDARD_DOMAINS = new Set(['item', 'flask', 'misc']);
+// mod domain -> the base `domain` its tag-gated edges may attach to.
+const TAG_GATED_DOMAINS = { flask: 'flask', misc: 'misc' };
+
 // Map a mod's (domain, generation_type) to its affix origin, or null if the mod
 // isn't a rollable affix (true implicits, enchants, internal mechanics, …).
 function originOf(domain, gen) {
-  if (domain === 'item' && ROLLABLE.has(gen)) return 'standard';
+  if (STANDARD_DOMAINS.has(domain) && ROLLABLE.has(gen)) return 'standard';
   if (domain === 'item' && gen === 'corrupted') return 'corrupted';
   if (domain === 'desecrated' && ROLLABLE.has(gen)) return 'desecrated';
   return null;
@@ -57,15 +66,18 @@ export function selectAffixRecords() {
     let rec = byKey.get(nodeId);
     if (!rec) {
       rec = {
-        id: nodeId, origin, type: v.type,
+        id: nodeId, origin, type: v.type, modDomain: v.domain,
         slug: originSlug(origin, slugify(v.type)),
         boss: null, spawnTags: new Set(), tiers: [],
       };
       byKey.set(nodeId, rec);
     }
     rec.tiers.push(tierRecord(id, v));
-    if (origin === 'desecrated') {
-      if (!rec.boss) rec.boss = abyssBoss(v.implicit_tags ?? []);
+    // Spawn-weight (item-tag) eligibility, collected for the two origins that use
+    // it: desecrated, and the flask/jewel standard mods (gated by base domain in
+    // affixEdges). The mods_by_base join handles item-domain standard mods instead.
+    if (origin === 'desecrated' || TAG_GATED_DOMAINS[v.domain]) {
+      if (origin === 'desecrated' && !rec.boss) rec.boss = abyssBoss(v.implicit_tags ?? []);
       for (const sw of v.spawn_weights ?? []) if (sw.weight > 0) rec.spawnTags.add(sw.tag);
     }
   }
@@ -73,7 +85,9 @@ export function selectAffixRecords() {
     rec.tiers.sort((a, b) => a.level - b.level);
     rec.tierIndexById = new Map(rec.tiers.map((t, i) => [t.id, i]));
   }
-  return [...byKey.values()];
+  // Drop flask/jewel standard families with no positive spawn weight anywhere —
+  // they can't roll on any base, so they'd be dead entries in search/affix tables.
+  return [...byKey.values()].filter((r) => !(TAG_GATED_DOMAINS[r.modDomain]) || r.spawnTags.size);
 }
 
 export function affixNodes() {
@@ -144,6 +158,24 @@ export function affixEdges(records, baseRecords, nodeIds) {
     const tagSet = new Set(b.raw.tags ?? []);
     if (!tagSet.size) continue;
     for (const rec of desecrated) {
+      let match = false;
+      for (const t of rec.spawnTags) if (tagSet.has(t)) { match = true; break; }
+      if (match) edges.push(makeEdge({ type: EDGE_TYPES.ROLLS_ON, from: rec.id, to: b.id }));
+    }
+  }
+
+  // Flask/jewel standard mods: same spawn_weights tag predicate, but scoped to the
+  // mod-domain's matching base domain. Flask charge mods gate on the universal
+  // `default` tag, so without this scoping they'd attach to every base; gating by
+  // base domain keeps flask mods on flasks/charms and jewel mods on jewels. All
+  // tiers eligible (no per-base tier restriction in the source).
+  const tagGated = records.filter((r) => r.origin === 'standard' && TAG_GATED_DOMAINS[r.modDomain] && r.spawnTags.size);
+  for (const b of baseRecords) {
+    const baseDomain = b.raw.domain;
+    const tagSet = new Set(b.raw.tags ?? []);
+    if (!tagSet.size) continue;
+    for (const rec of tagGated) {
+      if (TAG_GATED_DOMAINS[rec.modDomain] !== baseDomain) continue;
       let match = false;
       for (const t of rec.spawnTags) if (tagSet.has(t)) { match = true; break; }
       if (match) edges.push(makeEdge({ type: EDGE_TYPES.ROLLS_ON, from: rec.id, to: b.id }));

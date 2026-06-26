@@ -163,6 +163,20 @@ function modeProp(bases, key) {
 // (Runeforged/Runemastered variants never reach here — they're folded onto
 // their parent base in buildIndex and excluded from the class list entirely.)
 function topTierBases(bases) {
+  const attrIdx = (b) => {
+    const i = ATTR_SUBTYPE_ORDER.indexOf(b.attr);
+    return i < 0 ? ATTR_SUBTYPE_ORDER.length : i;
+  };
+  const sort = (list) => [...list].sort(
+    (a, b) => attrIdx(a) - attrIdx(b) || b.dropLevel - a.dropLevel || a.name.localeCompare(b.name),
+  );
+
+  // Archetype-collapsing models a drop-level tier progression (a low-tier base
+  // superseded by its endgame Alpha). Classes with no drop-level spread (jewels:
+  // every base is level 20) have no such progression — Diamond/Emerald/Ruby are
+  // distinct siblings, not tiers of one line — so every base is itself top-tier.
+  if (new Set(bases.map((b) => b.dropLevel ?? 0)).size <= 1) return sort(bases);
+
   const baseCrit = modeProp(bases, 'critical_strike_chance');
   const baseAtk = modeProp(bases, 'attack_time');
   const bias = (val, base) => (val == null || base == null || val === base ? '=' : (val > base ? '+' : '-'));
@@ -175,13 +189,7 @@ function topTierBases(bases) {
     const cur = byArchetype.get(key);
     if (!cur || b.dropLevel > cur.dropLevel) byArchetype.set(key, b);
   }
-  const attrIdx = (b) => {
-    const i = ATTR_SUBTYPE_ORDER.indexOf(b.attr);
-    return i < 0 ? ATTR_SUBTYPE_ORDER.length : i;
-  };
-  return [...byArchetype.values()].sort(
-    (a, b) => attrIdx(a) - attrIdx(b) || b.dropLevel - a.dropLevel || a.name.localeCompare(b.name),
-  );
+  return sort([...byArchetype.values()]);
 }
 
 export function getItemClass(classSlug) {
@@ -286,6 +294,16 @@ function buildAffixTargets() {
 // taxonomy (the only hand-maintained list here). Order = display order.
 const OFFHAND_CLASSES = ['Shield', 'Buckler', 'Focus', 'Quiver'];
 
+// Consumable/jewel classes get their own top-level nav groups (label -> class ids
+// in display order). They carry none of the onehand/twohand/armour tags the
+// weapon/armour bucketing keys off, so they're routed here explicitly instead of
+// falling through to Accessories. Mirrors the GROUPS taxonomy in itemTaxonomy.js.
+const EXTRA_NAV_GROUPS = [
+  { label: 'Flasks & Charms', classes: ['LifeFlask', 'ManaFlask', 'UtilityFlask'] },
+  { label: 'Jewels', classes: ['Jewel'] },
+];
+const EXTRA_NAV_CLASSES = new Set(EXTRA_NAV_GROUPS.flatMap((g) => g.classes));
+
 // Landing-page navigation model. Buckets are tag-driven, not GROUPS-driven, so
 // data quirks self-correct: Weapons split into One-/Two-Handed by onehand/twohand
 // tags (Talismans carry two_hand_weapon, so they land in Two-Handed); Off-Hand is
@@ -308,7 +326,7 @@ export function listBaseNav() {
   const accCards = [];
   for (const g of GROUPS) {
     for (const classId of g.classes) {
-      if (offhandSet.has(classId)) continue;
+      if (offhandSet.has(classId) || EXTRA_NAV_CLASSES.has(classId)) continue;
       const c = get(classId);
       if (!c.bases.length) continue;
       const tags = c.bases[0].tags;
@@ -335,6 +353,13 @@ export function listBaseNav() {
     return { title: c.info.name, cards: [classCard(c)] };
   });
 
+  // Consumable/jewel groups: one flat section of class cards each, skipping any
+  // class with no bases. Dropped entirely if a whole group is empty.
+  const extraGroups = EXTRA_NAV_GROUPS.map((g) => ({
+    label: g.label,
+    sections: [{ title: null, cards: g.classes.map(get).filter((c) => c.bases.length).map(classCard) }],
+  })).filter((g) => g.sections[0].cards.length);
+
   return [
     { label: 'Weapons', sections: [
       { title: 'One-Handed', cards: oneHand },
@@ -343,6 +368,7 @@ export function listBaseNav() {
     ] },
     { label: 'Armour', sections: armourSections },
     { label: 'Accessories', sections: [{ title: null, cards: accCards }] },
+    ...extraGroups,
   ];
 }
 

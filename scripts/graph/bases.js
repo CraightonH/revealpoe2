@@ -4,7 +4,7 @@ import { slugify } from '../../src/data/slug.js';
 import { makeNode, makeEdge, KINDS, EDGE_TYPES } from './schema.js';
 import { computeProperties } from '../../src/data/itemStats.js';
 import { ATTR_ABBR } from '../../src/data/attributes.js';
-import { BROWSABLE_CLASSES, ATTR_SUBTYPE_ORDER } from '../../src/data/itemTaxonomy.js';
+import { BROWSABLE_CLASSES, CONSUMABLE_CLASSES, ATTR_SUBTYPE_ORDER } from '../../src/data/itemTaxonomy.js';
 import { resolveImplicitTexts } from './affixes.js';
 
 // Re-exported for consumers that reach the browsable-class set via this resolver.
@@ -13,6 +13,19 @@ export { BROWSABLE_CLASSES };
 // Runeforged/Runemastered reissues are folded onto their parent base (Task 2),
 // never their own node — mirrors src/data/baseItems.js.
 const RUNE_VARIANT_RE = /^Rune(forged|mastered) /;
+
+// Domains that carry browsable bases. Most equipment is domain `item`; flasks and
+// charms live in `flask`, jewels in `misc`. Membership in BROWSABLE_CLASSES is the
+// real gate (these domains also hold non-item junk), so admitting them is safe.
+const BASE_DOMAINS = new Set(['item', 'flask', 'misc']);
+// `released` is the norm; consumable/jewel classes also admit `unique_only` bases
+// (Timeless Jewel has no generic drop but backs uniques). Weapons/armour stay
+// released-only, so unreferenced unique_only equipment bases never appear.
+const isReleaseEligible = (v) =>
+  v.release_state === 'released'
+  || (v.release_state === 'unique_only' && CONSUMABLE_CLASSES.has(v.item_class));
+const isBaseCandidate = (v) =>
+  BASE_DOMAINS.has(v.domain) && isReleaseEligible(v) && BROWSABLE_CLASSES.has(v.item_class);
 
 // A name appearing in >1 distinct browsable class gets a class-suffixed slug.
 function buildSlug(name, classId, nameAcrossClasses) {
@@ -28,8 +41,7 @@ export function selectBaseRecords() {
   const nameClassSeen = new Set();
   const nameAcrossClasses = {};
   for (const v of Object.values(raw)) {
-    if (v.domain !== 'item' || v.release_state !== 'released') continue;
-    if (!BROWSABLE_CLASSES.has(v.item_class)) continue;
+    if (!isBaseCandidate(v)) continue;
     const key = `${v.name}|${v.item_class}`;
     if (nameClassSeen.has(key)) continue;
     nameClassSeen.add(key);
@@ -41,8 +53,7 @@ export function selectBaseRecords() {
   const runeRaw = [];
   const seenNameClass = new Set();
   for (const [id, v] of Object.entries(raw)) {
-    if (v.domain !== 'item' || v.release_state !== 'released') continue;
-    if (!BROWSABLE_CLASSES.has(v.item_class)) continue;
+    if (!isBaseCandidate(v)) continue;
     if (RUNE_VARIANT_RE.test(v.name)) { runeRaw.push(v); continue; }
     const nameClassKey = `${v.name}|${v.item_class}`;
     if (seenNameClass.has(nameClassKey)) continue;

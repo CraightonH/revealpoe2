@@ -175,5 +175,32 @@ export function computeProperties(props, mods = { adds: [], defInc: {}, defFlat:
     });
   }
 
+  // Flask / charm stats. `duration` is in tenths of a second (like weapon range).
+  // Life/mana flasks recover an amount over that duration; charms (no recovery
+  // amount) simply last for it. Charges drain on use.
+  const seconds = (d) => Number((d / 10).toFixed(1));
+  if (props.life_per_use != null) {
+    out.push({
+      label: 'Recovery',
+      value: `${props.life_per_use} Life over ${seconds(props.duration)} Seconds`,
+      colorClass: 'colourDefault',
+    });
+  } else if (props.mana_per_use != null) {
+    out.push({
+      label: 'Recovery',
+      value: `${props.mana_per_use} Mana over ${seconds(props.duration)} Seconds`,
+      colorClass: 'colourDefault',
+    });
+  } else if (props.duration != null) {
+    out.push({ label: 'Duration', value: `${seconds(props.duration)} Seconds`, colorClass: 'colourDefault' });
+  }
+  if (props.charges_max != null) {
+    out.push({
+      label: 'Charges',
+      value: `${props.charges_per_use} of ${props.charges_max} per use`,
+      colorClass: 'colourDefault',
+    });
+  }
+
   return out;
 }

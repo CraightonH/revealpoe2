@@ -74,6 +74,38 @@ test('baseNodes fold rune variants onto the parent base with resolved option tex
       && opt.every((l) => typeof l.id === 'string' && typeof l.text === 'string'))));
 });
 
+test('selectBaseRecords ingests charm/flask/jewel bases (non-item domains)', () => {
+  const { records } = selectBaseRecords();
+  const byName = new Map(records.map((r) => [r.raw.name, r]));
+  // Flasks (domain `flask`), charms (UtilityFlask), jewels (domain `misc`).
+  assert.equal(byName.get('Ultimate Life Flask')?.itemClass, 'LifeFlask');
+  assert.equal(byName.get('Ultimate Mana Flask')?.itemClass, 'ManaFlask');
+  assert.equal(byName.get('Thawing Charm')?.itemClass, 'UtilityFlask');
+  assert.equal(byName.get('Diamond')?.itemClass, 'Jewel');
+});
+
+test('selectBaseRecords admits unique_only bases only for consumable/jewel classes', () => {
+  const { records } = selectBaseRecords();
+  const names = new Set(records.map((r) => r.raw.name));
+  // Timeless Jewel is unique_only but a Jewel -> ingested (it backs uniques).
+  assert.ok(names.has('Timeless Jewel'), 'unique_only jewel ingested');
+  // Golden Mantle is a unique_only Body Armour -> stays excluded (no orphan page).
+  assert.ok(!names.has('Golden Mantle'), 'unique_only equipment stays excluded');
+});
+
+test('baseNodes resolve flask/charm display properties', () => {
+  const { nodes } = baseNodes();
+  const flask = nodes.find((n) => n.name === 'Ultimate Life Flask');
+  const props = Object.fromEntries(flask.props.properties.map((p) => [p.label, p.value]));
+  assert.equal(props.Recovery, '920 Life over 3 Seconds');
+  assert.equal(props.Charges, '10 of 75 per use');
+
+  const charm = nodes.find((n) => n.name === 'Thawing Charm');
+  const cprops = Object.fromEntries(charm.props.properties.map((p) => [p.label, p.value]));
+  assert.equal(cprops.Duration, '3 Seconds'); // charms last, they don't recover
+  assert.equal(cprops.Charges, '40 of 40 per use');
+});
+
 test('classNodes cover browsable classes with synthetic ids', () => {
   const cnodes = classNodes();
   const amulet = cnodes.find((n) => n.id === 'Class/Amulet');

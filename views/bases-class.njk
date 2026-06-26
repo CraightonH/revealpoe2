@@ -33,7 +33,12 @@
     align="center"
   ) }}
   {% endif %}
-  <details class="bases-group">
+  {# "Highest-Tier" is a crafting curation of "All Base Items". When it would list
+     every base (classes with no drop-level progression — jewels, charms), the two
+     sections are identical, so we drop the redundant tier section and open the
+     canonical full list instead. #}
+  {% set hasTierCuration = cls.topBases.length and cls.topBases.length < cls.bases.length %}
+  <details class="bases-group"{% if not hasTierCuration %} open{% endif %}>
     <summary class="bases-group-title">All Base Items <span class="bases-group-count">{{ cls.bases.length }}</span></summary>
     <div class="bases-list-grid">
       {% for b in cls.bases %}
@@ -41,7 +46,7 @@
       {% endfor %}
     </div>
   </details>
-  {% if cls.topBases.length %}
+  {% if hasTierCuration %}
   <details class="bases-group" open>
     <summary class="bases-group-title">Highest-Tier Bases <span class="bases-group-count">{{ cls.topBases.length }}</span></summary>
     <p class="bases-top-hint">The endgame base of each implicit archetype — what matters once you're crafting.</p>

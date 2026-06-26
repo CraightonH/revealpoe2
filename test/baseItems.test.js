@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   listItemClasses, getItemClass, getBaseItem, buildBaseItemViewModel, affixBaseTargets,
+  listBaseNav,
 } from '../src/data/baseItems.js';
 
 test('affixBaseTargets: class-wide mod lists plain class links', () => {
@@ -34,6 +35,76 @@ test('listItemClasses returns grouped categories with counts', () => {
   assert.ok(weaponGroup.classes[0].name);
   assert.ok(weaponGroup.classes[0].classSlug);
   assert.ok(weaponGroup.classes[0].count > 0);
+});
+
+test('listItemClasses exposes the Flasks & Charms and Jewels groups', () => {
+  const groups = listItemClasses();
+  const labels = groups.map((g) => g.label);
+  assert.ok(labels.includes('Flasks & Charms'));
+  assert.ok(labels.includes('Jewels'));
+  const flasks = groups.find((g) => g.label === 'Flasks & Charms');
+  const classNames = flasks.classes.map((c) => c.name);
+  assert.deepEqual(classNames, ['Life Flasks', 'Mana Flasks', 'Charms']);
+  assert.ok(flasks.classes.every((c) => c.count > 0));
+});
+
+test('listBaseNav surfaces consumables/jewels as their own top-level groups', () => {
+  const nav = listBaseNav();
+  const flasks = nav.find((g) => g.label === 'Flasks & Charms');
+  const jewels = nav.find((g) => g.label === 'Jewels');
+  assert.ok(flasks && jewels, 'both new nav groups present');
+  const flaskCards = flasks.sections.flatMap((s) => s.cards);
+  assert.equal(flaskCards.length, 3, 'Life/Mana/Charms class cards');
+  assert.ok(flaskCards.every((c) => c.href.startsWith('/bases/') && c.count > 0));
+  // They must NOT leak into Accessories.
+  const accCards = nav.find((g) => g.label === 'Accessories').sections.flatMap((s) => s.cards);
+  assert.ok(!accCards.some((c) => /Flask|Charm|Jewel/.test(c.name)));
+});
+
+test('getItemClass renders a jewel class page with its affix pool', () => {
+  const cls = getItemClass('jewel');
+  assert.ok(cls);
+  assert.equal(cls.name, 'Jewels');
+  assert.ok(cls.bases.length > 0);
+  assert.deepEqual(cls.attrSubtypes, [], 'jewels have no defence subtypes');
+  // Jewels roll a large spawn-weight-gated affix pool (domain `misc` mods).
+  assert.ok(cls.affixes.standard.prefix.length > 20, 'jewel prefixes resolved');
+  assert.ok(cls.affixes.standard.suffix.length > 20, 'jewel suffixes resolved');
+});
+
+test('topBases: a class with no drop-level spread treats every base as top-tier', () => {
+  // Jewels are all level 20 — Diamond/Emerald/Ruby/Sapphire are distinct siblings,
+  // not tiers of one line — so none collapses; all bases appear as highest-tier.
+  const jewels = getItemClass('jewel');
+  assert.equal(jewels.topBases.length, jewels.bases.length, 'all jewels are top-tier');
+  assert.ok(jewels.topBases.length >= 9);
+
+  // A class with a real drop-level progression still collapses to representatives.
+  const life = getItemClass('lifeflask');
+  assert.ok(life.topBases.length < life.bases.length, 'flask tiers collapse');
+  assert.equal(life.topBases[0].name, 'Ultimate Life Flask', 'endgame flask is the representative');
+});
+
+test('getItemClass: flask/charm classes expose their craftable mods, scoped by type', () => {
+  const life = getItemClass('lifeflask');
+  const names = [...life.affixes.standard.prefix, ...life.affixes.standard.suffix].map((f) => f.displayName);
+  assert.ok(names.some((n) => /Recovery Amount/.test(n)), 'life flask rolls recovery mods');
+  assert.ok(names.some((n) => /Max Charges/.test(n)), 'flasks roll charge mods');
+  // Low-Life recovery is life-flask only — must NOT appear on mana flasks.
+  const mana = getItemClass('manaflask');
+  const manaNames = [...mana.affixes.standard.prefix].map((f) => f.displayName);
+  assert.ok(!manaNames.some((n) => /On Low Life$/.test(n)), 'low-life mod excluded from mana flasks');
+  // And none of it leaks onto equipment.
+  const bow = getItemClass('bow');
+  const bowNames = [...bow.affixes.standard.prefix, ...bow.affixes.standard.suffix].map((f) => f.displayName);
+  assert.ok(!bowNames.some((n) => /^Flask |^Charm /.test(n)), 'flask/charm mods do not leak onto weapons');
+});
+
+test('buildBaseItemViewModel: charm base links its uniques', () => {
+  const vm = buildBaseItemViewModel('thawing-charm');
+  assert.ok(vm, 'thawing-charm base page exists');
+  assert.equal(vm.className, 'Charms');
+  assert.ok(vm.uniquesOnBase.some((u) => u.slug === 'nascent-hope'), 'Nascent Hope listed on its base');
 });
 
 test('getItemClass resolves "amulet" class slug', () => {
