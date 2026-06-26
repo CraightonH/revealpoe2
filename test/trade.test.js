@@ -41,7 +41,9 @@ test('base searches type only, no name', () => {
 test('gem searches type plus min-bound default filters', () => {
   const q = queryOf(tradeUrl({ kind: 'gem', type: 'Snipe' }));
   assert.equal(q.type, 'Snipe');
-  assert.equal(q.filters.misc_filters.filters.gem_level.min, 20);
+  // level >= 21: genuine max-20 + corruption, excludes level-19→20-corruption fakes.
+  assert.equal(q.filters.misc_filters.filters.gem_level.min, 21);
+  assert.equal(q.filters.misc_filters.filters.gem_sockets.min, 5); // "5-link"
   assert.equal(q.filters.misc_filters.filters.corrupted.option, 'true');
   assert.equal(q.filters.type_filters.filters.quality.min, 20);
 });

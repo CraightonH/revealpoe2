@@ -676,15 +676,18 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
 .card-actions {
   position: absolute;
   top: 5px;
-  right: 6px;
+  right: 30px;
   z-index: 4;
   display: flex;
   gap: 4px;
 }
 /* Condensed browse/list cards are <a>; the trade affordance is a <span> overlay
    (no nested anchor) handled by trade-link.js. The card must be a positioning
-   context for it — .gem-browse-card is already relative; .bases-list-card isn't. */
+   context for it — .gem-browse-card is already relative; .bases-list-card isn't.
+   These cards are narrow, so keep the overlay in the corner rather than inheriting
+   the popups' 30px inset (which would crowd the card's name). */
 .bases-list-card { position: relative; }
+.card-actions--overlay { right: 6px; }
 
 .trade-link {
   display: inline-flex;

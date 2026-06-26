@@ -40,13 +40,18 @@ name). The link defaults to the setup players price-check, using **min-bounds** 
 the ideal *and* better-than-baseline listings both show (fewer empty results,
 friendlier for a beginner-first wiki):
 
-- `gem_level >= 20` — `misc_filters`
+- `gem_level >= 21` — `misc_filters`
+- `gem_sockets >= 5` — `misc_filters` ("5-link"; see below)
 - `quality >= 20` — `type_filters` (general Item Quality field)
 - `corrupted = true` — `misc_filters`
 
-The "+1" players mention is a corrupted level-21 gem, which `gem_level >= 20`
-already includes — so no fragile per-skill `+1` stat id is needed. Filter ids
-verified against `https://www.pathofexile.com/api/trade2/data/filters`.
+`gem_level >= 21` (not 20): an uncorrupted gem caps at level 20, so level 21 is the
+genuine max + corruption. A min of 20 would also surface level-19 bases corrupted up
+to 20 — fakes players don't want.
+
+PoE2 has no link system; the equivalent is the skill gem's support-gem slot count,
+filtered by `gem_sockets`. So "5-link" = `gem_sockets >= 5`. Filter ids verified
+against `https://www.pathofexile.com/api/trade2/data/filters`.
 
 ## League is a hardcoded constant — and why it can't be derived
 

@@ -22,11 +22,20 @@ const STATUS = { option: 'securable' };
 // Gems are tradeable as Listed Items (search by type = gem name). Default to the
 // setup players price-check, using MIN-BOUNDS so the ideal and better-than-baseline
 // listings both show (friendlier than exact values, fewer empty results):
-//   level >= 20, quality >= 20, corrupted. A corrupted "+1" gem is level 21, which
-//   `gem_level >= 20` already includes — no fragile per-skill +1 stat id needed.
-// Filter ids verified against /api/trade2/data/filters.
+//   level >= 21, quality >= 20, corrupted, 5 gem sockets ("5-link").
+// level >= 21 (not 20): an uncorrupted gem caps at 20, so level 21 is the genuine
+// max + corruption. A min of 20 would also surface level-19 bases corrupted up to
+// 20, which players don't want. PoE2 has no "links" — gem_sockets is the support-
+// gem slot count, so "5-link" = gem_sockets >= 5. Ids verified against
+// /api/trade2/data/filters.
 const GEM_FILTERS = {
-  misc_filters: { filters: { gem_level: { min: 20 }, corrupted: { option: 'true' } } },
+  misc_filters: {
+    filters: {
+      gem_level: { min: 21 },
+      gem_sockets: { min: 5 },
+      corrupted: { option: 'true' },
+    },
+  },
   type_filters: { filters: { quality: { min: 20 } } },
 };
 
