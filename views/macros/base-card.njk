@@ -1,3 +1,5 @@
+{% from "macros/card-actions.njk" import tradeLink, tradeButton %}
+
 {# Compact class nav card used on the /bases index grid (and reused wherever we
    want to point at a whole item class rather than list every base): name, icon,
    base count, links to /bases/:classSlug. #}
@@ -16,6 +18,7 @@
    same keyword-linked labels unique cards use; full tooltip on hover. #}
 {% macro baseListCard(b) %}
 <a class="bases-list-card" href="/base/{{ b.slug }}" data-card-url="/base/{{ b.slug }}/card"{% if b.attr %} data-attr="{{ b.attr }}"{% endif %}>
+  {{ tradeButton(b.tradeUrl) }}
   <div class="bases-list-header"><span class="bases-list-name">{{ b.name }}</span></div>
   <div class="bases-list-main">
     {% set sizeClass = 'bases-list-icon--' ~ b.inventorySize.w ~ 'x' ~ b.inventorySize.h %}
@@ -53,6 +56,7 @@
 {% macro baseCard(vm, full=false) %}
 <div class="unique-item-with-art">
   <div class="newItemPopup NormalPopup item-popup--poe2">
+    {{ tradeLink(vm.tradeUrl) }}
     <div class="itemHeader doubleLine">
       <div class="itemName"><span class="lc normal-name">{{ vm.name }}</span></div>
       <div class="itemName typeLine"><span class="lc normal-type">{{ vm.className }}</span></div>

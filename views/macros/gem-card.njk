@@ -1,3 +1,5 @@
+{% from "macros/card-actions.njk" import tradeLink, tradeButton %}
+
 {# A single condensed card for the /gems browse grid. Also reused on the
    /theorycraft results page so gem matches render identically to /gems.
    `modifier` feeds the filter-bar data-type; defaults to the gem's own type. #}
@@ -8,6 +10,7 @@
    data-type="{{ dataType }}"
    data-origin="{{ g.origin }}"
    data-req="{{ g.req | join(' ') }}">
+  {{ tradeButton(g.tradeUrl) }}
   <div class="gem-browse-header"><span class="gem-browse-name">{{ g.name }}</span></div>
   <div class="gem-browse-main">
     {% if g.iconUrl %}
@@ -45,6 +48,7 @@
      style="--card-border: {{ vm.borderColor }}; --card-glow: {{ vm.glowColor }};
             {% if vm.borderColor2 %}--card-border-2: {{ vm.borderColor2 }}; --card-glow-2: {{ vm.glowColor2 }};{% endif %}
             {% if vm.hoverImageUrl %}--hover-image: url('{{ vm.hoverImageUrl }}');{% endif %}">
+  {{ tradeLink(vm.tradeUrl) }}
   <div class="bg-art"></div>
   <div class="content">
     <div class="itemHeader doubleLine">

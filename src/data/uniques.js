@@ -1,5 +1,6 @@
 import { slugify } from './slug.js';
 import { ddsUrl } from './images.js';
+import { tradeUrl } from './trade.js';
 import { getGem } from './gems.js';
 import { getBaseByName, listItemClasses } from './baseItems.js';
 import { parseLocalMods, computeProperties } from './itemStats.js';
@@ -65,6 +66,7 @@ function toUnique(node, variantIndex) {
     iconUrl: ddsUrl(p.iconDds),
     flavour: p.flavour,
     implicitCount: cur.implicits.length,
+    tradeUrl: tradeUrl({ kind: 'unique', name: node.name, type: p.base }),
   };
 }
 
@@ -146,6 +148,7 @@ function uniqueCardVM(node, variantIndex) {
     requirements: baseRecord?.requirements ?? [],
     implicits: parsed.slice(0, u.implicitCount),
     explicits: parsed.slice(u.implicitCount),
+    tradeUrl: u.tradeUrl,
   };
 }
 

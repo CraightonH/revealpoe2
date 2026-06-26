@@ -668,3 +668,47 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
   padding: 2px 7px; cursor: pointer;
 }
 .tc-example:hover { border-color: var(--accent, #c8a13a); color: var(--accent, #c8a13a); }
+
+/* ── "Search on PoE Trade" action (Todo 4 part 1) ─────────────────────────────
+   `.card-actions` is the action slot; it holds the trade balance-scale icon today
+   and is sized to take a second button (Add to Theory Craft) later. Two contexts:
+   inside a full tooltip popup (.newItemPopup), and overlaid on a condensed card. */
+.card-actions {
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  z-index: 4;
+  display: flex;
+  gap: 4px;
+}
+/* Condensed browse/list cards are <a>; the trade affordance is a <span> overlay
+   (no nested anchor) handled by trade-link.js. The card must be a positioning
+   context for it — .gem-browse-card is already relative; .bases-list-card isn't. */
+.bases-list-card { position: relative; }
+
+.trade-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  color: var(--text, #c8b888);
+  background: color-mix(in srgb, var(--bg-base, #0d0d0d) 70%, transparent);
+  opacity: 0.5;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity 0.12s, color 0.12s, background 0.12s;
+}
+.trade-link:hover,
+.trade-link:focus-visible {
+  opacity: 1;
+  color: var(--accent, #c8a13a);
+  background: color-mix(in srgb, var(--bg-base, #0d0d0d) 85%, transparent);
+  outline: none;
+}
+.trade-scale {
+  width: 15px;
+  height: 15px;
+  display: block;
+}

@@ -1,5 +1,6 @@
 import { renderGameText, linkifyRequirement } from './keywords.js';
 import { ddsUrl } from './images.js';
+import { tradeUrl } from './trade.js';
 import { hasDefinition } from './keywordDefs.js';
 import { ATTR_ABBR, ATTR_KEY, ATTR_ORDER } from './attributes.js';
 import { getNode, nodeBySlug, nodesByKind, edgesFrom, edgesTo } from './graph.js';
@@ -160,6 +161,7 @@ function gemBrowseCardVM(node) {
   return {
     slug: gem.slug,
     name: gem.name,
+    tradeUrl: tradeUrl({ kind: 'gem', type: gem.name }),
     cardColor: cardColor(req, gem.color),
     gemType: gem.gem_type,
     origin: gem.origin,
@@ -407,6 +409,7 @@ export function buildGemViewModel(slug) {
   return {
     slug,
     name: gem.name,
+    tradeUrl: tradeUrl({ kind: 'gem', type: gem.name }),
     attribute: gem.color,
     gemType: gem.gem_type,
     borderColor: b.border,

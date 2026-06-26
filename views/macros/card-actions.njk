@@ -1,0 +1,43 @@
+{# Card action affordances. Currently just the "Search on PoE Trade" balance-scale
+   icon (Todo 4 part 1); built as a `.card-actions` container so part 2
+   ("Add to Theory Craft") drops a second button alongside with no rework.
+
+   Two render forms because of where they sit:
+   - tradeLink(url):   a real <a>, for the full tooltip popups (uniqueCard /
+     gemCard / baseCard) which are NOT wrapped in an anchor. Works with no JS.
+   - tradeButton(url): a <span data-trade-url>, for the condensed browse/list
+     cards, which are themselves <a> (a nested <a> is invalid HTML and spills the
+     card). public/js/trade-link.js delegates the click → window.open. #}
+
+{# Traditional balance scales (scales of justice) — self-contained inline SVG. #}
+{% macro scaleIcon() %}
+<svg class="trade-scale" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+     stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+  <path d="M12 4.2v15.3"/>
+  <path d="M8 19.5h8"/>
+  <path d="M5 7h14"/>
+  <circle cx="12" cy="4.2" r="1.05"/>
+  <path d="M5 7 2.3 12M5 7 7.7 12"/>
+  <path d="M2.3 12q2.7 3 5.4 0"/>
+  <path d="M19 7 16.3 12M19 7 21.7 12"/>
+  <path d="M16.3 12q2.7 3 5.4 0"/>
+</svg>
+{% endmacro %}
+
+{% macro tradeLink(url) %}
+{% if url %}
+<div class="card-actions">
+  <a class="trade-link" href="{{ url }}" target="_blank" rel="noopener nofollow"
+     title="Search on PoE Trade" aria-label="Search on PoE Trade">{{ scaleIcon() }}</a>
+</div>
+{% endif %}
+{% endmacro %}
+
+{% macro tradeButton(url) %}
+{% if url %}
+<span class="card-actions card-actions--overlay">
+  <span class="trade-link" role="button" tabindex="0" data-trade-url="{{ url }}"
+        title="Search on PoE Trade" aria-label="Search on PoE Trade">{{ scaleIcon() }}</span>
+</span>
+{% endif %}
+{% endmacro %}

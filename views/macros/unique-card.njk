@@ -1,3 +1,5 @@
+{% from "macros/card-actions.njk" import tradeLink, tradeButton %}
+
 {% macro modLine(stat) %}
 <div class="explicitMod">
   {%- if stat.gemSlug -%}
@@ -31,6 +33,7 @@
 {% macro uniqueListCard(u) %}
 {% set sizeClass = ('bases-list-icon--' ~ u.inventorySize.w ~ 'x' ~ u.inventorySize.h) if u.inventorySize else '' %}
 <a class="bases-list-card bases-list-card--unique" href="/unique/{{ u.slug }}" data-card-url="/unique/{{ u.slug }}/card" data-itemclass="{{ u.itemClassSlug }}">
+  {{ tradeButton(u.tradeUrl) }}
   <div class="bases-list-header"><span class="bases-list-name">{{ u.name }}</span></div>
   <div class="bases-list-main">
     {% if u.iconUrl %}
@@ -62,6 +65,7 @@
 <div class="unique-item-with-art">
   <div class="newItemPopup UniquePopup item-popup--poe2"
        style="--card-border: {{ vm.borderColor }}; --card-glow: {{ vm.glowColor }};">
+    {{ tradeLink(vm.tradeUrl) }}
     <div class="itemHeader doubleLine">
       <div class="itemName"><span class="lc unique-name">{{ vm.name }}</span></div>
       <div class="itemName typeLine">{% if vm.baseSlug %}<a class="lc unique-type" href="/base/{{ vm.baseSlug }}" data-card-url="/base/{{ vm.baseSlug }}/card">{{ vm.base }}</a>{% else %}<span class="lc unique-type">{{ vm.base }}</span>{% endif %}</div>

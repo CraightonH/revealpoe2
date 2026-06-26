@@ -1,4 +1,5 @@
 import { ddsUrl } from './images.js';
+import { tradeUrl } from './trade.js';
 import { getModsForClass, getCorruptedForClass, getDesecratedForClass } from './mods.js';
 import { getGemRefByKey } from './gems.js';
 import { hasDefinition } from './keywordDefs.js';
@@ -58,6 +59,7 @@ function toBase(node) {
     attr: p.attr,
     implicitIds: p.implicitIds,
     grantedSkills: (p.skillsGranted ?? []).map(getGemRefByKey).filter(Boolean),
+    tradeUrl: tradeUrl({ kind: 'base', type: node.name }),
   };
 }
 
