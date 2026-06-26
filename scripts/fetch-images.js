@@ -21,10 +21,11 @@
 //   node scripts/fetch-images.js --workers 32
 //   node scripts/fetch-images.js --force      # ignore ETags, re-download all
 
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { imageRelPath } from '../src/data/images.js';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -127,6 +128,16 @@ async function loadManifest() {
   catch { return {}; }
 }
 
+// Pure gate decision. The referenced set is graph/CSS-derived, so an unchanged
+// set with every file already on disk means nothing can need fetching. Returns
+// the referenced-set hash (stamped into the manifest) and whether to skip the
+// network sync. `exists(ddsPath)` is injected so the logic is unit-testable.
+export function syncGate({ dds, manifest, exists, force }) {
+  const refHash = crypto.createHash('sha256').update([...dds].sort().join('\n')).digest('hex');
+  const skip = !force && manifest._refHash === refHash && [...dds].every(exists);
+  return { refHash, skip };
+}
+
 async function run() {
   if (!fs.existsSync(GRAPH)) {
     console.error('fetch-images: build/graph.json missing — run build:graph first.');
@@ -135,6 +146,21 @@ async function run() {
 
   const dds = new Set([...ddsFromGraph(), ...ddsFromCss()]);
   const manifest = FORCE ? {} : await loadManifest();
+
+  // Gate the network sync on the referenced set (the bulk of this step's cost
+  // on a code-only deploy is ~3000 conditional round-trips that all 304). See
+  // syncGate. Trade-off: an upstream art change with no content change won't be
+  // seen until a `--force` pass. The scrape→deploy content loop always changes
+  // the graph (hence always does a full pass), so that's the rare exception.
+  const { refHash, skip } = syncGate({
+    dds, manifest, force: FORCE,
+    exists: (d) => fs.existsSync(path.join(IMG_DIR, imageRelPath(d))),
+  });
+  if (skip) {
+    console.log(`fetch-images: ${dds.size} referenced | unchanged (graph + files on disk), skipped network sync`);
+    return;
+  }
+
   const desiredFiles = new Set(); // relative img paths we should keep
 
   const stats = { fresh: 0, updated: 0, added: 0, recovered: 0, failed: [], missing: 0 };
@@ -215,6 +241,7 @@ async function run() {
     walk(IMG_DIR);
   }
 
+  manifest._refHash = refHash; // gate marker for the next run
   await fsp.mkdir(IMG_DIR, { recursive: true });
   await fsp.writeFile(MANIFEST, JSON.stringify(manifest, null, 0));
 
@@ -231,4 +258,5 @@ async function run() {
   }
 }
 
-run();
+// Only sync when run as a script; importing (e.g. tests) must not hit the network.
+if (import.meta.url === pathToFileURL(process.argv[1]).href) run();

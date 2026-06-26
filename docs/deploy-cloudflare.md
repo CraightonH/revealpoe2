@@ -29,6 +29,7 @@ npm run deploy
        ├─ npm run build:graph    scripts/graph/cli.js     → build/graph.json
        ├─ npm run build:images   scripts/fetch-images.js  → public/img/*.webp
        ├─ npm run build:index    scripts/build-index.js   → public/generated/*.json
+       ├─ npm run build:og       scripts/build-og.js      → public/og/*.png
        └─ node scripts/prerender.js                       → dist/
   └─ wrangler pages deploy                                → Cloudflare Pages
 ```
@@ -41,14 +42,28 @@ Each stage:
 2. **`build:images`** — mirrors every `.dds` referenced by the graph (+ the
    UI-chrome paths in the CSS) from ggpk.exposed into `public/img/` as webp, so
    images ship same-origin with no runtime CDN. Idempotent and ETag-driven
-   (unchanged images return 304 — re-syncs in seconds); rate-limit-aware. See
-   CLAUDE.md *Icons* and `docs/image-assets.md`.
+   (unchanged images return 304 — re-syncs in seconds); rate-limit-aware.
+   **Gated:** the referenced set is graph-derived, so if it's unchanged since
+   the last sync and every file is on disk, the ~3000 conditional round-trips
+   are skipped entirely (the bulk of a code-only deploy's image cost). An
+   upstream art change with *no* content change is the one case this misses
+   until `npm run build:images -- --force`. See CLAUDE.md *Icons* and
+   `docs/image-assets.md`.
 3. **`build:index`** — emits the two client artifacts (search index + browse
    cards) into `public/generated/`. See **Client artifacts**.
-4. **`prerender`** — boots the real app and crawls it into `dist/`. See
+4. **`build:og`** — renders a 1200×630 OG preview PNG per gem/unique/base into
+   `public/og/`. Rendering all ~2500 cards (satori→resvg) is the single most
+   expensive deploy step, so it's **incremental**: a per-card key over the card
+   spec + its art file + the render code/fonts (in `public/og/_manifest.json`)
+   means a card re-renders only when one of those changes. A code-only deploy
+   renders 0 cards. `--force` re-renders all; a corrupt/missing manifest is
+   treated as fully stale (fail-safe).
+5. **`prerender`** — boots the real app and crawls it into `dist/`. See
    **The prerender crawler**. `copyPublic()` mirrors `public/` (including
-   `img/`) into `dist/static/`, so the fetched images deploy automatically.
-5. **`wrangler pages deploy`** — uploads `dist/` to Pages.
+   `img/` and `og/`) into `dist/static/`, so the fetched images and OG cards
+   deploy automatically.
+6. **`wrangler pages deploy`** — uploads `dist/` to Pages (upload itself is
+   idempotent — only changed files transfer).
 
 `build:index` also runs on `predev`/`prestart`, so the dev server has the same
 graph + client artifacts the static build does (dev ≈ prod parity). Note
