@@ -1,6 +1,6 @@
 import { renderGameText, linkifyRequirement } from './keywords.js';
 import { ddsUrl } from './images.js';
-import { tradeUrl } from './trade.js';
+import { tradeUrl, gemExchangeUrl } from './trade.js';
 import { hasDefinition } from './keywordDefs.js';
 import { ATTR_ABBR, ATTR_KEY, ATTR_ORDER } from './attributes.js';
 import { getNode, nodeBySlug, nodesByKind, edgesFrom, edgesTo } from './graph.js';
@@ -125,11 +125,22 @@ function grantedSkillNode(gem) {
   return key ? getNode(key) : null;
 }
 
-// Trade-search URL for a gem, but ONLY for actual tradeable skill gems
-// (origin === 'gem'). Skills that merely enter the game granted by a unique or by
-// equipping a weapon (origin 'item'/'other') aren't Listed Items, so a gem-type
-// search on their name returns an empty result — omit the affordance for those.
+// Lineage supports (tagged "lineage") ship no skill/buff art — their
+// icon_dds_file is a blank placeholder — so the faceted gem inventory icon is
+// the only real icon. They're also fungible items traded via the bulk exchange,
+// not the item search, and get a "lineage" Origin facet for filtering.
+function isLineage(gem) {
+  return (gem.tags ?? []).includes('lineage');
+}
+
+// Trade link for a gem. Lineage supports are fungible items traded on the bulk
+// EXCHANGE (want-only deep link; null when we have no exchange id for them).
+// Everything else is a Listed Item, searchable ONLY for actually-tradeable skill
+// gems (origin === 'gem'): skills granted by a unique or by equipping a weapon
+// (origin 'item'/'other') aren't listed, so a type search returns nothing — omit
+// the affordance for those.
 function gemTradeUrl(gem) {
+  if (isLineage(gem)) return gemExchangeUrl(gem.id);
   return gem.origin === 'gem' ? tradeUrl({ kind: 'gem', type: gem.name }) : null;
 }
 
@@ -172,9 +183,9 @@ function gemBrowseCardVM(node) {
     tradeUrl: gemTradeUrl(gem),
     cardColor: cardColor(req, gem.color),
     gemType: gem.gem_type,
-    origin: gem.origin,
+    origin: isLineage(gem) ? `${gem.origin} lineage` : gem.origin,
     req,
-    iconUrl: ddsUrl(gem.icon_dds_file),
+    iconUrl: ddsUrl(isLineage(gem) ? gem.gem_icon_dds : gem.icon_dds_file),
     typeLineHtml: renderGameText(`[${typeLine}]`, hasDefinition),
     tags: tagTokens.map((t) => renderGameText(t, hasDefinition)),
     requirements: [

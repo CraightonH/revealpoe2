@@ -33,6 +33,9 @@ that a plain "online" search surfaces.
 | `base` | `type` (base name) only |
 | `gem` | `type` (gem name) + the gem default filters below |
 
+**Exception — Lineage supports** don't use this item search at all; they go to the
+bulk exchange (see "Lineage supports → bulk exchange" below).
+
 ### Gem default filters
 
 Cut skill gems **are** tradeable as distinct Listed Items (search by `type` = gem
@@ -81,6 +84,49 @@ constant rather than in `data/manual/*.json` (which is for graph overlays merged
 with referential-integrity checks against source nodes; a free-floating league
 string has nothing to reference).
 
+## Lineage supports → bulk exchange (not the item search)
+
+Lineage support gems (tagged `lineage`) are **fungible, fixed items** — every copy
+is identical, so they're never Listed Items in the regular trade search. They're
+traded through PoE2's **bulk / currency exchange**. The gem-search URL above would
+return nothing for them (and the gem default filters — level/quality/sockets — are
+nonsensical for a fixed item). So `gemTradeUrl` routes them to a bulk-exchange link
+instead via `gemExchangeUrl(metadataId)`.
+
+**The link is want-only — we never pin the offered currency.** The exchange query
+sets only `want: [<id>]` and leaves `have: []`. That returns every offer for the
+gem regardless of which currency the seller asks. This is deliberate: most Lineage
+supports are undesired and priced in Exalted Orbs, the sought-after few in Divine
+Orbs, but *which currency a listing wants is volatile market state we neither have
+nor need*. Want-only sidesteps the exalted-vs-divine pair entirely.
+
+```
+https://www.pathofexile.com/trade2/exchange/poe2/<League>?q={"query":{"status":{"option":"online"},"want":["amanamus-tithe"],"have":[]}}
+```
+
+### The exchange-id map (trade-service state, like the league)
+
+The `want` value is the gem's **exchange id** (e.g. `amanamus-tithe`), which lives
+in the trade service's static data (`api/trade2/data/static`, group
+`LineageSupportGems`) — **not in RePoE source**. Like `TRADE_LEAGUE`, it's volatile
+trade-service state, so it's cached in a committed file and refreshed by a script:
+
+- **`src/data/lineage-exchange-ids.json`** — `{ <our gem metadata id>: <exchange id> }`.
+  Loaded once by `trade.js`. A missing file or unmapped gem → `gemExchangeUrl`
+  returns `null` → the card omits the affordance (no broken link), same graceful
+  fallback as a missing icon.
+- **`npm run fetch:exchange-ids`** (`scripts/fetch-exchange-ids.js`) — fetches the
+  static data, matches each `LineageSupportGems` entry to our gem by display name,
+  rewrites the JSON, and prints a coverage report: our Lineage gems with no
+  exchange id (not bulk-tradeable, or renamed → no link), and exchange gems we
+  don't carry yet (a re-scrape will pick them up). Refresh it like a re-scrape —
+  after a game patch or when GGG adds Lineage supports.
+
+It is **not** a `data/manual/*.json` graph overlay: it's trade-service presentation
+config, not a graph relationship, and merging an exchange id onto a `repoe`-sourced
+gem node would break the provenance-isolation policy. It belongs in the presentation
+layer next to `TRADE_LEAGUE`, for the same reasons.
+
 ## Why two render forms (link vs. button)
 
 The full tooltip popups (`uniqueCard` / `gemCard` / `baseCard`) are plain `<div>`s,
@@ -99,3 +145,7 @@ trade URL in a new tab. Mirrors the existing `data-card-url` tooltip delegation.
 2. `npm run deploy`.
 
 That's it — every trade link across the site picks up the new league.
+
+After a game patch that adds/renames Lineage supports, also run
+`npm run fetch:exchange-ids` and commit the updated
+`src/data/lineage-exchange-ids.json` (check the printed coverage report).

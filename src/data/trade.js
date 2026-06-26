@@ -6,6 +6,9 @@
 //
 // See docs/trade-integration.md for the full rationale, especially why the league
 // is a hardcoded constant rather than derived from the scraped data.
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // The trade league the site is currently running. This is GGG trade-service state
 // (it rotates ~every league), NOT game-content data — RePoE never models it, so it
@@ -13,6 +16,7 @@
 export const TRADE_LEAGUE = 'Runes of Aldur';
 
 const SEARCH_BASE = 'https://www.pathofexile.com/trade2/search/poe2/';
+const EXCHANGE_BASE = 'https://www.pathofexile.com/trade2/exchange/poe2/';
 
 // `securable` = listings purchasable through PoE2's secured/instant-buy system,
 // excluding the no-price / whisper-for-price listings (AFK price-fixers, scammers)
@@ -56,4 +60,34 @@ export function tradeUrl({ kind, name, type } = {}) {
 
   const q = encodeURIComponent(JSON.stringify({ query }));
   return `${SEARCH_BASE}${encodeURIComponent(TRADE_LEAGUE)}?q=${q}`;
+}
+
+// Lineage support gems are fungible, fixed items — NOT Listed Items in the item
+// search, but traded through PoE2's bulk/currency exchange. Their exchange "want"
+// id (e.g. amanamus-tithe) comes from the trade service's static data (the
+// LineageSupportGems group), NOT RePoE — so, like TRADE_LEAGUE, it's cached in a
+// committed file and refreshed by `npm run fetch:exchange-ids`. A missing file or
+// unmapped gem yields null, so the caller omits the affordance (no broken link).
+const EXCHANGE_IDS = loadExchangeIds();
+function loadExchangeIds() {
+  try {
+    const p = path.join(path.dirname(fileURLToPath(import.meta.url)), 'lineage-exchange-ids.json');
+    return JSON.parse(fs.readFileSync(p, 'utf8')).map ?? {};
+  } catch {
+    return {};
+  }
+}
+
+// Bulk-exchange deep link for a Lineage support, keyed by our gem metadata id.
+// WANT-ONLY: we set only the wanted item and leave `have` empty, so the exchange
+// shows every offer for it regardless of the currency the seller asks (exalted,
+// divine, …). That sidesteps the market-defined exalted-vs-divine pair entirely —
+// which currency a listing wants is volatile market state we neither have nor need.
+export function gemExchangeUrl(metadataId) {
+  const want = EXCHANGE_IDS[metadataId];
+  if (!want) return null;
+  const q = encodeURIComponent(JSON.stringify({
+    query: { status: { option: 'online' }, want: [want], have: [] },
+  }));
+  return `${EXCHANGE_BASE}${encodeURIComponent(TRADE_LEAGUE)}?q=${q}`;
 }

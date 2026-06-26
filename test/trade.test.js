@@ -1,11 +1,20 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { tradeUrl, TRADE_LEAGUE } from '../src/data/trade.js';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { tradeUrl, gemExchangeUrl, TRADE_LEAGUE } from '../src/data/trade.js';
 
 // Decode the `q` param back into the query object for assertions.
 function queryOf(url) {
   const q = new URL(url).searchParams.get('q');
   return JSON.parse(q).query;
+}
+
+// A metadata id known to be mapped in the committed exchange-id cache.
+function aMappedExchangeId() {
+  const p = fileURLToPath(new URL('../src/data/lineage-exchange-ids.json', import.meta.url));
+  const { map } = JSON.parse(readFileSync(p, 'utf8'));
+  return Object.entries(map)[0]; // [metadataId, exchangeId]
 }
 
 test('TRADE_LEAGUE is set and URL-encoded into the path', () => {
@@ -58,4 +67,19 @@ test('special characters in names are encoded', () => {
   const url = tradeUrl({ kind: 'unique', name: "Atziri's Disfavour", type: 'Vaal Axe' });
   // Round-trips cleanly despite the apostrophe/space.
   assert.equal(queryOf(url).name, "Atziri's Disfavour");
+});
+
+test('gemExchangeUrl builds a want-only bulk-exchange link for a mapped gem', () => {
+  const [metadataId, exchangeId] = aMappedExchangeId();
+  const url = gemExchangeUrl(metadataId);
+  assert.ok(url.startsWith('https://www.pathofexile.com/trade2/exchange/poe2/'));
+  assert.ok(url.includes(encodeURIComponent(TRADE_LEAGUE)));
+  const q = queryOf(url);
+  assert.deepEqual(q.want, [exchangeId]); // the wanted item
+  assert.deepEqual(q.have, []);           // want-only: any currency the seller asks
+  assert.equal(q.status.option, 'online');
+});
+
+test('gemExchangeUrl returns null for an unmapped gem (no broken link)', () => {
+  assert.equal(gemExchangeUrl('Metadata/Items/Gem/SupportGemNotARealLineageGem'), null);
 });

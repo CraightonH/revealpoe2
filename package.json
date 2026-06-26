@@ -13,6 +13,7 @@
     "build:graph": "node scripts/graph/cli.js",
     "build:index": "node scripts/build-index.js",
     "build:images": "node scripts/fetch-images.js",
+    "fetch:exchange-ids": "node scripts/fetch-exchange-ids.js",
     "build:og": "node scripts/build-og.js",
     "build:static": "npm run build:graph && npm run build:images && npm run build:index && npm run build:og && node scripts/prerender.js",
     "deploy": "npm run build:static && wrangler pages deploy dist --branch main",
