@@ -1,0 +1,33 @@
+{
+  "_comment": "Golden test vectors for the official PoE2 passive-tree share code (format version 7). Captured 2026-06-26 from pathofexile2.com for the same character/tree under three allocation states. Used by the codec (public/js/passive-code.js) round-trip tests: decode(code) must yield the documented state, and encode(decode(code)) must reproduce the code byte-for-byte. URL-safe base64 (- and _).",
+  "_format_v7_confirmed": {
+    "header": "version uint32 BE (=7), class uint8 (=10 for these), ascendancy uint8 (0=none, 1=first ascendancy), then a count field (uint16 BE).",
+    "main_nodes": "allocated node hashes decode to uint16 values that all validate against Default.json passives keys.",
+    "weapon_set_section": "present only when weapon-set passives are allocated (A,B have it; C does not).",
+    "ascendancy_section": "present only when an ascendancy is chosen (B,C have it; A does not).",
+    "open_detail": "exact per-record framing (tag/extra words seen as 0x3a4f/0x66b9/0xdebe on some main records; SS markers 01/02/03 on trailing records) and section length prefixes to be finalized against these fixtures during implementation."
+  },
+  "vectors": [
+    {
+      "name": "A_noasc_weaponset",
+      "description": "No ascendancy chosen; some weapon-set passives allocated.",
+      "ascendancy": 0,
+      "hasWeaponSet": true,
+      "code": "AAAABwoAAHQofAAAp2kAAE44AACsvwAAwEQAABA9AACFeAAA1zAAAO8MAAI6T9rtAAI6Ty1UAALevkLAAALevvGKAADKHQACZrnh3QACZrl8FQACOk8C0gACOk89nwACZrl4WAAC3r43uwACZrkOOAAARTwAAELNAABjEgAAf_sAAL6FAAI6T5ZdAABaAAAANF8AAAt4AACZyQAA1scAAJaJAAA3tgACOk9VuQAAZ8wAALmaAADxFgAAlcYAAGBHAAJmuaqrAAI6T1TyAAI6T7a-AADRwgAAUbQAAH-9AAI6T3NNAAJmuUmCAABTQgAAxuAAAOPZAAI6T9woAAD8gwAAaigAAEFBAAJmuYc9AAACFwAAUMUAAOiSAAI6T7toAAJmuThuAALevrKGAAB7zAAAtHUAAPV5AABD1wAAMdkAAC_ZAABK1AAA0rUAAFNYAAD2CAAAPmcAALxGAAA0awAAOm4AAESMAACXFAAAbQYAANKyAACQQwAApv4AAJM7AADchQAAjYcAAA0IAAB3lwAA_rQAADvvAADrTwAAwMwAAEeKAADk4QAAZ7wAAOkJAACkXgAAdQcAABrrAADbyQAAZbIAAKc1AADeBgAAhhQAAKA5AAMCOk-v1AABAiA2AAECkqwAAQKM9QABAi1OAAEDreQAAQMIQQABAwFGAAEDetkAAQMk5AABAxG4AAEDkooAAQM="
+    },
+    {
+      "name": "B_asc_weaponset",
+      "description": "Same tree as A, plus an ascendancy chosen (index 1); weapon-set passives still allocated.",
+      "ascendancy": 1,
+      "hasWeaponSet": true,
+      "code": "AAAABwoBAHwofAAAp2kAAE44AACsvwAAwEQAABA9AACFeAAA1zAAAO8MAAI6T9rtAAI6Ty1UAALevkLAAALevvGKAADKHQACZrnh3QACZrl8FQACOk8C0gACOk89nwACZrl4WAAC3r43uwACZrkOOAAARTwAAELNAABjEgAAf_sAAL6FAAI6T5ZdAABaAAAANF8AAAt4AACZyQAA1scAAJaJAAA3tgACOk9VuQAAZ8wAALmaAADxFgAAlcYAAGBHAAJmuaqrAAI6T1TyAAI6T7a-AADRwgAAUbQAAH-9AAI6T3NNAAJmuUmCAABTQgAAxuAAAOPZAAI6T9woAAD8gwAAaigAAEFBAAJmuYc9AAACFwAAUMUAAOiSAAI6T7toAAJmuThuAALevrKGAAB7zAAAtHUAAPV5AABD1wAAMdkAAC_ZAABK1AAA0rUAAFNYAAD2CAAAPmcAALxGAAA0awAAOm4AAESMAACXFAAAbQYAANKyAACQQwAApv4AAJM7AADchQAAjYcAAA0IAAB3lwAA_rQAADvvAADrTwAAwMwAAEeKAADk4QAAZ7wAAOkJAACkXgAAdQcAABrrAADbyQAAZbIAAKc1AADeBgAAhhQAAKA5AAMCOk-v1AABAiA2AAECkqwAAQKM9QABAi1OAAEDreQAAQMIQQABAwFGAAEDetkAAQMk5AABAxG4AAEDkooAAQOFIQABAUuqAAEBjyMAAQEGywABAdAgAAEBoxcAAQH-zAABAfCSAAEB"
+    },
+    {
+      "name": "C_asc_noweaponset",
+      "description": "Same tree as B (ascendancy index 1) but with the weapon-set passives removed.",
+      "ascendancy": 1,
+      "hasWeaponSet": false,
+      "code": "AAAABwoBAG8ofAAAp2kAAE44AACsvwAAwEQAABA9AACFeAAA1zAAAO8MAAI6T9rtAAI6Ty1UAALevkLAAALevvGKAADKHQACZrnh3QACZrl8FQACOk8C0gACOk89nwACZrl4WAAC3r43uwACZrkOOAAARTwAAELNAABjEgAAf_sAAL6FAAI6T5ZdAABaAAAANF8AAAt4AACZyQAA1scAAJaJAAA3tgACOk9VuQAAZ8wAALmaAADxFgAAlcYAAGBHAAJmuaqrAAI6T1TyAAI6T7a-AADRwgAAUbQAAH-9AAI6T3NNAAJmuUmCAABTQgAAxuAAAOPZAAI6T9woAAD8gwAAaigAAEFBAAJmuYc9AAACFwAAUMUAAOiSAAI6T7toAAJmuThuAALevrKGAAB7zAAAtHUAAPV5AABD1wAAMdkAAC_ZAABK1AAA0rUAAFNYAAD2CAAAPmcAALxGAAA0awAAOm4AAESMAACXFAAAbQYAANKyAACQQwAApv4AAJM7AADchQAAjYcAAA0IAAB3lwAA_rQAADvvAADrTwAAwMwAAEeKAADk4QAAZ7wAAOkJAACkXgAAdQcAABrrAADbyQAAZbIAAKc1AADeBgAAhhQAAIUhAAEBS6oAAQGPIwABAQbLAAEB0CAAAQGjFwABAf7MAAEB8JIAAQE="
+    }
+  ]
+}

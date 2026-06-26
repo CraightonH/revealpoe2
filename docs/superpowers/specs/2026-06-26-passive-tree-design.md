@@ -151,12 +151,25 @@ Pure, unit-tested module (mirrors the shared-`query-core.js` pattern):
 
 ### F. `public/js/passive-code.js` (new) — share codec (pure)
 
-- `decode(base64) → state`, `encode(state) → base64`.
-- Targets the official format: uint32 BE version (7), class byte, ascendancy byte,
-  then allocated node hashes (uint16 BE list); weapon-set allocation per the format
-  once a sample is available.
-- **Hard dependency:** finalization is blocked on real test vectors (see Risks). The
-  codec is designed and stubbed; components B–E proceed without it.
+- `decode(base64) → state`, `encode(state) → base64`. URL-safe base64 (`-`/`_`).
+- Official format **version 7**, mapped from the three captured fixtures
+  (`test/fixtures/passive-tree-codes.json`):
+  - **Header:** `version` uint32 BE (=7) · `class` uint8 · `ascendancy` uint8
+    (0 = none, 1 = first ascendancy) · count field (uint16 BE).
+  - **Main nodes:** allocated node hashes decode to uint16 values, all validated
+    against `Default.json` passives — the core allocation is cleanly recoverable.
+  - **Weapon-set sub-section:** present iff weapon-set passives are allocated
+    (fixtures A & B have it; C does not).
+  - **Ascendancy sub-section:** present iff an ascendancy is chosen (fixtures B & C
+    have it; A does not); distinguished by `SS`-type markers (01 ascendancy / 02 / 03
+    weapon sets).
+- **Remaining detail (finalized during implementation, TDD against the fixtures):**
+  exact per-record framing — some main records carry an extra word (observed
+  `0x3a4f`/`0x66b9`/`0x66b9` group/proxy refs), and the section length prefixes. These
+  are deterministic given the allocation, so byte-exact round-trip is achievable.
+- **Acceptance:** `decode()` of each fixture yields its documented ascendancy /
+  weapon-set state and a valid node set; `encode(decode(code))` reproduces each
+  fixture **byte-for-byte**.
 
 ### G. Page & route
 
@@ -183,13 +196,13 @@ Pure, unit-tested module (mirrors the shared-`query-core.js` pattern):
 
 ## Risks & open items
 
-1. **Official code format (blocks codec only).** Need ~3–5 real share codes with known
-   allocations from the user: at minimum one plain, one with an ascendancy chosen, and
-   one with weapon-set points, to pin the exact node-list layout and weapon-set
-   encoding. Reverse-engineered format → a game patch may bump the version; the version
-   byte lets us detect and fail loudly.
-2. **Weapon-set encoding** unknown until a sample code is available.
-3. **Artifact size** — measure during implementation; mitigate by trimming text or
+1. **Official code format — RESOLVED.** Three real share codes captured
+   (`test/fixtures/passive-tree-codes.json`): one plain + weapon-set, one with
+   ascendancy + weapon-set, one with ascendancy and weapon-set removed. Format version
+   7 is mapped (see §F); only per-record framing remains, finalized via TDD against the
+   fixtures. Reverse-engineered format → a game patch may bump the version; the version
+   field lets us detect and fail loudly rather than mis-decode.
+2. **Artifact size** — measure during implementation; mitigate by trimming text or
    splitting ascendancy data if it exceeds ~4MB.
 
 ## Implementation ordering
