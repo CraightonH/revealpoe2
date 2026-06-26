@@ -15,13 +15,17 @@ Official site, GET-prefilled search:
 https://www.pathofexile.com/trade2/search/poe2/<League>?q=<url-encoded JSON>
 ```
 
-`<League>` is `Runes of Aldur` (URL-encoded `Runes%20of%20Aldur`) — see **League handling** below. The `q` payload is the standard trade query object:
+`<League>` is `Runes of Aldur` (URL-encoded `Runes%20of%20Aldur`) — see **League handling** below. The `q` payload is the standard trade query object. Every query carries the **Instant Buyout Only** trade filter (`sale_type: "priced"`):
 
-- **unique:** `{"query":{"status":{"option":"online"},"name":"<unique name>","type":"<base type>","stats":[{"type":"and","filters":[]}]}}`
-- **base:** `{"query":{"status":{"option":"online"},"type":"<base name>","stats":[{"type":"and","filters":[]}]}}`
-- **gem:** `{"query":{"status":{"option":"online"},"type":"<gem name>","stats":[{"type":"and","filters":[]}]}}`
+- **unique:** `{"query":{"status":{"option":"online"},"name":"<unique name>","type":"<base type>","filters":{"trade_filters":{"filters":{"sale_type":{"option":"priced"}}}},"stats":[{"type":"and","filters":[]}]}}`
+- **base:** `{"query":{"status":{"option":"online"},"type":"<base name>","filters":{"trade_filters":{"filters":{"sale_type":{"option":"priced"}}}},"stats":[{"type":"and","filters":[]}]}}`
+- **gem:** `{"query":{"status":{"option":"online"},"type":"<gem name>","filters":{"trade_filters":{"filters":{"sale_type":{"option":"priced"}}}},"stats":[{"type":"and","filters":[]}]}}`
 
 Uniques pin both `name` and base `type` for precision; bases and gems search by `type` alone.
+
+### Instant Buyout Only (not plain Online)
+
+`sale_type: "priced"` restricts results to listings with a real buyout / fixed price — i.e. immediately purchasable. A plain Online search (no sale-type filter) also surfaces *no-listed-price* / whisper-for-price listings, which are dominated by AFK price-fixers and scammers. `status: online` is still set (you want live sellers for an instant buy); the buyout filter is what excludes the junk. Encoding confirmed against a working PoE2 trade-link tool (`05K4R/poe-2-pricer`).
 
 ### Gem caveat
 
