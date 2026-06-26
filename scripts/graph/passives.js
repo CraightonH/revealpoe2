@@ -2,10 +2,10 @@
 //
 // Build-time resolver for passive tree nodes. Emits one `passive` node per
 // keystone/notable (incl. ascendancy notables) and one `ascendancy` node per
-// live ascendancy. Stat-id -> English string resolution runs here (the
-// passive_skill_stat_descriptions map over the general stat_descriptions map);
-// the resolved strings are stored raw — keyword linkification stays in the app
-// (graph rule #8), exactly the uniques split. Two edge kinds connect them:
+// live ascendancy. Stat-id -> English string resolution delegates to
+// passiveSource.resolveStatLines (single source of truth); resolved strings are
+// stored raw — keyword linkification stays in the app (graph rule #8), exactly
+// the uniques split. Two edge kinds connect them:
 // `grants` (passive -> granted gem) and `in_ascendancy` (ascNotable -> ascendancy).
 //
 // src/data/passiveTree.js consumes these nodes/edges and owns all rendering; it
@@ -13,49 +13,7 @@
 import { loadJson } from './loader.js';
 import { REPOE } from './source.js';
 import { makeNode, makeEdge, KINDS, EDGE_TYPES } from './schema.js';
-
-// ---------------------------------------------------------------------------
-// Stat translation (verbatim logic from src/data/passiveTree.js buildStatMap /
-// rawString, minus the renderGameText/stripGameText steps — those stay app-side).
-// ---------------------------------------------------------------------------
-let _statMap = null;
-function statMap() {
-  if (_statMap) return _statMap;
-  const general = loadJson(`${REPOE}/stat_translations/stat_descriptions.json`);
-  const passive = loadJson(`${REPOE}/stat_translations/passive_skill_stat_descriptions.json`);
-  _statMap = new Map();
-  // general first so passive-specific entries override
-  for (const entry of general) {
-    const eng = entry.English?.[0];
-    if (!eng) continue;
-    for (const id of entry.ids ?? []) _statMap.set(id, eng);
-  }
-  for (const entry of passive) {
-    const eng = entry.English?.[0];
-    if (!eng) continue;
-    for (const id of entry.ids ?? []) _statMap.set(id, eng);
-  }
-  return _statMap;
-}
-
-function rawString(entry, val) {
-  return entry.format?.[0] === 'ignore' ? entry.string : entry.string.replace('{0}', val);
-}
-
-// Resolved (value-substituted) English lines for a stats object, in source order.
-// Raw text — no keyword linkification, no HTML.
-function resolveStatLines(stats) {
-  const map = statMap();
-  const lines = [];
-  for (const [id, val] of Object.entries(stats ?? {})) {
-    const entry = map.get(id);
-    if (!entry) continue;
-    for (const line of rawString(entry, val).split('\n')) {
-      if (line.trim()) lines.push(line);
-    }
-  }
-  return lines;
-}
+import { resolveStatLines } from './passiveSource.js';
 
 // ---------------------------------------------------------------------------
 // passiveNodes — keystones + notables (incl. ascendancy notables).

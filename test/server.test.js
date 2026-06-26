@@ -164,3 +164,11 @@ test('GET /search?q=maximum+life returns Affix results', async () => {
   assert.equal(res.status, 200);
   assert.ok(res.text.includes('Affix'));
 });
+
+test('GET /passives renders the tree shell', async () => {
+  const app = createApp();
+  const res = await request(app).get('/passives');
+  assert.equal(res.status, 200);
+  assert.match(res.text, /<canvas/);
+  assert.match(res.text, /passive-tree\.js/);
+});

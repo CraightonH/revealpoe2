@@ -42,6 +42,24 @@ export function affixCardSeeds() {
     .filter((u) => typeof u === 'string' && u.startsWith('/mod/'));
 }
 
+// Passive-tree node cards are pre-rendered into public/generated/passive-cards.json
+// and shown client-side on canvas hover — their HTML never appears in any crawled
+// page, so the keyword (/api/keyword/:key) and granted-skill (/gem/:slug/card)
+// links embedded in them aren't link-reachable. Seed every link the cards embed,
+// the same way affixCardSeeds handles the search dropdown — same source the client
+// reads, so the seeds can't drift from what the tooltips surface.
+export function passiveCardSeeds() {
+  const file = path.join(PUBLIC, 'generated', 'passive-cards.json');
+  if (!fs.existsSync(file)) return [];
+  const cards = JSON.parse(fs.readFileSync(file, 'utf8'));
+  const out = new Set();
+  for (const html of Object.values(cards)) {
+    for (const m of html.matchAll(ATTR_RE)) out.add(m[1]);           // href / hx-get / data-card-url
+    for (const m of html.matchAll(KW_RE)) out.add(keywordUrl(m[1])); // data-keyword
+  }
+  return [...out];
+}
+
 // Attributes whose "/..." values are internal links worth following.
 const LINK_ATTRS = ['href', 'hx-get', 'data-card-url'];
 const ATTR_RE = new RegExp(`(?:${LINK_ATTRS.join('|')})="(/[^"]*)"`, 'g');
@@ -124,6 +142,8 @@ async function run() {
   SEEDS.forEach(enqueue);
   // Affix flyout fragments aren't link-reachable (see affixCardSeeds); seed them.
   for (const u of affixCardSeeds()) { const n = normalize(u); if (n) enqueue(n); }
+  // Passive-tree card links live only in the JSON artifact (see passiveCardSeeds).
+  for (const u of passiveCardSeeds()) { const n = normalize(u); if (n) enqueue(n); }
 
   async function handle(urlPath) {
     let res;

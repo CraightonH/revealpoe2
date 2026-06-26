@@ -31,11 +31,8 @@
 <div class="newItemPopup PassivePopup item-popup--poe2 is-{{ node.kind }}" style="--card-border: var(--color-{{ node.kind }}); --card-glow: var(--color-{{ node.kind }}-glow);">
 {% endif %}
   <div class="itemHeader doubleLine passiveHeader">
-    {% if node.iconUrl %}
-    <img class="leadPassiveIcon" src="{{ node.iconUrl }}" alt="{{ node.name }}" onerror="this.style.visibility='hidden'">
-    {% endif %}
     <div class="itemName"><span class="lc">{{ node.name }}</span></div>
-    <div class="itemName typeLine"><span class="lc">{% if node.ascendancyName %}{{ node.ascendancyName }}{% elif node.kind == 'keystone' %}Keystone{% else %}Notable Passive{% endif %}</span></div>
+    <div class="itemName typeLine"><span class="lc">{% if node.ascendancyName %}{{ node.ascendancyName }}{% elif node.typeLabel %}{{ node.typeLabel }}{% elif node.kind == 'keystone' %}Keystone{% else %}Notable Passive{% endif %}</span></div>
   </div>
   <div class="content">
     {% if node.grantedSkill %}

@@ -1239,24 +1239,35 @@ details[open] > .affix-origin-title::before { transform: rotate(90deg); }
   --passive-name-color: var(--color-notable);
 }
 
-/* Flat header bar — overrides the gem .dds banner background */
-.itemHeader.doubleLine.passiveHeader {
-  background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.25));
+/* Passive cards use the ItemsHeaderWhite 3-slice banner (same as base-item
+   cards): scrollwork corners scale to header height, the middle tiles across,
+   layered twice at a half-tile offset to hide the 1px trim seam. Unlike the
+   single GemHoverTitle image (background-size: contain), this fills the header
+   at ANY card width — so the title/subtitle banner is consistent on every node. */
+/* Drop the inset vignette for passive cards — over the bright banner it reads as
+   a black bar across the top. Keep the outer glow border. */
+.newItemPopup.PassivePopup {
+  box-shadow: 0 0 18px var(--card-glow, rgba(139,48,48,0.45)), 0 0 6px var(--card-glow, rgba(139,48,48,0.3));
 }
-.PassivePopup .leadPassiveIcon {
-  position: absolute;
-  left: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 44px;
-  height: 44px;
-  object-fit: contain;
+.itemHeader.doubleLine.passiveHeader {
+  background:
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderWhiteLeft.webp) left center no-repeat,
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderWhiteRight.webp) right center no-repeat,
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderWhiteMiddle.webp) 0 center repeat-x,
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderWhiteMiddle.webp) 24px center repeat-x;
+  /* Full texture height — the frame shows uncropped. (The top black gap was the
+     collapsing page margin, fixed in app.css, not a texture margin.) */
+  background-size: auto 100%, auto 100%, auto 100%, auto 100%;
+  height: 52px;
+  padding: 2px 18px;
+  justify-content: center;
+  text-align: center;
 }
 .PassivePopup .itemName .lc {
-  padding: 2px 12px 0 64px;
-  text-align: left;
+  padding: 2px 12px 0;
+  text-align: center;
   white-space: normal;
-  color: var(--passive-name-color);
+  color: #fff;
 }
 .PassivePopup .itemName.typeLine .lc {
   padding-top: 0;

@@ -58,9 +58,9 @@ test('GET /keystone/:id renders a keystone passive popup', async () => {
   assert.match(res.text, /is-keystone/);
   // reuses the glow-border machinery
   assert.match(res.text, /--card-border:/);
-  // flat header with left-anchored icon and a "Keystone" type line
-  assert.match(res.text, /passiveHeader/);
-  assert.match(res.text, /leadPassiveIcon/);
+  // ornate 3-slice banner header (no lead icon) with a "Keystone" type line
+  assert.match(res.text, /itemHeader doubleLine passiveHeader/);
+  assert.doesNotMatch(res.text, /leadPassiveIcon/);
   assert.match(res.text, /typeLine">.*Keystone.*<\/span>/);
   // under the size scaler
   const popupIdx = res.text.indexOf('newItemPopup');

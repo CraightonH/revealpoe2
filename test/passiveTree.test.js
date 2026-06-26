@@ -1,6 +1,16 @@
-import { describe, it } from 'node:test';
+import { describe, it, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { listKeystones, getKeystone, listNotables, getNotable, getPassiveNode, listAscendancies, getAscendancy } from '../src/data/passiveTree.js';
+import { passiveNodes } from '../scripts/graph/passives.js';
+
+test('passiveNodes emits keystones + notables with resolved stat lines', () => {
+  const { nodes } = passiveNodes();
+  assert.ok(nodes.length > 1000, `passive nodes=${nodes.length}`);
+  const withStats = nodes.filter((n) => n.props.statLines.length > 0);
+  assert.ok(withStats.length > 0);
+  // kind is one of keystone/notable
+  for (const n of nodes) assert.ok(['keystone', 'notable'].includes(n.props.kind));
+});
 
 describe('passiveTree', () => {
   describe('listKeystones', () => {

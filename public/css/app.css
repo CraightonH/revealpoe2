@@ -321,6 +321,40 @@ body {
 .page--prose a { color: var(--color-magic); }
 .page--prose li { margin-bottom: 8px; line-height: 1.5; }
 
+/* Passive tree page: full-viewport canvas with controls bar above. */
+.page--passives { flex-direction: column; padding: 0; width: 100%; }
+.passive-tree-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 16px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.passive-tree-toggle { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.passive-tree-wrap {
+  position: relative;
+  width: 100%;
+  height: calc(100vh - 110px); /* viewport minus header + controls */
+}
+.passive-tree-wrap canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.passive-tree-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 12px;
+  max-width: 260px;
+  z-index: 10;
+}
+
 /* Site footer: legally-required GGG disclaimer + credits link, on every page. */
 .site-footer {
   margin-top: 48px;
@@ -454,6 +488,26 @@ body {
 }
 .tippy-box[data-theme~='poe2'] .tippy-content { padding: 0; }
 .tippy-box[data-theme~='poe2'] .tippy-arrow { color: #000; }
+/* Cards carry a page-layout margin (e.g. .PassivePopup { margin: 16px auto 0 })
+   that collapses into the zero-padding tooltip and shows the black box top. Zero
+   it inside tooltips so the card sits flush. */
+.tippy-box[data-theme~='poe2'] .newItemPopup { margin: 0; }
+
+/* Passive-tree tooltips are translucent so the tree shows through (in-game feel).
+   A backdrop blur keeps the stat text legible over the busy tree behind it.
+   The per-rarity colored border/glow is dropped here — over the tree it's just
+   noise — for a neutral faint edge + soft drop shadow that only reads as depth. */
+.tippy-box[data-theme~='passive-tree'] { background: transparent; }
+.tippy-box[data-theme~='passive-tree'] .newItemPopup {
+  background-color: rgba(8, 9, 12, 0.7);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.55);
+}
+/* No subtitle (Keystone / Notable Passive / Passive) in the tree tooltips —
+   just the name in the banner. */
+.tippy-box[data-theme~='passive-tree'] .itemName.typeLine { display: none; }
 
 /* Affix base-target flyout — the list of bases that can roll a mod. */
 .affix-bases { padding: 8px 10px; min-width: 160px; }

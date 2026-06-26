@@ -15,12 +15,13 @@
     "build:images": "node scripts/fetch-images.js",
     "fetch:exchange-ids": "node scripts/fetch-exchange-ids.js",
     "build:og": "node scripts/build-og.js",
-    "build:static": "npm run build:graph && npm run build:images && npm run build:index && npm run build:og && node scripts/prerender.js",
+    "build:passives": "node scripts/build-passive-tree.js",
+    "build:static": "npm run build:graph && npm run build:images && npm run build:index && npm run build:passives && npm run build:og && node scripts/prerender.js",
     "deploy": "npm run build:static && wrangler pages deploy dist --branch main",
     "deploy:preview": "npm run build:static && wrangler pages deploy dist --branch \"preview-$(git rev-parse --abbrev-ref HEAD)\"",
-    "prestart": "npm run build:graph && npm run build:index",
-    "predev": "npm run build:graph && npm run build:index",
-    "pretest": "npm run build:graph"
+    "prestart": "npm run build:graph && npm run build:index && npm run build:passives",
+    "predev": "npm run build:graph && npm run build:index && npm run build:passives",
+    "pretest": "npm run build:graph && npm run build:passives"
   },
   "dependencies": {
     "@resvg/resvg-js": "^2.6.2",

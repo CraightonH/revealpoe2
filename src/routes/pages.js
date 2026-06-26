@@ -94,6 +94,10 @@ export function registerPages(app) {
 
   detailRoute(app, '/ascendancy/:id', getAscendancy, 'ascendancy.njk', 'a');
 
+  app.get('/passives', (_req, res) => {
+    res.render('passives.njk', { title: 'Passive Tree' });
+  });
+
   app.get('/credits', (_req, res) => {
     res.render('credits.njk');
   });

@@ -18,7 +18,7 @@
 - **Geometry precomputed at build time**; the client does no orbit math.
 - **`orbit_radii` is NOT monotonic** (`[0,82,162,335,493,662,846,251,1080,1332]`, index 7 = 251). Always index by the node's `radius` field; never assume sorted orbits.
 - **Edge dedup:** connections are bidirectional; store each undirected edge once as `(min(a,b), max(a,b))`.
-- **Arc rule:** an edge is an arc iff both endpoints share the same group AND the same orbit (`radius`); otherwise a straight line. Verified counts on current data: 1610 arcs / 4458 straight / 6068 total.
+- **Arc rule:** an edge is an arc iff both endpoints share the same group AND the same orbit (`radius`); otherwise a straight line. Verified counts on current data: 1603 arcs / 4464 straight / 6067 total (a source self-loop hash 35653→35653 is filtered to preserve a<b).
 - **Canonical source paths** (via `scripts/graph/source.js` `REPOE`): `${REPOE}/passive_skill_trees/Default.json`, `${REPOE}/ascendancies.json`, `${REPOE}/stat_translations/stat_descriptions.json`, `${REPOE}/stat_translations/passive_skill_stat_descriptions.json`.
 - **Share codes** are URL-safe base64 (`-`→`+`, `_`→`/`), format version 7.
 

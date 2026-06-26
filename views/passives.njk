@@ -1,0 +1,22 @@
+{% extends "base.njk" %}
+{% block title %}Passive Tree — PoE2 Wiki{% endblock %}
+{% block content %}
+<div class="page page--passives">
+  <div class="passive-tree-controls">
+    <span class="passive-tree-points" id="tree-points"></span>
+    <label class="passive-tree-toggle">
+      <input type="checkbox" id="tree-weapon-set" value="1">
+      Weapon Set 2
+    </label>
+    <button type="button" id="tree-copy-code" class="passive-tree-btn">Copy Share Code</button>
+  </div>
+  <div class="passive-tree-wrap">
+    <canvas id="tree"></canvas>
+  </div>
+</div>
+<script type="module">
+  import { load } from '/static/js/passive-tree.js';
+  const canvas = document.getElementById('tree');
+  if (canvas) load(canvas).catch(console.error);
+</script>
+{% endblock %}
