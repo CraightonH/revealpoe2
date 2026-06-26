@@ -5,7 +5,7 @@ import { getGemRefByKey } from './gems.js';
 import { hasDefinition } from './keywordDefs.js';
 import { linkifyRequirement, linkifyPhrases, renderGameText } from './keywords.js';
 import { nodesByKind, edgesTo, getNode } from './graph.js';
-import { GROUPS, ATTR_SUBTYPE_ORDER } from './itemTaxonomy.js';
+import { GROUPS, ATTR_SUBTYPE_ORDER, CONSUMABLE_CLASSES } from './itemTaxonomy.js';
 
 // Presentation adapter over the graph artifact (build/graph.json). Base identity,
 // selection, slugs, props, rune-variant folding, and resolved implicit/affix data
@@ -266,6 +266,17 @@ function buildAffixTargets() {
   for (const [, info] of _classInfo) {
     const cls = getItemClass(info.classSlug);
     if (!cls) continue;
+    // Per-base-nav classes (jewels) have no class page — point each family at the
+    // individual bases that roll it, resolved per base from its own affix set.
+    if (PER_BASE_NAV_CLASSES.has(cls.classId)) {
+      for (const b of cls.bases) {
+        const a = baseAffixes(b.metadataKey);
+        for (const f of [...a.standard.prefix, ...a.standard.suffix]) {
+          add(f.typeSlug, { label: b.name, href: `/base/${b.slug}` });
+        }
+      }
+      continue;
+    }
     const subKeys = cls.attrSubtypes.map((s) => s.value);
     const subLabel = new Map(cls.attrSubtypes.map((s) => [s.value, s.label]));
     const families = [...cls.affixes.standard.prefix, ...cls.affixes.standard.suffix];
@@ -303,6 +314,13 @@ const EXTRA_NAV_GROUPS = [
   { label: 'Jewels', classes: ['Jewel'] },
 ];
 const EXTRA_NAV_CLASSES = new Set(EXTRA_NAV_GROUPS.flatMap((g) => g.classes));
+
+// Classes navigated per-base on the /bases landing rather than via a class page —
+// each base rolls a distinct affix set, so listing one base page per type is more
+// useful than a union class page. These have NO /bases/:class page (the route
+// 404s); breadcrumbs render the class as plain text and affix flyouts target the
+// individual bases that roll a mod.
+export const PER_BASE_NAV_CLASSES = new Set(['Jewel']);
 
 // Landing-page navigation model. Buckets are tag-driven, not GROUPS-driven, so
 // data quirks self-correct: Weapons split into One-/Two-Handed by onehand/twohand
@@ -353,12 +371,22 @@ export function listBaseNav() {
     return { title: c.info.name, cards: [classCard(c)] };
   });
 
-  // Consumable/jewel groups: one flat section of class cards each, skipping any
-  // class with no bases. Dropped entirely if a whole group is empty.
-  const extraGroups = EXTRA_NAV_GROUPS.map((g) => ({
-    label: g.label,
-    sections: [{ title: null, cards: g.classes.map(get).filter((c) => c.bases.length).map(classCard) }],
-  })).filter((g) => g.sections[0].cards.length);
+  // Per-base nav card for jewels — each jewel base rolls its own affix set, so the
+  // landing lists them individually (Ruby, Emerald, …) rather than one "Jewel"
+  // class card. Count is rollable-mod families ("mods"), not bases.
+  const jewelBaseCard = (b) =>
+    ({ ...card(b.name, affixFamilyCount(baseAffixes(b.metadataKey)), b.iconUrl, `/base/${b.slug}`), unit: 'mods' });
+
+  // Consumable groups: one flat section each, skipping empties. Per-base-nav
+  // classes (jewels) expand to a card per base; other groups (flasks/charms) list
+  // class cards that link to their class page.
+  const extraGroups = EXTRA_NAV_GROUPS.map((g) => {
+    const perBase = g.classes.some((c) => PER_BASE_NAV_CLASSES.has(c));
+    const cards = perBase
+      ? g.classes.flatMap((classId) => _byClass.get(classId) ?? []).map(jewelBaseCard)
+      : g.classes.map(get).filter((c) => c.bases.length).map(classCard);
+    return { label: g.label, sections: [{ title: null, cards }] };
+  }).filter((g) => g.sections[0].cards.length);
 
   return [
     { label: 'Weapons', sections: [
@@ -384,6 +412,23 @@ export function getBaseByName(name) {
   return _byName.get(name) ?? null;
 }
 
+// The three affix origins rollable on a single base, in the shape the affix-table
+// macros consume. Consumable/jewel bases each roll a *distinct* set (a Ruby ≠ an
+// Emerald), so they get per-base tables; equipment mods are uniform class-wide, so
+// those bases defer to the class page instead.
+function baseAffixes(metadataKey) {
+  return {
+    standard: getModsForClass([metadataKey]),
+    corrupted: getCorruptedForClass([metadataKey]),
+    desecrated: getDesecratedForClass([metadataKey]),
+  };
+}
+
+function affixFamilyCount(a) {
+  return a.standard.prefix.length + a.standard.suffix.length
+    + a.corrupted.length + a.desecrated.prefix.length + a.desecrated.suffix.length;
+}
+
 export function buildBaseItemViewModel(slug) {
   const b = getBaseItem(slug);
   if (!b) return null;
@@ -395,5 +440,12 @@ export function buildBaseItemViewModel(slug) {
     .filter(Boolean)
     .map((n) => ({ slug: n.slug, name: n.name, iconUrl: ddsUrl(n.props.iconDds) }));
 
-  return { ...b, uniquesOnBase, runeVariants: _runeByParent.get(b.slug) ?? [] };
+  // Per-base affix tables for consumable/jewel bases; equipment keeps the
+  // "see the class page" pointer (its mods don't vary base to base).
+  const affixes = CONSUMABLE_CLASSES.has(b.itemClass) ? baseAffixes(b.metadataKey) : null;
+  // Jewels have no class page (PER_BASE_NAV_CLASSES) — the breadcrumb shows the
+  // class as plain text rather than a dead link to /bases/:class.
+  const classHasPage = !PER_BASE_NAV_CLASSES.has(b.itemClass);
+
+  return { ...b, uniquesOnBase, affixes, classHasPage, runeVariants: _runeByParent.get(b.slug) ?? [] };
 }

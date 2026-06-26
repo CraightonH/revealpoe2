@@ -29,10 +29,31 @@ export function isOrigin(id) {
   return Object.prototype.hasOwnProperty.call(AFFIX_ORIGINS, id);
 }
 
-// Node slug for an affix family. Standard keeps the bare type slug so existing
-// /mod/:typeSlug URLs stay stable (verified collision-free across standard types);
-// other origins are namespaced so the same family type across origins (e.g. a
-// "FireResistance" standard mod vs a corrupted one) yields distinct, unique slugs.
-export function originSlug(origin, typeSlug) {
-  return origin === 'standard' ? typeSlug : `${origin}-${typeSlug}`;
+// Affix scope: which base-domain bucket a family rolls on. RePoE reuses `type`
+// names across source domains with *different* stat scales — a jewel
+// "FireResistance" (+5–10%) is not a ring "FireResistance" (+6–45%), and the two
+// never co-occur on a base — so family identity must include the scope, not just
+// (origin, type). Equipment (source domains `item` + `desecrated`) is the default,
+// un-namespaced scope; flasks/charms (`flask`) and jewels (`misc`) are partitioned.
+export const SCOPE_ITEM = 'item';
+export function scopeOfModDomain(domain) {
+  if (domain === 'flask') return 'flask';
+  if (domain === 'misc') return 'jewel';
+  return SCOPE_ITEM; // item, desecrated, anything else → equipment bucket
+}
+
+// Affix family node id. Equipment scope keeps the legacy `Affix/${origin}/${type}`
+// id so existing graph ids stay stable; flask/jewel scopes are namespaced.
+export function affixNodeId(origin, type, scope = SCOPE_ITEM) {
+  return scope === SCOPE_ITEM ? `Affix/${origin}/${type}` : `Affix/${origin}/${scope}/${type}`;
+}
+
+// Node slug / `/mod/:typeSlug` key for an affix family. Standard equipment keeps
+// the bare type slug so existing /mod URLs stay stable (verified collision-free
+// across standard types); other origins and non-equipment scopes are namespaced so
+// distinct families (a standard vs corrupted "FireResistance", an equipment vs
+// jewel "FireResistance") yield distinct, unique slugs.
+export function originSlug(origin, typeSlug, scope = SCOPE_ITEM) {
+  const withOrigin = origin === 'standard' ? typeSlug : `${origin}-${typeSlug}`;
+  return scope === SCOPE_ITEM ? withOrigin : `${scope}-${withOrigin}`;
 }

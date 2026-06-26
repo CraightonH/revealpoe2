@@ -5,7 +5,7 @@
    base count, links to /bases/:classSlug. #}
 {% macro basesClassCard(c) %}
 <a class="bases-class-card" href="{{ c.href }}"
-   title="{{ c.name }}" aria-label="{{ c.name }} ({{ c.count }} bases)">
+   title="{{ c.name }}" aria-label="{{ c.name }} ({{ c.count }} {{ c.unit or 'bases' }})">
   <span class="bases-class-name">{{ c.name }}</span>
   {% if c.iconUrl %}
   <img class="bases-class-icon" src="{{ c.iconUrl }}" alt="" loading="lazy" onerror="this.remove()">

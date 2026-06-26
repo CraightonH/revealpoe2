@@ -11,7 +11,6 @@
 // out per the origin registry (src/data/affixOrigins.js). Adding an origin is a
 // registry entry + a build-side eligibility branch — no change here.
 import { getNode, nodesByKind, edgesTo } from './graph.js';
-import { slugify } from './slug.js';
 import { renderGameText } from './keywords.js';
 import { hasDefinition } from './keywordDefs.js';
 import { AFFIX_ORIGINS } from './affixOrigins.js';
@@ -49,7 +48,10 @@ function buildFamily(node, idxSet, origin) {
   return {
     type: node.props.type,
     displayName: node.name,
-    typeSlug: slugify(node.props.type),
+    // The family's slug doubles as the /mod/:typeSlug flyout key. It is scope- and
+    // origin-aware (jewel "FireResistance" → `jewel-fireresistance`), so a jewel
+    // mod and a same-named equipment mod resolve to distinct flyouts.
+    typeSlug: node.slug,
     genericHtml: renderGameText(toGenericText(top.text), hasDefinition),
     sortKey: toSortKey(top.text),
     tags,
@@ -164,7 +166,7 @@ export function listModGroups() {
       type: node.props.type,
       displayName: node.name,
       genericText: familyGenericText(tiers),
-      typeSlug: slugify(node.props.type),
+      typeSlug: node.slug,
       generation_type: first.generationType,
       text: first.text,
       tierCount: tiers.length,

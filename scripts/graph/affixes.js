@@ -20,24 +20,27 @@ import { REPOE } from './source.js';
 import { slugify } from '../../src/data/slug.js';
 import { makeNode, makeEdge, KINDS, EDGE_TYPES } from './schema.js';
 import { abyssBoss, humanizeType, toGenericDisplay } from '../../src/data/affixText.js';
-import { originSlug } from '../../src/data/affixOrigins.js';
+import { originSlug, scopeOfModDomain, affixNodeId } from '../../src/data/affixOrigins.js';
 
 const ROLLABLE = new Set(['prefix', 'suffix']);
 
 // Domains whose rollable mods are "standard" craftable affixes (applied via basic
 // currency). Equipment is `item`; flasks/charms live in `flask`; jewels in `misc`.
-// flask/misc eligibility is spawn-weight (item-tag) gated rather than the
-// mods_by_base join, and is resolved in affixEdges scoped to the matching base
-// domain (so a `default`-tagged flask charge mod can't leak onto weapons).
+// All three are gated identically through the mods_by_base join (every rollable
+// flask/jewel mod is referenced there with proper per-base tiers — verified) and
+// partitioned into separate families by scope (scopeOfModDomain) so a jewel mod's
+// `type` can't merge with a same-named equipment mod's tiers.
 const STANDARD_DOMAINS = new Set(['item', 'flask', 'misc']);
-// mod domain -> the base `domain` its tag-gated edges may attach to.
-const TAG_GATED_DOMAINS = { flask: 'flask', misc: 'misc' };
+// Non-equipment mod domains, kept for the dead-family drop filter below.
+const SPAWN_GATED_DOMAINS = new Set(['flask', 'misc']);
 
 // Map a mod's (domain, generation_type) to its affix origin, or null if the mod
 // isn't a rollable affix (true implicits, enchants, internal mechanics, …).
+// Corruption applies to equipment, flasks, and jewels alike (Vaal Orb), so any of
+// those domains with a `corrupted` gen-type is a corrupted-origin family.
 function originOf(domain, gen) {
   if (STANDARD_DOMAINS.has(domain) && ROLLABLE.has(gen)) return 'standard';
-  if (domain === 'item' && gen === 'corrupted') return 'corrupted';
+  if (gen === 'corrupted' && STANDARD_DOMAINS.has(domain)) return 'corrupted';
   if (domain === 'desecrated' && ROLLABLE.has(gen)) return 'desecrated';
   return null;
 }
@@ -62,21 +65,22 @@ export function selectAffixRecords() {
   for (const [id, v] of Object.entries(raw)) {
     const origin = originOf(v.domain, v.generation_type);
     if (!origin) continue;
-    const nodeId = `Affix/${origin}/${v.type}`;
+    const scope = scopeOfModDomain(v.domain);
+    const nodeId = affixNodeId(origin, v.type, scope);
     let rec = byKey.get(nodeId);
     if (!rec) {
       rec = {
-        id: nodeId, origin, type: v.type, modDomain: v.domain,
-        slug: originSlug(origin, slugify(v.type)),
+        id: nodeId, origin, scope, type: v.type, modDomain: v.domain,
+        slug: originSlug(origin, slugify(v.type), scope),
         boss: null, spawnTags: new Set(), tiers: [],
       };
       byKey.set(nodeId, rec);
     }
     rec.tiers.push(tierRecord(id, v));
-    // Spawn-weight (item-tag) eligibility, collected for the two origins that use
-    // it: desecrated, and the flask/jewel standard mods (gated by base domain in
-    // affixEdges). The mods_by_base join handles item-domain standard mods instead.
-    if (origin === 'desecrated' || TAG_GATED_DOMAINS[v.domain]) {
+    // Spawn-weight (item-tag) eligibility, collected for desecrated (its gating
+    // predicate + boss pill) and for the flask/jewel dead-family drop below. The
+    // mods_by_base join handles all standard/corrupted eligibility regardless.
+    if (origin === 'desecrated' || SPAWN_GATED_DOMAINS.has(v.domain)) {
       if (origin === 'desecrated' && !rec.boss) rec.boss = abyssBoss(v.implicit_tags ?? []);
       for (const sw of v.spawn_weights ?? []) if (sw.weight > 0) rec.spawnTags.add(sw.tag);
     }
@@ -85,9 +89,9 @@ export function selectAffixRecords() {
     rec.tiers.sort((a, b) => a.level - b.level);
     rec.tierIndexById = new Map(rec.tiers.map((t, i) => [t.id, i]));
   }
-  // Drop flask/jewel standard families with no positive spawn weight anywhere —
-  // they can't roll on any base, so they'd be dead entries in search/affix tables.
-  return [...byKey.values()].filter((r) => !(TAG_GATED_DOMAINS[r.modDomain]) || r.spawnTags.size);
+  // Drop flask/jewel families with no positive spawn weight anywhere — they can't
+  // roll on any base, so they'd be dead entries in search/affix tables.
+  return [...byKey.values()].filter((r) => !SPAWN_GATED_DOMAINS.has(r.modDomain) || r.spawnTags.size);
 }
 
 export function affixNodes() {
@@ -96,6 +100,7 @@ export function affixNodes() {
     const top = r.tiers[r.tiers.length - 1];
     const props = {
       origin: r.origin,
+      scope: r.scope,
       type: r.type,
       boss: r.boss,
       tiers: r.tiers.map((t) => ({
@@ -116,12 +121,16 @@ const GEN_TO_ORIGIN = { prefix: 'standard', suffix: 'standard', corrupted: 'corr
 
 export function affixEdges(records, baseRecords, nodeIds) {
   const edges = [];
-  const byOriginType = new Map(); // `${origin}|${type}` -> record
-  for (const r of records) byOriginType.set(`${r.origin}|${r.type}`, r);
+  const rawMods = loadJson(`${REPOE}/mods.json`);
+  const byKey = new Map(); // `${origin}|${scope}|${type}` -> record
+  for (const r of records) byKey.set(`${r.origin}|${r.scope}|${r.type}`, r);
 
-  // Standard + corrupted: explicit mods_by_base join. A base can appear under
-  // multiple tag-combos, so accumulate the allowed mod-id union per (family, base)
-  // before emitting one edge carrying the allowed tier indices.
+  // Standard + corrupted (equipment, flasks, jewels alike): explicit mods_by_base
+  // join. Each mod-id is routed to its scoped family by the mod's source domain
+  // (scopeOfModDomain), so a jewel "FireResistance" lands on the jewel family and
+  // never the equipment one. A base can appear under multiple tag-combos, so
+  // accumulate the allowed mod-id union per (family, base) before emitting one edge
+  // carrying the allowed tier indices.
   const mbb = loadJson(`${REPOE}/mods_by_base.json`);
   const allowed = new Map(); // `${nodeId}|${baseId}` -> { rec, baseId, ids:Set }
   for (const combos of Object.values(mbb)) {
@@ -132,15 +141,16 @@ export function affixEdges(records, baseRecords, nodeIds) {
         const origin = GEN_TO_ORIGIN[genType];
         if (!origin) continue;
         for (const [typeName, modMap] of Object.entries(typeGroups)) {
-          const rec = byOriginType.get(`${origin}|${typeName}`);
-          if (!rec) continue;
-          const modIds = Object.keys(modMap).filter((mid) => rec.tierIndexById.has(mid));
-          if (!modIds.length) continue;
-          for (const baseId of bases) {
-            const key = `${rec.id}|${baseId}`;
-            let acc = allowed.get(key);
-            if (!acc) { acc = { rec, baseId, ids: new Set() }; allowed.set(key, acc); }
-            for (const mid of modIds) acc.ids.add(mid);
+          for (const mid of Object.keys(modMap)) {
+            const scope = scopeOfModDomain(rawMods[mid]?.domain);
+            const rec = byKey.get(`${origin}|${scope}|${typeName}`);
+            if (!rec || !rec.tierIndexById.has(mid)) continue;
+            for (const baseId of bases) {
+              const key = `${rec.id}|${baseId}`;
+              let acc = allowed.get(key);
+              if (!acc) { acc = { rec, baseId, ids: new Set() }; allowed.set(key, acc); }
+              acc.ids.add(mid);
+            }
           }
         }
       }
@@ -153,29 +163,13 @@ export function affixEdges(records, baseRecords, nodeIds) {
 
   // Desecrated: spawn_weights item-tag predicate, frozen into edges. Eligibility
   // is class/item-tag gated (not per-base tier restricted), so all tiers apply.
+  // These Abyss mods legitimately span scopes (the same mod rolls on an amulet or
+  // a jewel), so they stay scope-agnostic equipment-bucket families.
   const desecrated = records.filter((r) => r.origin === 'desecrated' && r.spawnTags.size);
   for (const b of baseRecords) {
     const tagSet = new Set(b.raw.tags ?? []);
     if (!tagSet.size) continue;
     for (const rec of desecrated) {
-      let match = false;
-      for (const t of rec.spawnTags) if (tagSet.has(t)) { match = true; break; }
-      if (match) edges.push(makeEdge({ type: EDGE_TYPES.ROLLS_ON, from: rec.id, to: b.id }));
-    }
-  }
-
-  // Flask/jewel standard mods: same spawn_weights tag predicate, but scoped to the
-  // mod-domain's matching base domain. Flask charge mods gate on the universal
-  // `default` tag, so without this scoping they'd attach to every base; gating by
-  // base domain keeps flask mods on flasks/charms and jewel mods on jewels. All
-  // tiers eligible (no per-base tier restriction in the source).
-  const tagGated = records.filter((r) => r.origin === 'standard' && TAG_GATED_DOMAINS[r.modDomain] && r.spawnTags.size);
-  for (const b of baseRecords) {
-    const baseDomain = b.raw.domain;
-    const tagSet = new Set(b.raw.tags ?? []);
-    if (!tagSet.size) continue;
-    for (const rec of tagGated) {
-      if (TAG_GATED_DOMAINS[rec.modDomain] !== baseDomain) continue;
       let match = false;
       for (const t of rec.spawnTags) if (tagSet.has(t)) { match = true; break; }
       if (match) edges.push(makeEdge({ type: EDGE_TYPES.ROLLS_ON, from: rec.id, to: b.id }));

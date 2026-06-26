@@ -5,25 +5,52 @@ import { baseNodes } from '../../scripts/graph/bases.js';
 import { slugify } from '../../src/data/slug.js';
 import { originSlug } from '../../src/data/affixOrigins.js';
 
-test('affixNodes: one node per (origin, type) with non-empty tiers', () => {
+test('affixNodes: one node per (origin, scope, type) with non-empty tiers', () => {
   const { nodes } = affixNodes();
   assert.ok(nodes.length > 500, 'many affix families');
   for (const n of nodes) {
     assert.equal(n.kind, 'affix');
     assert.ok(['standard', 'corrupted', 'desecrated'].includes(n.props.origin), `valid origin (${n.id})`);
+    assert.ok(['item', 'flask', 'jewel'].includes(n.props.scope), `valid scope (${n.id})`);
     assert.ok(n.props.type, 'has type');
     assert.ok(Array.isArray(n.props.tiers) && n.props.tiers.length > 0, 'has tiers');
   }
 });
 
-test('affixNodes: slug is bare for standard, namespaced for other origins', () => {
+test('affixNodes: slug is scope- and origin-aware, bare only for equipment standard', () => {
   const { nodes } = affixNodes();
   for (const n of nodes) {
-    assert.equal(n.slug, originSlug(n.props.origin, slugify(n.props.type)));
+    assert.equal(n.slug, originSlug(n.props.origin, slugify(n.props.type), n.props.scope));
   }
-  const standard = nodes.filter((n) => n.props.origin === 'standard');
-  assert.ok(standard.every((n) => !n.slug.startsWith('corrupted-') && !n.slug.startsWith('desecrated-')));
-  assert.ok(nodes.filter((n) => n.props.origin === 'corrupted').every((n) => n.slug.startsWith('corrupted-')));
+  // Equipment-scope standard keeps the legacy bare slug (URL stability).
+  const eqStandard = nodes.filter((n) => n.props.origin === 'standard' && n.props.scope === 'item');
+  assert.ok(eqStandard.every((n) => !n.slug.includes('-corrupted-') && !n.slug.startsWith('corrupted-')
+    && !n.slug.startsWith('jewel-') && !n.slug.startsWith('flask-')));
+  // Equipment corrupted is origin-namespaced; jewel families are scope-namespaced.
+  assert.ok(nodes.filter((n) => n.props.origin === 'corrupted' && n.props.scope === 'item')
+    .every((n) => n.slug.startsWith('corrupted-')));
+  assert.ok(nodes.filter((n) => n.props.scope === 'jewel').every((n) => n.slug.startsWith('jewel-')));
+});
+
+test('affixNodes: jewel standard families are separate from equipment, jewel-only tiers', () => {
+  const { nodes } = affixNodes();
+  // AttackDamage rolls on both gear and jewels with different scales — partitioned
+  // into two families rather than merged into one with mixed tiers.
+  const eq = nodes.find((n) => n.id === 'Affix/standard/AttackDamage');
+  const jewel = nodes.find((n) => n.id === 'Affix/standard/jewel/AttackDamage');
+  assert.ok(eq && jewel, 'both equipment and jewel AttackDamage families exist');
+  assert.notEqual(eq.slug, jewel.slug);
+  // No tier id is shared between the two families (disjoint tier sets).
+  const eqIds = new Set(eq.props.tiers.map((t) => t.id));
+  assert.ok(jewel.props.tiers.every((t) => !eqIds.has(t.id)), 'jewel family holds only its own tiers');
+  assert.ok(jewel.props.tiers.every((t) => /Jewel/i.test(t.id)), 'jewel tiers are jewel mods');
+});
+
+test('affixNodes: jewel corruption families exist (Vaal Orb implicits)', () => {
+  const { nodes } = affixNodes();
+  const jewelCorrupt = nodes.filter((n) => n.props.origin === 'corrupted' && n.props.scope === 'jewel');
+  assert.ok(jewelCorrupt.length > 0, 'jewel corrupted families present');
+  assert.ok(jewelCorrupt.some((n) => n.props.type === 'FireResistance'), 'incl. corrupted Fire Resistance');
 });
 
 test('affixNodes: slugs are unique within the affix kind', () => {
@@ -79,6 +106,27 @@ test('affixEdges: rolls_on points only to browsable base nodes, with valid tier 
       assert.notEqual(originOf.get(e.from), undefined, 'all-tiers edge still resolves to an affix node');
     }
   }
+});
+
+test('affixEdges: jewel bases roll only jewel-scoped affixes (no equipment tiers leak)', () => {
+  const { nodes: aNodes, records } = affixNodes();
+  const { nodes: bNodes, records: baseRecs } = baseNodes();
+  const nodeIds = new Set([...aNodes, ...bNodes].map((n) => n.id));
+  const affixById = new Map(aNodes.map((n) => [n.id, n]));
+  const edges = affixEdges(records, baseRecs, nodeIds);
+
+  const ruby = bNodes.find((n) => n.name === 'Ruby');
+  assert.ok(ruby, 'Ruby base present');
+  const rubyAffixes = edges.filter((e) => e.to === ruby.id).map((e) => affixById.get(e.from));
+  assert.ok(rubyAffixes.length > 0, 'Ruby rolls some affixes');
+  // Every standard/corrupted family Ruby rolls must be jewel-scoped; desecrated
+  // (Abyss) families legitimately span scopes, so exempt them.
+  for (const a of rubyAffixes) {
+    if (a.props.origin === 'desecrated') continue;
+    assert.equal(a.props.scope, 'jewel', `Ruby affix ${a.id} is jewel-scoped`);
+  }
+  // And it can be corrupted.
+  assert.ok(rubyAffixes.some((a) => a.props.origin === 'corrupted'), 'Ruby has corruption mods');
 });
 
 test('resolveImplicitTexts: resolves a base implicit, empty for unknown/none', () => {

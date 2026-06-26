@@ -1,6 +1,6 @@
 import { buildGemViewModel, listGems, listGemCards, getDefaultSkillGemsForClass } from '../data/gems.js';
 import { buildUniqueViewModel, listUniqueCards, listUniqueClassFilters } from '../data/uniques.js';
-import { listBaseNav, getItemClass, buildBaseItemViewModel, affixBaseTargets } from '../data/baseItems.js';
+import { listBaseNav, getItemClass, buildBaseItemViewModel, affixBaseTargets, PER_BASE_NAV_CLASSES } from '../data/baseItems.js';
 import { listKeystones, getKeystone, listNotables, getNotable, getPassiveNode, listAscendancies, getAscendancy } from '../data/passiveTree.js';
 
 // Register a detail page: reads the single route param, runs the builder,
@@ -52,7 +52,10 @@ export function registerPages(app) {
 
   app.get('/bases/:classSlug', (req, res) => {
     const cls = getItemClass(req.params.classSlug);
-    if (!cls) return res.status(404).render('home.njk', { notFound: req.params.classSlug });
+    // Per-base-nav classes (jewels) have no class page — browse them via /bases.
+    if (!cls || PER_BASE_NAV_CLASSES.has(cls.classId)) {
+      return res.status(404).render('home.njk', { notFound: req.params.classSlug });
+    }
     // Reverse of the gem page's "Granted by Equipping": the default-attack gem(s)
     // this weapon class grants. Empty for classes with no default-skill mapping.
     cls.defaultSkillGems = getDefaultSkillGemsForClass(req.params.classSlug);
