@@ -125,6 +125,14 @@ function grantedSkillNode(gem) {
   return key ? getNode(key) : null;
 }
 
+// Trade-search URL for a gem, but ONLY for actual tradeable skill gems
+// (origin === 'gem'). Skills that merely enter the game granted by a unique or by
+// equipping a weapon (origin 'item'/'other') aren't Listed Items, so a gem-type
+// search on their name returns an empty result — omit the affordance for those.
+function gemTradeUrl(gem) {
+  return gem.origin === 'gem' ? tradeUrl({ kind: 'gem', type: gem.name }) : null;
+}
+
 export function listGems() {
   return nodesByKind('gem').map((node) => {
     const gem = toGem(node);
@@ -161,7 +169,7 @@ function gemBrowseCardVM(node) {
   return {
     slug: gem.slug,
     name: gem.name,
-    tradeUrl: tradeUrl({ kind: 'gem', type: gem.name }),
+    tradeUrl: gemTradeUrl(gem),
     cardColor: cardColor(req, gem.color),
     gemType: gem.gem_type,
     origin: gem.origin,
@@ -409,7 +417,7 @@ export function buildGemViewModel(slug) {
   return {
     slug,
     name: gem.name,
-    tradeUrl: tradeUrl({ kind: 'gem', type: gem.name }),
+    tradeUrl: gemTradeUrl(gem),
     attribute: gem.color,
     gemType: gem.gem_type,
     borderColor: b.border,

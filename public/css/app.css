@@ -683,15 +683,13 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
   display: flex;
   gap: 4px;
 }
-/* Popups get a bit more right inset than the condensed cards. */
+/* Popups get a bit more right inset than the condensed cards. The gem popup pins a
+   gem icon (.trailGemIcon, 45px wide, ending at right:50px) in its header, so the
+   shared right:50px lands the trade icon just left of it — same header-band spot as
+   uniques, no overlap. */
 .newItemPopup .card-actions { right: 50px; }
-/* Gem popup headers are busy — a skill icon (left) and gem icon (right) are both
-   pinned in the header — so there's no room there. Center the action on the card
-   body's empty right margin instead. */
-.GemPopup .card-actions {
-  top: 50%;
-  transform: translateY(-50%);
-}
+/* Gem popup: nudge 10px further left so it clears the pinned gem icon a bit more. */
+.GemPopup .card-actions { right: 60px; }
 /* Condensed browse/list cards are <a>; the trade affordance is a <span> overlay
    (no nested anchor) handled by trade-link.js. The card must be a positioning
    context for it — .gem-browse-card is already relative; .bases-list-card isn't. */
