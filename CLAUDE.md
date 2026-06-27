@@ -143,8 +143,8 @@ Production is a **static prerender** of the app, hosted on **Cloudflare Pages** 
 
 - `pob-uniques/*.json` format: each file is a list of strings. Each string is a multi-line block where line 1 = unique name, rest = PoB text format with `{tags:...}` and `{variant:...}` annotations.
 - `stat_translations/specific_skill_stat_descriptions/` has 559 per-skill files — load on demand, not at startup.
-- The passive skill trees are in `repoe-poe2/passive_skill_trees/` — the Default tree is the character passive tree; Atlas/EndgameMap are endgame.
-- Data was scraped 2026-06-03 from RePoE-fork. Re-scrape with `python scripts/scrape.py` after game patches (writes to `data/source/`).
+- **Passive tree is the exception to "everything from RePoE."** The interactive tree **render** (geometry, node icons/frames, connector arcs, class art) is sourced from **GGG's own official web data + sprite atlases**, not RePoE — RePoE lacks the precomputed per-edge arc geometry and the web atlases. Ingested by `scripts/fetch-ggg-tree.js` (`npm run fetch:tree`) into `data/source/ggg-poe2/` + `public/img/passive-atlas/`; RePoE still backs the passive **pages/relationships** (graph). **Read `docs/passive-tree.md` before touching the tree.** RePoE's `repoe-poe2/passive_skill_trees/` (Default = character tree; Atlas/EndgameMap = endgame) remains the source for those graph relationships only.
+- Data was scraped 2026-06-03 from RePoE-fork. Re-scrape with `python scripts/scrape.py` after game patches (writes to `data/source/`). **Also run `npm run fetch:tree`** after a patch to refresh the GGG passive-tree data/atlases (it's part of `build:static`, so deploy covers it; run once on a fresh checkout for dev).
 
 ## Environment
 
