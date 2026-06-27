@@ -445,11 +445,16 @@ export default function init(canvas, data) {
 
   canvas.addEventListener('pointermove', (e) => {
     if (dragging) {
-      const dx = e.clientX - dragStart.x;
-      const dy = e.clientY - dragStart.y;
-      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragMoved = true;
-      view.ox = dragStart.ox + dx;
-      view.oy = dragStart.oy + dy;
+      // dragStart/clientX are in CSS pixels, but view.ox/oy live in buffer pixels
+      // (canvas.width = rect.width * devicePixelRatio). Scale the delta into buffer
+      // space so the grabbed world point tracks the cursor 1:1 — without this the
+      // content pans at 1/DPR of cursor speed (sluggish on HiDPI displays).
+      const r = canvas.getBoundingClientRect();
+      const cssDx = e.clientX - dragStart.x;
+      const cssDy = e.clientY - dragStart.y;
+      if (Math.abs(cssDx) > 3 || Math.abs(cssDy) > 3) dragMoved = true;
+      view.ox = dragStart.ox + cssDx * (canvas.width  / r.width);
+      view.oy = dragStart.oy + cssDy * (canvas.height / r.height);
       requestDraw();
     }
 
