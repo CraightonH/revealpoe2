@@ -6,6 +6,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import nunjucks from 'nunjucks';
 import { parseTree } from './graph/passiveSource.js';
+import { loadJson } from './graph/loader.js';
+import { REPOE } from './graph/source.js';
 import { ddsUrl } from '../src/data/images.js';
 import { getPassiveNode } from '../src/data/passiveTree.js';
 import { renderGameText } from '../src/data/keywords.js';
@@ -31,6 +33,25 @@ const frameStates = (f) => ({
   a: ddsUrl(f.allocatable),
   x: ddsUrl(f.allocated),
 });
+
+// Class name -> base-class illustration URL (the big central art per class).
+// The illustration lives in the ascendancy's `character` metadata array
+// (Art/2DArt/BaseClassIllustrations/<Class>BaseIllustration.dds); one per class.
+function classArtMap() {
+  const asc = loadJson(`${REPOE}/ascendancies.json`);
+  const out = {};
+  for (const v of Object.values(asc)) {
+    if (v.disabled || (v.name && v.name.includes('[DNT'))) continue;
+    if (!Array.isArray(v.character)) continue;
+    const cls = v.character[1];
+    if (!cls || out[cls]) continue;
+    const illo = v.character.find(
+      (s) => typeof s === 'string' && s.includes('BaseClassIllustrations'),
+    );
+    if (illo) out[cls] = ddsUrl(illo);
+  }
+  return out;
+}
 
 export function buildArtifact() {
   const { nodes, edges, meta } = parseTree();
@@ -78,6 +99,17 @@ export function buildArtifact() {
       art,
       frame: FRAME_PX,
       groupBg,
+      classArt: classArtMap(),
+      // Central class-frame ring. GGG's group-background spritesheet (self-hosted
+      // via fetch-images EXTERNAL_CHROME); the `startNode:MainCircle` sprite is
+      // the right 2000×2000 cell. Atlas is at 0.5 scale, so native (world-unit)
+      // diameter = 2000/0.5 = 4000 — drawn centered at the tree origin. The class
+      // illustration is 3000 native, i.e. fills exactly 0.75 of the frame.
+      classFrame: {
+        url: '/static/img/passive-atlas/group-background.webp',
+        sx: 2000, sy: 0, sw: 2000, sh: 2000,
+        native: 4000,
+      },
     },
   };
 }

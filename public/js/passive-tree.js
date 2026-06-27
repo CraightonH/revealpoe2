@@ -154,6 +154,33 @@ export default function init(canvas, data) {
   const framePx  = meta.frame ?? FRAME_PX;
   const radiusOf = (k) => (framePx[k] ?? 52) / 2;
 
+  // Central class illustration. The tree origin (0,0) is the centre of the
+  // class-start hexagon; the 6 class-start nodes sit ON the central frame ring,
+  // so their mean distance from the origin IS the ring radius — derive the art
+  // circle from that rather than guessing. The art is clipped to this circle
+  // (in-game look). RING_FILL nudges the art edge relative to the node ring:
+  // 1.0 = reaches the nodes, <1 leaves room for the (not-yet-drawn) frame.
+  // TODO 9 will drive activeClass from a class/ascendancy selector.
+  const classArt = meta.classArt ?? null;
+  let activeClass = 'Monk';
+  const RING_FILL = 0.95;
+
+  // The class-start root nodes sit at the hexagon vertices, now covered by the
+  // frame's clover ornaments — they're not selectable in-game. Hide them from
+  // rendering + hit-testing, but keep them in the graph as allocation anchors so
+  // their neighbours (the first real nodes) stay connected and allocatable, and
+  // their edges still anchor to the ring.
+  const hiddenNodes = new Set(Object.values(meta.classStarts ?? {}));
+  const classRingRadius = (() => {
+    const hs = Object.values(meta.classStarts ?? {});
+    let sum = 0, n = 0;
+    for (const h of hs) {
+      const nd = nodeMap.get(h);
+      if (nd) { sum += Math.hypot(nd.x, nd.y); n++; }
+    }
+    return n ? sum / n : 1470;
+  })();
+
   // Frame art state for a node: x = allocated/anchor, a = allocatable frontier,
   // u = unallocated. _canAllocateSync needs the alloc module loaded; before that
   // every unallocated node reads 'u' and is repainted once the module arrives.
@@ -345,11 +372,43 @@ export default function init(canvas, data) {
 
     ctx.save();
 
+    // --- Central class illustration + ornate frame ring (behind the graph) ---
+    {
+      const c = worldToScreen(view, 0, 0);
+      // Illustration, circular-clipped just inside the frame ring.
+      if (classArt && activeClass && classArt[activeClass]) {
+        const img = getImage(classArt[activeClass]);
+        if (img && img.complete && img.naturalWidth > 0) {
+          const R = classRingRadius * RING_FILL * view.scale;
+          const ar = img.naturalHeight / img.naturalWidth;
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(c.x, c.y, R, 0, Math.PI * 2);
+          ctx.clip();
+          ctx.drawImage(img, c.x - R, c.y - R * ar, R * 2, R * 2 * ar);
+          ctx.restore();
+        }
+      }
+      // Frame ring on top — GGG's MainCircle sprite, drawn at native world size
+      // so its clover ornaments land on the class-start nodes.
+      const cf = meta.classFrame;
+      if (cf) {
+        const fimg = getImage(cf.url);
+        if (fimg && fimg.complete && fimg.naturalWidth > 0) {
+          const FR = (cf.native / 2) * view.scale;
+          ctx.drawImage(fimg, cf.sx, cf.sy, cf.sw, cf.sh, c.x - FR, c.y - FR, FR * 2, FR * 2);
+        }
+      }
+    }
+
     // --- Edges ---
     for (const e of edges) {
       const na = nodeMap.get(e.a);
       const nb = nodeMap.get(e.b);
       if (!na || !nb) continue;
+      // Don't draw the spokes from a hidden class-start root to its neighbours.
+      // (Allocation adjacency is built separately, so this is render-only.)
+      if (hiddenNodes.has(e.a) || hiddenNodes.has(e.b)) continue;
 
       // Use loose != null so both null and undefined are treated as "no ascendancy".
       const aAsc = na.asc != null;
@@ -383,6 +442,7 @@ export default function init(canvas, data) {
     // --- Node icons + frames ---
     const cullMargin = 120 * view.scale; // worst-case frame radius, scaled
     for (const n of nodes) {
+      if (hiddenNodes.has(n.h)) continue; // class-start roots — drawn as frame clovers
       const sp = worldToScreen(view, n.x, n.y);
       if (sp.x < -cullMargin || sp.x > W + cullMargin ||
           sp.y < -cullMargin || sp.y > H + cullMargin) continue;
@@ -503,6 +563,7 @@ export default function init(canvas, data) {
 
     let best = null, bestDist2 = Infinity;
     for (const n of nodes) {
+      if (hiddenNodes.has(n.h)) continue;
       const r = radiusOf(n.k);
       const dx = n.x - wp.x, dy = n.y - wp.y;
       const d2 = dx * dx + dy * dy;
@@ -548,6 +609,7 @@ export default function init(canvas, data) {
 
     let hit = null, hitDist2 = Infinity;
     for (const n of nodes) {
+      if (hiddenNodes.has(n.h)) continue;
       const r = radiusOf(n.k);
       const dx = n.x - wp.x, dy = n.y - wp.y;
       const d2 = dx * dx + dy * dy;
