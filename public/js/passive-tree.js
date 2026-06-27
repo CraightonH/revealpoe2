@@ -69,8 +69,11 @@ const FRAME_KEY = {
   ascStart:   { u: 'AscendancyStartNode', a: 'AscendancyStartNode', x: 'AscendancyStartNode' },
 };
 
-// line.json connector sprite keys by state.
-const LINE_STATE = { u: 'Normal', a: 'Intermediate', x: 'Active' };
+// Connector stroke colours by state, matched to GGG's line art (dim bronze →
+// golden when allocated). Stroking with GGG's exact arc geometry gives clean,
+// non-crossing connectors without the fragility of clipping ring textures.
+const LINE_COLOR = { u: '#4b4534', a: '#8c7a4e', x: '#c8aa6e' };
+const LINE_WIDTH = 16; // world units
 
 // ---------------------------------------------------------------------------
 // Adjacency builder (with skip-guard for ghost nodes)
@@ -406,69 +409,34 @@ export default function init(canvas, data) {
     drawSprite('group-background', cf.frame, 0, 0);
   }
 
-  // Connectors. Straight = the LineConnector strip stretched + rotated between
-  // nodes; arc = the per-orbit ring texture clipped to the arc wedge — both from
-  // line.webp, state-coloured. GGG's precomputed arc centres keep them from crossing.
+  // Connectors. Straight edges are lines; same-orbit edges are arcs drawn with
+  // GGG's precomputed centre/radius/angles (arc.cx/cy/r/a0/a1/ccw) so they sweep
+  // along the orbit ring instead of crossing. Stroked in the state colour.
   function drawEdges(W, H) {
-    const at = atlas('line');
+    const lw = Math.max(1.2, LINE_WIDTH * view.scale);
+    ctx.lineCap = 'round';
     for (const e of edges) {
       const na = nodeMap.get(e.a), nb = nodeMap.get(e.b);
       if (!na || !nb) continue;
       if (hiddenNodes.has(e.a) || hiddenNodes.has(e.b)) continue;
       if ((na.asc != null) !== (nb.asc != null)) continue; // no main↔ascendancy spokes
-      const st = LINE_STATE[lineState(na, nb)];
-      if (!at) continue;
-
+      ctx.strokeStyle = LINE_COLOR[lineState(na, nb)];
+      ctx.lineWidth = lw;
+      ctx.beginPath();
       if (e.arc) {
         const arc = e.arc;
         const c = worldToScreen(view, arc.cx, arc.cy);
         const r = arc.r * view.scale;
         if (c.x + r < 0 || c.x - r > W || c.y + r < 0 || c.y - r > H) continue;
-        // Pick the ring sprite whose native radius is closest to this arc radius.
-        const key = ringKeyFor(at, arc.r, st);
-        const f = key && at.frames[key];
-        if (!f) continue;
-        ctx.save();
-        ctx.beginPath();
-        ctx.moveTo(c.x, c.y);
-        ctx.arc(c.x, c.y, r + 40 * view.scale, arc.a0, arc.a1, arc.ccw);
-        ctx.closePath();
-        ctx.clip();
-        ctx.drawImage(at.img, f.frame.x, f.frame.y, f.frame.w, f.frame.h,
-          c.x - r, c.y - r, r * 2, r * 2);
-        ctx.restore();
+        ctx.arc(c.x, c.y, r, arc.a0, arc.a1, arc.ccw);
       } else {
         const sa = worldToScreen(view, na.x, na.y);
         const sb = worldToScreen(view, nb.x, nb.y);
-        const f = at.frames[`line:LineConnector${st}`];
-        if (!f) continue;
-        const len = Math.hypot(sb.x - sa.x, sb.y - sa.y);
-        const thick = (f.frame.h / at.scale) * view.scale;
-        ctx.save();
-        ctx.translate(sa.x, sa.y);
-        ctx.rotate(Math.atan2(sb.y - sa.y, sb.x - sa.x));
-        ctx.drawImage(at.img, f.frame.x, f.frame.y, f.frame.w, f.frame.h, 0, -thick / 2, len, thick);
-        ctx.restore();
+        ctx.moveTo(sa.x, sa.y);
+        ctx.lineTo(sb.x, sb.y);
       }
+      ctx.stroke();
     }
-  }
-
-  // Cache: which Orbit{N}{state} ring sprite best matches a given world radius.
-  let _ringKeys = null;
-  function ringKeyFor(at, worldR, st) {
-    if (!_ringKeys) {
-      _ringKeys = [];
-      for (const k of Object.keys(at.frames)) {
-        const m = /^line:Orbit(\d+)Normal$/.exec(k);
-        if (m) _ringKeys.push({ n: m[1], r: (at.frames[k].frame.w / at.scale) / 2 });
-      }
-    }
-    let best = null, bd = Infinity;
-    for (const rk of _ringKeys) {
-      const d = Math.abs(rk.r - worldR);
-      if (d < bd) { bd = d; best = rk; }
-    }
-    return best ? `line:Orbit${best.n}${st}` : null;
   }
 
   function drawNodes(W, H) {
