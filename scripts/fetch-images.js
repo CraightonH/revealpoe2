@@ -40,6 +40,12 @@ const CDN = 'https://image.ggpk.exposed/poe2';
 const FALLBACK_CDN = 'https://cdn.poe2db.tw/image';
 const FALLBACK_REFERER = 'https://poe2db.tw/';
 const USER_AGENT = 'poe2wiki-image-sync/1.0 (+self-hosting referenced art)';
+
+// Subdirectories of public/img managed by a DIFFERENT sync step, not this one —
+// they must be excluded from the orphan prune (their files won't be in the
+// GGPK-derived desired set). passive-atlas/ holds GGG's web sprite sheets, synced
+// by scripts/fetch-ggg-tree.js alongside the passive-tree data they belong to.
+const EXTERNAL_DIRS = new Set(['passive-atlas']);
 const TIMEOUT = 30_000;
 const RETRIES = 5;
 // Transient HTTP statuses worth retrying — chiefly 429 (the CDN rate-limits
@@ -232,6 +238,8 @@ async function run() {
     const walk = (dir) => {
       for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
         const full = path.join(dir, e.name);
+        // Don't descend into externally-managed dirs (synced by another step).
+        if (e.isDirectory() && dir === IMG_DIR && EXTERNAL_DIRS.has(e.name)) continue;
         if (e.isDirectory()) { walk(full); continue; }
         if (e.name === '_manifest.json') continue;
         const rel = path.relative(IMG_DIR, full).split(path.sep).join('/');
