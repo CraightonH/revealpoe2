@@ -7,7 +7,7 @@ import { gemNodes, skillNodes, gemEdges } from './gems.js';
 import { baseNodes, classNodes, tagNodes, baseEdges } from './bases.js';
 import { affixNodes, affixEdges } from './affixes.js';
 import { uniqueNodes, uniqueEdges } from './uniques.js';
-import { passiveNodes, ascendancyNodes, passiveEdges, treeArtPaths } from './passives.js';
+import { passiveNodes, ascendancyNodes, passiveEdges } from './passives.js';
 import { keywordNodes } from './keywords.js';
 import { manualOverlay, hashManual } from './manual.js';
 import { validateGraph } from './validate.js';
@@ -95,9 +95,6 @@ export function buildGraph() {
       sourceHash: hashSources(),
       manualHash: hashManual(),
       provenance: provenanceSummary(nodes, edges),
-      // Passive-tree art asset list — present only so fetch-images.js discovers
-      // these .dds paths (it walks graph.json). Not used by the app at runtime.
-      treeArt: treeArtPaths(),
     },
     nodes,
     edges,
