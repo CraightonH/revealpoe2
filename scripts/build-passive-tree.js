@@ -34,7 +34,7 @@ const ATLAS_MAP = '/static/generated/passive-atlas'; // <name>.json (copied belo
 const iconWebp = (icon) => (icon ? ddsUrl(icon.replace(/\.png$/i, '.dds')) : null);
 
 export function buildArtifact() {
-  const { nodes, edges, classStarts, classes, extent } = parseGggTree();
+  const { nodes, edges, classStarts, classes, ascStarts, ascByClass, ascArt, extent } = parseGggTree();
 
   // Per-class central illustration: served atlas + frame key + placement offset.
   const classArt = {};
@@ -51,6 +51,18 @@ export function buildArtifact() {
     };
   }
 
+  // Per-ascendancy central illustration. Unlike class backgrounds these have no
+  // GGG web atlas, so the art is self-hosted through the ggpk .dds→webp pipeline
+  // (same as node icons) — its .dds path enters the fetch-images set via the
+  // `img` field below. `class` lets the renderer pick the owning class on import.
+  // (GGG's offsetX/Y anchor the art to the cluster's native group centre, which
+  // doesn't map to the origin-centred draw, so they're intentionally dropped.)
+  const ascendancyArt = {};
+  for (const [id, a] of Object.entries(ascArt)) {
+    if (!a.art) continue;
+    ascendancyArt[id] = { img: iconWebp(a.art), class: a.class };
+  }
+
   return {
     nodes: nodes.map((n) => ({
       h: n.h, x: n.x, y: n.y, k: n.k, name: n.name,
@@ -62,6 +74,9 @@ export function buildArtifact() {
     meta: {
       classStarts,
       classArt,
+      ascStarts,
+      ascByClass,
+      ascendancyArt,
       extent,
       pointBudget: 122,
       atlas: {

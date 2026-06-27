@@ -127,9 +127,30 @@ export default function init(canvas, data) {
   // native world size of a sprite = atlas px / scale (atlases are authored at 0.5).
   const ATLAS = meta.atlas;
   const classArt = meta.classArt ?? null;
-  let activeClass = 'Monk';
+  const ascByClass = meta.ascByClass ?? {};      // className -> [{id,name}]
+  const ascStarts = meta.ascStarts ?? {};        // ascId -> start node hash
+  const ascendancyArt = meta.ascendancyArt ?? {}; // ascId -> {img,offsetX,offsetY,class}
+  // Classes the selector offers: only those with ascendancy data (== those with
+  // a background illustration). Ordered as GGG lists them where possible.
+  const selectableClasses = Object.keys(ascByClass);
+  let activeClass = selectableClasses[0] ?? 'Monk';
+  let activeAsc = null; // ascId when an ascendancy is selected, else null
 
   const atlasCache = new Map(); // name -> {img, frames, scale} | 'loading' | 'error'
+  // Plain-image cache for ascendancy illustrations (no GGG atlas; ggpk webp).
+  const imgCache = new Map(); // url -> Image | 'loading' | 'error'
+  function loadImg(url) {
+    const c = imgCache.get(url);
+    if (c instanceof Image) return c;
+    if (!c) {
+      imgCache.set(url, 'loading');
+      const im = new Image();
+      im.onload = () => { imgCache.set(url, im); requestDraw(); };
+      im.onerror = () => imgCache.set(url, 'error');
+      im.src = url;
+    }
+    return null;
+  }
   function atlas(name) {
     const c = atlasCache.get(name);
     if (c && typeof c === 'object') return c;
@@ -167,6 +188,14 @@ export default function init(canvas, data) {
   // Class-start roots sit under the central frame's clover ornaments and aren't
   // selectable — hide from render + hit-test, keep as allocation anchors.
   const hiddenNodes = new Set(nodes.filter((n) => n.hidden).map((n) => n.h));
+
+  // A node is drawable/hittable when it isn't a hidden anchor and either belongs
+  // to the main tree (asc == null) or to the currently selected ascendancy.
+  function nodeVisible(n) {
+    if (hiddenNodes.has(n.h)) return false;
+    if (n.asc != null) return n.asc === activeAsc;
+    return true;
+  }
 
   // Allocation state for a node: x = allocated/anchor, a = allocatable, u = else.
   function frameState(n) {
@@ -234,10 +263,10 @@ export default function init(canvas, data) {
   let weaponSetMode = false;
   let decodedState = null;
 
-  // Determine the active class root from meta.classStarts.
-  // Default to the first classStarts value on init; overridden on import.
+  // Determine the active class root from meta.classStarts. Default to the
+  // selector's active class on init; overridden on import.
   const classStartValues = Object.values(meta.classStarts ?? {});
-  let classRoot = classStartValues[0] ?? null;
+  let classRoot = (meta.classStarts ?? {})[activeClass] ?? classStartValues[0] ?? null;
 
   if (classRoot != null) {
     starts = [classRoot];
@@ -366,20 +395,18 @@ export default function init(canvas, data) {
 
     ctx.save();
 
-    drawClassCentre();
+    drawCentre();
     drawEdges(W, H);
     drawNodes(W, H);
 
     ctx.restore();
   }
 
-  // Central class illustration (clipped to the frame's inner circle) + the ornate
-  // MainCircle frame ring on top, both from GGG's atlases, at the tree origin.
-  function drawClassCentre() {
-    const ca = classArt && activeClass ? classArt[activeClass] : null;
-    if (!ca) return;
-    const slug = `background-${activeClass.toLowerCase()}`;
-    const at = atlas(slug);
+  // Central illustration (clipped to the frame's inner circle) + the ornate
+  // MainCircle frame ring on top, at the tree origin. Shows the active class's
+  // art, or — when an ascendancy is selected — that ascendancy's illustration,
+  // matching the in-game look where the ascendancy occupies the central ring.
+  function drawCentre() {
     const c = worldToScreen(view, 0, 0);
     // Inner clip radius ~ class-start ring; frame native/2 * fill keeps art inside.
     const cf = ATLAS.classFrame;
@@ -389,24 +416,50 @@ export default function init(canvas, data) {
       const f = cfAt.frames[cf.frame];
       if (f) clipR = (f.frame.w / cfAt.scale) / 2 * 0.92 * view.scale;
     }
-    if (at) {
-      const f = at.frames[ca.frame];
-      if (f) {
-        const inv = 1 / at.scale;
-        const w = f.frame.w * inv * view.scale;
-        const h = f.frame.h * inv * view.scale;
-        const ox = (ca.offsetX || 0) * view.scale;
-        const oy = (ca.offsetY || 0) * view.scale;
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(c.x, c.y, clipR, 0, Math.PI * 2);
-        ctx.clip();
-        ctx.drawImage(at.img, f.frame.x, f.frame.y, f.frame.w, f.frame.h,
-          c.x - w / 2 + ox, c.y - h / 2 + oy, w, h);
-        ctx.restore();
-      }
-    }
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, clipR, 0, Math.PI * 2);
+    ctx.clip();
+    if (activeAsc) drawAscArt(c, clipR);
+    else drawClassArt(c);
+    ctx.restore();
+
     drawSprite('group-background', cf.frame, 0, 0);
+  }
+
+  // Class illustration: a sprite from the per-class background atlas, drawn at
+  // native size centred at origin with GGG's placement offset (world units).
+  function drawClassArt(c) {
+    const ca = classArt && activeClass ? classArt[activeClass] : null;
+    if (!ca) return;
+    const at = atlas(`background-${activeClass.toLowerCase()}`);
+    if (!at) return;
+    const f = at.frames[ca.frame];
+    if (!f) return;
+    const inv = 1 / at.scale;
+    const w = f.frame.w * inv * view.scale;
+    const h = f.frame.h * inv * view.scale;
+    const ox = (ca.offsetX || 0) * view.scale;
+    const oy = (ca.offsetY || 0) * view.scale;
+    ctx.drawImage(at.img, f.frame.x, f.frame.y, f.frame.w, f.frame.h,
+      c.x - w / 2 + ox, c.y - h / 2 + oy, w, h);
+  }
+
+  // Ascendancy illustration: a plain ggpk webp (no atlas). Scaled to cover the
+  // ring and centred on origin — GGG's offsetX/Y anchor the art to the cluster's
+  // native group centre, which doesn't map to our origin-centred draw, so the
+  // illustrations (authored to frame their figure centrally) centre cleanly.
+  function drawAscArt(c, clipR) {
+    const a = ascendancyArt[activeAsc];
+    if (!a || !a.img) return;
+    const im = loadImg(a.img);
+    if (!im) return;
+    const diameter = clipR * 2;
+    const scale = diameter / Math.min(im.naturalWidth, im.naturalHeight);
+    const w = im.naturalWidth * scale;
+    const h = im.naturalHeight * scale;
+    ctx.drawImage(im, c.x - w / 2, c.y - h / 2, w, h);
   }
 
   // Connectors. Straight edges are lines; same-orbit edges are arcs drawn with
@@ -418,7 +471,7 @@ export default function init(canvas, data) {
     for (const e of edges) {
       const na = nodeMap.get(e.a), nb = nodeMap.get(e.b);
       if (!na || !nb) continue;
-      if (hiddenNodes.has(e.a) || hiddenNodes.has(e.b)) continue;
+      if (!nodeVisible(na) || !nodeVisible(nb)) continue;
       if ((na.asc != null) !== (nb.asc != null)) continue; // no main↔ascendancy spokes
       ctx.strokeStyle = LINE_COLOR[lineState(na, nb)];
       ctx.lineWidth = lw;
@@ -442,7 +495,7 @@ export default function init(canvas, data) {
   function drawNodes(W, H) {
     const cullMargin = 240 * view.scale;
     for (const n of nodes) {
-      if (hiddenNodes.has(n.h)) continue;
+      if (!nodeVisible(n)) continue;
       const sp = worldToScreen(view, n.x, n.y);
       if (sp.x < -cullMargin || sp.x > W + cullMargin ||
           sp.y < -cullMargin || sp.y > H + cullMargin) continue;
@@ -526,7 +579,7 @@ export default function init(canvas, data) {
 
     let best = null, bestDist2 = Infinity;
     for (const n of nodes) {
-      if (hiddenNodes.has(n.h)) continue;
+      if (!nodeVisible(n)) continue;
       const r = radiusOf(n.k);
       const dx = n.x - wp.x, dy = n.y - wp.y;
       const d2 = dx * dx + dy * dy;
@@ -572,7 +625,7 @@ export default function init(canvas, data) {
 
     let hit = null, hitDist2 = Infinity;
     for (const n of nodes) {
-      if (hiddenNodes.has(n.h)) continue;
+      if (!nodeVisible(n)) continue;
       const r = radiusOf(n.k);
       const dx = n.x - wp.x, dy = n.y - wp.y;
       const d2 = dx * dx + dy * dy;
@@ -636,6 +689,84 @@ export default function init(canvas, data) {
       weaponSetMode = wsToggle.checked;
     });
   }
+
+  // ---------------------------------------------------------------------------
+  // Class / ascendancy selector
+  // ---------------------------------------------------------------------------
+  // Two <select>s in the controls bar. Class swaps the central art + start
+  // anchor (and resets the tree); ascendancy reveals that sub-tree centred on
+  // the class start, swapping the central art to the ascendancy illustration.
+
+  const classSel = document.getElementById('tree-class');
+  const ascSel   = document.getElementById('tree-ascendancy');
+
+  // Fill the ascendancy <select> for the active class (plus a "none" option).
+  function populateAscOptions() {
+    if (!ascSel) return;
+    const list = ascByClass[activeClass] ?? [];
+    ascSel.innerHTML = '';
+    const none = document.createElement('option');
+    none.value = '';
+    none.textContent = list.length ? '— No Ascendancy —' : '— None —';
+    ascSel.appendChild(none);
+    for (const a of list) {
+      const o = document.createElement('option');
+      o.value = a.id;
+      o.textContent = a.name;
+      ascSel.appendChild(o);
+    }
+    ascSel.disabled = list.length === 0;
+    ascSel.value = activeAsc ?? '';
+  }
+
+  // Apply an ascendancy selection: set the anchor, prune nodes from any other
+  // ascendancy, redraw. Pass null/'' to clear back to class-only.
+  function selectAscendancy(ascId) {
+    activeAsc = ascId || null;
+    const ascRoot = activeAsc ? ascStarts[activeAsc] : null;
+    starts = classRoot != null ? [classRoot] : [];
+    if (ascRoot != null) starts.push(ascRoot);
+    // Drop allocations belonging to a now-hidden ascendancy.
+    const next = new Set();
+    for (const h of allocated) {
+      const n = nodeMap.get(h);
+      if (n && n.asc != null && n.asc !== activeAsc) continue;
+      next.add(h);
+    }
+    allocated = next;
+    if (ascSel) ascSel.value = activeAsc ?? '';
+    updatePoints();
+    requestDraw();
+  }
+
+  // Apply a class selection: swap art + start anchor, reset the tree.
+  function selectClass(name) {
+    if (!ascByClass[name] && !classArt?.[name]) return;
+    activeClass = name;
+    classRoot = (meta.classStarts ?? {})[name] ?? null;
+    activeAsc = null;
+    allocated = new Set();
+    starts = classRoot != null ? [classRoot] : [];
+    decodedState = null;
+    if (classSel) classSel.value = name;
+    populateAscOptions();
+    updatePoints();
+    requestDraw();
+  }
+
+  if (classSel) {
+    classSel.innerHTML = '';
+    for (const name of selectableClasses) {
+      const o = document.createElement('option');
+      o.value = name;
+      o.textContent = name;
+      classSel.appendChild(o);
+    }
+    classSel.value = activeClass;
+    classSel.addEventListener('change', () => selectClass(classSel.value));
+  }
+  populateAscOptions();
+  if (ascSel) ascSel.addEventListener('change', () => selectAscendancy(ascSel.value));
 
   // ---------------------------------------------------------------------------
   // Copy share code
@@ -770,6 +901,23 @@ export default function init(canvas, data) {
 
     // Keep decoded state for round-trip encode.
     decodedState = decoded;
+
+    // Sync the selector + central art to the imported build. Map the ascendancy
+    // start back to its id, then resolve the class (prefer the ascendancy's
+    // owner; two classes can share a hexagon start, so the asc disambiguates).
+    const ascId = ascRoot != null
+      ? Object.keys(ascStarts).find((id) => ascStarts[id] === ascRoot) ?? null
+      : null;
+    activeAsc = ascId;
+    let className = ascId ? ascendancyArt[ascId]?.class : null;
+    if (!className) {
+      const starts2 = meta.classStarts ?? {};
+      className = Object.keys(starts2).find((nm) => starts2[nm] === classRoot && selectableClasses.includes(nm))
+        ?? Object.keys(starts2).find((nm) => starts2[nm] === classRoot);
+    }
+    if (className && (ascByClass[className] || classArt?.[className])) activeClass = className;
+    if (classSel) classSel.value = activeClass;
+    populateAscOptions();
 
     updatePoints();
     requestDraw();

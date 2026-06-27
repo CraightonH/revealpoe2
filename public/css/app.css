@@ -333,6 +333,17 @@ body {
   font-size: 13px;
 }
 .passive-tree-toggle { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.passive-tree-field { display: flex; align-items: center; gap: 6px; color: var(--text-muted, #9a8f7a); }
+.passive-tree-select {
+  background: var(--bg, #181410);
+  color: var(--text, #e8dcc0);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.passive-tree-select:disabled { opacity: 0.5; cursor: default; }
 .passive-tree-wrap {
   position: relative;
   width: 100%;

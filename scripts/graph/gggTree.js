@@ -63,6 +63,7 @@ export function parseGggTree() {
 
   const nodes = [];
   const keep = new Set();
+  const ascStarts = {}; // ascendancyId -> start node hash
   for (const [hStr, n] of Object.entries(rawNodes)) {
     if (hStr === 'root') continue;
     if (n.isMastery) continue;
@@ -70,6 +71,7 @@ export function parseGggTree() {
     const h = Number(hStr);
     const k = kindOf(n);
     keep.add(h);
+    if (n.isAscendancyStart && n.ascendancyId) ascStarts[n.ascendancyId] = h;
     nodes.push({
       h,
       x: Math.round(n.x),
@@ -85,29 +87,17 @@ export function parseGggTree() {
     });
   }
 
-  // Edges: straight (bare) or arc (orbit center given). Drop edges touching a
-  // dropped node (root/mastery). De-dupe undirected pairs.
   const pos = new Map(nodes.map((n) => [n.h, n]));
-  const seen = new Set();
-  const edges = [];
-  for (const e of d.edges) {
-    const a = Number(e.from), b = Number(e.to);
-    if (!keep.has(a) || !keep.has(b)) continue;
-    const key = a < b ? `${a}-${b}` : `${b}-${a}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    if (e.orbit && e.orbitX != null && e.orbitY != null) {
-      const na = pos.get(a), nb = pos.get(b);
-      edges.push({ a, b, arc: arcFor(na.x, na.y, nb.x, nb.y, e.orbitX, e.orbitY) });
-    } else {
-      edges.push({ a, b });
-    }
-  }
 
   // Classes → start node + central illustration placement. A start node carries
   // classStartIndex [i, …] indexing into d.classes; map each class to its node.
+  // Ascendancies hang off each class; only those with renderable nodes (a start
+  // node in ascStarts) are surfaced — GGG ships a few defs with no node data.
   const classStarts = {};
   const classes = {};
+  const ascByClass = {};  // className -> [{ id, name }]
+  const ascArt = {};      // ascendancyId -> { art, offsetX, offsetY, class }
+  const ascOf = {};       // ascendancyId -> className
   d.classes.forEach((c, i) => {
     const startHash = [...classStartHashes].find((h) =>
       (rawNodes[h].classStartIndex || []).includes(i));
@@ -119,13 +109,73 @@ export function parseGggTree() {
       offsetY: c.image_offset_y ?? 0,
       str: c.base_str, dex: c.base_dex, int: c.base_int,
     };
+    for (const a of c.ascendancies || []) {
+      if (ascStarts[a.id] == null) continue; // no renderable cluster — skip
+      (ascByClass[c.name] ||= []).push({ id: a.id, name: a.name });
+      ascOf[a.id] = c.name;
+      ascArt[a.id] = {
+        art: a.image,
+        offsetX: a.offsetX ?? 0,
+        offsetY: a.offsetY ?? 0,
+        class: c.name,
+      };
+    }
   });
+
+  // Translate each ascendancy cluster so its start node lands on its owning
+  // class's hexagon start node (per the in-game layout: the ascendancy sub-tree
+  // occupies the central ring, entering from the class start position). Nodes
+  // and their arc-edge centres shift by the same delta so connectors stay true.
+  // Hidden unless the ascendancy is selected, so baking centred coords is safe.
+  const ascDelta = {}; // ascendancyId -> { dx, dy }
+  for (const [ascId, startHash] of Object.entries(ascStarts)) {
+    const className = ascOf[ascId];
+    const classStartHash = className ? classStarts[className] : null;
+    const ascStartNode = pos.get(startHash);
+    const classStartNode = classStartHash != null ? pos.get(classStartHash) : null;
+    if (!ascStartNode || !classStartNode) continue;
+    ascDelta[ascId] = {
+      dx: classStartNode.x - ascStartNode.x,
+      dy: classStartNode.y - ascStartNode.y,
+    };
+  }
+  for (const n of nodes) {
+    const d2 = n.asc != null ? ascDelta[n.asc] : null;
+    if (!d2) continue;
+    n.x += d2.dx;
+    n.y += d2.dy;
+  }
+
+  // Edges: straight (bare) or arc (orbit center given). Drop edges touching a
+  // dropped node (root/mastery). De-dupe undirected pairs. Arc centres for
+  // intra-ascendancy edges shift by the cluster delta (node coords already did).
+  const seen = new Set();
+  const edges = [];
+  for (const e of d.edges) {
+    const a = Number(e.from), b = Number(e.to);
+    if (!keep.has(a) || !keep.has(b)) continue;
+    const key = a < b ? `${a}-${b}` : `${b}-${a}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    if (e.orbit && e.orbitX != null && e.orbitY != null) {
+      const na = pos.get(a), nb = pos.get(b);
+      const d2 = na.asc != null ? ascDelta[na.asc] : null;
+      const cx = e.orbitX + (d2 ? d2.dx : 0);
+      const cy = e.orbitY + (d2 ? d2.dy : 0);
+      edges.push({ a, b, arc: arcFor(na.x, na.y, nb.x, nb.y, cx, cy) });
+    } else {
+      edges.push({ a, b });
+    }
+  }
 
   return {
     nodes,
     edges,
     classStarts,
     classes,
+    ascStarts,
+    ascByClass,
+    ascArt,
     extent: { minX: d.min_x, minY: d.min_y, maxX: d.max_x, maxY: d.max_y },
   };
 }

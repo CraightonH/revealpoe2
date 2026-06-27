@@ -91,7 +91,7 @@ manual fudge factor.
 ## Build (`scripts/build-passive-tree.js`)
 
 `scripts/graph/gggTree.js` `parseGggTree()` reads the GGG JSON → `{nodes, edges,
-classStarts, classes, extent}`:
+classStarts, classes, ascStarts, ascByClass, ascArt, extent}`:
 - node kind from the flags above (`kindOf`); **masteries are dropped** (TODO #7 —
   non-selectable pass-throughs).
 - icon-kind prefix (`iconKindOf`) for the skills-atlas key.
@@ -103,8 +103,18 @@ classStarts, classes, extent}`:
 `build-passive-tree.js` emits:
 - `public/generated/passive-tree.json` — `{nodes, edges, meta}`. Nodes carry
   `h,x,y,k,name,icon,iconKind,asc,ws,(hidden)`. `meta` has `classStarts`,
-  `classArt` (per-class atlas + frame key + offsets), `atlas` (base paths +
-  `classFrame`), `extent`, `pointBudget`.
+  `classArt` (per-class atlas + frame key + offsets), `ascStarts`
+  (ascId→start hash), `ascByClass` (class→`[{id,name}]`, drives the selector),
+  `ascendancyArt` (ascId→`{img, class}`), `atlas` (base paths + `classFrame`),
+  `extent`, `pointBudget`.
+- **Ascendancy cluster centring:** `gggTree.js` translates each ascendancy's
+  nodes (and their arc-edge centres) so the cluster's start node lands on its
+  owning class's hexagon start node — baked into the artifact coords. Clusters
+  are hidden unless their ascendancy is selected, so the only visible cluster is
+  always anchored to the active class's start (Monk's enters from the upper-right,
+  Warrior's from the left, etc.). Only the 8 classes with ascendancy node data
+  (== those with a `background-<class>` atlas) get surfaced; the 4 PoE1-legacy
+  class slots have no nodes/art and self-exclude — no hardcoded list.
 - `public/generated/passive-atlas/*.json` — the atlas frame maps (served copy).
 - `public/generated/passive-cards.json` — one hover card per visible node, keyed
   by hash, built from GGG stats keyword-linkified through `renderGameText`.
@@ -125,10 +135,25 @@ classStarts, classes, extent}`:
   the orbit without crossing. Coloured by state (`LINE_COLOR`: dim bronze →
   golden) at `LINE_WIDTH` world units. (The `line` atlas exists but the
   ring-texture-clip approach produced artifacts; stroking is the chosen render.)
-- **Class centre** (`drawClassCentre`): the active class's illustration
-  (`background-<class>` atlas, `Class0`), offset by GGG's `image_offset`, clipped
-  to a circle just inside the ring, with the `group-background` `MainCircle` frame
-  on top. `activeClass` is hard-coded to `'Monk'` pending the TODO #9 selector.
+- **Centre** (`drawCentre`): clips to the ring + draws the `group-background`
+  `MainCircle` frame on top. Inside, when no ascendancy is selected it draws the
+  active class's illustration (`drawClassArt`: `background-<class>` atlas `Class0`,
+  offset by GGG's `image_offset`); when an ascendancy is selected it draws that
+  ascendancy's illustration (`drawAscArt`: a plain ggpk webp, no atlas, scaled to
+  cover the ring and **centred on origin** — GGG's per-ascendancy offset anchors
+  to the cluster's native group centre, so it's dropped; the illustrations frame
+  their figure centrally and centre cleanly).
+- **Class/ascendancy selector**: two `<select>`s (`#tree-class`, `#tree-ascendancy`)
+  in the controls bar. Selecting a class swaps the art + start anchor and resets
+  the tree; selecting an ascendancy sets `activeAsc`, reveals that cluster
+  (`nodeVisible` gates draw + hit-test: a node shows only if `asc == null` or
+  `asc === activeAsc`), and swaps the centre art. Imported share codes sync the
+  selector via `ascStarts`/`ascendancyArt` reverse-lookups. `activeClass` defaults
+  to the first selectable class.
+- **Ascendancy art self-hosting**: the illustrations have no GGG web atlas, so
+  they ride the ggpk `.dds`→webp pipeline like node icons. `fetch-images.js`'s
+  `ddsFromPassiveArtifact()` reverse-maps `meta.ascendancyArt[].img` URLs into the
+  referenced `.dds` set so deploy mirrors them.
 - **Hit-testing** uses fixed per-kind world radii (`KIND_RADIUS`, = half the GGG
   frame sprite native size); drawing sizes come from the atlas directly.
 - Allocation/encoding (`passive-alloc.js`, `passive-code.js`), pan/zoom, and the
@@ -148,8 +173,8 @@ classStarts, classes, extent}`:
 - **Masteries** excluded (TODO #7).
 - **Weapon-set mode** is inert — GGG node data has no per-node weapon-set flag, so
   `ws` is 0 everywhere.
-- **Ascendancy placement & class/ascendancy selector** — TODO #9. `activeClass`
-  is fixed to Monk; ascendancy sub-trees render in place but aren't repositioned.
+- **Ascendancy placement & class/ascendancy selector** — done (TODO #6). Clusters
+  are centred on their class start and hidden until selected; see Build + Renderer.
 - **Textured connectors** — deferred in favour of stroked lines.
 
 ## Key files

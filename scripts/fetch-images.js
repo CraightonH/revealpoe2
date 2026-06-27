@@ -94,6 +94,23 @@ function ddsFromCss() {
   return out;
 }
 
+// Passive-tree ascendancy illustrations have no GGG web atlas, so they ride the
+// ggpk .dds→webp pipeline like node icons. The build artifact stores their
+// served webp URLs in meta.ascendancyArt; reverse-map to .dds (same as CSS) so
+// fetch-images self-hosts them. (Other passive art is in the GGG sprite atlases,
+// synced by fetch-ggg-tree, so this is the only artifact-referenced dds source.)
+function ddsFromPassiveArtifact() {
+  const out = new Set();
+  const p = path.join(root, 'public', 'generated', 'passive-tree.json');
+  if (!fs.existsSync(p)) return out;
+  const art = JSON.parse(fs.readFileSync(p, 'utf8'))?.meta?.ascendancyArt ?? {};
+  for (const a of Object.values(art)) {
+    const m = /^\/static\/img\/(.+)\.webp$/.exec(a?.img || '');
+    if (m) out.add(`${m[1]}.dds`);
+  }
+  return out;
+}
+
 // --- fetch with retry/timeout ---------------------------------------------- //
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -150,7 +167,7 @@ async function run() {
     process.exit(1);
   }
 
-  const dds = new Set([...ddsFromGraph(), ...ddsFromCss()]);
+  const dds = new Set([...ddsFromGraph(), ...ddsFromCss(), ...ddsFromPassiveArtifact()]);
   const manifest = FORCE ? {} : await loadManifest();
 
   // Gate the network sync on the referenced set (the bulk of this step's cost
