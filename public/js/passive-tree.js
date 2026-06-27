@@ -75,6 +75,12 @@ const FRAME_KEY = {
 const LINE_COLOR = { u: '#4b4534', a: '#8c7a4e', x: '#c8aa6e' };
 const LINE_WIDTH = 16; // world units
 
+// Fraction of the MainCircle frame's half-width to clip the central illustration
+// to. The ornate ring band occupies the outer ~25% of the frame, so the inner
+// opening (where the start-node hexagon sits, ~1470 of the 2000 half-width) is
+// ~0.74 — clip there so the art fills the opening without bleeding over the ring.
+const CENTER_CLIP_FILL = 0.74;
+
 // ---------------------------------------------------------------------------
 // Adjacency builder (with skip-guard for ghost nodes)
 // ---------------------------------------------------------------------------
@@ -423,10 +429,10 @@ export default function init(canvas, data) {
     // Inner clip radius ~ class-start ring; frame native/2 * fill keeps art inside.
     const cf = ATLAS.classFrame;
     const cfAt = atlas('group-background');
-    let clipR = 1380 * view.scale; // fallback
+    let clipR = 1480 * view.scale; // fallback (~inner-opening radius)
     if (cfAt) {
       const f = cfAt.frames[cf.frame];
-      if (f) clipR = (f.frame.w / cfAt.scale) / 2 * 0.92 * view.scale;
+      if (f) clipR = (f.frame.w / cfAt.scale) / 2 * CENTER_CLIP_FILL * view.scale;
     }
 
     ctx.save();
