@@ -21,6 +21,17 @@ function rawData() {
   return _raw;
 }
 
+// GGG node names carry description tokens: "[Ref|Display]" shows Display and
+// "[Word]" shows Word — e.g. "[SinisterJewelSockets|Sinister] [Jewel] Socket"
+// -> "Sinister Jewel Socket". Reduce ref|display tokens to their display word,
+// then strip the brackets off the remaining bare tokens. Mirrors the same
+// two-step pass in src/data/affixText.js.
+function cleanName(name) {
+  return name
+    .replace(/\[[^\]|]*\|([^\]]*)\]/g, '$1')
+    .replace(/[[\]]/g, '');
+}
+
 // Node kind from GGG flags. Masteries are auto-activated pass-throughs (not
 // selectable — see TODO #7) and are dropped entirely, like the RePoE path did.
 function kindOf(n) {
@@ -85,7 +96,7 @@ export function parseGggTree() {
       x: Math.round(n.x),
       y: Math.round(n.y),
       k,
-      name: n.name ?? '',
+      name: cleanName(n.name ?? ''),
       icon: n.icon ?? null,
       iconKind: iconKindOf(k),
       stats: Array.isArray(n.stats) ? n.stats : [],
