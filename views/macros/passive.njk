@@ -43,7 +43,13 @@
       </div>
     </div>
     {% endif %}
-    {% if node.statLines.length %}
+    {% if node.attrOptions %}
+    <div class="Stats attr-choice">
+      {% for opt in node.attrOptions %}
+      <div class="explicitMod attr-opt" data-attr="{{ opt.key }}">{{ opt.line | safe }}</div>
+      {% endfor %}
+    </div>
+    {% elif node.statLines.length %}
     <div class="Stats">
       {% for line in node.statLines %}
       <div class="explicitMod">{{ line | safe }}</div>

@@ -520,6 +520,17 @@ body {
    just the name in the banner. */
 .tippy-box[data-theme~='passive-tree'] .itemName.typeLine { display: none; }
 
+/* Generic-attribute node: the "+5 to any Attribute" choice. Each row is a
+   clickable Str/Int/Dex option; the picked one is highlighted (in-game pick). */
+.attr-choice .attr-opt {
+  cursor: pointer;
+  border-radius: 3px;
+  padding: 2px 8px;
+  transition: background 0.1s ease;
+}
+.attr-choice .attr-opt:hover { background: rgba(200, 170, 110, 0.14); }
+.attr-choice .attr-opt.chosen { background: rgba(200, 170, 110, 0.26); }
+
 /* Affix base-target flyout — the list of bases that can roll a mod. */
 .affix-bases { padding: 8px 10px; min-width: 160px; }
 .affix-bases-head {

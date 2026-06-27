@@ -69,6 +69,7 @@ export function buildArtifact() {
       icon: n.icon, iconKind: n.iconKind,
       asc: n.asc, ws: n.ws,
       ...(n.lock ? { lock: n.lock } : {}),
+      ...(n.attr ? { attr: 1 } : {}),
       ...(n.hidden ? { hidden: 1 } : {}),
     })),
     edges,
@@ -111,6 +112,14 @@ export function buildCards() {
     '{% from "macros/passive.njk" import passiveDetail %}{{ passiveDetail(vm) }}',
     env,
   );
+  // Generic-attribute nodes ("+5 to any Attribute") render as a 3-way choice
+  // (Str/Int/Dex) instead of the generic line; the renderer highlights the
+  // chosen one. data-attr keys it; renderGameText keeps the +5 number styling.
+  const ATTR_OPTS = [
+    { key: 'str', line: renderGameText('+5 to Strength', hasDefinition) },
+    { key: 'int', line: renderGameText('+5 to Intelligence', hasDefinition) },
+    { key: 'dex', line: renderGameText('+5 to Dexterity', hasDefinition) },
+  ];
   const { nodes } = parseGggTree();
   const cards = {};
   for (const n of nodes) {
@@ -124,6 +133,7 @@ export function buildCards() {
         .map((line) => renderGameText(line, hasDefinition)),
       reminderText: [],
       flavourText: null,
+      attrOptions: n.attr ? ATTR_OPTS : null,
     };
     cards[n.h] = tmpl.render({ vm });
   }

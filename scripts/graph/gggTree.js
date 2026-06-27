@@ -91,6 +91,8 @@ export function parseGggTree() {
       stats: Array.isArray(n.stats) ? n.stats : [],
       asc: n.ascendancyId ?? null,
       lock,
+      // "+5 to any Attribute" — the player picks Str/Int/Dex when allocating.
+      attr: n.isGenericAttribute || undefined,
       hidden: classStartHashes.has(h) || undefined, // class-start roots: anchor only
       ws: 0,
     });

@@ -280,6 +280,11 @@ export default function init(canvas, data) {
   let weaponState  = new Map();
   let weaponSetMode = false;
   let decodedState = null;
+  // attrChoice: Map<hash, 'str'|'int'|'dex'> — per generic-attribute node, which
+  // attribute the user picked (the "+5 to any Attribute" choice). Defaults to
+  // 'str' on allocation; changed by clicking an option in the node's card.
+  const attrChoice = new Map();
+  const ATTR_DEFAULT = 'str';
 
   // Determine the active class root from meta.classStarts. Default to the
   // selector's active class on init; overridden on import.
@@ -338,12 +343,39 @@ export default function init(canvas, data) {
       onMount(instance) {
         instance.popper.addEventListener('mouseenter', () => { overTip = true; clearTimeout(hideTimer); });
         instance.popper.addEventListener('mouseleave', () => { overTip = false; hideTip(); });
+        if (!instance.popper._attrBound) {
+          instance.popper._attrBound = true;
+          instance.popper.addEventListener('click', onAttrOptionClick);
+        }
       },
     });
     return tip;
   }
   function hideTip() { hoverHash = null; if (tip) tip.hide(); }
   function scheduleHide() { clearTimeout(hideTimer); hideTimer = setTimeout(() => { if (!overTip) hideTip(); }, 160); }
+
+  // Highlight the chosen attribute option inside an attribute node's card.
+  function paintAttrChoice(popper, h) {
+    if (!popper) return;
+    const chosen = attrChoice.get(h);
+    for (const el of popper.querySelectorAll('.attr-opt')) {
+      el.classList.toggle('chosen', el.getAttribute('data-attr') === chosen);
+    }
+  }
+
+  // Clicking an option in an attribute node's card sets that attribute (and
+  // allocates the node if it's allocatable), mirroring the in-game pick menu.
+  function onAttrOptionClick(e) {
+    const opt = e.target.closest('.attr-opt[data-attr]');
+    if (!opt) return;
+    const h = hoverHash;
+    const n = h != null ? nodeMap.get(h) : null;
+    if (!n || !n.attr) return;
+    attrChoice.set(h, opt.getAttribute('data-attr'));
+    if (!allocated.has(h) && _canAllocateSync(h)) _allocateSync(h);
+    if (tip) paintAttrChoice(tip.popper, h);
+    requestDraw();
+  }
 
   function nodeKindOf(h) {
     return nodeMap.get(h)?.k ?? '';
@@ -620,6 +652,7 @@ export default function init(canvas, data) {
           t.setContent(c[best.h] || best.name || '');
           t.show();
           if (t.popperInstance) t.popperInstance.update();
+          if (best.attr) paintAttrChoice(t.popper, best.h);
         });
       } else if (t.popperInstance) {
         t.popperInstance.update(); // keep anchored while panning
@@ -670,6 +703,12 @@ export default function init(canvas, data) {
       _deallocateSync(hit.h);
     } else if (_canAllocateSync(hit.h)) {
       _allocateSync(hit.h);
+      // Generic-attribute node: default to Strength until the user picks in the
+      // card. Refresh the card so the default highlight shows immediately.
+      if (hit.attr && !attrChoice.has(hit.h)) {
+        attrChoice.set(hit.h, ATTR_DEFAULT);
+        if (tip && hoverHash === hit.h) paintAttrChoice(tip.popper, hit.h);
+      }
     }
   });
 
