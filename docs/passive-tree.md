@@ -155,6 +155,14 @@ classStarts, classes, ascStarts, ascByClass, ascArt, extent}`:
   `asc === activeAsc`), and swaps the centre art. Imported share codes sync the
   selector via `ascStarts`/`ascendancyArt` reverse-lookups. `activeClass` defaults
   to the first selectable class.
+- **Generic-attribute nodes** (`attr`, the 293 "+5 to any Attribute" nodes): the
+  card shows a Str/Int/Dex choice (`.attr-opt[data-attr]`, built in `buildCards`).
+  Picking an option allocates the node with that attribute; the node icon is then
+  tinted the stat colour (`ATTR_COLOR`: red/green/blue) and the card collapses to
+  the chosen line. To change it, deallocate (node-click, which clears the pick via
+  `pruneAttrChoices`) and reallocate. Per-node picks live in `attrChoice`
+  (`attrOf` defaults to Strength, e.g. for imported builds). Not yet encoded into
+  the share-code tag word.
 - **Ascendancy art self-hosting**: the illustrations have no GGG web atlas, so
   they ride the ggpk `.dds`→webp pipeline like node icons. `fetch-images.js`'s
   `ddsFromPassiveArtifact()` reverse-maps `meta.ascendancyArt[].img` URLs into the

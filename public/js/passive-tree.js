@@ -75,6 +75,10 @@ const FRAME_KEY = {
 const LINE_COLOR = { u: '#4b4534', a: '#8c7a4e', x: '#c8aa6e' };
 const LINE_WIDTH = 16; // world units
 
+// Attribute colours for generic-attribute node tinting (PoE convention:
+// Strength red, Dexterity green, Intelligence blue).
+const ATTR_COLOR = { str: '#d1453b', dex: '#4ea850', int: '#5a7ce0' };
+
 // Fraction of the MainCircle frame's half-width to clip the central illustration
 // to. The ornate ring band occupies the outer ~25% of the frame, so the inner
 // opening (where the start-node hexagon sits, ~1470 of the 2000 half-width) is
@@ -354,12 +358,22 @@ export default function init(canvas, data) {
   function hideTip() { hoverHash = null; if (tip) tip.hide(); }
   function scheduleHide() { clearTimeout(hideTimer); hideTimer = setTimeout(() => { if (!overTip) hideTip(); }, 160); }
 
-  // Highlight the chosen attribute option inside an attribute node's card.
+  // The picked attribute for an allocated node (defaults to Strength — covers
+  // imported builds whose pick we don't yet decode from the share-code tag).
+  const attrOf = (h) => attrChoice.get(h) ?? ATTR_DEFAULT;
+
+  // Paint an attribute node's card. Unallocated → show the full Str/Int/Dex
+  // menu. Allocated → collapse to just the chosen stat (respec by deallocating).
   function paintAttrChoice(popper, h) {
     if (!popper) return;
-    const chosen = attrChoice.get(h);
+    const alloc = allocated.has(h);
+    const chosen = alloc ? attrOf(h) : attrChoice.get(h);
+    const box = popper.querySelector('.attr-choice');
+    if (box) box.classList.toggle('locked', alloc);
     for (const el of popper.querySelectorAll('.attr-opt')) {
-      el.classList.toggle('chosen', el.getAttribute('data-attr') === chosen);
+      const k = el.getAttribute('data-attr');
+      el.classList.toggle('chosen', k === chosen);
+      el.hidden = alloc && k !== chosen;
     }
   }
 
@@ -371,8 +385,10 @@ export default function init(canvas, data) {
     const h = hoverHash;
     const n = h != null ? nodeMap.get(h) : null;
     if (!n || !n.attr) return;
+    if (allocated.has(h)) return;     // locked once selected — respec via node click
+    if (!_canAllocateSync(h)) return; // not reachable from the allocated tree yet
     attrChoice.set(h, opt.getAttribute('data-attr'));
-    if (!allocated.has(h) && _canAllocateSync(h)) _allocateSync(h);
+    _allocateSync(h);
     if (tip) paintAttrChoice(tip.popper, h);
     requestDraw();
   }
@@ -423,6 +439,7 @@ export default function init(canvas, data) {
   function _allocateSync(h) {
     if (!_allocMod) return;
     allocated = _allocMod.allocate(adj, allocated, starts, h);
+    pruneAttrChoices();
     updatePoints();
     requestDraw();
   }
@@ -430,8 +447,16 @@ export default function init(canvas, data) {
   function _deallocateSync(h) {
     if (!_allocMod) return;
     allocated = _allocMod.deallocate(adj, allocated, starts, h);
+    pruneAttrChoices();
     updatePoints();
     requestDraw();
+  }
+
+  // Drop attribute picks for nodes that are no longer allocated — deallocating
+  // (which may cascade) clears the choice, so a fresh allocation re-opens the
+  // Str/Int/Dex menu (the respec path: unallocate, then reallocate + re-pick).
+  function pruneAttrChoices() {
+    for (const h of attrChoice.keys()) if (!allocated.has(h)) attrChoice.delete(h);
   }
 
   // ---------------------------------------------------------------------------
@@ -557,6 +582,21 @@ export default function init(canvas, data) {
         drawSprite(alloc ? 'skills' : 'skills-disabled',
           `${n.iconKind}${alloc ? 'Active' : 'Inactive'}:${n.icon}`, n.x, n.y);
       }
+
+      // Selected generic-attribute node: tint the icon the chosen stat's colour
+      // (red/green/blue) so the picked attribute reads at a glance. Drawn over
+      // the (opaque) icon with partial alpha, under the frame.
+      const attrCol = (n.attr && st === 'x') ? ATTR_COLOR[attrOf(n.h)] : null;
+      if (attrCol) {
+        ctx.save();
+        ctx.globalAlpha = 0.6;
+        ctx.beginPath();
+        ctx.arc(sp.x, sp.y, radiusOf(n.k) * 0.6 * view.scale, 0, Math.PI * 2);
+        ctx.fillStyle = attrCol;
+        ctx.fill();
+        ctx.restore();
+      }
+
       const fk = FRAME_KEY[n.k];
       if (fk) drawSprite('frame', `frame:${fk[st]}`, n.x, n.y);
     }
@@ -700,16 +740,16 @@ export default function init(canvas, data) {
 
     // Normal alloc/dealloc.
     if (allocated.has(hit.h)) {
-      _deallocateSync(hit.h);
+      _deallocateSync(hit.h); // also clears any attribute pick (pruneAttrChoices)
     } else if (_canAllocateSync(hit.h)) {
+      // Generic-attribute node: a node-body click allocates with the default
+      // attribute (Strength); picking a specific option in the card chooses
+      // another. Set the choice before allocating so it survives the prune.
+      if (hit.attr) attrChoice.set(hit.h, ATTR_DEFAULT);
       _allocateSync(hit.h);
-      // Generic-attribute node: default to Strength until the user picks in the
-      // card. Refresh the card so the default highlight shows immediately.
-      if (hit.attr && !attrChoice.has(hit.h)) {
-        attrChoice.set(hit.h, ATTR_DEFAULT);
-        if (tip && hoverHash === hit.h) paintAttrChoice(tip.popper, hit.h);
-      }
     }
+    // Keep the hovered attribute card in sync (menu ⇄ collapsed) after the click.
+    if (hit.attr && tip && hoverHash === hit.h) paintAttrChoice(tip.popper, hit.h);
   });
 
   canvas.addEventListener('pointercancel', () => {

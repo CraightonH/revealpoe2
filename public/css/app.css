@@ -530,6 +530,9 @@ body {
 }
 .attr-choice .attr-opt:hover { background: rgba(200, 170, 110, 0.14); }
 .attr-choice .attr-opt.chosen { background: rgba(200, 170, 110, 0.26); }
+/* Once selected the card collapses to the single chosen stat — show it as a
+   plain stat line (the node itself carries the colour; respec via node click). */
+.attr-choice.locked .attr-opt { cursor: default; background: none; padding: 0; }
 
 /* Affix base-target flyout — the list of bases that can roll a mod. */
 .affix-bases { padding: 8px 10px; min-width: 160px; }
