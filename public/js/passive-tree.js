@@ -145,26 +145,14 @@ export default function init(canvas, data) {
   // Build adjacency (with skip-guard for ghost nodes).
   const adj = buildAdjacency(nodes, edges);
 
-  // --- Artwork (node frames + orbit-ring backgrounds) ---
-  // Supplied by the artifact (meta.art / meta.frame / meta.groupBg, data.groups).
-  // Falls back to the module FRAME_PX + colored rings when absent (older artifact).
+  // --- Artwork (node frames) ---
+  // Supplied by the artifact (meta.art / meta.frame). Falls back to the module
+  // FRAME_PX + colored rings when absent (older artifact).
+  // (Orbit group-ring backgrounds are staged in the pipeline — meta.groupBg /
+  // data.groups — but not drawn yet; their placement needs calibration.)
   const art      = meta.art ?? null;
-  const groupBg  = meta.groupBg ?? null;
-  const groups   = data.groups ?? [];
   const framePx  = meta.frame ?? FRAME_PX;
   const radiusOf = (k) => (framePx[k] ?? 52) / 2;
-
-  // Background size class by the group's largest orbit radius. Thresholds are
-  // tuned to the native ring radii (small 359/2≈180, medium 465/2≈232,
-  // large 739/2≈370); groups larger than the big ring (structural outer wheels)
-  // get no background. Adjust here if rings drift from their node clusters.
-  function bgForRadius(r) {
-    if (!groupBg) return null;
-    if (r <= 180) return groupBg.small;
-    if (r <= 280) return groupBg.medium;
-    if (r <= 370) return groupBg.large;
-    return null;
-  }
 
   // Frame art state for a node: x = allocated/anchor, a = allocatable frontier,
   // u = unallocated. _canAllocateSync needs the alloc module loaded; before that
@@ -356,31 +344,6 @@ export default function init(canvas, data) {
     ctx.clearRect(0, 0, W, H);
 
     ctx.save();
-
-    // --- Orbit-ring backgrounds (behind everything) ---
-    if (groupBg) {
-      for (const g of groups) {
-        const bg = bgForRadius(g.r);
-        if (!bg) continue;
-        const img = getImage(bg.u);
-        if (!img || !img.complete || !img.naturalWidth) continue;
-        const c = worldToScreen(view, g.x, g.y);
-        const R = (bg.px / 2) * view.scale;
-        if (c.x + R < 0 || c.x - R > W || c.y + R < 0 || c.y - R > H) continue; // cull
-        if (bg.half) {
-          // Source art is the top half of the ring; draw it, then mirror it
-          // vertically for the bottom half to form the full circle.
-          ctx.drawImage(img, c.x - R, c.y - R, R * 2, R);
-          ctx.save();
-          ctx.translate(c.x, c.y);
-          ctx.scale(1, -1);
-          ctx.drawImage(img, -R, -R, R * 2, R);
-          ctx.restore();
-        } else {
-          ctx.drawImage(img, c.x - R, c.y - R, R * 2, R * 2);
-        }
-      }
-    }
 
     // --- Edges ---
     for (const e of edges) {
