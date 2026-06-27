@@ -44,60 +44,33 @@ export function screenToWorld(view, sx, sy) {
 // Node kind visual config
 // ---------------------------------------------------------------------------
 
-// Native frame artwork diameters in px (== world units). Used as a fallback when
-// the artifact predates meta.frame; the artifact normally supplies these. Node
-// radius is half the frame diameter, so frames render at in-game proportions.
-const FRAME_PX = {
-  keystone:   217,
-  notable:    151,
-  small:      102,
-  ascStart:   90,
-  ascNotable: 206,
-  ascSmall:   159,
-  jewel:      151,
+// Node hit-test radii in world units (== half the GGG frame sprite's native
+// size). Used for pointer hit-testing; drawing sizes come from the atlas frames
+// directly. Kept in sync with frame.json sprite sizes (atlas px / 0.5 / 2).
+const KIND_RADIUS = {
+  keystone:   109,
+  notable:    76,
+  small:      51,
+  ascStart:   45,
+  ascNotable: 103,
+  ascSmall:   80,
+  jewel:      76,
 };
 
-// Fraction of the frame diameter the inner icon fills (the art ring sits in the
-// outer band). Tuned per kind so icons sit inside the ring, not under it.
-const ICON_FRACTION = {
-  keystone:   0.5,
-  notable:    0.56,
-  small:      0.6,
-  ascStart:   0.62,
-  ascNotable: 0.52,
-  ascSmall:   0.58,
-  jewel:      0.46,
+// kind -> frame.json sprite keys by allocation state (u=unallocated,
+// a=allocatable, x=allocated). Prefixed 'frame:' to match the atlas keys.
+const FRAME_KEY = {
+  keystone:   { u: 'KeystoneFrameUnallocated', a: 'KeystoneFrameCanAllocate', x: 'KeystoneFrameAllocated' },
+  notable:    { u: 'NotableFrameUnallocated', a: 'NotableFrameCanAllocate', x: 'NotableFrameAllocated' },
+  small:      { u: 'PSSkillFrame', a: 'PSSkillFrameHighlighted', x: 'PSSkillFrameActive' },
+  jewel:      { u: 'JewelFrameUnallocated', a: 'JewelFrameCanAllocate', x: 'JewelFrameAllocated' },
+  ascNotable: { u: 'AscendancyFrameNotableUnallocated', a: 'AscendancyFrameNotableCanAllocate', x: 'AscendancyFrameNotableAllocated' },
+  ascSmall:   { u: 'AscendancyFrameNormalUnallocated', a: 'AscendancyFrameNormalCanAllocate', x: 'AscendancyFrameNormalAllocated' },
+  ascStart:   { u: 'AscendancyStartNode', a: 'AscendancyStartNode', x: 'AscendancyStartNode' },
 };
 
-const KIND_COLOR = {
-  keystone:   '#c8a84b',
-  notable:    '#8fc8e0',
-  small:      '#9090a0',
-  ascKS:      '#e0b060',
-  ascNotable: '#d0a0d0',
-  ascSmall:   '#b090c0',
-  classStart: '#ffffff',
-  mastery:    '#60c060',
-};
-
-const EDGE_COLOR       = '#6a6a86';
-const EDGE_COLOR_ASC   = '#9a7cc0';
-const EDGE_WIDTH       = 4;
-
-// ---------------------------------------------------------------------------
-// Image cache
-// ---------------------------------------------------------------------------
-
-const imgCache = new Map(); // url → HTMLImageElement | null (null = error)
-
-function getImage(url) {
-  if (imgCache.has(url)) return imgCache.get(url);
-  const img = new Image();
-  img.src = url;
-  img.onerror = () => { imgCache.set(url, null); };
-  imgCache.set(url, img);
-  return img;
-}
+// line.json connector sprite keys by state.
+const LINE_STATE = { u: 'Normal', a: 'Intermediate', x: 'Active' };
 
 // ---------------------------------------------------------------------------
 // Adjacency builder (with skip-guard for ghost nodes)
@@ -145,48 +118,66 @@ export default function init(canvas, data) {
   // Build adjacency (with skip-guard for ghost nodes).
   const adj = buildAdjacency(nodes, edges);
 
-  // --- Artwork (node frames) ---
-  // Supplied by the artifact (meta.art / meta.frame). Falls back to the module
-  // FRAME_PX + colored rings when absent (older artifact).
-  // (Orbit group-ring backgrounds are staged in the pipeline — meta.groupBg /
-  // data.groups — but not drawn yet; their placement needs calibration.)
-  const art      = meta.art ?? null;
-  const framePx  = meta.frame ?? FRAME_PX;
-  const radiusOf = (k) => (framePx[k] ?? 52) / 2;
-
-  // Central class illustration. The tree origin (0,0) is the centre of the
-  // class-start hexagon; the 6 class-start nodes sit ON the central frame ring,
-  // so their mean distance from the origin IS the ring radius — derive the art
-  // circle from that rather than guessing. The art is clipped to this circle
-  // (in-game look). RING_FILL nudges the art edge relative to the node ring:
-  // 1.0 = reaches the nodes, <1 leaves room for the (not-yet-drawn) frame.
-  // TODO 9 will drive activeClass from a class/ascendancy selector.
+  // --- Sprite atlases (GGG's own web art) ---
+  // Each atlas is an image + a frame map ({key:{frame:{x,y,w,h}}}, meta.scale).
+  // Loaded lazily; atlas() returns null until ready and triggers a redraw on load.
+  // native world size of a sprite = atlas px / scale (atlases are authored at 0.5).
+  const ATLAS = meta.atlas;
   const classArt = meta.classArt ?? null;
   let activeClass = 'Monk';
-  const RING_FILL = 0.95;
 
-  // The class-start root nodes sit at the hexagon vertices, now covered by the
-  // frame's clover ornaments — they're not selectable in-game. Hide them from
-  // rendering + hit-testing, but keep them in the graph as allocation anchors so
-  // their neighbours (the first real nodes) stay connected and allocatable, and
-  // their edges still anchor to the ring.
-  const hiddenNodes = new Set(Object.values(meta.classStarts ?? {}));
-  const classRingRadius = (() => {
-    const hs = Object.values(meta.classStarts ?? {});
-    let sum = 0, n = 0;
-    for (const h of hs) {
-      const nd = nodeMap.get(h);
-      if (nd) { sum += Math.hypot(nd.x, nd.y); n++; }
+  const atlasCache = new Map(); // name -> {img, frames, scale} | 'loading' | 'error'
+  function atlas(name) {
+    const c = atlasCache.get(name);
+    if (c && typeof c === 'object') return c;
+    if (!c) {
+      atlasCache.set(name, 'loading');
+      Promise.all([
+        fetch(`${ATLAS.map}/${name}.json`).then((r) => r.json()),
+        new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = `${ATLAS.img}/${name}.webp`; }),
+      ]).then(([map, img]) => {
+        atlasCache.set(name, { img, frames: map.frames, scale: Number(map.meta?.scale) || 1 });
+        requestDraw();
+      }).catch(() => atlasCache.set(name, 'error'));
     }
-    return n ? sum / n : 1470;
-  })();
+    return null;
+  }
 
-  // Frame art state for a node: x = allocated/anchor, a = allocatable frontier,
-  // u = unallocated. _canAllocateSync needs the alloc module loaded; before that
-  // every unallocated node reads 'u' and is repainted once the module arrives.
+  // Draw an atlas sprite centred at world (wx,wy). w/h default to the sprite's
+  // native size; ox/oy offset in world units (for class-art placement).
+  function drawSprite(name, key, wx, wy, opts = {}) {
+    const at = atlas(name);
+    if (!at) return false;
+    const f = at.frames[key];
+    if (!f) return false;
+    const fr = f.frame;
+    const inv = 1 / at.scale;
+    const w = (opts.w ?? fr.w * inv) * view.scale;
+    const h = (opts.h ?? fr.h * inv) * view.scale;
+    const s = worldToScreen(view, wx + (opts.ox || 0), wy + (opts.oy || 0));
+    ctx.drawImage(at.img, fr.x, fr.y, fr.w, fr.h, s.x - w / 2, s.y - h / 2, w, h);
+    return true;
+  }
+
+  const radiusOf = (k) => KIND_RADIUS[k] ?? 51;
+
+  // Class-start roots sit under the central frame's clover ornaments and aren't
+  // selectable — hide from render + hit-test, keep as allocation anchors.
+  const hiddenNodes = new Set(nodes.filter((n) => n.hidden).map((n) => n.h));
+
+  // Allocation state for a node: x = allocated/anchor, a = allocatable, u = else.
   function frameState(n) {
     if (allocated.has(n.h) || starts.includes(n.h)) return 'x';
     if (_canAllocateSync(n.h)) return 'a';
+    return 'u';
+  }
+
+  // Connector state between two nodes (a/b alloc states drive the line sprite).
+  function lineState(na, nb) {
+    const aa = allocated.has(na.h) || starts.includes(na.h);
+    const ba = allocated.has(nb.h) || starts.includes(nb.h);
+    if (aa && ba) return 'x';
+    if (aa || ba) return 'a';
     return 'u';
   }
 
@@ -372,128 +363,132 @@ export default function init(canvas, data) {
 
     ctx.save();
 
-    // --- Central class illustration + ornate frame ring (behind the graph) ---
-    {
-      const c = worldToScreen(view, 0, 0);
-      // Illustration, circular-clipped just inside the frame ring.
-      if (classArt && activeClass && classArt[activeClass]) {
-        const img = getImage(classArt[activeClass]);
-        if (img && img.complete && img.naturalWidth > 0) {
-          const R = classRingRadius * RING_FILL * view.scale;
-          const ar = img.naturalHeight / img.naturalWidth;
-          ctx.save();
-          ctx.beginPath();
-          ctx.arc(c.x, c.y, R, 0, Math.PI * 2);
-          ctx.clip();
-          ctx.drawImage(img, c.x - R, c.y - R * ar, R * 2, R * 2 * ar);
-          ctx.restore();
-        }
-      }
-      // Frame ring on top — GGG's MainCircle sprite, drawn at native world size
-      // so its clover ornaments land on the class-start nodes.
-      const cf = meta.classFrame;
-      if (cf) {
-        const fimg = getImage(cf.url);
-        if (fimg && fimg.complete && fimg.naturalWidth > 0) {
-          const FR = (cf.native / 2) * view.scale;
-          ctx.drawImage(fimg, cf.sx, cf.sy, cf.sw, cf.sh, c.x - FR, c.y - FR, FR * 2, FR * 2);
-        }
+    drawClassCentre();
+    drawEdges(W, H);
+    drawNodes(W, H);
+
+    ctx.restore();
+  }
+
+  // Central class illustration (clipped to the frame's inner circle) + the ornate
+  // MainCircle frame ring on top, both from GGG's atlases, at the tree origin.
+  function drawClassCentre() {
+    const ca = classArt && activeClass ? classArt[activeClass] : null;
+    if (!ca) return;
+    const slug = `background-${activeClass.toLowerCase()}`;
+    const at = atlas(slug);
+    const c = worldToScreen(view, 0, 0);
+    // Inner clip radius ~ class-start ring; frame native/2 * fill keeps art inside.
+    const cf = ATLAS.classFrame;
+    const cfAt = atlas('group-background');
+    let clipR = 1380 * view.scale; // fallback
+    if (cfAt) {
+      const f = cfAt.frames[cf.frame];
+      if (f) clipR = (f.frame.w / cfAt.scale) / 2 * 0.92 * view.scale;
+    }
+    if (at) {
+      const f = at.frames[ca.frame];
+      if (f) {
+        const inv = 1 / at.scale;
+        const w = f.frame.w * inv * view.scale;
+        const h = f.frame.h * inv * view.scale;
+        const ox = (ca.offsetX || 0) * view.scale;
+        const oy = (ca.offsetY || 0) * view.scale;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, clipR, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.drawImage(at.img, f.frame.x, f.frame.y, f.frame.w, f.frame.h,
+          c.x - w / 2 + ox, c.y - h / 2 + oy, w, h);
+        ctx.restore();
       }
     }
+    drawSprite('group-background', cf.frame, 0, 0);
+  }
 
-    // --- Edges ---
+  // Connectors. Straight = the LineConnector strip stretched + rotated between
+  // nodes; arc = the per-orbit ring texture clipped to the arc wedge — both from
+  // line.webp, state-coloured. GGG's precomputed arc centres keep them from crossing.
+  function drawEdges(W, H) {
+    const at = atlas('line');
     for (const e of edges) {
-      const na = nodeMap.get(e.a);
-      const nb = nodeMap.get(e.b);
+      const na = nodeMap.get(e.a), nb = nodeMap.get(e.b);
       if (!na || !nb) continue;
-      // Don't draw the spokes from a hidden class-start root to its neighbours.
-      // (Allocation adjacency is built separately, so this is render-only.)
       if (hiddenNodes.has(e.a) || hiddenNodes.has(e.b)) continue;
+      if ((na.asc != null) !== (nb.asc != null)) continue; // no main↔ascendancy spokes
+      const st = LINE_STATE[lineState(na, nb)];
+      if (!at) continue;
 
-      // Use loose != null so both null and undefined are treated as "no ascendancy".
-      const aAsc = na.asc != null;
-      const bAsc = nb.asc != null;
-      // Skip edges that bridge the main tree and an ascendancy (the class-start →
-      // ascendancy-start link), which otherwise draws a long line straight across
-      // the whole tree. Ascendancy clusters stay connected via their internal edges.
-      if (aAsc !== bAsc) continue;
-
-      const isAsc = aAsc || bAsc;
-      ctx.strokeStyle = isAsc ? EDGE_COLOR_ASC : EDGE_COLOR;
-      ctx.lineWidth = Math.max(1.5, EDGE_WIDTH * view.scale);
-
-      ctx.beginPath();
       if (e.arc) {
         const arc = e.arc;
-        // Convert "up=0, clockwise" convention to canvas "right=0" by subtracting π/2.
-        const cx = view.ox + arc.cx * view.scale;
-        const cy = view.oy + arc.cy * view.scale;
-        const r  = arc.r  * view.scale;
-        ctx.arc(cx, cy, r, arc.a0 - Math.PI / 2, arc.a1 - Math.PI / 2, arc.ccw);
+        const c = worldToScreen(view, arc.cx, arc.cy);
+        const r = arc.r * view.scale;
+        if (c.x + r < 0 || c.x - r > W || c.y + r < 0 || c.y - r > H) continue;
+        // Pick the ring sprite whose native radius is closest to this arc radius.
+        const key = ringKeyFor(at, arc.r, st);
+        const f = key && at.frames[key];
+        if (!f) continue;
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(c.x, c.y);
+        ctx.arc(c.x, c.y, r + 40 * view.scale, arc.a0, arc.a1, arc.ccw);
+        ctx.closePath();
+        ctx.clip();
+        ctx.drawImage(at.img, f.frame.x, f.frame.y, f.frame.w, f.frame.h,
+          c.x - r, c.y - r, r * 2, r * 2);
+        ctx.restore();
       } else {
         const sa = worldToScreen(view, na.x, na.y);
         const sb = worldToScreen(view, nb.x, nb.y);
-        ctx.moveTo(sa.x, sa.y);
-        ctx.lineTo(sb.x, sb.y);
+        const f = at.frames[`line:LineConnector${st}`];
+        if (!f) continue;
+        const len = Math.hypot(sb.x - sa.x, sb.y - sa.y);
+        const thick = (f.frame.h / at.scale) * view.scale;
+        ctx.save();
+        ctx.translate(sa.x, sa.y);
+        ctx.rotate(Math.atan2(sb.y - sa.y, sb.x - sa.x));
+        ctx.drawImage(at.img, f.frame.x, f.frame.y, f.frame.w, f.frame.h, 0, -thick / 2, len, thick);
+        ctx.restore();
       }
-      ctx.stroke();
     }
+  }
 
-    // --- Node icons + frames ---
-    const cullMargin = 120 * view.scale; // worst-case frame radius, scaled
+  // Cache: which Orbit{N}{state} ring sprite best matches a given world radius.
+  let _ringKeys = null;
+  function ringKeyFor(at, worldR, st) {
+    if (!_ringKeys) {
+      _ringKeys = [];
+      for (const k of Object.keys(at.frames)) {
+        const m = /^line:Orbit(\d+)Normal$/.exec(k);
+        if (m) _ringKeys.push({ n: m[1], r: (at.frames[k].frame.w / at.scale) / 2 });
+      }
+    }
+    let best = null, bd = Infinity;
+    for (const rk of _ringKeys) {
+      const d = Math.abs(rk.r - worldR);
+      if (d < bd) { bd = d; best = rk; }
+    }
+    return best ? `line:Orbit${best.n}${st}` : null;
+  }
+
+  function drawNodes(W, H) {
+    const cullMargin = 240 * view.scale;
     for (const n of nodes) {
-      if (hiddenNodes.has(n.h)) continue; // class-start roots — drawn as frame clovers
+      if (hiddenNodes.has(n.h)) continue;
       const sp = worldToScreen(view, n.x, n.y);
       if (sp.x < -cullMargin || sp.x > W + cullMargin ||
           sp.y < -cullMargin || sp.y > H + cullMargin) continue;
-
-      const fr = radiusOf(n.k) * view.scale;                    // frame radius (screen px)
-      const ir = fr * (ICON_FRACTION[n.k] ?? 0.58);             // inner icon radius
       const st = frameState(n);
 
-      // Icon, clipped to the inner circle so it sits inside the frame ring.
-      if (n.icon) {
-        const img = getImage(n.icon);
-        if (img && img.complete && img.naturalWidth > 0) {
-          ctx.save();
-          ctx.beginPath();
-          ctx.arc(sp.x, sp.y, ir, 0, Math.PI * 2);
-          ctx.clip();
-          ctx.drawImage(img, sp.x - ir, sp.y - ir, ir * 2, ir * 2);
-          ctx.restore();
-        } else {
-          ctx.beginPath();
-          ctx.arc(sp.x, sp.y, ir * 0.85, 0, Math.PI * 2);
-          ctx.fillStyle = KIND_COLOR[n.k] ?? '#888';
-          ctx.fill();
-        }
+      // Icon (active vs disabled atlas), then frame on top.
+      if (n.icon && n.iconKind) {
+        const alloc = st === 'x';
+        drawSprite(alloc ? 'skills' : 'skills-disabled',
+          `${n.iconKind}${alloc ? 'Active' : 'Inactive'}:${n.icon}`, n.x, n.y);
       }
-
-      // Frame art (state-driven), drawn over the icon. Falls back to a colored
-      // ring (gold=allocated, light=allocatable) while the art loads or if it errored.
-      const frameUrl = art && art[n.k] ? art[n.k][st] : null;
-      const fimg = frameUrl ? getImage(frameUrl) : null;
-      if (fimg && fimg.complete && fimg.naturalWidth > 0) {
-        ctx.drawImage(fimg, sp.x - fr, sp.y - fr, fr * 2, fr * 2);
-      } else {
-        ctx.beginPath();
-        ctx.arc(sp.x, sp.y, fr, 0, Math.PI * 2);
-        ctx.strokeStyle = st === 'x' ? '#ffe066' : st === 'a' ? '#cfe8ff' : (KIND_COLOR[n.k] ?? '#888');
-        ctx.lineWidth = Math.max(1, view.scale * 1.5);
-        ctx.stroke();
-      }
-
-      // Start-node indicator (always-present class/ascendancy anchors).
-      if (starts.includes(n.h)) {
-        ctx.beginPath();
-        ctx.arc(sp.x, sp.y, fr + view.scale * 4, 0, Math.PI * 2);
-        ctx.strokeStyle = '#44aaff';
-        ctx.lineWidth = Math.max(1, view.scale * 1.5);
-        ctx.stroke();
-      }
+      const fk = FRAME_KEY[n.k];
+      if (fk) drawSprite('frame', `frame:${fk[st]}`, n.x, n.y);
     }
-
-    ctx.restore();
   }
 
   // ---------------------------------------------------------------------------
@@ -852,14 +847,8 @@ export default function init(canvas, data) {
     data,
   };
 
-  // Trigger redraws as icons load.
-  const drawOnLoad = () => requestDraw();
-  for (const n of nodes) {
-    if (n.icon) {
-      const img = getImage(n.icon);
-      if (img && !img.complete) img.addEventListener('load', drawOnLoad, { once: true });
-    }
-  }
+  // Atlases load lazily via atlas(); each triggers requestDraw() on load, so no
+  // per-node icon preloading is needed.
 
   // Load alloc + code modules eagerly so click handlers have them ready.
   Promise.all([allocMod(), codeMod()]).then(() => {
