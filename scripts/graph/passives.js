@@ -16,6 +16,53 @@ import { makeNode, makeEdge, KINDS, EDGE_TYPES } from './schema.js';
 import { resolveStatLines } from './passiveSource.js';
 
 // ---------------------------------------------------------------------------
+// treeArtPaths — every passive-tree art asset (.dds) the renderer needs staged.
+//
+// Returned as a flat, deduped, .dds-normalized list and stamped into the graph
+// meta (build.js) for ONE reason: scripts/fetch-images.js discovers art by
+// walking build/graph.json for ".dds" strings — it never reads the render
+// artifact, and it runs BEFORE build:passives. Surfacing the paths here lets the
+// existing fetcher download them (ggpk for illustrations, its poe2db fallback
+// for the UI frames ggpk 500s on) with no pipeline reordering.
+//
+// Covers node frames (×3 states), orbit group backgrounds, the glow, AND the
+// class/ascendancy illustrations — the latter aren't drawn yet (TODO 9 places
+// them) but are staged now so they're on disk when that work lands.
+// ---------------------------------------------------------------------------
+export function treeArtPaths() {
+  const tree = loadJson(`${REPOE}/passive_skill_trees/Default.json`);
+  const asc = loadJson(`${REPOE}/ascendancies.json`);
+  const out = new Set();
+  // Collect every "Art/..." string leaf in an arbitrary structure. The art
+  // objects also carry non-path strings ("id": "Character"); the Art/ prefix
+  // filter drops those.
+  const addLeaves = (o) => {
+    if (typeof o === 'string') { if (o.startsWith('Art/')) out.add(o); return; }
+    if (Array.isArray(o)) { o.forEach(addLeaves); return; }
+    if (o && typeof o === 'object') Object.values(o).forEach(addLeaves);
+  };
+
+  addLeaves(tree.art); // main-tree frames + group backgrounds + glow
+
+  for (const v of Object.values(asc)) {
+    if (v.disabled || (v.name && v.name.includes('[DNT'))) continue;
+    addLeaves(v.art);                                  // ascendancy frame variants
+    if (v.passive_tree_image) out.add(v.passive_tree_image); // ascendancy illustration
+    // The class illustration (e.g. WarriorBaseIllustration) is buried in the
+    // character metadata array; find it by content rather than a fixed index.
+    if (Array.isArray(v.character)) {
+      for (const s of v.character) {
+        if (typeof s === 'string' && s.includes('BaseClassIllustrations')) out.add(s);
+      }
+    }
+  }
+
+  // Normalize to .dds so fetch-images.js's /\.dds$/ walker discovers them
+  // (frame paths in source carry no extension; illustrations already do).
+  return [...out].map((p) => (/\.dds$/i.test(p) ? p : `${p}.dds`)).sort();
+}
+
+// ---------------------------------------------------------------------------
 // passiveNodes — keystones + notables (incl. ascendancy notables).
 // ---------------------------------------------------------------------------
 export function passiveNodes() {

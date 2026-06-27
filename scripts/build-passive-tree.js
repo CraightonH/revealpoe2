@@ -15,8 +15,47 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.join(__dirname, '..', 'public', 'generated', 'passive-tree.json');
 const CARDS_OUT = path.join(__dirname, '..', 'public', 'generated', 'passive-cards.json');
 
+// Native artwork diameters in px (== world units; nodes/orbits share the source
+// coordinate space, so drawing a frame at its native size reproduces the in-game
+// proportions — the "artwork ratios" of TODO 8). Measured from the webp assets.
+const FRAME_PX = {
+  small: 102, notable: 151, keystone: 217, jewel: 151,
+  ascStart: 90, ascNotable: 206, ascSmall: 159,
+};
+const GROUP_BG_PX = { small: 359, medium: 465, large: 739 };
+
+// Map a source art frame object {unallocated,allocatable,allocated} to renderer
+// URLs keyed by state: u(nallocated) / a(llocatable) / (allocated→)x.
+const frameStates = (f) => ({
+  u: ddsUrl(f.unallocated),
+  a: ddsUrl(f.allocatable),
+  x: ddsUrl(f.allocated),
+});
+
 export function buildArtifact() {
   const { nodes, edges, meta } = parseTree();
+  const a = meta.art;      // main-tree (Character) art
+  const aa = meta.ascArt;  // representative ascendancy art (shared frames)
+
+  // Per-node-kind frame art. Ascendancy kinds use the ascendancy frame variants.
+  const art = {
+    small:      frameStates(a.passive_frame),
+    notable:    frameStates(a.notable_frame),
+    keystone:   frameStates(a.keystone_frame),
+    jewel:      frameStates(a.jewel_frame),
+    ascStart:   frameStates(aa.ascendancystart_frame),
+    ascNotable: frameStates(aa.notable_frame),
+    ascSmall:   frameStates(aa.passive_frame),
+  };
+
+  // Orbit-ring backgrounds. `large` art is a half-circle (drawn mirrored into a
+  // full ring by the renderer); `half` flags that.
+  const groupBg = {
+    small:  { u: ddsUrl(a.group_bg_small_normal),  px: GROUP_BG_PX.small },
+    medium: { u: ddsUrl(a.group_bg_medium_normal), px: GROUP_BG_PX.medium },
+    large:  { u: ddsUrl(a.group_bg_large_normal),  px: GROUP_BG_PX.large, half: true },
+  };
+
   return {
     nodes: nodes.map((n) => ({
       h: n.h,
@@ -30,11 +69,15 @@ export function buildArtifact() {
       ws: n.ws,
     })),
     edges,
+    groups: meta.groups, // [{x,y,r}] orbit-ring backgrounds
     meta: {
       classStarts: meta.classStarts,
       ascStarts: meta.ascStarts,
       liveAscendancies: meta.liveAscendancies,
       pointBudget: 122, // character passive point cap; refine if source provides it
+      art,
+      frame: FRAME_PX,
+      groupBg,
     },
   };
 }

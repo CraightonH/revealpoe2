@@ -246,6 +246,26 @@ export function parseTree() {
     .filter(([, v]) => !v.disabled && !(v.name && v.name.includes('[DNT')))
     .map(([id]) => id);
 
+  // Ascendancy frame art is identical across ascendancies (shared UIImages
+  // paths), so one live ascendancy's `art` is a representative source for the
+  // ascStart/ascNotable/ascSmall frames.
+  const repAscArt = asc[liveAscendancies[0]]?.art ?? null;
+
+  // Orbit ring backgrounds: one entry per group that occupies a non-zero orbit,
+  // carrying the group centre and the largest orbit RADIUS used (orbit_radii is
+  // not monotonic by index, so resolve to the value). The renderer picks a
+  // small/medium/large background by this radius. Pure orbit-0 groups (a single
+  // centred node) get no ring.
+  const groups = [];
+  for (const g of raw.groups) {
+    let r = 0;
+    for (const gp of g.passives ?? []) {
+      const rr = orbitRadii[gp.radius] || 0;
+      if (rr > r) r = rr;
+    }
+    if (r > 0) groups.push({ x: Math.round(g.x), y: Math.round(g.y), r });
+  }
+
   // class start nodes are roots; ascendancy starts are the ascStart nodes.
   const ascStarts = {};
   for (const n of nodes) {
@@ -258,6 +278,9 @@ export function parseTree() {
     meta: {
       orbitRadii,
       skillsPerOrbit,
+      art: raw.art,
+      ascArt: repAscArt,
+      groups,
       roots: raw.roots,
       classStarts: Object.fromEntries(
         raw.roots

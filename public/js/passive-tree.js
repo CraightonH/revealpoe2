@@ -44,14 +44,29 @@ export function screenToWorld(view, sx, sy) {
 // Node kind visual config
 // ---------------------------------------------------------------------------
 
-const KIND_RADIUS = {
-  keystone:   100,
-  notable:    67,
-  small:      37,
-  ascStart:   85,
-  ascNotable: 67,
-  ascSmall:   37,
-  jewel:      56,
+// Native frame artwork diameters in px (== world units). Used as a fallback when
+// the artifact predates meta.frame; the artifact normally supplies these. Node
+// radius is half the frame diameter, so frames render at in-game proportions.
+const FRAME_PX = {
+  keystone:   217,
+  notable:    151,
+  small:      102,
+  ascStart:   90,
+  ascNotable: 206,
+  ascSmall:   159,
+  jewel:      151,
+};
+
+// Fraction of the frame diameter the inner icon fills (the art ring sits in the
+// outer band). Tuned per kind so icons sit inside the ring, not under it.
+const ICON_FRACTION = {
+  keystone:   0.5,
+  notable:    0.56,
+  small:      0.6,
+  ascStart:   0.62,
+  ascNotable: 0.52,
+  ascSmall:   0.58,
+  jewel:      0.46,
 };
 
 const KIND_COLOR = {
@@ -129,6 +144,36 @@ export default function init(canvas, data) {
 
   // Build adjacency (with skip-guard for ghost nodes).
   const adj = buildAdjacency(nodes, edges);
+
+  // --- Artwork (node frames + orbit-ring backgrounds) ---
+  // Supplied by the artifact (meta.art / meta.frame / meta.groupBg, data.groups).
+  // Falls back to the module FRAME_PX + colored rings when absent (older artifact).
+  const art      = meta.art ?? null;
+  const groupBg  = meta.groupBg ?? null;
+  const groups   = data.groups ?? [];
+  const framePx  = meta.frame ?? FRAME_PX;
+  const radiusOf = (k) => (framePx[k] ?? 52) / 2;
+
+  // Background size class by the group's largest orbit radius. Thresholds are
+  // tuned to the native ring radii (small 359/2≈180, medium 465/2≈232,
+  // large 739/2≈370); groups larger than the big ring (structural outer wheels)
+  // get no background. Adjust here if rings drift from their node clusters.
+  function bgForRadius(r) {
+    if (!groupBg) return null;
+    if (r <= 180) return groupBg.small;
+    if (r <= 280) return groupBg.medium;
+    if (r <= 370) return groupBg.large;
+    return null;
+  }
+
+  // Frame art state for a node: x = allocated/anchor, a = allocatable frontier,
+  // u = unallocated. _canAllocateSync needs the alloc module loaded; before that
+  // every unallocated node reads 'u' and is repainted once the module arrives.
+  function frameState(n) {
+    if (allocated.has(n.h) || starts.includes(n.h)) return 'x';
+    if (_canAllocateSync(n.h)) return 'a';
+    return 'u';
+  }
 
   // Initial view: center the tree in the canvas.
   // Compute world bounds.
@@ -312,6 +357,31 @@ export default function init(canvas, data) {
 
     ctx.save();
 
+    // --- Orbit-ring backgrounds (behind everything) ---
+    if (groupBg) {
+      for (const g of groups) {
+        const bg = bgForRadius(g.r);
+        if (!bg) continue;
+        const img = getImage(bg.u);
+        if (!img || !img.complete || !img.naturalWidth) continue;
+        const c = worldToScreen(view, g.x, g.y);
+        const R = (bg.px / 2) * view.scale;
+        if (c.x + R < 0 || c.x - R > W || c.y + R < 0 || c.y - R > H) continue; // cull
+        if (bg.half) {
+          // Source art is the top half of the ring; draw it, then mirror it
+          // vertically for the bottom half to form the full circle.
+          ctx.drawImage(img, c.x - R, c.y - R, R * 2, R);
+          ctx.save();
+          ctx.translate(c.x, c.y);
+          ctx.scale(1, -1);
+          ctx.drawImage(img, -R, -R, R * 2, R);
+          ctx.restore();
+        } else {
+          ctx.drawImage(img, c.x - R, c.y - R, R * 2, R * 2);
+        }
+      }
+    }
+
     // --- Edges ---
     for (const e of edges) {
       const na = nodeMap.get(e.a);
@@ -348,51 +418,52 @@ export default function init(canvas, data) {
     }
 
     // --- Node icons + frames ---
+    const cullMargin = 120 * view.scale; // worst-case frame radius, scaled
     for (const n of nodes) {
       const sp = worldToScreen(view, n.x, n.y);
-      const r  = (KIND_RADIUS[n.k] ?? 26) * view.scale;
+      if (sp.x < -cullMargin || sp.x > W + cullMargin ||
+          sp.y < -cullMargin || sp.y > H + cullMargin) continue;
 
-      // Icon (lazy-loaded; placeholder until ready).
+      const fr = radiusOf(n.k) * view.scale;                    // frame radius (screen px)
+      const ir = fr * (ICON_FRACTION[n.k] ?? 0.58);             // inner icon radius
+      const st = frameState(n);
+
+      // Icon, clipped to the inner circle so it sits inside the frame ring.
       if (n.icon) {
         const img = getImage(n.icon);
         if (img && img.complete && img.naturalWidth > 0) {
-          const size = r * 2;
-          // Clip the square icon to the node circle so its corners don't poke out.
           ctx.save();
           ctx.beginPath();
-          ctx.arc(sp.x, sp.y, r, 0, Math.PI * 2);
+          ctx.arc(sp.x, sp.y, ir, 0, Math.PI * 2);
           ctx.clip();
-          ctx.drawImage(img, sp.x - r, sp.y - r, size, size);
+          ctx.drawImage(img, sp.x - ir, sp.y - ir, ir * 2, ir * 2);
           ctx.restore();
         } else {
-          // Placeholder circle with kind color.
           ctx.beginPath();
-          ctx.arc(sp.x, sp.y, r * 0.7, 0, Math.PI * 2);
+          ctx.arc(sp.x, sp.y, ir * 0.85, 0, Math.PI * 2);
           ctx.fillStyle = KIND_COLOR[n.k] ?? '#888';
           ctx.fill();
         }
       }
 
-      // Frame ring by kind.
-      ctx.beginPath();
-      ctx.arc(sp.x, sp.y, r, 0, Math.PI * 2);
-      ctx.strokeStyle = KIND_COLOR[n.k] ?? '#888';
-      ctx.lineWidth = Math.max(1, view.scale * 1.5);
-      ctx.stroke();
-
-      // Allocation highlight.
-      if (allocated.has(n.h)) {
+      // Frame art (state-driven), drawn over the icon. Falls back to a colored
+      // ring (gold=allocated, light=allocatable) while the art loads or if it errored.
+      const frameUrl = art && art[n.k] ? art[n.k][st] : null;
+      const fimg = frameUrl ? getImage(frameUrl) : null;
+      if (fimg && fimg.complete && fimg.naturalWidth > 0) {
+        ctx.drawImage(fimg, sp.x - fr, sp.y - fr, fr * 2, fr * 2);
+      } else {
         ctx.beginPath();
-        ctx.arc(sp.x, sp.y, r + view.scale * 2, 0, Math.PI * 2);
-        ctx.strokeStyle = '#ffe066';
-        ctx.lineWidth = Math.max(1.5, view.scale * 2);
+        ctx.arc(sp.x, sp.y, fr, 0, Math.PI * 2);
+        ctx.strokeStyle = st === 'x' ? '#ffe066' : st === 'a' ? '#cfe8ff' : (KIND_COLOR[n.k] ?? '#888');
+        ctx.lineWidth = Math.max(1, view.scale * 1.5);
         ctx.stroke();
       }
 
-      // Start-node indicator (always-present anchors).
+      // Start-node indicator (always-present class/ascendancy anchors).
       if (starts.includes(n.h)) {
         ctx.beginPath();
-        ctx.arc(sp.x, sp.y, r + view.scale * 4, 0, Math.PI * 2);
+        ctx.arc(sp.x, sp.y, fr + view.scale * 4, 0, Math.PI * 2);
         ctx.strokeStyle = '#44aaff';
         ctx.lineWidth = Math.max(1, view.scale * 1.5);
         ctx.stroke();
@@ -469,7 +540,7 @@ export default function init(canvas, data) {
 
     let best = null, bestDist2 = Infinity;
     for (const n of nodes) {
-      const r = KIND_RADIUS[n.k] ?? 26;
+      const r = radiusOf(n.k);
       const dx = n.x - wp.x, dy = n.y - wp.y;
       const d2 = dx * dx + dy * dy;
       if (d2 < r * r && d2 < bestDist2) { best = n; bestDist2 = d2; }
@@ -480,7 +551,7 @@ export default function init(canvas, data) {
       // Node centre + radius in viewport CSS pixels for the virtual reference.
       const sp = worldToScreen(view, best.x, best.y);
       const cssScale = rect.width / canvas.width;
-      const rr = (KIND_RADIUS[best.k] ?? 33) * view.scale * cssScale;
+      const rr = radiusOf(best.k) * view.scale * cssScale;
       const cx = rect.left + sp.x * cssScale;
       const cy = rect.top  + sp.y * cssScale;
       tipRect = { x: cx - rr, y: cy - rr, w: rr * 2, h: rr * 2 };
@@ -514,7 +585,7 @@ export default function init(canvas, data) {
 
     let hit = null, hitDist2 = Infinity;
     for (const n of nodes) {
-      const r = KIND_RADIUS[n.k] ?? 26;
+      const r = radiusOf(n.k);
       const dx = n.x - wp.x, dy = n.y - wp.y;
       const d2 = dx * dx + dy * dy;
       if (d2 < r * r && d2 < hitDist2) { hit = n; hitDist2 = d2; }
