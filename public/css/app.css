@@ -377,6 +377,9 @@ body {
   line-height: 1.5;
   text-align: center;
 }
+/* Passive tree fills the viewport with a black canvas; the footer's top margin
+   reads as a stray black band with no nodes in it, so drop it on that page. */
+main:has(.page--passives) + .site-footer { margin-top: 0; }
 .site-footer__disclaimer { max-width: 820px; margin: 0 auto 6px; }
 .site-footer__links { margin: 0; }
 .site-footer a { color: var(--color-magic); }

@@ -249,10 +249,16 @@ export default function init(canvas, data) {
   const worldCx = (minX + maxX) / 2;
   const worldCy = (minY + maxY) / 2;
 
-  // Fit scale so the tree fills ~80% of the smaller canvas dimension.
+  // Fit scale so the tree fills ~80% of the smaller canvas dimension, then zoom
+  // in by DEFAULT_ZOOM so we open closer to the start than the full-tree view.
   // `view` is mutable; it's re-fit by fitView() once real canvas dimensions
   // arrive (the ResizeObserver fires after layout — at init the drawing buffer
   // is still the default 300×150).
+  const DEFAULT_ZOOM = 5;
+  // Origin (0,0) is the center of the 6-class start hexagon — the point we want
+  // centered on load.
+  const CENTER_X = 0;
+  const CENTER_Y = 0;
   const view = { scale: 1, ox: 0, oy: 0 };
   let fitted = false;
 
@@ -260,10 +266,13 @@ export default function init(canvas, data) {
     const fitScale = Math.min(
       (canvas.width  * 0.8) / (worldW || 1),
       (canvas.height * 0.8) / (worldH || 1),
-    );
+    ) * DEFAULT_ZOOM;
     view.scale = fitScale;
-    view.ox = canvas.width  / 2 - worldCx * fitScale;
-    view.oy = canvas.height / 2 - worldCy * fitScale;
+    // Center on the origin (0,0) — the start hexagon — rather than the extent
+    // midpoint, which is skewed by hidden ascendancy clusters and locked nodes
+    // and drifts visibly off-center once zoomed in.
+    view.ox = canvas.width  / 2 - CENTER_X * fitScale;
+    view.oy = canvas.height / 2 - CENTER_Y * fitScale;
   }
 
   // Initial fit against whatever the buffer currently is (a reasonable default;
