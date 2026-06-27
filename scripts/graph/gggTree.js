@@ -72,6 +72,14 @@ export function parseGggTree() {
     const k = kindOf(n);
     keep.add(h);
     if (n.isAscendancyStart && n.ascendancyId) ascStarts[n.ascendancyId] = h;
+    // unlockConstraint: a set of "locked" nodes that only become visible once
+    // their gating node(s) are allocated — e.g. Oracle's "The Unseen Path" (node
+    // 5571) reveals ~190 main-tree "Paths Not Taken" nodes. These carry no
+    // ascendancyId, so without this gate they'd render in the main tree always.
+    const uc = n.unlockConstraint;
+    const lock = uc && Array.isArray(uc.nodes) && uc.nodes.length
+      ? { nodes: uc.nodes.map(Number), asc: uc.ascendancy ?? null }
+      : undefined;
     nodes.push({
       h,
       x: Math.round(n.x),
@@ -82,6 +90,7 @@ export function parseGggTree() {
       iconKind: iconKindOf(k),
       stats: Array.isArray(n.stats) ? n.stats : [],
       asc: n.ascendancyId ?? null,
+      lock,
       hidden: classStartHashes.has(h) || undefined, // class-start roots: anchor only
       ws: 0,
     });

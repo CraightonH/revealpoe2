@@ -102,7 +102,12 @@ classStarts, classes, ascStarts, ascByClass, ascArt, extent}`:
 
 `build-passive-tree.js` emits:
 - `public/generated/passive-tree.json` — `{nodes, edges, meta}`. Nodes carry
-  `h,x,y,k,name,icon,iconKind,asc,ws,(hidden)`. `meta` has `classStarts`,
+  `h,x,y,k,name,icon,iconKind,asc,ws,(lock),(hidden)`. `lock` = GGG's
+  `unlockConstraint` (`{nodes:[…], asc}`): the node is hidden until its gating
+  node(s) are allocated — e.g. Oracle's "The Unseen Path" (5571) reveals ~176
+  main-tree "Paths Not Taken" nodes that otherwise carry no `ascendancyId` and
+  would clutter the main tree always. The renderer's `nodeVisible`/`lockSatisfied`
+  gate these. `meta` has `classStarts`,
   `classArt` (per-class atlas + frame key + offsets), `ascStarts`
   (ascId→start hash), `ascByClass` (class→`[{id,name}]`, drives the selector),
   `ascendancyArt` (ascId→`{img, class}`), `atlas` (base paths + `classFrame`),

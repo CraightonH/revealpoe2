@@ -189,11 +189,23 @@ export default function init(canvas, data) {
   // selectable — hide from render + hit-test, keep as allocation anchors.
   const hiddenNodes = new Set(nodes.filter((n) => n.hidden).map((n) => n.h));
 
-  // A node is drawable/hittable when it isn't a hidden anchor and either belongs
-  // to the main tree (asc == null) or to the currently selected ascendancy.
+  // A node is drawable/hittable when it isn't a hidden anchor, belongs to the
+  // main tree (asc == null) or the active ascendancy, and — if it's an
+  // unlock-gated node (e.g. Oracle's "Paths Not Taken") — its gating node(s) are
+  // allocated. Without the lock gate those ~190 nodes would clutter the main
+  // tree by default; they reveal only once The Unseen Path is taken.
   function nodeVisible(n) {
     if (hiddenNodes.has(n.h)) return false;
-    if (n.asc != null) return n.asc === activeAsc;
+    if (n.asc != null && n.asc !== activeAsc) return false;
+    if (n.lock && !lockSatisfied(n.lock)) return false;
+    return true;
+  }
+
+  function lockSatisfied(lock) {
+    if (lock.asc != null && lock.asc !== activeAsc) return false;
+    for (const g of lock.nodes) {
+      if (!allocated.has(g) && !starts.includes(g)) return false;
+    }
     return true;
   }
 

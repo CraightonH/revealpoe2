@@ -68,6 +68,7 @@ export function buildArtifact() {
       h: n.h, x: n.x, y: n.y, k: n.k, name: n.name,
       icon: n.icon, iconKind: n.iconKind,
       asc: n.asc, ws: n.ws,
+      ...(n.lock ? { lock: n.lock } : {}),
       ...(n.hidden ? { hidden: 1 } : {}),
     })),
     edges,
