@@ -44,7 +44,16 @@
     </div>
     {% endif %}
     {% if node.attrOptions %}
-    <div class="Stats attr-choice">
+    {# Generic-attribute node: resting state shows the generic "+5 to any
+       Attribute" line; clicking the node reveals the Str/Int/Dex picker
+       (.attr-choice, hidden until then); once picked it collapses to the chosen
+       line. Visibility is toggled by paintAttrChoice() in passive-tree.js. #}
+    <div class="Stats attr-generic">
+      {% for line in node.statLines %}
+      <div class="explicitMod">{{ line | safe }}</div>
+      {% endfor %}
+    </div>
+    <div class="Stats attr-choice" hidden>
       {% for opt in node.attrOptions %}
       <div class="explicitMod attr-opt" data-attr="{{ opt.key }}">{{ opt.line | safe }}</div>
       {% endfor %}

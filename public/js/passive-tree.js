@@ -73,11 +73,28 @@ const FRAME_KEY = {
 // golden when allocated). Stroking with GGG's exact arc geometry gives clean,
 // non-crossing connectors without the fragility of clipping ring textures.
 const LINE_COLOR = { u: '#4b4534', a: '#8c7a4e', x: '#c8aa6e' };
-const LINE_WIDTH = 16; // world units
+// GGG draws each connector as a "double rail": two thin parallel lines with a
+// real gap between them (not one solid stroke). We reproduce it geometrically —
+// each rail is its own thin stroke offset perpendicular from the centreline
+// (concentric r±offset for arcs), leaving a true transparent gap that matches at
+// any zoom and survives crossings, with no background-colour dependency.
+const LINE_RAIL_W = 3.2;   // each rail's thickness, world units
+const LINE_RAIL_OFF = 4.4; // centreline → rail offset (half the rail spacing), world units
+// An allocated connector (both ends taken, state 'x') is drawn as a single solid
+// stroke instead of the double rail — matching GGG, where the active path fills
+// in. Width ≈ the rail pair's outer span so thickness doesn't jump on allocate.
+const LINE_SOLID_W = 11; // world units
 
-// Attribute colours for generic-attribute node tinting (PoE convention:
-// Strength red, Dexterity green, Intelligence blue).
-const ATTR_COLOR = { str: '#d1453b', dex: '#4ea850', int: '#5a7ce0' };
+// When a generic-attribute node is allocated with a chosen stat, GGG swaps the
+// icon to a dedicated per-attribute sprite (red Strength / green Dexterity /
+// blue Intelligence cross), not a flat colour overlay — these live in the same
+// skills atlas as the generic `plusattribute` icon. Map the pick → icon path so
+// the sprite key resolves like any other node icon.
+const ATTR_ICON = {
+  str: 'Art/2DArt/SkillIcons/passives/plusstrength.png',
+  dex: 'Art/2DArt/SkillIcons/passives/plusdexterity.png',
+  int: 'Art/2DArt/SkillIcons/passives/plusintelligence.png',
+};
 
 // Fraction of the MainCircle frame's half-width to clip the central illustration
 // to. The ornate ring band occupies the outer ~25% of the frame, so the inner
@@ -343,6 +360,10 @@ export default function init(canvas, data) {
   // node. Manual trigger; a short hide delay + an over-card flag let the cursor
   // travel from the node into the (interactive) card to reach keyword tooltips.
   let tip = null, hoverHash = null, overTip = false, hideTimer = null;
+  // Hash of the generic-attribute node whose Str/Int/Dex picker is currently
+  // open (set on node-click, cleared on pick / hover-change / hide). Transient
+  // to the hovered node — re-hovering shows the generic line again until clicked.
+  let attrChoosing = null;
   let tipRect = { x: 0, y: 0, w: 0, h: 0 };
   function ensureTip() {
     if (tip || !window.tippy) return tip;
@@ -350,6 +371,12 @@ export default function init(canvas, data) {
     document.body.appendChild(anchor);
     tip = window.tippy(anchor, {
       theme: 'poe2 passive-tree', allowHTML: true, interactive: true, maxWidth: 'none',
+      // hideOnClick defaults to true, which tears down the card on any click
+      // outside it — including clicking the node itself (the reference is a
+      // virtual anchor, not the canvas). That would hide the card the moment you
+      // click to open the attribute picker. We hide manually (scheduleHide /
+      // pointerleave / over-card flag), so disable the click-to-hide behaviour.
+      hideOnClick: false,
       placement: 'right-start', trigger: 'manual', appendTo: () => document.body,
       offset: [0, 14],
       getReferenceClientRect: () => ({
@@ -373,25 +400,34 @@ export default function init(canvas, data) {
     });
     return tip;
   }
-  function hideTip() { hoverHash = null; if (tip) tip.hide(); }
+  function hideTip() { hoverHash = null; attrChoosing = null; if (tip) tip.hide(); }
   function scheduleHide() { clearTimeout(hideTimer); hideTimer = setTimeout(() => { if (!overTip) hideTip(); }, 160); }
 
   // The picked attribute for an allocated node (defaults to Strength — covers
   // imported builds whose pick we don't yet decode from the share-code tag).
   const attrOf = (h) => attrChoice.get(h) ?? ATTR_DEFAULT;
 
-  // Paint an attribute node's card. Unallocated → show the full Str/Int/Dex
-  // menu. Allocated → collapse to just the chosen stat (respec by deallocating).
+  // Paint an attribute node's card across its three states:
+  //   resting (unallocated, not choosing) → generic "+5 to any Attribute" line;
+  //   choosing (node clicked)             → the full Str/Int/Dex picker;
+  //   allocated                           → collapse to just the chosen stat.
+  // Respec by deallocating (node click), which returns it to the resting line.
   function paintAttrChoice(popper, h) {
     if (!popper) return;
     const alloc = allocated.has(h);
-    const chosen = alloc ? attrOf(h) : attrChoice.get(h);
+    const choosing = !alloc && attrChoosing === h;
+    const chosen = alloc ? attrOf(h) : null;
+    const generic = popper.querySelector('.attr-generic');
     const box = popper.querySelector('.attr-choice');
-    if (box) box.classList.toggle('locked', alloc);
-    for (const el of popper.querySelectorAll('.attr-opt')) {
-      const k = el.getAttribute('data-attr');
-      el.classList.toggle('chosen', k === chosen);
-      el.hidden = alloc && k !== chosen;
+    if (generic) generic.hidden = alloc || choosing;
+    if (box) {
+      box.hidden = !(alloc || choosing);
+      box.classList.toggle('locked', alloc);
+      for (const el of box.querySelectorAll('.attr-opt')) {
+        const k = el.getAttribute('data-attr');
+        el.classList.toggle('chosen', k === chosen);
+        el.hidden = alloc && k !== chosen;
+      }
     }
   }
 
@@ -407,6 +443,7 @@ export default function init(canvas, data) {
     if (!_canAllocateSync(h)) return; // not reachable from the allocated tree yet
     attrChoice.set(h, opt.getAttribute('data-attr'));
     _allocateSync(h);
+    attrChoosing = null;
     if (tip) paintAttrChoice(tip.popper, h);
     requestDraw();
   }
@@ -584,29 +621,53 @@ export default function init(canvas, data) {
 
   // Connectors. Straight edges are lines; same-orbit edges are arcs drawn with
   // GGG's precomputed centre/radius/angles (arc.cx/cy/r/a0/a1/ccw) so they sweep
-  // along the orbit ring instead of crossing. Stroked in the state colour.
+  // along the orbit ring instead of crossing. An unallocated edge is a double
+  // rail (see LINE_RAIL_*); an allocated edge (state 'x') fills to a single solid
+  // stroke down the centreline.
   function drawEdges(W, H) {
-    const lw = Math.max(1.2, LINE_WIDTH * view.scale);
+    const off = LINE_RAIL_OFF * view.scale;
+    const railW = Math.max(1, LINE_RAIL_W * view.scale);
+    const solidW = Math.max(1.4, LINE_SOLID_W * view.scale);
     ctx.lineCap = 'round';
     for (const e of edges) {
       const na = nodeMap.get(e.a), nb = nodeMap.get(e.b);
       if (!na || !nb) continue;
       if (!nodeVisible(na) || !nodeVisible(nb)) continue;
       if ((na.asc != null) !== (nb.asc != null)) continue; // no main↔ascendancy spokes
-      ctx.strokeStyle = LINE_COLOR[lineState(na, nb)];
-      ctx.lineWidth = lw;
+      const state = lineState(na, nb);
+      const solid = state === 'x';
+      ctx.strokeStyle = LINE_COLOR[state];
+      ctx.lineWidth = solid ? solidW : railW;
       ctx.beginPath();
       if (e.arc) {
         const arc = e.arc;
         const c = worldToScreen(view, arc.cx, arc.cy);
         const r = arc.r * view.scale;
         if (c.x + r < 0 || c.x - r > W || c.y + r < 0 || c.y - r > H) continue;
-        ctx.arc(c.x, c.y, r, arc.a0, arc.a1, arc.ccw);
+        if (solid) {
+          ctx.arc(c.x, c.y, r, arc.a0, arc.a1, arc.ccw);
+        } else {
+          // Concentric rails: same centre/angles, radius offset in/out.
+          ctx.arc(c.x, c.y, r + off, arc.a0, arc.a1, arc.ccw);
+          const ri = r - off;
+          if (ri > 0.5) {
+            ctx.moveTo(c.x + ri * Math.cos(arc.a0), c.y + ri * Math.sin(arc.a0));
+            ctx.arc(c.x, c.y, ri, arc.a0, arc.a1, arc.ccw);
+          }
+        }
       } else {
         const sa = worldToScreen(view, na.x, na.y);
         const sb = worldToScreen(view, nb.x, nb.y);
-        ctx.moveTo(sa.x, sa.y);
-        ctx.lineTo(sb.x, sb.y);
+        if (solid) {
+          ctx.moveTo(sa.x, sa.y); ctx.lineTo(sb.x, sb.y);
+        } else {
+          // Perpendicular offset rails either side of the centreline.
+          let px = -(sb.y - sa.y), py = sb.x - sa.x;
+          const len = Math.hypot(px, py) || 1;
+          px = px / len * off; py = py / len * off;
+          ctx.moveTo(sa.x + px, sa.y + py); ctx.lineTo(sb.x + px, sb.y + py);
+          ctx.moveTo(sa.x - px, sa.y - py); ctx.lineTo(sb.x - px, sb.y - py);
+        }
       }
       ctx.stroke();
     }
@@ -621,25 +682,14 @@ export default function init(canvas, data) {
           sp.y < -cullMargin || sp.y > H + cullMargin) continue;
       const st = frameState(n);
 
-      // Icon (active vs disabled atlas), then frame on top.
+      // Icon (active vs disabled atlas), then frame on top. An allocated
+      // generic-attribute node swaps to its chosen stat's dedicated sprite
+      // (Str/Dex/Int) — GGG's own art, richer than a colour overlay.
       if (n.icon && n.iconKind) {
         const alloc = st === 'x';
+        const icon = (n.attr && alloc) ? (ATTR_ICON[attrOf(n.h)] || n.icon) : n.icon;
         drawSprite(alloc ? 'skills' : 'skills-disabled',
-          `${n.iconKind}${alloc ? 'Active' : 'Inactive'}:${n.icon}`, n.x, n.y);
-      }
-
-      // Selected generic-attribute node: tint the icon the chosen stat's colour
-      // (red/green/blue) so the picked attribute reads at a glance. Drawn over
-      // the (opaque) icon with partial alpha, under the frame.
-      const attrCol = (n.attr && st === 'x') ? ATTR_COLOR[attrOf(n.h)] : null;
-      if (attrCol) {
-        ctx.save();
-        ctx.globalAlpha = 0.6;
-        ctx.beginPath();
-        ctx.arc(sp.x, sp.y, radiusOf(n.k) * 0.6 * view.scale, 0, Math.PI * 2);
-        ctx.fillStyle = attrCol;
-        ctx.fill();
-        ctx.restore();
+          `${n.iconKind}${alloc ? 'Active' : 'Inactive'}:${icon}`, n.x, n.y);
       }
 
       const fk = FRAME_KEY[n.k];
@@ -684,7 +734,9 @@ export default function init(canvas, data) {
     dragging  = true;
     dragMoved = false;
     dragStart = { x: e.clientX, y: e.clientY, ox: view.ox, oy: view.oy };
-    hideTip();
+    // Do NOT hide the card here — a press that turns out to be a click must keep
+    // the card alive so the node-click can open the attribute picker in it. The
+    // card is dismissed only once a real pan begins (in pointermove below).
     canvas.setPointerCapture(e.pointerId);
   });
 
@@ -697,10 +749,16 @@ export default function init(canvas, data) {
       const r = canvas.getBoundingClientRect();
       const cssDx = e.clientX - dragStart.x;
       const cssDy = e.clientY - dragStart.y;
-      if (Math.abs(cssDx) > 3 || Math.abs(cssDy) > 3) dragMoved = true;
-      view.ox = dragStart.ox + cssDx * (canvas.width  / r.width);
-      view.oy = dragStart.oy + cssDy * (canvas.height / r.height);
-      requestDraw();
+      if (!dragMoved && (Math.abs(cssDx) > 3 || Math.abs(cssDy) > 3)) {
+        dragMoved = true;
+        hideTip(); // a real pan has begun → dismiss the hover card
+      }
+      if (dragMoved) {
+        view.ox = dragStart.ox + cssDx * (canvas.width  / r.width);
+        view.oy = dragStart.oy + cssDy * (canvas.height / r.height);
+        requestDraw();
+      }
+      return; // while panning, skip the hover hit-test (don't re-show the card)
     }
 
     // Hover card: hit-test the node under the cursor, then show its pre-rendered
@@ -732,6 +790,7 @@ export default function init(canvas, data) {
       tipRect = { x: cx - rr, y: cy - rr, w: rr * 2, h: rr * 2 };
       if (best.h !== hoverHash) {
         hoverHash = best.h;
+        attrChoosing = null; // new node → start at the resting (generic) view
         loadCards().then((c) => {
           if (hoverHash !== best.h) return; // moved on while the artifact loaded
           t.setContent(c[best.h] || best.name || '');
@@ -786,14 +845,16 @@ export default function init(canvas, data) {
     // Normal alloc/dealloc.
     if (allocated.has(hit.h)) {
       _deallocateSync(hit.h); // also clears any attribute pick (pruneAttrChoices)
+      attrChoosing = null;
+    } else if (hit.attr && _canAllocateSync(hit.h)) {
+      // Generic-attribute node: a node-body click doesn't allocate — it opens
+      // the Str/Int/Dex picker in the card. Allocation happens when the player
+      // clicks a specific option (onAttrOptionClick).
+      attrChoosing = hit.h;
     } else if (_canAllocateSync(hit.h)) {
-      // Generic-attribute node: a node-body click allocates with the default
-      // attribute (Strength); picking a specific option in the card chooses
-      // another. Set the choice before allocating so it survives the prune.
-      if (hit.attr) attrChoice.set(hit.h, ATTR_DEFAULT);
       _allocateSync(hit.h);
     }
-    // Keep the hovered attribute card in sync (menu ⇄ collapsed) after the click.
+    // Keep the hovered attribute card in sync (resting/menu/chosen) after the click.
     if (hit.attr && tip && hoverHash === hit.h) paintAttrChoice(tip.popper, hit.h);
   });
 
