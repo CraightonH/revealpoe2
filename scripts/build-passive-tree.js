@@ -16,13 +16,14 @@ import nunjucks from 'nunjucks';
 import { parseGggTree } from './graph/gggTree.js';
 import { getDataDir } from './graph/source.js';
 import { ddsUrl } from '../src/data/images.js';
-import { renderGameText } from '../src/data/keywords.js';
+import { renderGameText, stripGameText } from '../src/data/keywords.js';
 import { hasDefinition } from '../src/data/keywordDefs.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const GEN_DIR = path.join(__dirname, '..', 'public', 'generated');
 const OUT = path.join(GEN_DIR, 'passive-tree.json');
 const CARDS_OUT = path.join(GEN_DIR, 'passive-cards.json');
+const SEARCH_OUT = path.join(GEN_DIR, 'passive-search.json');
 const ATLAS_SRC = path.join(getDataDir(), 'ggg-poe2', 'atlas');
 const ATLAS_OUT = path.join(GEN_DIR, 'passive-atlas');
 
@@ -140,6 +141,22 @@ export function buildCards() {
   return cards;
 }
 
+// Lightweight search index: hash -> lowercased searchable text (node name plus
+// its stat lines as plain text, glossary tokens stripped). Drives the in-canvas
+// search bar (substring match highlights nodes, dims the rest). Keyed only for
+// visible nodes — hidden anchors aren't searchable.
+export function buildSearch() {
+  const { nodes } = parseGggTree();
+  const out = {};
+  for (const n of nodes) {
+    if (n.hidden) continue;
+    const text = [n.name, ...n.stats.map(stripGameText)]
+      .filter(Boolean).join(' ').replace(/\s+/g, ' ').trim().toLowerCase();
+    out[n.h] = text;
+  }
+  return out;
+}
+
 function copyAtlasMaps() {
   fs.mkdirSync(ATLAS_OUT, { recursive: true });
   let n = 0;
@@ -165,6 +182,11 @@ function main() {
   fs.writeFileSync(CARDS_OUT, JSON.stringify(cards));
   const ckb = (fs.statSync(CARDS_OUT).size / 1024).toFixed(0);
   console.log(`build-passive-tree: ${Object.keys(cards).length} cards -> ${CARDS_OUT} (${ckb} KB)`);
+
+  const search = buildSearch();
+  fs.writeFileSync(SEARCH_OUT, JSON.stringify(search));
+  const skb = (fs.statSync(SEARCH_OUT).size / 1024).toFixed(0);
+  console.log(`build-passive-tree: ${Object.keys(search).length} search entries -> ${SEARCH_OUT} (${skb} KB)`);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) main();

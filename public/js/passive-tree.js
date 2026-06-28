@@ -325,6 +325,23 @@ export default function init(canvas, data) {
   const attrChoice = new Map();
   const ATTR_DEFAULT = 'str';
 
+  // Search highlight state. searchHits is null when no query is active (full
+  // brightness); otherwise a Set of node hashes matching the query — those draw
+  // normally with a glow, everything else dims (SEARCH_DIM). The index (hash ->
+  // searchable text) is a build artifact, loaded lazily on first search.
+  let searchHits = null;
+  let searchIndex = null, searchIndexLoading = null;
+  const SEARCH_DIM = 0.14;
+  const SEARCH_URL = '/static/generated/passive-search.json';
+  function loadSearchIndex() {
+    if (searchIndex) return Promise.resolve(searchIndex);
+    if (!searchIndexLoading) {
+      searchIndexLoading = fetch(SEARCH_URL).then((r) => r.json())
+        .then((idx) => { searchIndex = idx; return idx; });
+    }
+    return searchIndexLoading;
+  }
+
   // Determine the active class root from meta.classStarts. Default to the
   // selector's active class on init; overridden on import.
   const classStartValues = Object.values(meta.classStarts ?? {});
@@ -682,6 +699,19 @@ export default function init(canvas, data) {
           sp.y < -cullMargin || sp.y > H + cullMargin) continue;
       const st = frameState(n);
 
+      // Search highlight: matches keep full alpha + a gold glow; everything else
+      // dims so the matches read at a glance. shadowBlur only on the few matches.
+      if (searchHits) {
+        if (searchHits.has(n.h)) {
+          ctx.globalAlpha = 1;
+          ctx.shadowColor = 'rgba(255, 216, 120, 0.95)';
+          ctx.shadowBlur = 26 * view.scale;
+        } else {
+          ctx.globalAlpha = SEARCH_DIM;
+          ctx.shadowBlur = 0;
+        }
+      }
+
       // Icon (active vs disabled atlas), then frame on top. An allocated
       // generic-attribute node swaps to its chosen stat's dedicated sprite
       // (Str/Dex/Int) — GGG's own art, richer than a colour overlay.
@@ -695,6 +725,8 @@ export default function init(canvas, data) {
       const fk = FRAME_KEY[n.k];
       if (fk) drawSprite('frame', `frame:${fk[st]}`, n.x, n.y);
     }
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
   }
 
   // ---------------------------------------------------------------------------
@@ -982,8 +1014,8 @@ export default function init(canvas, data) {
         const cm = await codeMod();
         const code = buildShareCode(cm);
         if (!code) { copyBtn.textContent = 'Error'; return; }
-        await navigator.clipboard.writeText(code);
         location.hash = code;
+        await navigator.clipboard.writeText(location.href);
         const prev = copyBtn.textContent;
         copyBtn.textContent = 'Copied!';
         setTimeout(() => { copyBtn.textContent = prev; }, 1500);
@@ -991,6 +1023,90 @@ export default function init(canvas, data) {
         console.error('Copy share code failed:', err);
       }
     });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Search — highlight matching nodes, dim the rest (name + stat substring).
+  // ---------------------------------------------------------------------------
+
+  const searchInput = document.getElementById('tree-search');
+  function runSearch(raw) {
+    const q = (raw || '').trim().toLowerCase();
+    if (!q) { searchHits = null; requestDraw(); return; }
+    if (!searchIndex) { loadSearchIndex().then(() => runSearch(raw)); return; }
+    const hits = new Set();
+    for (const [h, text] of Object.entries(searchIndex)) {
+      if (text.includes(q)) hits.add(Number(h));
+    }
+    searchHits = hits;
+    requestDraw();
+  }
+  if (searchInput) {
+    searchInput.addEventListener('focus', loadSearchIndex, { once: true });
+    searchInput.addEventListener('input', () => runSearch(searchInput.value));
+  }
+
+  // ---------------------------------------------------------------------------
+  // Reset tree — clear allocations back to the current class/ascendancy anchors.
+  // ---------------------------------------------------------------------------
+
+  const resetBtn = document.getElementById('tree-reset');
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      if (allocated.size && !window.confirm('Reset the tree? This clears all allocated passives.')) return;
+      allocated = new Set();
+      attrChoice.clear();
+      weaponState.clear();
+      decodedState = null;
+      starts = classRoot != null ? [classRoot] : [];
+      if (activeAsc != null) {
+        const ascRoot = ascStarts[activeAsc];
+        if (ascRoot != null) starts.push(ascRoot);
+      }
+      updatePoints();
+      requestDraw();
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Fullscreen — expand the canvas wrapper; the ResizeObserver re-fits the canvas.
+  // ---------------------------------------------------------------------------
+
+  const fsBtn = document.getElementById('tree-fullscreen');
+  const wrap = canvas.closest('.passive-tree-wrap');
+  function syncFsLabel() {
+    if (fsBtn) fsBtn.textContent = document.fullscreenElement ? 'Exit Fullscreen' : 'Fullscreen';
+  }
+  if (fsBtn && wrap) {
+    fsBtn.addEventListener('click', () => {
+      if (document.fullscreenElement) document.exitFullscreen?.();
+      else wrap.requestFullscreen?.().catch((err) => console.error('Fullscreen failed:', err));
+    });
+    document.addEventListener('fullscreenchange', syncFsLabel);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Panel collapse — tuck the overlay out of the way (default collapsed on phones).
+  // ---------------------------------------------------------------------------
+
+  const panel = document.getElementById('tree-panel');
+  const panelToggle = document.getElementById('tree-panel-toggle');
+  function syncPanelToggle() {
+    if (!panel || !panelToggle) return;
+    const collapsed = panel.classList.contains('collapsed');
+    panelToggle.textContent = collapsed ? '‹' : '›';
+    panelToggle.title = collapsed ? 'Expand' : 'Collapse';
+    panelToggle.setAttribute('aria-label', panelToggle.title);
+  }
+  if (panel && panelToggle) {
+    if (window.matchMedia && window.matchMedia('(max-width: 640px)').matches) {
+      panel.classList.add('collapsed');
+    }
+    panelToggle.addEventListener('click', () => {
+      panel.classList.toggle('collapsed');
+      syncPanelToggle();
+    });
+    syncPanelToggle();
   }
 
   /**

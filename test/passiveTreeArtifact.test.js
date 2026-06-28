@@ -1,7 +1,7 @@
 // test/passiveTreeArtifact.test.js
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildArtifact, buildCards } from '../scripts/build-passive-tree.js';
+import { buildArtifact, buildCards, buildSearch } from '../scripts/build-passive-tree.js';
 
 test('buildArtifact produces nodes/edges/meta from GGG data', () => {
   const art = buildArtifact();
@@ -24,6 +24,24 @@ test('buildArtifact produces nodes/edges/meta from GGG data', () => {
     assert.equal(ca.offsetX, 0, `${name} classArt offsetX`);
     assert.equal(ca.offsetY, 0, `${name} classArt offsetY`);
   }
+});
+
+test('buildArtifact: only live ascendancies are surfaced (no null-name placeholders)', () => {
+  const art = buildArtifact();
+  const { ascByClass, ascendancyArt } = art.meta;
+  // GGG ships not-yet-live ascendancy defs (e.g. Druid3, Ranger2) with null
+  // name + image but a real start node. Those must not reach the selector.
+  for (const [cls, list] of Object.entries(ascByClass)) {
+    for (const a of list) {
+      assert.ok(a.name, `${cls} ascendancy ${a.id} has a name`);
+      assert.ok(ascendancyArt[a.id]?.img, `${cls} ascendancy ${a.id} has art`);
+    }
+  }
+  // Druid and Ranger have exactly two live ascendancies right now.
+  assert.equal(ascByClass.Druid.length, 2);
+  assert.equal(ascByClass.Ranger.length, 2);
+  assert.deepEqual(ascByClass.Druid.map((a) => a.name), ['Oracle', 'Shaman']);
+  assert.deepEqual(ascByClass.Ranger.map((a) => a.name), ['Deadeye', 'Pathfinder']);
 });
 
 test('buildCards renders a card per visible node, keyed by hash', () => {
@@ -50,4 +68,20 @@ test('buildCards: a small passive renders with the popup shell', () => {
   const html = cards[small.h];
   assert.match(html, /newItemPopup/);
   assert.match(html, /itemHeader doubleLine/);
+});
+
+test('buildSearch: one lowercase plaintext entry per visible node, name + stats, no tokens', () => {
+  const art = buildArtifact();
+  const search = buildSearch();
+  const visible = art.nodes.filter((n) => !n.hidden);
+  assert.equal(Object.keys(search).length, visible.length);
+  // Every entry is lowercase plaintext with the glossary tokens stripped.
+  for (const text of Object.values(search)) {
+    assert.equal(typeof text, 'string');
+    assert.equal(text, text.toLowerCase());
+    assert.doesNotMatch(text, /[[\]|]/, 'no leftover [tag|text] tokens');
+  }
+  // Each visible node's (lowercased) name is searchable.
+  const sample = visible.find((n) => n.name && art.nodes.some((m) => m.h === n.h));
+  assert.ok(search[sample.h].includes(sample.name.toLowerCase()), 'name is indexed');
 });

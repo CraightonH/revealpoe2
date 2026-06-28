@@ -141,6 +141,10 @@ export function parseGggTree() {
     };
     for (const a of c.ascendancies || []) {
       if (ascStarts[a.id] == null) continue; // no renderable cluster — skip
+      // GGG ships not-yet-live ascendancy defs (e.g. Druid3, Ranger2) with a
+      // start node but null name + image. They'd surface as a blank selector
+      // option that opens an incomplete cluster — skip until they go live.
+      if (!a.name || !a.image) continue;
       (ascByClass[c.name] ||= []).push({ id: a.id, name: a.name });
       ascOf[a.id] = c.name;
       ascArt[a.id] = {
