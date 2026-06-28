@@ -127,8 +127,16 @@ export function parseGggTree() {
     classes[c.name] = {
       start: startHash ?? null,
       art: c.image,                 // Art/2DArt/BaseClassIllustrations/<X>.png
-      offsetX: c.image_offset_x ?? 0,
-      offsetY: c.image_offset_y ?? 0,
+      // PoE2's Class0 illustrations are self-centred circular sprites that fill
+      // their 3000² frame, so they need no placement offset. GGG's
+      // image_offset_x/y are STALE PoE1 values inherited via the shared class
+      // slot index (Warrior=Marauder 350,-574; Mercenary=Duelist 0,-699;
+      // Druid=Templar 717,182; Ranger/Huntress=legacy Ranger -536,-281) — for
+      // the PoE2 art they shove the already-centred figure off the MainCircle.
+      // Drop them and centre on origin. (Witch/Sorceress happened to inherit
+      // 0,0 and Monk a tiny offset, which is why only the other five looked off.)
+      offsetX: 0,
+      offsetY: 0,
       str: c.base_str, dex: c.base_dex, int: c.base_int,
     };
     for (const a of c.ascendancies || []) {

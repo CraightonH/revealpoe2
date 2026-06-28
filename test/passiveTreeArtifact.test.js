@@ -17,6 +17,13 @@ test('buildArtifact produces nodes/edges/meta from GGG data', () => {
   assert.ok(art.meta.atlas && art.meta.atlas.img && art.meta.atlas.classFrame);
   assert.equal(typeof art.meta.classStarts.Monk, 'number');
   assert.ok(art.meta.classArt.Monk.atlas.endsWith('background-monk.webp'));
+  // PoE2 class illustrations are pre-centred circular sprites; GGG's stale PoE1
+  // image_offset must be dropped so the art centres in the MainCircle. Guards
+  // against the Warrior/Ranger/Huntress/Mercenary/Druid off-centre regression.
+  for (const [name, ca] of Object.entries(art.meta.classArt)) {
+    assert.equal(ca.offsetX, 0, `${name} classArt offsetX`);
+    assert.equal(ca.offsetY, 0, `${name} classArt offsetY`);
+  }
 });
 
 test('buildCards renders a card per visible node, keyed by hash', () => {

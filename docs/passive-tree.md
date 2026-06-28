@@ -179,7 +179,11 @@ classStarts, classes, ascStarts, ascByClass, ascArt, extent}`:
 - `LINE_WIDTH` / `LINE_COLOR` — connector thickness + palette.
 - `KIND_RADIUS` — hit-test radii; keep in sync with `frame.json` sizes
   (atlas px / scale / 2) if GGG changes the frame art.
-- Class-art placement comes from GGG (`image_offset`); don't hand-tune.
+- Class-art placement: the PoE2 `Class0` illustrations are pre-centred circular
+  sprites filling their 3000² frame, so they draw at native size centred on
+  origin with **no offset**. GGG's `image_offset_x/y` are stale PoE1 values
+  inherited via the shared class-slot index and are zeroed in `gggTree.js` — do
+  not re-apply them (they shove the figure off the MainCircle).
 
 ## Known gaps / deferrals
 
