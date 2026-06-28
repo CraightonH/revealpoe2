@@ -149,6 +149,12 @@ export function parseGggTree() {
   // occupies the central ring, entering from the class start position). Nodes
   // and their arc-edge centres shift by the same delta so connectors stay true.
   // Hidden unless the ascendancy is selected, so baking centred coords is safe.
+  //
+  // The class-start hexagon sits right on the MainCircle ring, so anchoring the
+  // ascendancy start there makes the cluster crowd/overlap the ring. Pull the
+  // anchor radially inward (toward origin) by ASC_PUSH_IN world units, keeping
+  // the same angle, so the start node clears the ring without drifting sideways.
+  const ASC_PUSH_IN = 160;
   const ascDelta = {}; // ascendancyId -> { dx, dy }
   for (const [ascId, startHash] of Object.entries(ascStarts)) {
     const className = ascOf[ascId];
@@ -156,9 +162,12 @@ export function parseGggTree() {
     const ascStartNode = pos.get(startHash);
     const classStartNode = classStartHash != null ? pos.get(classStartHash) : null;
     if (!ascStartNode || !classStartNode) continue;
+    // Anchor = class start pulled toward origin along its own radial direction.
+    const r = Math.hypot(classStartNode.x, classStartNode.y) || 1;
+    const k = Math.max(0, (r - ASC_PUSH_IN) / r);
     ascDelta[ascId] = {
-      dx: classStartNode.x - ascStartNode.x,
-      dy: classStartNode.y - ascStartNode.y,
+      dx: classStartNode.x * k - ascStartNode.x,
+      dy: classStartNode.y * k - ascStartNode.y,
     };
   }
   for (const n of nodes) {

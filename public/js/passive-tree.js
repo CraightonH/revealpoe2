@@ -179,6 +179,7 @@ export default function init(canvas, data) {
 
   // Draw an atlas sprite centred at world (wx,wy). w/h default to the sprite's
   // native size; ox/oy offset in world units (for class-art placement).
+  // opts.rotate (radians) spins the sprite about its own centre.
   function drawSprite(name, key, wx, wy, opts = {}) {
     const at = atlas(name);
     if (!at) return false;
@@ -189,7 +190,15 @@ export default function init(canvas, data) {
     const w = (opts.w ?? fr.w * inv) * view.scale;
     const h = (opts.h ?? fr.h * inv) * view.scale;
     const s = worldToScreen(view, wx + (opts.ox || 0), wy + (opts.oy || 0));
-    ctx.drawImage(at.img, fr.x, fr.y, fr.w, fr.h, s.x - w / 2, s.y - h / 2, w, h);
+    if (opts.rotate) {
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      ctx.rotate(opts.rotate);
+      ctx.drawImage(at.img, fr.x, fr.y, fr.w, fr.h, -w / 2, -h / 2, w, h);
+      ctx.restore();
+    } else {
+      ctx.drawImage(at.img, fr.x, fr.y, fr.w, fr.h, s.x - w / 2, s.y - h / 2, w, h);
+    }
     return true;
   }
 
@@ -486,6 +495,32 @@ export default function init(canvas, data) {
     ctx.restore();
   }
 
+  // Start-position light. GGG packs a second ring sprite, `MainCircleActive`,
+  // identical to `MainCircle` but with one cross-in-circle ornament lit (its
+  // intricate troughs filled with a baked golden glow) at the top (12 o'clock).
+  // To mark the active class's start, GGG draws this overlay rotated so its lit
+  // ornament lands on that class's position. We do the same: rotate by the
+  // class-start node's angle off the sprite's reference (top = -90°). No
+  // hardcoded per-class angles — it's read from the start node's coords.
+  const ACTIVE_ORNAMENT_ANGLE = -Math.PI / 2; // lit ornament's baked position (top)
+  function drawStartGlow() {
+    if (classRoot == null) return;
+    const root = nodeMap.get(classRoot);
+    if (!root) return;
+    const classAngle = Math.atan2(root.y, root.x);
+    // The active sprite carries the lit gold clover *and* solid black clovers at
+    // the five inactive positions. Drawn normally, those black clovers paint over
+    // the base ring's clover holes (hollowing them). GGG composites this layer
+    // additively so black adds nothing — only the gold ornament lights up, while
+    // the inactive holes keep revealing the stone backing behind the ring.
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    drawSprite('group-background', 'startNode:MainCircleActive', 0, 0, {
+      rotate: classAngle - ACTIVE_ORNAMENT_ANGLE,
+    });
+    ctx.restore();
+  }
+
   // Central illustration (clipped to the frame's inner circle) + the ornate
   // MainCircle frame ring on top, at the tree origin. Shows the active class's
   // art, or — when an ascendancy is selected — that ascendancy's illustration,
@@ -510,6 +545,7 @@ export default function init(canvas, data) {
     ctx.restore();
 
     drawSprite('group-background', cf.frame, 0, 0);
+    drawStartGlow();
   }
 
   // Class illustration: a sprite from the per-class background atlas, drawn at
