@@ -53,7 +53,11 @@
       maxWidth: 'none',
       theme: 'poe2',
       placement: 'right-start',
-      appendTo: function () { return document.body; },
+      // Honour fullscreen: a popper appended to document.body sits outside the
+      // fullscreen element's top-layer subtree and won't render (e.g. keyword
+      // tooltips inside the fullscreen passive tree). Falls back to body when
+      // nothing is fullscreen, preserving site-wide behaviour.
+      appendTo: function () { return document.fullscreenElement || document.body; },
       // Keep the popup inside the viewport so tall tooltips don't spill off the
       // top; paired with the max-height cap in app.css. altAxis pins the
       // vertical axis too (default preventOverflow only does the main axis),

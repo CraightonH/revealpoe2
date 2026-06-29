@@ -408,7 +408,13 @@ export default function init(canvas, data) {
       // click to open the attribute picker. We hide manually (scheduleHide /
       // pointerleave / over-card flag), so disable the click-to-hide behaviour.
       hideOnClick: false,
-      placement: 'right-start', trigger: 'manual', appendTo: () => document.body,
+      // appendTo must honour fullscreen: the Fullscreen API renders only the
+      // fullscreen element's subtree in the top layer, so a popper appended to
+      // document.body (outside .passive-tree-wrap) is invisible and unreachable
+      // — taking the hover card and its attribute picker with it. Fall back to
+      // body when nothing is fullscreen.
+      placement: 'right-start', trigger: 'manual',
+      appendTo: () => document.fullscreenElement || document.body,
       offset: [0, 14],
       getReferenceClientRect: () => ({
         width: tipRect.w, height: tipRect.h,
@@ -925,11 +931,22 @@ export default function init(canvas, data) {
     const rect = canvas.getBoundingClientRect();
     // Guard against 0×0 (e.g. hidden element during layout).
     if (!rect.width || !rect.height) return;
+    const prevW = canvas.width, prevH = canvas.height;
     canvas.width  = rect.width  * devicePixelRatio;
     canvas.height = rect.height * devicePixelRatio;
-    // Fit exactly once, when real (non-zero) dimensions first arrive; later
-    // resizes keep the user's current pan/zoom.
-    if (!fitted) { fitView(); fitted = true; }
+    // Fit exactly once, when real (non-zero) dimensions first arrive. Later
+    // resizes (entering/leaving fullscreen, window resize, panel toggle) keep
+    // the user's zoom AND keep what they were looking at centred: shift the
+    // origin by half the size delta so the previously screen-centred world
+    // point stays centred. (Holding ox/oy fixed instead would let the content
+    // drift toward a corner — that's the fullscreen "off-centre" bug.)
+    if (!fitted) {
+      fitView();
+      fitted = true;
+    } else if (prevW && prevH) {
+      view.ox += (canvas.width  - prevW) / 2;
+      view.oy += (canvas.height - prevH) / 2;
+    }
     requestDraw();
   });
   ro.observe(canvas);

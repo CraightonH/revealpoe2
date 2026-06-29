@@ -328,7 +328,7 @@ body {
   width: 100%;
   height: calc(100vh - 88px); /* viewport minus header + nav */
 }
-.passive-tree-wrap:fullscreen { height: 100%; background: var(--bg, #181410); }
+.passive-tree-wrap:fullscreen { height: 100%; background: var(--bg-base); }
 
 /* In-canvas control panel — GGG-style overlay, wiki-native dark styling. */
 .tree-panel {
