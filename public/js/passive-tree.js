@@ -286,11 +286,10 @@ export default function init(canvas, data) {
   const DEFAULT_ZOOM = 5;
   // Zoom caps, expressed as multiples of baseFit (the scale at which the whole
   // tree fills ~80% of the canvas). Anchoring to baseFit keeps the limits
-  // resolution/DPI-independent — both ends scale with the canvas. Min lets you
-  // pull back a touch past the full-tree view; max is ~8× the opening zoom,
-  // enough to read individual nodes without letting a node engulf the screen.
-  const MIN_SCALE_FACTOR = 0.7;
-  const MAX_SCALE_FACTOR = 30;
+  // resolution/DPI-independent — both ends scale with the canvas. The opening
+  // view (DEFAULT_ZOOM) sits between them, so it's never clamped on load.
+  const MIN_SCALE_FACTOR = 2;
+  const MAX_SCALE_FACTOR = 20;
   let minScale = 0;          // recomputed by fitView() against the real buffer
   let maxScale = Infinity;
   // Origin (0,0) is the center of the 6-class start hexagon — the point we want
