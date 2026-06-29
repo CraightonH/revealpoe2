@@ -39,14 +39,17 @@ function kindOf(n) {
   if (n.isAscendancyStart) return 'ascStart';
   if (n.ascendancyId) return n.isNotable ? 'ascNotable' : 'ascSmall';
   if (n.isKeystone) return 'keystone';
-  if (n.isNotable) return 'notable';
+  // Blighted notables (GGG id `DeliriumAnoint_*`) are the disconnected, edgeless
+  // notables instilled onto an item (usually an amulet) rather than allocated on
+  // the tree. GGG ships them a distinct ornate gold frame (BlightedNotableFrame).
+  if (n.isNotable) return n.isBlighted ? 'blighted' : 'notable';
   return 'small';
 }
 
 // Atlas icon-prefix (skills.json keys are `${prefix}${Active|Inactive}:${icon}`).
 function iconKindOf(k) {
   if (k === 'keystone') return 'keystone';
-  if (k === 'notable' || k === 'ascNotable') return 'notable';
+  if (k === 'notable' || k === 'ascNotable' || k === 'blighted') return 'notable';
   return 'normal';
 }
 

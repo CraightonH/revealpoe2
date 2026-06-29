@@ -50,6 +50,7 @@ export function screenToWorld(view, sx, sy) {
 const KIND_RADIUS = {
   keystone:   109,
   notable:    76,
+  blighted:   76,
   small:      51,
   ascStart:   45,
   ascNotable: 103,
@@ -62,6 +63,8 @@ const KIND_RADIUS = {
 const FRAME_KEY = {
   keystone:   { u: 'KeystoneFrameUnallocated', a: 'KeystoneFrameCanAllocate', x: 'KeystoneFrameAllocated' },
   notable:    { u: 'NotableFrameUnallocated', a: 'NotableFrameCanAllocate', x: 'NotableFrameAllocated' },
+  // Disconnected "instilled on an item" notables (DeliriumAnoint_*) — ornate gold frame.
+  blighted:   { u: 'BlightedNotableFrameUnallocated', a: 'BlightedNotableFrameCanAllocate', x: 'BlightedNotableFrameAllocated' },
   small:      { u: 'PSSkillFrame', a: 'PSSkillFrameHighlighted', x: 'PSSkillFrameActive' },
   jewel:      { u: 'JewelFrameUnallocated', a: 'JewelFrameCanAllocate', x: 'JewelFrameAllocated' },
   ascNotable: { u: 'AscendancyFrameNotableUnallocated', a: 'AscendancyFrameNotableCanAllocate', x: 'AscendancyFrameNotableAllocated' },
