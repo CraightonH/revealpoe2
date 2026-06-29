@@ -289,7 +289,7 @@ export default function init(canvas, data) {
   // resolution/DPI-independent — both ends scale with the canvas. The opening
   // view (DEFAULT_ZOOM) sits between them, so it's never clamped on load.
   const MIN_SCALE_FACTOR = 1.5;
-  const MAX_SCALE_FACTOR = 10;
+  const MAX_SCALE_FACTOR = 13;
   let minScale = 0;          // recomputed by fitView() against the real buffer
   let maxScale = Infinity;
   // Origin (0,0) is the center of the 6-class start hexagon — the point we want
