@@ -284,6 +284,15 @@ export default function init(canvas, data) {
   // arrive (the ResizeObserver fires after layout — at init the drawing buffer
   // is still the default 300×150).
   const DEFAULT_ZOOM = 5;
+  // Zoom caps, expressed as multiples of baseFit (the scale at which the whole
+  // tree fills ~80% of the canvas). Anchoring to baseFit keeps the limits
+  // resolution/DPI-independent — both ends scale with the canvas. Min lets you
+  // pull back a touch past the full-tree view; max is ~8× the opening zoom,
+  // enough to read individual nodes without letting a node engulf the screen.
+  const MIN_SCALE_FACTOR = 0.7;
+  const MAX_SCALE_FACTOR = 30;
+  let minScale = 0;          // recomputed by fitView() against the real buffer
+  let maxScale = Infinity;
   // Origin (0,0) is the center of the 6-class start hexagon — the point we want
   // centered on load.
   const CENTER_X = 0;
@@ -292,10 +301,13 @@ export default function init(canvas, data) {
   let fitted = false;
 
   function fitView() {
-    const fitScale = Math.min(
+    const baseFit = Math.min(
       (canvas.width  * 0.8) / (worldW || 1),
       (canvas.height * 0.8) / (worldH || 1),
-    ) * DEFAULT_ZOOM;
+    );
+    minScale = baseFit * MIN_SCALE_FACTOR;
+    maxScale = baseFit * MAX_SCALE_FACTOR;
+    const fitScale = baseFit * DEFAULT_ZOOM;
     view.scale = fitScale;
     // Center on the origin (0,0) — the start hexagon — rather than the extent
     // midpoint, which is skewed by hidden ascendancy clusters and locked nodes
@@ -751,11 +763,16 @@ export default function init(canvas, data) {
     const mx   = (e.clientX - rect.left) * (canvas.width  / rect.width);
     const my   = (e.clientY - rect.top)  * (canvas.height / rect.height);
 
-    const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+    const raw = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+    // Clamp to the zoom caps. Derive the factor from the clamped target so the
+    // cursor-anchor math below stays exact at the limits (no drift on overshoot).
+    const target = Math.min(maxScale, Math.max(minScale, view.scale * raw));
+    const factor = target / view.scale;
+    if (factor === 1) return; // already at a cap — nothing to do
     // Keep the world point under the cursor stationary.
     view.ox = mx - (mx - view.ox) * factor;
     view.oy = my - (my - view.oy) * factor;
-    view.scale *= factor;
+    view.scale = target;
     hideTip();
     requestDraw();
   }, { passive: false });
