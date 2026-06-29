@@ -24,6 +24,7 @@ const GEN_DIR = path.join(__dirname, '..', 'public', 'generated');
 const OUT = path.join(GEN_DIR, 'passive-tree.json');
 const CARDS_OUT = path.join(GEN_DIR, 'passive-cards.json');
 const SEARCH_OUT = path.join(GEN_DIR, 'passive-search.json');
+const STATS_OUT = path.join(GEN_DIR, 'passive-stats.json');
 const ATLAS_SRC = path.join(getDataDir(), 'ggg-poe2', 'atlas');
 const ATLAS_OUT = path.join(GEN_DIR, 'passive-atlas');
 
@@ -157,6 +158,24 @@ export function buildSearch() {
   return out;
 }
 
+// Raw stat lines per node, keyed by hash — the input to the client-side stat
+// aggregation panel (public/js/passive-stats-agg.js). Unlike buildSearch (which
+// strips markup for matching) and buildCards (which renders HTML), this keeps
+// the GGG lines verbatim in [tag|text] keyword format so the client can both
+// templatize/sum them and strip them for display. Multi-line stat strings are
+// split so each line is an independent summable unit. Visible nodes only —
+// hidden anchors carry no stats.
+export function buildStats() {
+  const { nodes } = parseGggTree();
+  const out = {};
+  for (const n of nodes) {
+    if (n.hidden) continue;
+    const lines = n.stats.flatMap((s) => s.split('\n')).filter(Boolean);
+    if (lines.length) out[n.h] = lines;
+  }
+  return out;
+}
+
 function copyAtlasMaps() {
   fs.mkdirSync(ATLAS_OUT, { recursive: true });
   let n = 0;
@@ -187,6 +206,11 @@ function main() {
   fs.writeFileSync(SEARCH_OUT, JSON.stringify(search));
   const skb = (fs.statSync(SEARCH_OUT).size / 1024).toFixed(0);
   console.log(`build-passive-tree: ${Object.keys(search).length} search entries -> ${SEARCH_OUT} (${skb} KB)`);
+
+  const stats = buildStats();
+  fs.writeFileSync(STATS_OUT, JSON.stringify(stats));
+  const stkb = (fs.statSync(STATS_OUT).size / 1024).toFixed(0);
+  console.log(`build-passive-tree: ${Object.keys(stats).length} stat entries -> ${STATS_OUT} (${stkb} KB)`);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) main();

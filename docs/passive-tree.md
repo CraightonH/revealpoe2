@@ -123,6 +123,10 @@ classStarts, classes, ascStarts, ascByClass, ascArt, extent}`:
 - `public/generated/passive-atlas/*.json` — the atlas frame maps (served copy).
 - `public/generated/passive-cards.json` — one hover card per visible node, keyed
   by hash, built from GGG stats keyword-linkified through `renderGameText`.
+- `public/generated/passive-stats.json` — raw GGG stat lines per visible node,
+  keyed by hash, **markup preserved** (unlike `passive-search.json`, which strips
+  it). Drives the client-side stat aggregation panel. Multi-line stat strings are
+  split so each line is an independent summable unit (`buildStats()`).
 
 ---
 
@@ -172,6 +176,30 @@ classStarts, classes, ascStarts, ascByClass, ascArt, extent}`:
   they ride the ggpk `.dds`→webp pipeline like node icons. `fetch-images.js`'s
   `ddsFromPassiveArtifact()` reverse-maps `meta.ascendancyArt[].img` URLs into the
   referenced `.dds` set so deploy mirrors them.
+- **Stat aggregation panel** (`#tree-stats-panel`, left-docked, collapsible): on
+  every alloc/dealloc, `updatePoints()` also calls `renderStats()`, which lazy-loads
+  `passive-stats.json` + the pure `passive-stats-agg.js` module, builds the effective
+  stat lines of all allocated non-hidden nodes (resolving generic "+5 to any
+  Attribute" nodes to the player's `attrChoice` pick via `effectiveAttrLine`), and
+  renders summed totals bucketed into Offense / Defense / Attributes / Other plus a
+  verbatim **Unique Effects** section for number-less keystone/flag lines. The
+  aggregation is pure + node-tested (`test/passiveStatsAgg.test.js`); the categories
+  are approximate keyword heuristics. Numbers render white on muted prose for
+  at-a-glance scanning.
+  - **Hover-to-highlight:** dwelling on a panel line for `HOVER_DELAY` (500ms)
+    highlights *every* node granting that stat — allocated or not — via `hoverHits`,
+    a transient layer drawn over `searchHits` so it doesn't disturb an active query.
+    Matching is by the agg module's number-less `template`, looked up in
+    `templateIndex` (template → node hashes, built once over all nodes from the stat
+    artifact). Generic "+5 to any Attribute" nodes are also keyed under the three
+    resolved attribute templates, so hovering a summed "+N to Strength" lights every
+    attribute node. The dwell timer restarts when the cursor moves between lines
+    (debounce) and clears on leaving the panel.
+  - **Click-to-pin:** clicking a line moves its match set into the persistent
+    `searchHits` layer and fills the search box with `templateToQuery(template)` (the
+    longest number-free phrase; attribute lines → "any attribute"), so the highlight
+    survives the cursor leaving and reads as a normal, editable/clearable search.
+    Hovering other lines still previews over the pin (hover wins, then reverts).
 - **Hit-testing** uses fixed per-kind world radii (`KIND_RADIUS`, = half the GGG
   frame sprite native size); drawing sizes come from the atlas directly.
 - Allocation/encoding (`passive-alloc.js`, `passive-code.js`), pan/zoom, and the
@@ -206,7 +234,8 @@ classStarts, classes, ascStarts, ascByClass, ascArt, extent}`:
 | `scripts/fetch-ggg-tree.js` | ingest GGG data + atlases (`npm run fetch:tree`) |
 | `scripts/graph/gggTree.js` | parse GGG JSON → nodes/edges/classes |
 | `scripts/build-passive-tree.js` | emit render artifact + cards + atlas-map copy |
-| `public/js/passive-tree.js` | canvas renderer (atlases, connectors, allocation) |
+| `public/js/passive-tree.js` | canvas renderer (atlases, connectors, allocation, stat panel) |
+| `public/js/passive-stats-agg.js` | pure stat aggregation (strip→templatize→sum→categorize) |
 | `data/source/ggg-poe2/` | cached GGG data + atlas maps (gitignored) |
 | `public/img/passive-atlas/` | self-hosted atlas images (gitignored) |
 | `scripts/graph/passives.js` + `src/data/passiveTree.js` | **RePoE** passive pages/relationships (unchanged) |

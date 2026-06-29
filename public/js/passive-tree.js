@@ -346,6 +346,20 @@ export default function init(canvas, data) {
   let searchHits = null;
   let searchIndex = null, searchIndexLoading = null;
   const SEARCH_DIM = 0.14;
+  // hoverHits: transient highlight layer for hovering a stat-panel line — a Set
+  // of every node hash matching that stat (allocated or not, like search). Drawn
+  // *over* searchHits (hover wins) so it doesn't disturb an active search query.
+  let hoverHits = null;
+  // Hover-to-highlight bookkeeping for the stat panel. `templateIndex` maps a
+  // number-less stat template → every node hash carrying it (built once from the
+  // stat artifact); `hoverSets` is the per-rendered-line lookup; the timer
+  // enforces the 0.75s dwell before a highlight fires (debounce-on-move).
+  let templateIndex = null;
+  let hoverSets = [];
+  let hoverQueries = [];
+  let hoverTimer = null;
+  let hoverIdx = -1;
+  const HOVER_DELAY = 500;
   const SEARCH_URL = '/static/generated/passive-search.json';
   function loadSearchIndex() {
     if (searchIndex) return Promise.resolve(searchIndex);
@@ -371,6 +385,39 @@ export default function init(canvas, data) {
 
   const pointsEl  = document.getElementById('tree-points');
   const wsToggle  = document.getElementById('tree-weapon-set');
+
+  // Stat aggregation panel (left-docked). Totals are recomputed from the
+  // allocated set on every alloc/dealloc via renderStats(), driven off the same
+  // updatePoints() hook the point counter uses.
+  const statsPointsEl = document.getElementById('tree-stats-points');
+  const statsListEl   = document.getElementById('tree-stats-list');
+  // Raw per-node stat lines (markup-preserved) — a lazy static artifact, like
+  // the hover cards. Loaded on first allocation.
+  const STATS_URL = '/static/generated/passive-stats.json';
+  let statLines = null, statLinesLoading = null;
+  function loadStatLines() {
+    if (statLines) return Promise.resolve(statLines);
+    if (!statLinesLoading) {
+      statLinesLoading = fetch(STATS_URL).then((r) => r.json())
+        .then((s) => { statLines = s; return s; });
+    }
+    return statLinesLoading;
+  }
+  // The pure aggregation module (node-testable; shared with the build test).
+  let _aggMod = null;
+  function aggMod() {
+    if (_aggMod) return Promise.resolve(_aggMod);
+    return import('./passive-stats-agg.js').then((m) => { _aggMod = m; return m; });
+  }
+  // Generic "+5 to any Attribute" nodes resolve to the player's Str/Int/Dex pick
+  // before aggregation (the agg module is attribute-agnostic). Keep the line's
+  // own number so a future +N variant still sums correctly.
+  const ATTR_FULL = { str: 'Strength', int: 'Intelligence', dex: 'Dexterity' };
+  function effectiveAttrLine(h) {
+    const raw = (statLines[h] && statLines[h][0]) || '+5 to any Attribute';
+    const num = (raw.match(/\d+/) || ['5'])[0];
+    return `+${num} to ${ATTR_FULL[attrOf(h)] || 'Strength'}`;
+  }
 
   // ---------------------------------------------------------------------------
   // Hover card — pre-rendered passive cards shown through the shared Tippy harness
@@ -490,12 +537,137 @@ export default function init(canvas, data) {
   }
 
   function updatePoints() {
-    if (!pointsEl || !_allocMod) return;
-    const { main, ascendancy } = _allocMod.pointsSpent(allocated, nodeKindOf);
-    const budget = meta.pointBudget ?? 0;
-    pointsEl.textContent = budget
-      ? `${main} / ${budget} points · ${ascendancy} ascendancy`
-      : `${main} points · ${ascendancy} ascendancy`;
+    if (!_allocMod) return;
+    if (pointsEl) {
+      const { main, ascendancy } = _allocMod.pointsSpent(allocated, nodeKindOf);
+      const budget = meta.pointBudget ?? 0;
+      pointsEl.textContent = budget
+        ? `${main} / ${budget} points · ${ascendancy} ascendancy`
+        : `${main} points · ${ascendancy} ascendancy`;
+    }
+    renderStats();
+  }
+
+  // Escape + wrap numeric tokens so they render white against muted prose
+  // (high-contrast scanning). Input is already plain text from the agg module.
+  function escHtml(s) {
+    return s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  }
+  function numHtml(s) {
+    return escHtml(s).replace(/[+-]?\d[\d.]*%?/g, (m) => `<span class="num">${m}</span>`);
+  }
+
+  // template -> Set<hash> over EVERY node (not just allocated), so hovering a
+  // stat lights up all nodes that grant it — like the search bar. Generic "+5 to
+  // any Attribute" nodes are also keyed under the three resolved attribute
+  // templates so hovering "+18 to Strength" highlights every attribute node.
+  function buildTemplateIndex() {
+    if (templateIndex) return templateIndex;
+    const idx = new Map();
+    const add = (t, h) => { let s = idx.get(t); if (!s) idx.set(t, (s = new Set())); s.add(h); };
+    const attrTemplates = ['Strength', 'Dexterity', 'Intelligence']
+      .map((a) => _aggMod.parseLine(`+5 to ${a}`).template);
+    for (const [hStr, ls] of Object.entries(statLines)) {
+      const h = Number(hStr);
+      for (const line of ls) add(_aggMod.parseLine(line).template, h);
+      if (nodeMap.get(h)?.attr) for (const t of attrTemplates) add(t, h);
+    }
+    templateIndex = idx;
+    return idx;
+  }
+
+  // Recompute and render the left stat panel from the allocated set. Lazily
+  // pulls the stat-line artifact + agg module on first use, then re-renders.
+  function renderStats() {
+    if (!statsListEl) return;
+    if (!statLines || !_aggMod) {
+      Promise.all([loadStatLines(), aggMod()]).then(() => renderStats()).catch(() => {});
+      return;
+    }
+    // A re-render invalidates the prior data-hl indices, so drop any pending or
+    // active hover highlight before rebuilding.
+    clearTimeout(hoverTimer); hoverTimer = null; hoverIdx = -1; hoverHits = null;
+    buildTemplateIndex();
+
+    if (statsPointsEl && _allocMod) {
+      const { main } = _allocMod.pointsSpent(allocated, nodeKindOf);
+      statsPointsEl.textContent = main ? `Passive Stats · ${main}` : 'Passive Stats';
+    }
+    const lines = [];
+    for (const h of allocated) {
+      const n = nodeMap.get(h);
+      if (!n || n.hidden) continue;
+      if (n.attr) { lines.push(effectiveAttrLine(h)); continue; }
+      const ls = statLines[h];
+      if (ls) for (const l of ls) lines.push(l);
+    }
+    const { categories, uniqueEffects } = _aggMod.aggregate(lines);
+
+    hoverSets = [];
+    hoverQueries = [];
+    // Register a rendered line's highlight set + its pin-to-search query, and
+    // return its data-hl attribute (the index into both arrays).
+    const tag = (template) => {
+      const set = templateIndex.get(template);
+      const i = hoverSets.length;
+      hoverSets.push(set && set.size ? set : null);
+      hoverQueries.push(_aggMod.templateToQuery(template));
+      return `data-hl="${i}"`;
+    };
+
+    let html = '';
+    for (const cat of categories) {
+      html += `<div class="tree-stats-cat"><div class="tree-stats-cat-head">${escHtml(cat.name)}</div>`;
+      for (const l of cat.lines) html += `<div class="tree-stats-line" ${tag(l.template)}>${numHtml(l.text)}</div>`;
+      html += '</div>';
+    }
+    if (uniqueEffects.length) {
+      html += '<div class="tree-stats-cat tree-stats-uniq"><div class="tree-stats-cat-head">Unique Effects</div>';
+      for (const u of uniqueEffects) {
+        const xn = u.count > 1 ? ` <span class="xn">×${u.count}</span>` : '';
+        html += `<div class="tree-stats-line" ${tag(u.template)}>${escHtml(u.text)}${xn}</div>`;
+      }
+      html += '</div>';
+    }
+    statsListEl.innerHTML = html || '<p class="tree-stats-empty">Allocate nodes to see totals.</p>';
+  }
+
+  // Hover a stat line for HOVER_DELAY ms → highlight every matching node. Moving
+  // to another line restarts the dwell (debounce); leaving the list clears it.
+  function clearStatHover() {
+    clearTimeout(hoverTimer); hoverTimer = null; hoverIdx = -1;
+    if (hoverHits) { hoverHits = null; requestDraw(); }
+  }
+  if (statsListEl) {
+    statsListEl.addEventListener('pointerover', (e) => {
+      const line = e.target.closest('.tree-stats-line[data-hl]');
+      if (!line) return;
+      const i = Number(line.getAttribute('data-hl'));
+      if (i === hoverIdx) return; // same line (e.g. moved onto a .num span)
+      hoverIdx = i;
+      clearTimeout(hoverTimer);
+      hoverTimer = setTimeout(() => {
+        const set = hoverSets[i];
+        if (set && set.size) { hoverHits = set; requestDraw(); }
+      }, HOVER_DELAY);
+    });
+    statsListEl.addEventListener('pointerleave', clearStatHover);
+
+    // Click pins the stat: the matching set moves into the persistent search
+    // layer (so it survives the cursor leaving) and the search box is populated
+    // with the equivalent query, so the highlight reads as a normal search the
+    // user can edit or clear. Hovering other lines still previews over the pin.
+    statsListEl.addEventListener('click', (e) => {
+      const line = e.target.closest('.tree-stats-line[data-hl]');
+      if (!line) return;
+      const i = Number(line.getAttribute('data-hl'));
+      const set = hoverSets[i];
+      if (!set || !set.size) return;
+      clearStatHover();
+      searchHits = set;
+      if (searchInput) searchInput.value = hoverQueries[i] || '';
+      requestDraw();
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -721,8 +893,9 @@ export default function init(canvas, data) {
 
       // Search highlight: matches keep full alpha + a gold glow; everything else
       // dims so the matches read at a glance. shadowBlur only on the few matches.
-      if (searchHits) {
-        if (searchHits.has(n.h)) {
+      const hl = hoverHits || searchHits;
+      if (hl) {
+        if (hl.has(n.h)) {
           ctx.globalAlpha = 1;
           ctx.shadowColor = 'rgba(255, 216, 120, 0.95)';
           ctx.shadowBlur = 26 * view.scale;
@@ -1143,6 +1316,28 @@ export default function init(canvas, data) {
       syncPanelToggle();
     });
     syncPanelToggle();
+  }
+
+  // Stats panel collapse — mirror of #tree-panel but docked left, so the toggle
+  // chevrons point the other way (‹ collapses it back into the left edge).
+  const statsPanel = document.getElementById('tree-stats-panel');
+  const statsToggle = document.getElementById('tree-stats-toggle');
+  function syncStatsToggle() {
+    if (!statsPanel || !statsToggle) return;
+    const collapsed = statsPanel.classList.contains('collapsed');
+    statsToggle.textContent = collapsed ? '›' : '‹';
+    statsToggle.title = collapsed ? 'Expand' : 'Collapse';
+    statsToggle.setAttribute('aria-label', `${statsToggle.title} stats`);
+  }
+  if (statsPanel && statsToggle) {
+    if (window.matchMedia && window.matchMedia('(max-width: 640px)').matches) {
+      statsPanel.classList.add('collapsed');
+    }
+    statsToggle.addEventListener('click', () => {
+      statsPanel.classList.toggle('collapsed');
+      syncStatsToggle();
+    });
+    syncStatsToggle();
   }
 
   /**

@@ -1,7 +1,8 @@
 // test/passiveTreeArtifact.test.js
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildArtifact, buildCards, buildSearch } from '../scripts/build-passive-tree.js';
+import { buildArtifact, buildCards, buildSearch, buildStats } from '../scripts/build-passive-tree.js';
+import { aggregate } from '../public/js/passive-stats-agg.js';
 
 test('buildArtifact produces nodes/edges/meta from GGG data', () => {
   const art = buildArtifact();
@@ -68,6 +69,26 @@ test('buildCards: a small passive renders with the popup shell', () => {
   const html = cards[small.h];
   assert.match(html, /newItemPopup/);
   assert.match(html, /itemHeader doubleLine/);
+});
+
+test('buildStats: raw stat lines keyed by hash, markup preserved, feed the agg module', () => {
+  const art = buildArtifact();
+  const stats = buildStats();
+  // Keyed only for visible nodes that actually have stats (some jewel sockets none).
+  const visibleWithStats = art.nodes.filter((n) => !n.hidden).filter((n) => stats[n.h]);
+  assert.ok(visibleWithStats.length > 1000, 'most visible nodes carry stat lines');
+  // Entries are arrays of raw GGG lines: markup is preserved (unlike buildSearch).
+  const anyMarkup = Object.values(stats).some((lines) => lines.some((l) => /\[[^\]]+\]/.test(l)));
+  assert.ok(anyMarkup, 'keyword markup preserved for the client renderer');
+  for (const lines of Object.values(stats)) {
+    assert.ok(Array.isArray(lines) && lines.length > 0);
+    for (const l of lines) assert.equal(typeof l, 'string');
+  }
+  // End-to-end: feeding real node lines through aggregate() yields summed output.
+  const sample = art.nodes.filter((n) => !n.hidden && stats[n.h]).slice(0, 50);
+  const lines = sample.flatMap((n) => stats[n.h]);
+  const agg = aggregate(lines);
+  assert.ok(agg.categories.length > 0, 'real tree data aggregates into categories');
 });
 
 test('buildSearch: one lowercase plaintext entry per visible node, name + stats, no tokens', () => {

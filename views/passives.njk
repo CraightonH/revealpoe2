@@ -5,6 +5,20 @@
   <div class="passive-tree-wrap" id="tree-wrap">
     <canvas id="tree"></canvas>
 
+    {# Left-docked stat aggregation panel. Populated client-side by the renderer
+       (passive-tree.js → passive-stats-agg.js) on every alloc/dealloc; stays
+       empty + static-safe with no JS. Collapsible, mirroring #tree-panel. #}
+    <div class="tree-panel tree-stats-panel" id="tree-stats-panel">
+      <button type="button" class="tree-panel-toggle" id="tree-stats-toggle"
+              aria-label="Collapse stats" title="Collapse">‹</button>
+      <div class="tree-panel-body">
+        <div class="tree-panel-points" id="tree-stats-points">Passive Stats</div>
+        <div class="tree-stats-list" id="tree-stats-list">
+          <p class="tree-stats-empty">Allocate nodes to see totals.</p>
+        </div>
+      </div>
+    </div>
+
     {# In-canvas control panel (GGG-style overlay, wiki-native dark styling).
        Existing control ids are preserved so the renderer wiring is unchanged;
        new ids (search / reset / fullscreen / panel toggle) are added below. #}
