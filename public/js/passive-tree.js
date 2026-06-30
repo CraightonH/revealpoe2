@@ -806,11 +806,22 @@ export default function init(canvas, data) {
   // Alloc helpers (synchronous wrappers that use already-loaded modules)
   // ---------------------------------------------------------------------------
 
+  // The pool a click on node `h` spends from: the active weapon set, EXCEPT
+  // ascendancy nodes, which are always their own pool (8 pts) and are never
+  // weapon-set-specializable — so a weapon set being active never diverts them.
+  // Returns 1|2 for a weapon-set allocation, or null for the shared/ascendancy pool.
+  function modeFor(h) {
+    if (wsMode == null) return null;
+    return nodeMap.get(h)?.asc != null ? null : wsMode;
+  }
+
   // We also keep synchronous versions for click handlers after the modules are loaded.
-  // Mode-aware: in a weapon-set mode, "can allocate" tests the active set's frontier.
+  // Mode-aware: in a weapon-set mode, "can allocate" tests the active set's frontier
+  // (but ascendancy nodes always test the shared frontier — see modeFor).
   function _canAllocateSync(h) {
     if (!_allocMod) return false;
-    if (wsMode != null) return _allocMod.wsCanAllocate(adj, allocated, starts, wsAlloc[wsMode], h);
+    const m = modeFor(h);
+    if (m != null) return _allocMod.wsCanAllocate(adj, allocated, starts, wsAlloc[m], h);
     return _allocMod.canAllocate(adj, allocated, starts, h);
   }
 
@@ -894,21 +905,29 @@ export default function init(canvas, data) {
   // if the module isn't loaded yet, or the node is already taken / unreachable.
   function computePath(hash) {
     if (!_pathMod) return null;
+    const m = modeFor(hash); // ascendancy targets route on the shared pool even in ws mode
     const sources = new Set(allocated);
     for (const s of starts) sources.add(s);
-    // In a weapon-set mode the active set's nodes also anchor routes; the route's
-    // new nodes will be allocated into that set.
-    if (wsMode != null) for (const h of wsAlloc[wsMode]) sources.add(h);
+    // For a weapon-set route the active set's nodes also anchor it; the route's
+    // new nodes will be allocated into that set, and it must not cross into the
+    // ascendancy cluster (which is its own pool).
+    if (m != null) for (const h of wsAlloc[m]) sources.add(h);
     return _pathMod.shortestPath(adj, sources, hash, {
-      isPathable: (h) => { const n = nodeMap.get(h); return !!n && nodeVisible(n); },
+      isPathable: (h) => {
+        const n = nodeMap.get(h);
+        if (!n || !nodeVisible(n)) return false;
+        if (m != null && n.asc != null) return false; // ws routes never run through ascendancy
+        return true;
+      },
       isAttr: (h) => !!nodeMap.get(h)?.attr,
     });
   }
 
-  // The preview/allocation accent for the current mode (white-gold for shared,
-  // the set's colour in weapon-set mode).
+  // The preview/allocation accent for the previewed target's pool (white-gold for
+  // shared/ascendancy, the set's colour for a weapon-set route).
   function pathColor() {
-    return wsMode != null ? WS_COLOR[wsMode].path : PATH_COLOR;
+    const m = pathTarget != null ? modeFor(pathTarget) : wsMode;
+    return m != null ? WS_COLOR[m].path : PATH_COLOR;
   }
 
   function clearPathPreview() {
@@ -925,10 +944,11 @@ export default function init(canvas, data) {
   // and (in weapon-set mode) not already in the active set.
   function canTargetForPath(h) {
     if (allocated.has(h) || starts.includes(h)) return false;
-    if (wsMode != null) {
-      if (wsAlloc[wsMode].has(h)) return false;      // already in the active set
-    } else if (wsAlloc[1].has(h) || wsAlloc[2].has(h)) {
-      return false;                                  // ws nodes aren't editable from the shared view
+    const m = modeFor(h);
+    if (m != null) {
+      if (wsAlloc[m].has(h)) return false;           // already in the active set
+    } else if (wsMode == null && (wsAlloc[1].has(h) || wsAlloc[2].has(h))) {
+      return false;                                  // ws node not editable from the shared view
     }
     return true;
   }
@@ -948,8 +968,9 @@ export default function init(canvas, data) {
     // that path[0] hangs off (so the route visibly connects to the allocated tree).
     pathEdgeSet = new Set();
     for (let i = 0; i + 1 < path.length; i++) pathEdgeSet.add(edgeKey(path[i], path[i + 1]));
+    const m = modeFor(target.h);
     const inFrontier = (nb) =>
-      allocated.has(nb) || starts.includes(nb) || (wsMode != null && wsAlloc[wsMode].has(nb));
+      allocated.has(nb) || starts.includes(nb) || (m != null && wsAlloc[m].has(nb));
     for (const nb of adj.get(path[0]) ?? []) {
       if (inFrontier(nb)) { pathEdgeSet.add(edgeKey(path[0], nb)); break; }
     }
@@ -962,13 +983,14 @@ export default function init(canvas, data) {
   function _allocatePathSync(path) {
     if (!_allocMod || !path || !path.length) return;
     const primary = classPrimaryAttr();
-    if (wsMode != null) {
+    const m = modeFor(path[path.length - 1]); // the target decides the pool
+    if (m != null) {
       // Route into the active weapon set's 25-pt pool.
-      if (!_allocMod.wsCanAfford(wsAlloc[wsMode], path.length, budgets().ws)) return;
+      if (!_allocMod.wsCanAfford(wsAlloc[m], path.length, budgets().ws)) return;
       for (const h of path) {
         const n = nodeMap.get(h);
         if (n && n.attr) attrChoice.set(h, primary);
-        wsAlloc[wsMode] = _allocMod.wsAllocate(adj, allocated, starts, wsAlloc[wsMode], h);
+        wsAlloc[m] = _allocMod.wsAllocate(adj, allocated, starts, wsAlloc[m], h);
       }
     } else {
       if (!canAfford(path)) return; // route doesn't fit the main budget — no-op
@@ -1424,9 +1446,10 @@ export default function init(canvas, data) {
 
     if (!hit) return;
 
-    // Weapon-set editing mode: clicks act on the active set's own pool, never the
-    // shared backbone (which is managed in the default mode).
-    if (wsMode != null) {
+    // Weapon-set editing mode acts on the active set's own pool, never the shared
+    // backbone (managed in default mode). Ascendancy nodes are exempt — modeFor()
+    // forces them to the shared/ascendancy pool below even with a set active.
+    if (modeFor(hit.h) != null) {
       if (wsAlloc[wsMode].has(hit.h)) {
         _wsDeallocateSync(hit.h); // cascades within the set
       } else if (allocated.has(hit.h) || starts.includes(hit.h)) {
@@ -1440,7 +1463,8 @@ export default function init(canvas, data) {
       return;
     }
 
-    // Default mode — shared/main alloc/dealloc.
+    // Default / ascendancy — shared pool (also reached for ascendancy nodes while
+    // a weapon set is active, since modeFor() returns null for them).
     if (allocated.has(hit.h)) {
       _deallocateSync(hit.h); // also clears any attribute pick (pruneAttrChoices)
       attrChoosing = null;
