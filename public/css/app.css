@@ -412,7 +412,18 @@ body {
 /* Weapon-set row (inert placeholder for the follow-up). */
 .tree-panel-ws { display: flex; align-items: center; gap: 8px; }
 .tree-panel-ws .tree-panel-label { flex: 1; }
-.tree-ws-sets { display: flex; gap: 2px; }
+.tree-ws-sets { display: flex; align-items: center; gap: 5px; }
+.tree-ws-count {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  min-width: 34px;
+}
+/* Count text matches its set's tree accent — Set I red, Set II green — and
+   brightens + bolds when the set's 25 points are fully spent. */
+.tree-ws-count[data-ws-count="1"] { color: #e0584e; }
+.tree-ws-count[data-ws-count="2"] { color: #5bbf6a; }
+.tree-ws-count[data-ws-count="1"].is-full { color: #ff8a80; font-weight: 600; }
+.tree-ws-count[data-ws-count="2"].is-full { color: #9be8a6; font-weight: 600; }
 .tree-ws-btn {
   width: 26px;
   height: 22px;

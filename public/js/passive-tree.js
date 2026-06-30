@@ -438,6 +438,10 @@ export default function init(canvas, data) {
 
   const pointsEl  = document.getElementById('tree-points');
   const wsBtns    = Array.from(document.querySelectorAll('#tree-ws-sets .tree-ws-btn'));
+  const wsCountEls = {
+    1: document.querySelector('#tree-ws-sets [data-ws-count="1"]'),
+    2: document.querySelector('#tree-ws-sets [data-ws-count="2"]'),
+  };
 
   // Stat aggregation panel (left-docked). Totals are recomputed from the
   // allocated set on every alloc/dealloc via renderStats(), driven off the same
@@ -612,15 +616,18 @@ export default function init(canvas, data) {
     if (pointsEl) {
       const { main, ascendancy } = _allocMod.pointsSpent(allocated, nodeKindOf);
       const b = budgets();
-      const w1 = wsAlloc[1].size, w2 = wsAlloc[2].size;
       const seg = (n, max) => (max === Infinity ? `${n}` : `${n} / ${max}`);
-      pointsEl.textContent =
-        `${seg(main, b.main)} points · I ${seg(w1, b.ws)} · II ${seg(w2, b.ws)} · ${seg(ascendancy, b.ascendancy)} asc`;
-      // "Full" reflects the pool the current mode spends from.
-      const full = wsMode != null
-        ? (wsMode === 1 ? w1 : w2) >= b.ws
-        : (main >= b.main || ascendancy >= b.ascendancy);
-      pointsEl.classList.toggle('points-full', !!full);
+      // Top counter: shared + ascendancy only (weapon sets show beside the buttons).
+      pointsEl.textContent = `${seg(main, b.main)} points · ${seg(ascendancy, b.ascendancy)} asc`;
+      pointsEl.classList.toggle('points-full', main >= b.main || ascendancy >= b.ascendancy);
+    }
+    // Per-weapon-set counts sit next to the I / II buttons.
+    for (const k of [1, 2]) {
+      const el = wsCountEls[k];
+      if (!el) continue;
+      const used = wsAlloc[k].size, max = budgets().ws;
+      el.textContent = max === Infinity ? `${used}` : `${used} / ${max}`;
+      el.classList.toggle('is-full', used >= max);
     }
     renderStats();
   }
