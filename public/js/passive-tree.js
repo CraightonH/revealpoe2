@@ -96,6 +96,14 @@ const PATH_COLOR = '#fff3c4';
 const PATH_LINE_W = 7;   // world units (~1.5× a rail pair's span)
 const PATH_RING_W = 5;   // node-ring stroke, world units
 
+// Weapon-set accent colours: Set I = red, Set II = green. `line` strokes the
+// set's allocated connectors + node ring; `path` tints its shortest-path preview.
+const WS_COLOR = {
+  1: { line: '#e0584e', path: '#ff8a80' },
+  2: { line: '#5bbf6a', path: '#9be8a6' },
+};
+const WS_RING_W = 5; // allocated-node ring stroke, world units
+
 // When a generic-attribute node is allocated with a chosen stat, GGG swaps the
 // icon to a dedicated per-attribute sprite (red Strength / green Dexterity /
 // blue Intelligence cross), not a flat colour overlay — these live in the same
@@ -256,17 +264,23 @@ export default function init(canvas, data) {
     return true;
   }
 
+  // Is a node "on" in the current view? In a weapon-set mode, the shared tree
+  // plus that set's nodes are on; the other set's nodes appear unallocated.
+  function viewAllocated(h) {
+    return allocated.has(h) || (wsMode != null && wsAlloc[wsMode].has(h));
+  }
+
   // Allocation state for a node: x = allocated/anchor, a = allocatable, u = else.
   function frameState(n) {
-    if (allocated.has(n.h) || starts.includes(n.h)) return 'x';
+    if (viewAllocated(n.h) || starts.includes(n.h)) return 'x';
     if (_canAllocateSync(n.h)) return 'a';
     return 'u';
   }
 
   // Connector state between two nodes (a/b alloc states drive the line sprite).
   function lineState(na, nb) {
-    const aa = allocated.has(na.h) || starts.includes(na.h);
-    const ba = allocated.has(nb.h) || starts.includes(nb.h);
+    const aa = viewAllocated(na.h) || starts.includes(na.h);
+    const ba = viewAllocated(nb.h) || starts.includes(nb.h);
     if (aa && ba) return 'x';
     if (aa || ba) return 'a';
     return 'u';
@@ -331,15 +345,16 @@ export default function init(canvas, data) {
   // Allocation state
   // ---------------------------------------------------------------------------
 
-  // allocated: Set<number> — node hashes the user has allocated.
+  // allocated: Set<number> — shared/main node hashes the user has allocated.
   // starts: number[] — class root + ascendancy start (always-present anchors, not counted in points).
-  // weaponState: Map<number, number> — mask (1=setI, 2=setII, 3=both) for weapon-set nodes.
-  // weaponSetMode: boolean — when true, clicks on ws-capable nodes toggle their set instead of alloc/dealloc.
+  // wsAlloc: { 1:Set, 2:Set } — per-weapon-set node hashes (each its own 25-pt pool),
+  //   overlaid on the shared tree. A node here is NOT in `allocated`.
+  // wsMode: null | 1 | 2 — which set is being edited/viewed; null = shared/main (default).
   // decodedState: the last decode() result, kept for round-trip encode().
   let allocated    = new Set();
   let starts       = [];
-  let weaponState  = new Map();
-  let weaponSetMode = false;
+  const wsAlloc    = { 1: new Set(), 2: new Set() };
+  let wsMode       = null;
   let decodedState = null;
   // attrChoice: Map<hash, 'str'|'int'|'dex'> — per generic-attribute node, which
   // attribute the user picked (the "+5 to any Attribute" choice). Defaults to
@@ -405,7 +420,7 @@ export default function init(canvas, data) {
   // ---------------------------------------------------------------------------
 
   const pointsEl  = document.getElementById('tree-points');
-  const wsToggle  = document.getElementById('tree-weapon-set');
+  const wsBtns    = Array.from(document.querySelectorAll('#tree-ws-sets .tree-ws-btn'));
 
   // Stat aggregation panel (left-docked). Totals are recomputed from the
   // allocated set on every alloc/dealloc via renderStats(), driven off the same
@@ -558,13 +573,18 @@ export default function init(canvas, data) {
     return nodeMap.get(h)?.k ?? '';
   }
 
-  // Allocation budgets: two independent pools (main passive points + ascendancy
-  // points). Undefined = unbounded (pre-budget artifact / staleness safety).
+  // Allocation budgets: independent pools — main passive points, ascendancy
+  // points, and a per-weapon-set pool (each set gets the full `ws`). Undefined =
+  // unbounded (pre-budget artifact / staleness safety).
   function budgets() {
-    return { main: meta.pointBudget ?? Infinity, ascendancy: meta.ascendancyBudget ?? Infinity };
+    return {
+      main: meta.pointBudget ?? Infinity,
+      ascendancy: meta.ascendancyBudget ?? Infinity,
+      ws: meta.weaponSetBudget ?? Infinity,
+    };
   }
 
-  // Whether the given new-node hashes fit in the remaining budget (all-or-nothing).
+  // Whether the given new-node hashes fit the remaining MAIN budget (all-or-nothing).
   function canAfford(hashes) {
     if (!_allocMod) return false;
     return _allocMod.canAfford(allocated, nodeKindOf, hashes, budgets());
@@ -575,12 +595,15 @@ export default function init(canvas, data) {
     if (pointsEl) {
       const { main, ascendancy } = _allocMod.pointsSpent(allocated, nodeKindOf);
       const b = budgets();
-      const mainTxt = b.main === Infinity ? `${main} points` : `${main} / ${b.main} points`;
-      const ascTxt  = b.ascendancy === Infinity
-        ? `${ascendancy} ascendancy`
-        : `${ascendancy} / ${b.ascendancy} ascendancy`;
-      pointsEl.textContent = `${mainTxt} · ${ascTxt}`;
-      pointsEl.classList.toggle('points-full', main >= b.main || ascendancy >= b.ascendancy);
+      const w1 = wsAlloc[1].size, w2 = wsAlloc[2].size;
+      const seg = (n, max) => (max === Infinity ? `${n}` : `${n} / ${max}`);
+      pointsEl.textContent =
+        `${seg(main, b.main)} points · I ${seg(w1, b.ws)} · II ${seg(w2, b.ws)} · ${seg(ascendancy, b.ascendancy)} asc`;
+      // "Full" reflects the pool the current mode spends from.
+      const full = wsMode != null
+        ? (wsMode === 1 ? w1 : w2) >= b.ws
+        : (main >= b.main || ascendancy >= b.ascendancy);
+      pointsEl.classList.toggle('points-full', !!full);
     }
     renderStats();
   }
@@ -760,15 +783,20 @@ export default function init(canvas, data) {
   // ---------------------------------------------------------------------------
 
   // We also keep synchronous versions for click handlers after the modules are loaded.
+  // Mode-aware: in a weapon-set mode, "can allocate" tests the active set's frontier.
   function _canAllocateSync(h) {
     if (!_allocMod) return false;
+    if (wsMode != null) return _allocMod.wsCanAllocate(adj, allocated, starts, wsAlloc[wsMode], h);
     return _allocMod.canAllocate(adj, allocated, starts, h);
   }
 
+  // Any edit invalidates the imported share-code cache so Copy Share Code
+  // rebuilds from the current state (otherwise it would re-emit the import as-is).
   function _allocateSync(h) {
     if (!_allocMod) return;
     if (!canAfford([h])) return; // out of points for this pool — no-op
     allocated = _allocMod.allocate(adj, allocated, starts, h);
+    decodedState = null;
     pruneAttrChoices();
     clearPathPreview(); // frontier changed → stale preview
     updatePoints();
@@ -778,17 +806,51 @@ export default function init(canvas, data) {
   function _deallocateSync(h) {
     if (!_allocMod) return;
     allocated = _allocMod.deallocate(adj, allocated, starts, h);
+    decodedState = null;
+    pruneWeaponLayers(); // a shrunk main tree may orphan weapon-set branches
     pruneAttrChoices();
     clearPathPreview(); // frontier changed → stale preview
     updatePoints();
     requestDraw();
   }
 
-  // Drop attribute picks for nodes that are no longer allocated — deallocating
-  // (which may cascade) clears the choice, so a fresh allocation re-opens the
-  // Str/Int/Dex menu (the respec path: unallocate, then reallocate + re-pick).
+  // Allocate/deallocate within the active weapon set (its own 25-pt pool).
+  function _wsAllocateSync(h) {
+    if (!_allocMod || wsMode == null) return;
+    if (!_allocMod.wsCanAfford(wsAlloc[wsMode], 1, budgets().ws)) return; // set full
+    const n = nodeMap.get(h);
+    if (n && n.attr) attrChoice.set(h, classPrimaryAttr()); // ws attr nodes default like path-alloc
+    wsAlloc[wsMode] = _allocMod.wsAllocate(adj, allocated, starts, wsAlloc[wsMode], h);
+    decodedState = null;
+    clearPathPreview();
+    updatePoints();
+    requestDraw();
+  }
+
+  function _wsDeallocateSync(h) {
+    if (!_allocMod || wsMode == null) return;
+    wsAlloc[wsMode] = _allocMod.wsDeallocate(adj, allocated, starts, wsAlloc[wsMode], h);
+    decodedState = null;
+    pruneAttrChoices();
+    clearPathPreview();
+    updatePoints();
+    requestDraw();
+  }
+
+  // Re-anchor both weapon-set layers to the (possibly shrunk) shared tree.
+  function pruneWeaponLayers() {
+    if (!_allocMod) return;
+    wsAlloc[1] = _allocMod.pruneWeaponSets(adj, allocated, starts, wsAlloc[1]);
+    wsAlloc[2] = _allocMod.pruneWeaponSets(adj, allocated, starts, wsAlloc[2]);
+  }
+
+  // Drop attribute picks for nodes no longer allocated anywhere (main or either
+  // weapon set) — deallocating (which may cascade) clears the choice, so a fresh
+  // allocation re-opens the Str/Int/Dex menu (respec: unallocate, reallocate, re-pick).
   function pruneAttrChoices() {
-    for (const h of attrChoice.keys()) if (!allocated.has(h)) attrChoice.delete(h);
+    for (const h of attrChoice.keys()) {
+      if (!allocated.has(h) && !wsAlloc[1].has(h) && !wsAlloc[2].has(h)) attrChoice.delete(h);
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -810,10 +872,19 @@ export default function init(canvas, data) {
     if (!_pathMod) return null;
     const sources = new Set(allocated);
     for (const s of starts) sources.add(s);
+    // In a weapon-set mode the active set's nodes also anchor routes; the route's
+    // new nodes will be allocated into that set.
+    if (wsMode != null) for (const h of wsAlloc[wsMode]) sources.add(h);
     return _pathMod.shortestPath(adj, sources, hash, {
       isPathable: (h) => { const n = nodeMap.get(h); return !!n && nodeVisible(n); },
       isAttr: (h) => !!nodeMap.get(h)?.attr,
     });
+  }
+
+  // The preview/allocation accent for the current mode (white-gold for shared,
+  // the set's colour in weapon-set mode).
+  function pathColor() {
+    return wsMode != null ? WS_COLOR[wsMode].path : PATH_COLOR;
   }
 
   function clearPathPreview() {
@@ -826,9 +897,16 @@ export default function init(canvas, data) {
   // Recompute the preview for the hovered node. No preview for the empty cursor,
   // already-allocated/anchor nodes, or before the path module loads. Recomputes
   // only when the target changes (cheap, but cheaper still to skip).
+  // A node the current mode can target with a route: not a shared/anchor node,
+  // and (in weapon-set mode) not already in the active set.
+  function canTargetForPath(h) {
+    if (allocated.has(h) || starts.includes(h)) return false;
+    if (wsMode != null && wsAlloc[wsMode].has(h)) return false;
+    return true;
+  }
+
   function updatePathPreview(target) {
-    if (!_pathMod || !target ||
-        allocated.has(target.h) || starts.includes(target.h)) {
+    if (!_pathMod || !target || !canTargetForPath(target.h)) {
       clearPathPreview();
       return;
     }
@@ -842,8 +920,10 @@ export default function init(canvas, data) {
     // that path[0] hangs off (so the route visibly connects to the allocated tree).
     pathEdgeSet = new Set();
     for (let i = 0; i + 1 < path.length; i++) pathEdgeSet.add(edgeKey(path[i], path[i + 1]));
+    const inFrontier = (nb) =>
+      allocated.has(nb) || starts.includes(nb) || (wsMode != null && wsAlloc[wsMode].has(nb));
     for (const nb of adj.get(path[0]) ?? []) {
-      if (allocated.has(nb) || starts.includes(nb)) { pathEdgeSet.add(edgeKey(path[0], nb)); break; }
+      if (inFrontier(nb)) { pathEdgeSet.add(edgeKey(path[0], nb)); break; }
     }
     requestDraw();
   }
@@ -853,13 +933,24 @@ export default function init(canvas, data) {
   // primary attribute; they stay re-pickable via the usual node-click respec.
   function _allocatePathSync(path) {
     if (!_allocMod || !path || !path.length) return;
-    if (!canAfford(path)) return; // route doesn't fit the remaining budget — no-op
     const primary = classPrimaryAttr();
-    for (const h of path) {
-      const n = nodeMap.get(h);
-      if (n && n.attr) attrChoice.set(h, primary);
-      allocated = _allocMod.allocate(adj, allocated, starts, h);
+    if (wsMode != null) {
+      // Route into the active weapon set's 25-pt pool.
+      if (!_allocMod.wsCanAfford(wsAlloc[wsMode], path.length, budgets().ws)) return;
+      for (const h of path) {
+        const n = nodeMap.get(h);
+        if (n && n.attr) attrChoice.set(h, primary);
+        wsAlloc[wsMode] = _allocMod.wsAllocate(adj, allocated, starts, wsAlloc[wsMode], h);
+      }
+    } else {
+      if (!canAfford(path)) return; // route doesn't fit the main budget — no-op
+      for (const h of path) {
+        const n = nodeMap.get(h);
+        if (n && n.attr) attrChoice.set(h, primary);
+        allocated = _allocMod.allocate(adj, allocated, starts, h);
+      }
     }
+    decodedState = null;
     clearPathPreview();
     updatePoints();
     requestDraw();
@@ -989,7 +1080,11 @@ export default function init(canvas, data) {
       if ((na.asc != null) !== (nb.asc != null)) continue; // no main↔ascendancy spokes
       const state = lineState(na, nb);
       const solid = state === 'x';
-      ctx.strokeStyle = LINE_COLOR[state];
+      // An allocated connector touching the active set's nodes strokes in the
+      // set's accent (red/green) so the weapon-set branch reads at a glance.
+      const wsEdge = wsMode != null && solid &&
+        (wsAlloc[wsMode].has(na.h) || wsAlloc[wsMode].has(nb.h));
+      ctx.strokeStyle = wsEdge ? WS_COLOR[wsMode].line : LINE_COLOR[state];
       ctx.lineWidth = solid ? solidW : railW;
       ctx.beginPath();
       if (e.arc) {
@@ -1061,6 +1156,20 @@ export default function init(canvas, data) {
 
       const fk = FRAME_KEY[n.k];
       if (fk) drawSprite('frame', `frame:${fk[st]}`, n.x, n.y);
+
+      // Weapon-set ring: a node allocated in the active set gets an accent ring
+      // so it's distinct from shared/main allocations.
+      if (wsMode != null && wsAlloc[wsMode].has(n.h)) {
+        ctx.save();
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = WS_COLOR[wsMode].line;
+        ctx.lineWidth = Math.max(1.5, WS_RING_W * view.scale);
+        ctx.beginPath();
+        ctx.arc(sp.x, sp.y, radiusOf(n.k) * view.scale * 0.92, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
     }
     ctx.globalAlpha = 1;
     ctx.shadowBlur = 0;
@@ -1072,7 +1181,7 @@ export default function init(canvas, data) {
     if (!pathEdgeSet || !pathEdgeSet.size) return;
     ctx.save();
     ctx.lineCap = 'round';
-    ctx.strokeStyle = PATH_COLOR;
+    ctx.strokeStyle = pathColor();
     ctx.lineWidth = Math.max(2, PATH_LINE_W * view.scale);
     ctx.shadowColor = 'rgba(255, 243, 196, 0.8)';
     ctx.shadowBlur = 12 * view.scale;
@@ -1100,7 +1209,7 @@ export default function init(canvas, data) {
   function drawPathRings() {
     if (!pathNodeSet || !pathNodeSet.size) return;
     ctx.save();
-    ctx.strokeStyle = PATH_COLOR;
+    ctx.strokeStyle = pathColor();
     ctx.lineWidth = Math.max(1.5, PATH_RING_W * view.scale);
     ctx.shadowColor = 'rgba(255, 243, 196, 0.9)';
     ctx.shadowBlur = 16 * view.scale;
@@ -1138,10 +1247,10 @@ export default function init(canvas, data) {
     else ctx.rect(bx, by, bw, bh);
     ctx.fillStyle = 'rgba(20, 16, 8, 0.85)';
     ctx.fill();
-    ctx.strokeStyle = PATH_COLOR;
+    ctx.strokeStyle = pathColor();
     ctx.lineWidth = Math.max(1, dpr);
     ctx.stroke();
-    ctx.fillStyle = PATH_COLOR;
+    ctx.fillStyle = pathColor();
     ctx.textBaseline = 'top';
     ctx.fillText(label, bx + padX, by + padY);
     ctx.restore();
@@ -1287,20 +1396,23 @@ export default function init(canvas, data) {
 
     if (!hit) return;
 
-    // Weapon-set toggle mode.
-    if (weaponSetMode && hit.ws) {
-      if (!_allocMod) return;
-      weaponState = _allocMod.toggleSet(weaponState, hit.h, 2); // toggle set II
-      const mask = _allocMod.setMask(weaponState, hit.h);
-      if (mask === 0) {
-        allocated = _allocMod.deallocate(adj, allocated, starts, hit.h);
-        updatePoints();
+    // Weapon-set editing mode: clicks act on the active set's own pool, never the
+    // shared backbone (which is managed in the default mode).
+    if (wsMode != null) {
+      if (wsAlloc[wsMode].has(hit.h)) {
+        _wsDeallocateSync(hit.h); // cascades within the set
+      } else if (allocated.has(hit.h) || starts.includes(hit.h)) {
+        // Shared/anchor node — backbone, not editable from here. No-op.
+      } else {
+        // Same "route collapses into one click" behaviour, into the set's pool.
+        const path = computePath(hit.h);
+        if (path && path.length >= 2) _allocatePathSync(path);
+        else if (_canAllocateSync(hit.h)) _wsAllocateSync(hit.h);
       }
-      requestDraw();
       return;
     }
 
-    // Normal alloc/dealloc.
+    // Default mode — shared/main alloc/dealloc.
     if (allocated.has(hit.h)) {
       _deallocateSync(hit.h); // also clears any attribute pick (pruneAttrChoices)
       attrChoosing = null;
@@ -1364,13 +1476,20 @@ export default function init(canvas, data) {
   ro.observe(canvas);
 
   // ---------------------------------------------------------------------------
-  // Weapon-set mode toggle
+  // Weapon-set mode toggle (two buttons: I / II). Default = neither active =
+  // shared/main allocation. Clicking a set enters its editing mode; clicking the
+  // active set again returns to default. Switching sets is non-destructive.
   // ---------------------------------------------------------------------------
 
-  if (wsToggle) {
-    wsToggle.addEventListener('change', () => {
-      weaponSetMode = wsToggle.checked;
-    });
+  function setWsMode(mode) {
+    wsMode = wsMode === mode ? null : mode;
+    for (const b of wsBtns) b.classList.toggle('is-active', Number(b.dataset.wsSet) === wsMode);
+    clearPathPreview();   // frontier/pool changed → stale preview
+    updatePoints();       // counter "full" flag follows the active pool
+    requestDraw();        // re-tint edges/rings for the active set
+  }
+  for (const b of wsBtns) {
+    b.addEventListener('click', () => setWsMode(Number(b.dataset.wsSet)));
   }
 
   // ---------------------------------------------------------------------------
@@ -1506,7 +1625,10 @@ export default function init(canvas, data) {
       if (allocated.size && !window.confirm('Reset the tree? This clears all allocated passives.')) return;
       allocated = new Set();
       attrChoice.clear();
-      weaponState.clear();
+      wsAlloc[1].clear();
+      wsAlloc[2].clear();
+      wsMode = null;
+      for (const b of wsBtns) b.classList.remove('is-active');
       decodedState = null;
       starts = classRoot != null ? [classRoot] : [];
       if (activeAsc != null) {
@@ -1604,16 +1726,24 @@ export default function init(canvas, data) {
       const allocArr = [...allocated];
       const mainRecords = allocArr.map((h) => ({ hash: h, tag: null }));
 
+      // Weapon-set nodes as trailing records (ssType 0x01 + subType 0x02/0x03,
+      // matching the codec's weapon-set classification).
+      const wsArr = [...wsAlloc[1], ...wsAlloc[2]];
+      const trailing = [
+        ...[...wsAlloc[1]].map((h) => ({ hash: h, ssType: 0x01, subType: 0x02, tag: null })),
+        ...[...wsAlloc[2]].map((h) => ({ hash: h, ssType: 0x01, subType: 0x03, tag: null })),
+      ];
+
       const state = {
         version: 7,
         charClass: 10,
         ascendancy: 0,
         nodes: allocArr,
-        weaponSet: [],
+        weaponSet: wsArr,
         ascNodes: [],
         records: {
           main: mainRecords,
-          trailing: [],
+          trailing,
         },
       };
       return cm.encode(state);
@@ -1681,14 +1811,27 @@ export default function init(canvas, data) {
     starts = classRoot != null ? [classRoot] : [];
     if (ascRoot != null && !starts.includes(ascRoot)) starts.push(ascRoot);
 
-    // Mark all decoded nodes as allocated (excluding the class root itself —
-    // start nodes are always-present anchors, not in the allocated pool).
+    // Route weapon-set records into their per-set pools by subType (0x02 = Set I,
+    // 0x03 = Set II); everything else (main + ascendancy nodes) is shared/main.
+    const ws = { 1: new Set(), 2: new Set() };
+    for (const r of decoded.records?.trailing ?? []) {
+      if (r.subType === 0x02) ws[1].add(r.hash);
+      else if (r.subType === 0x03) ws[2].add(r.hash);
+    }
+    const weaponSetHashes = new Set([...ws[1], ...ws[2]]);
+
+    // Mark shared/main nodes as allocated (excluding the class root itself —
+    // start nodes are always-present anchors — and the weapon-set nodes).
     const newAllocated = new Set();
     const startSet = new Set(starts);
     for (const h of decodedNodeSet) {
-      if (!startSet.has(h)) newAllocated.add(h);
+      if (!startSet.has(h) && !weaponSetHashes.has(h)) newAllocated.add(h);
     }
     allocated = newAllocated;
+    wsAlloc[1] = ws[1];
+    wsAlloc[2] = ws[2];
+    wsMode = null;
+    for (const b of wsBtns) b.classList.remove('is-active');
 
     // Keep decoded state for round-trip encode.
     decodedState = decoded;

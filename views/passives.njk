@@ -28,16 +28,16 @@
       <div class="tree-panel-body">
         <div class="tree-panel-points" id="tree-points"></div>
 
-        {# Weapon Set: present but inert — divergent per-set passive pathing is a
-           follow-up. Rendered disabled so the panel matches the in-game layout. #}
+        {# Weapon Set: pick a set, then allocate its extra 25-point pool. Default
+           (neither active) allocates the shared main tree. Set I paths render
+           red, Set II green. #}
         <div class="tree-panel-row tree-panel-ws"
-             title="Weapon-set passive pathing — coming soon">
+             title="Allocate per-weapon-set passives — pick a set, then click nodes">
           <span class="tree-panel-label">Weapon Set</span>
-          <div class="tree-ws-sets" aria-hidden="true">
-            <button type="button" class="tree-ws-btn is-active" disabled>I</button>
-            <button type="button" class="tree-ws-btn" disabled>II</button>
+          <div class="tree-ws-sets" id="tree-ws-sets">
+            <button type="button" class="tree-ws-btn" data-ws-set="1">I</button>
+            <button type="button" class="tree-ws-btn" data-ws-set="2">II</button>
           </div>
-          <span class="tree-panel-soon">soon</span>
         </div>
 
         <label class="tree-panel-field">

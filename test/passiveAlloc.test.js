@@ -1,7 +1,10 @@
 // test/passiveAlloc.test.js
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { canAllocate, allocate, deallocate, pointsSpent, pointsNeeded, canAfford, setMask, toggleSet } from '../public/js/passive-alloc.js';
+import {
+  canAllocate, allocate, deallocate, pointsSpent, pointsNeeded, canAfford,
+  wsCanAllocate, wsAllocate, wsDeallocate, pruneWeaponSets, wsCanAfford,
+} from '../public/js/passive-alloc.js';
 
 // graph: 0-1-2-3 chain, start=0
 const adj = new Map([[0,[1]],[1,[0,2]],[2,[1,3]],[3,[2]]]);
@@ -80,14 +83,48 @@ test('canAfford treats a missing budget as unbounded', () => {
   assert.equal(canAfford(new Set([1, 2, 3]), kindOf, [4], {}), true);
 });
 
-test('setMask defaults to both (3) when unset', () => {
-  assert.equal(setMask(new Map(), 5), 3);
+// Weapon-set graph: main backbone 0(start)-1-2; extra reachable nodes 3-4 hang
+// off 2, and 5 hangs off 1.  Main tree = {1,2}, starts = [0].
+//   0:[1]  1:[0,2,5]  2:[1,3]  3:[2,4]  4:[3]  5:[1]
+const wsAdj = new Map([
+  [0, [1]], [1, [0, 2, 5]], [2, [1, 3]], [3, [2, 4]], [4, [3]], [5, [1]],
+]);
+const wsMain = new Set([1, 2]);
+const wsStarts = [0];
+
+test('wsCanAllocate: a weapon node must touch the shared frontier or same-set nodes', () => {
+  const empty = new Set();
+  assert.equal(wsCanAllocate(wsAdj, wsMain, wsStarts, empty, 3), true);  // 3 ↔ main 2
+  assert.equal(wsCanAllocate(wsAdj, wsMain, wsStarts, empty, 4), false); // 4 only ↔ 3 (not yet in set)
+  assert.equal(wsCanAllocate(wsAdj, wsMain, wsStarts, new Set([3]), 4), true); // now 4 ↔ set node 3
 });
 
-test('toggleSet flips a single set bit', () => {
-  let ws = new Map();
-  ws = toggleSet(ws, 5, 2); // remove set II -> only set I (1)
-  assert.equal(setMask(ws, 5), 1);
-  ws = toggleSet(ws, 5, 1); // remove set I too -> 0 (caller deallocates)
-  assert.equal(setMask(ws, 5), 0);
+test('wsCanAllocate: cannot weapon-allocate a node already in the shared/main tree', () => {
+  assert.equal(wsCanAllocate(wsAdj, wsMain, wsStarts, new Set(), 1), false); // 1 is shared
+});
+
+test('wsAllocate adds a reachable node and is a no-op for an unreachable one', () => {
+  assert.deepEqual([...wsAllocate(wsAdj, wsMain, wsStarts, new Set(), 3)], [3]);
+  assert.deepEqual([...wsAllocate(wsAdj, wsMain, wsStarts, new Set(), 4)], []); // unreachable
+});
+
+test('wsDeallocate cascades: removing a cut node frees what it orphaned', () => {
+  const set = new Set([3, 4]);             // 2(main)-3-4
+  assert.deepEqual([...wsDeallocate(wsAdj, wsMain, wsStarts, set, 3)], []); // 4 orphaned too
+  assert.deepEqual([...wsDeallocate(wsAdj, wsMain, wsStarts, set, 4)].sort((a, b) => a - b), [3]);
+});
+
+test('pruneWeaponSets re-anchors a set after the main tree shrinks', () => {
+  const set = new Set([3, 4]);             // both hang off main node 2
+  // Main tree loses node 2 → 3 and 4 are no longer reachable from {1} ∪ starts.
+  assert.deepEqual([...pruneWeaponSets(wsAdj, new Set([1]), wsStarts, set)], []);
+  // Node 5 hangs off main node 1, which survives.
+  assert.deepEqual([...pruneWeaponSets(wsAdj, new Set([1]), wsStarts, new Set([5]))], [5]);
+});
+
+test('wsCanAfford gates a weapon set against its own 25-point budget', () => {
+  assert.equal(wsCanAfford(new Set([1, 2, 3]), 1, 25), true);
+  const full = new Set(Array.from({ length: 25 }, (_, i) => i + 1));
+  assert.equal(wsCanAfford(full, 1, 25), false);
+  assert.equal(wsCanAfford(full, 0, 25), true);
 });

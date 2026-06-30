@@ -410,7 +410,7 @@ body {
 .passive-tree-input::placeholder { color: var(--text-muted, #9a8f7a); opacity: 0.7; }
 
 /* Weapon-set row (inert placeholder for the follow-up). */
-.tree-panel-ws { display: flex; align-items: center; gap: 8px; opacity: 0.55; }
+.tree-panel-ws { display: flex; align-items: center; gap: 8px; }
 .tree-panel-ws .tree-panel-label { flex: 1; }
 .tree-ws-sets { display: flex; gap: 2px; }
 .tree-ws-btn {
@@ -421,9 +421,12 @@ body {
   border: 1px solid var(--border);
   border-radius: 3px;
   font-family: var(--font-display);
-  cursor: default;
+  cursor: pointer;
 }
-.tree-ws-btn.is-active { color: var(--color-unique, #c9aa71); border-color: var(--color-unique, #c9aa71); }
+.tree-ws-btn:hover { border-color: var(--text-muted, #9a8f7a); }
+/* Active set glows in its accent — Set I red, Set II green (matches the tree). */
+.tree-ws-btn[data-ws-set="1"].is-active { color: #ff8a80; border-color: #e0584e; box-shadow: inset 0 0 0 1px #e0584e; }
+.tree-ws-btn[data-ws-set="2"].is-active { color: #9be8a6; border-color: #5bbf6a; box-shadow: inset 0 0 0 1px #5bbf6a; }
 .tree-panel-soon {
   font-size: 10px;
   text-transform: uppercase;

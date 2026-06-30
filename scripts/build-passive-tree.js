@@ -96,6 +96,7 @@ export function buildArtifact() {
       extent,
       pointBudget: 122,
       ascendancyBudget: 8,
+      weaponSetBudget: 25,
       atlas: {
         img: ATLAS_IMG,
         map: ATLAS_MAP,

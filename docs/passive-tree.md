@@ -244,11 +244,35 @@ classStarts, classes, ascStarts, ascByClass, ascArt, extent}`:
   inherited via the shared class-slot index and are zeroed in `gggTree.js` — do
   not re-apply them (they shove the figure off the MainCircle).
 
+## Weapon-set passives
+
+Two **extra 25-point pools**, one per weapon set, allocated independently and
+overlaid on the shared main tree (PoE2's Weapon Set Passive Skills). Spec:
+`docs/superpowers/specs/2026-06-29-weapon-set-passives-design.md`.
+
+- **Three layers:** `allocated` (shared/main, 122), `wsAlloc[1]`, `wsAlloc[2]`
+  (25 each). A node lives in at most one layer. There is **no per-node weapon-set
+  flag in GGG data** (`ws` is 0 everywhere) — any reachable passive can be
+  weapon-set allocated; "which set" is an *allocation* property, not a node one.
+- **Connectivity (pure, `passive-alloc.js`, node-tested):** a Set-_k_ node must
+  touch `allocated ∪ starts ∪ wsAlloc[k]` — roots in the shared tree, chains
+  within its own set, never through the other set (`wsCanAllocate`). Removing a
+  main node re-anchors both sets (`pruneWeaponSets`); `wsDeallocate` cascades
+  within a set. Budget gated by `wsCanAfford` against `meta.weaponSetBudget` (25).
+- **Editing model:** two buttons (`#tree-ws-sets [data-ws-set]`) set `wsMode ∈
+  {null,1,2}`. Default (null) edits the shared tree; clicking a set enters its
+  mode (re-click to exit). In Set-_k_ mode the shared tree shows normally, the
+  set's nodes get an accent ring + colored connectors (`WS_COLOR`: 1=red, 2=green),
+  the other set's nodes appear unallocated, and the shortest-path preview tints to
+  the set colour. View state is `viewAllocated()`; the path frontier + budget
+  follow `wsMode`.
+- **Share code:** the v7 codec already round-trips weapon-set records (subType
+  `0x02`/`0x03`); import routes them into `wsAlloc[1/2]`, export emits them. Any
+  edit clears `decodedState` so Copy Share Code rebuilds from current state.
+
 ## Known gaps / deferrals
 
 - **Masteries** excluded (TODO #7).
-- **Weapon-set mode** is inert — GGG node data has no per-node weapon-set flag, so
-  `ws` is 0 everywhere.
 - **Ascendancy placement & class/ascendancy selector** — done (TODO #6). Clusters
   are centred on their class start and hidden until selected; see Build + Renderer.
 - **Textured connectors** — deferred in favour of stroked lines.
