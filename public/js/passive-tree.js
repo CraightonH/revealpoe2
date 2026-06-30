@@ -88,6 +88,14 @@ const LINE_RAIL_OFF = 4.4; // centreline → rail offset (half the rail spacing)
 // in. Width ≈ the rail pair's outer span so thickness doesn't jump on allocate.
 const LINE_SOLID_W = 11; // world units
 
+// Shortest-path preview (hover a node → its fastest route from the allocated
+// frontier glows; clicking allocates the whole route). A bright white-gold,
+// distinct from both the solid-gold *allocated* state and the dim *allocatable*
+// rails so it reads as "preview, not committed".
+const PATH_COLOR = '#fff3c4';
+const PATH_LINE_W = 7;   // world units (~1.5× a rail pair's span)
+const PATH_RING_W = 5;   // node-ring stroke, world units
+
 // When a generic-attribute node is allocated with a chosen stat, GGG swaps the
 // icon to a dedicated per-attribute sprite (red Strength / green Dexterity /
 // blue Intelligence cross), not a flat colour overlay — these live in the same
@@ -350,6 +358,14 @@ export default function init(canvas, data) {
   // of every node hash matching that stat (allocated or not, like search). Drawn
   // *over* searchHits (hover wins) so it doesn't disturb an active search query.
   let hoverHits = null;
+  // Shortest-path preview: the route from the allocated frontier to the hovered
+  // node. `pathNodes` = ordered hashes that would be newly allocated (target
+  // last); `pathNodeSet`/`pathEdgeSet` are draw-time lookups; `pathTarget` is the
+  // hovered node it was computed for (so we only recompute when it changes).
+  let pathNodes = null;
+  let pathNodeSet = null;
+  let pathEdgeSet = null;
+  let pathTarget = null;
   // Hover-to-highlight bookkeeping for the stat panel. `templateIndex` maps a
   // number-less stat template → every node hash carrying it (built once from the
   // stat artifact); `hoverSets` is the per-rendered-line lookup; the timer
@@ -706,10 +722,16 @@ export default function init(canvas, data) {
   // lazily so tests that import only passive-tree.js don't require them.
   let _allocMod = null;
   let _codeMod  = null;
+  let _pathMod  = null;
 
   async function allocMod() {
     if (!_allocMod) _allocMod = await import('./passive-alloc.js');
     return _allocMod;
+  }
+
+  async function pathMod() {
+    if (!_pathMod) _pathMod = await import('./passive-path.js');
+    return _pathMod;
   }
 
   async function codeMod() {
@@ -731,6 +753,7 @@ export default function init(canvas, data) {
     if (!_allocMod) return;
     allocated = _allocMod.allocate(adj, allocated, starts, h);
     pruneAttrChoices();
+    clearPathPreview(); // frontier changed → stale preview
     updatePoints();
     requestDraw();
   }
@@ -739,6 +762,7 @@ export default function init(canvas, data) {
     if (!_allocMod) return;
     allocated = _allocMod.deallocate(adj, allocated, starts, h);
     pruneAttrChoices();
+    clearPathPreview(); // frontier changed → stale preview
     updatePoints();
     requestDraw();
   }
@@ -748,6 +772,79 @@ export default function init(canvas, data) {
   // Str/Int/Dex menu (the respec path: unallocate, then reallocate + re-pick).
   function pruneAttrChoices() {
     for (const h of attrChoice.keys()) if (!allocated.has(h)) attrChoice.delete(h);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Shortest-path preview + one-click path allocation
+  // ---------------------------------------------------------------------------
+
+  // The active class's dominant base attribute — the default for path-allocated
+  // generic "+5 to any Attribute" nodes (derived at build time; see classArt).
+  function classPrimaryAttr() {
+    return (classArt && activeClass && classArt[activeClass]?.attr) || ATTR_DEFAULT;
+  }
+
+  const edgeKey = (a, b) => (a < b ? `${a}|${b}` : `${b}|${a}`);
+
+  // Shortest route from the allocated frontier (allocated ∪ starts) to `hash`,
+  // through visible/unlocked nodes, fewest points (attr-filler tie-break). Null
+  // if the module isn't loaded yet, or the node is already taken / unreachable.
+  function computePath(hash) {
+    if (!_pathMod) return null;
+    const sources = new Set(allocated);
+    for (const s of starts) sources.add(s);
+    return _pathMod.shortestPath(adj, sources, hash, {
+      isPathable: (h) => { const n = nodeMap.get(h); return !!n && nodeVisible(n); },
+      isAttr: (h) => !!nodeMap.get(h)?.attr,
+    });
+  }
+
+  function clearPathPreview() {
+    if (!pathNodes) { pathTarget = null; return; }
+    pathNodes = pathNodeSet = pathEdgeSet = null;
+    pathTarget = null;
+    requestDraw();
+  }
+
+  // Recompute the preview for the hovered node. No preview for the empty cursor,
+  // already-allocated/anchor nodes, or before the path module loads. Recomputes
+  // only when the target changes (cheap, but cheaper still to skip).
+  function updatePathPreview(target) {
+    if (!_pathMod || !target ||
+        allocated.has(target.h) || starts.includes(target.h)) {
+      clearPathPreview();
+      return;
+    }
+    if (target.h === pathTarget) return; // already computed for this node
+    const path = computePath(target.h);
+    pathTarget = target.h;
+    if (!path) { pathNodes = pathNodeSet = pathEdgeSet = null; requestDraw(); return; }
+    pathNodes = path;
+    pathNodeSet = new Set(path);
+    // Edge set: each consecutive pair, plus the entry edge from the frontier node
+    // that path[0] hangs off (so the route visibly connects to the allocated tree).
+    pathEdgeSet = new Set();
+    for (let i = 0; i + 1 < path.length; i++) pathEdgeSet.add(edgeKey(path[i], path[i + 1]));
+    for (const nb of adj.get(path[0]) ?? []) {
+      if (allocated.has(nb) || starts.includes(nb)) { pathEdgeSet.add(edgeKey(path[0], nb)); break; }
+    }
+    requestDraw();
+  }
+
+  // Allocate every node on the previewed path in order (each becomes allocatable
+  // once its predecessor is taken). Generic-attribute nodes default to the class
+  // primary attribute; they stay re-pickable via the usual node-click respec.
+  function _allocatePathSync(path) {
+    if (!_allocMod || !path || !path.length) return;
+    const primary = classPrimaryAttr();
+    for (const h of path) {
+      const n = nodeMap.get(h);
+      if (n && n.attr) attrChoice.set(h, primary);
+      allocated = _allocMod.allocate(adj, allocated, starts, h);
+    }
+    clearPathPreview();
+    updatePoints();
+    requestDraw();
   }
 
   // ---------------------------------------------------------------------------
@@ -763,7 +860,9 @@ export default function init(canvas, data) {
 
     drawCentre();
     drawEdges(W, H);
+    drawPathEdges();      // preview route under the node frames (like allocated lines)
     drawNodes(W, H);
+    drawPathRings();      // preview node rings + cost label on top
 
     ctx.restore();
   }
@@ -949,6 +1048,87 @@ export default function init(canvas, data) {
     ctx.shadowBlur = 0;
   }
 
+  // Preview route connectors — bright white-gold over the normal edges, reusing
+  // GGG's exact arc/line geometry so the highlight tracks the real connectors.
+  function drawPathEdges() {
+    if (!pathEdgeSet || !pathEdgeSet.size) return;
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = PATH_COLOR;
+    ctx.lineWidth = Math.max(2, PATH_LINE_W * view.scale);
+    ctx.shadowColor = 'rgba(255, 243, 196, 0.8)';
+    ctx.shadowBlur = 12 * view.scale;
+    for (const e of edges) {
+      if (!pathEdgeSet.has(edgeKey(e.a, e.b))) continue;
+      const na = nodeMap.get(e.a), nb = nodeMap.get(e.b);
+      if (!na || !nb) continue;
+      ctx.beginPath();
+      if (e.arc) {
+        const arc = e.arc;
+        const c = worldToScreen(view, arc.cx, arc.cy);
+        ctx.arc(c.x, c.y, arc.r * view.scale, arc.a0, arc.a1, arc.ccw);
+      } else {
+        const sa = worldToScreen(view, na.x, na.y);
+        const sb = worldToScreen(view, nb.x, nb.y);
+        ctx.moveTo(sa.x, sa.y); ctx.lineTo(sb.x, sb.y);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // Preview node rings (one per node that would be allocated) + a "+N pts" pill
+  // on the target so the click's cost is visible before committing.
+  function drawPathRings() {
+    if (!pathNodeSet || !pathNodeSet.size) return;
+    ctx.save();
+    ctx.strokeStyle = PATH_COLOR;
+    ctx.lineWidth = Math.max(1.5, PATH_RING_W * view.scale);
+    ctx.shadowColor = 'rgba(255, 243, 196, 0.9)';
+    ctx.shadowBlur = 16 * view.scale;
+    for (const h of pathNodeSet) {
+      const n = nodeMap.get(h);
+      if (!n) continue;
+      const sp = worldToScreen(view, n.x, n.y);
+      ctx.beginPath();
+      ctx.arc(sp.x, sp.y, radiusOf(n.k) * view.scale * 0.92, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+    drawPathCost();
+  }
+
+  function drawPathCost() {
+    if (!pathNodes || !pathNodes.length || pathTarget == null) return;
+    const target = nodeMap.get(pathTarget);
+    if (!target) return;
+    // Font/padding in buffer pixels so the pill reads at a constant CSS size on
+    // HiDPI (the drawing buffer is CSS px × devicePixelRatio).
+    const dpr = canvas.width / (canvas.clientWidth || canvas.width) || 1;
+    const fs = 13 * dpr, padX = 6 * dpr, padY = 3 * dpr;
+    const n = pathNodes.length;
+    const label = `+${n} pt${n === 1 ? '' : 's'}`;
+    const sp = worldToScreen(view, target.x, target.y);
+    const r = radiusOf(target.k) * view.scale;
+    ctx.save();
+    ctx.font = `600 ${fs}px system-ui, -apple-system, sans-serif`;
+    const tw = ctx.measureText(label).width;
+    const bw = tw + padX * 2, bh = fs + padY * 2;
+    const bx = sp.x + r * 0.7, by = sp.y - r * 0.7 - bh;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(bx, by, bw, bh, 4 * dpr);
+    else ctx.rect(bx, by, bw, bh);
+    ctx.fillStyle = 'rgba(20, 16, 8, 0.85)';
+    ctx.fill();
+    ctx.strokeStyle = PATH_COLOR;
+    ctx.lineWidth = Math.max(1, dpr);
+    ctx.stroke();
+    ctx.fillStyle = PATH_COLOR;
+    ctx.textBaseline = 'top';
+    ctx.fillText(label, bx + padX, by + padY);
+    ctx.restore();
+  }
+
   // ---------------------------------------------------------------------------
   // Interaction: pan + zoom
   // ---------------------------------------------------------------------------
@@ -1009,6 +1189,7 @@ export default function init(canvas, data) {
       if (!dragMoved && (Math.abs(cssDx) > 3 || Math.abs(cssDy) > 3)) {
         dragMoved = true;
         hideTip(); // a real pan has begun → dismiss the hover card
+        clearPathPreview(); // …and the path preview
       }
       if (dragMoved) {
         view.ox = dragStart.ox + cssDx * (canvas.width  / r.width);
@@ -1058,8 +1239,10 @@ export default function init(canvas, data) {
       } else if (t.popperInstance) {
         t.popperInstance.update(); // keep anchored while panning
       }
+      updatePathPreview(best); // hover route from the allocated frontier
     } else {
       scheduleHide();
+      clearPathPreview();
     }
   });
 
@@ -1103,13 +1286,22 @@ export default function init(canvas, data) {
     if (allocated.has(hit.h)) {
       _deallocateSync(hit.h); // also clears any attribute pick (pruneAttrChoices)
       attrChoosing = null;
-    } else if (hit.attr && _canAllocateSync(hit.h)) {
-      // Generic-attribute node: a node-body click doesn't allocate — it opens
-      // the Str/Int/Dex picker in the card. Allocation happens when the player
-      // clicks a specific option (onAttrOptionClick).
-      attrChoosing = hit.h;
-    } else if (_canAllocateSync(hit.h)) {
-      _allocateSync(hit.h);
+    } else {
+      // A multi-node shortest route collapses into a single click (the "fewer
+      // clicks" win); attr nodes on it default to the class primary attribute.
+      // A length-1 route (target directly adjacent) falls through to the existing
+      // single-step behaviour so the attr picker is preserved for adjacent clicks.
+      const path = computePath(hit.h);
+      if (path && path.length >= 2) {
+        _allocatePathSync(path);
+      } else if (hit.attr && _canAllocateSync(hit.h)) {
+        // Generic-attribute node: a node-body click doesn't allocate — it opens
+        // the Str/Int/Dex picker in the card. Allocation happens when the player
+        // clicks a specific option (onAttrOptionClick).
+        attrChoosing = hit.h;
+      } else if (_canAllocateSync(hit.h)) {
+        _allocateSync(hit.h);
+      }
     }
     // Keep the hovered attribute card in sync (resting/menu/chosen) after the click.
     if (hit.attr && tip && hoverHash === hit.h) paintAttrChoice(tip.popper, hit.h);
@@ -1119,11 +1311,13 @@ export default function init(canvas, data) {
     dragging  = false;
     dragMoved = false;
     scheduleHide();
+    clearPathPreview();
   });
 
   canvas.addEventListener('pointerleave', () => {
     // Delay so the cursor can travel into the (interactive) card without it closing.
     scheduleHide();
+    clearPathPreview();
   });
 
   // Resize: keep canvas pixel-matched to its CSS size.
@@ -1545,8 +1739,8 @@ export default function init(canvas, data) {
   // Atlases load lazily via atlas(); each triggers requestDraw() on load, so no
   // per-node icon preloading is needed.
 
-  // Load alloc + code modules eagerly so click handlers have them ready.
-  Promise.all([allocMod(), codeMod()]).then(() => {
+  // Load alloc + code (+ path) modules eagerly so click handlers have them ready.
+  Promise.all([allocMod(), codeMod(), pathMod()]).then(() => {
     // Attempt hash import after modules are ready.
     importFromHash().catch((err) => console.warn('[passive-tree] importFromHash error:', err));
     // Initial draw.

@@ -200,6 +200,32 @@ classStarts, classes, ascStarts, ascByClass, ascArt, extent}`:
     longest number-free phrase; attribute lines → "any attribute"), so the highlight
     survives the cursor leaving and reads as a normal, editable/clearable search.
     Hovering other lines still previews over the pin (hover wins, then reverts).
+- **Shortest-path preview + one-click allocation** (`public/js/passive-path.js`,
+  pure + node-tested in `test/passivePath.test.js`): hovering an unallocated node
+  highlights the fastest route to it from the allocated frontier (`allocated ∪
+  starts`), and **clicking allocates the whole route in one click**.
+  - `shortestPath(adj, sources, target, {isPathable, isAttr})` is a multi-source
+    BFS (lexicographic-cost Dijkstra over a min-heap) minimising **node count =
+    passive points**, tie-broken to route through the **fewest generic
+    "+5 to any Attribute" filler nodes** when two routes are the same length —
+    so a free detour around filler is taken but the path is *never* lengthened.
+    Returns the ordered hashes that would be newly allocated (target last), or
+    null if the target is already allocated / unreachable.
+  - The renderer passes `isPathable = nodeVisible` so routes never cross hidden
+    roots, unsatisfied unlock-gated nodes, or non-active ascendancy clusters, and
+    `isAttr = !!node.attr`. The preview is recomputed in the `pointermove`
+    hit-test only when the hovered node changes (`pathTarget`), and cleared on
+    pan / leave / alloc / dealloc. `drawPathEdges()` strokes the route over the
+    normal connectors (reusing GGG's exact arc geometry) in a bright white-gold
+    (`PATH_COLOR`); `drawPathRings()` rings each route node and draws a `+N pts`
+    cost pill on the target.
+  - **Click rule:** a route of length **≥ 2** collapses into one click
+    (`_allocatePathSync` — generic-attribute nodes on it default to the class's
+    **primary attribute**, `classArt[class].attr`, derived at build time as the
+    argmax of base str/dex/int; each stays re-pickable via the usual node-click
+    respec). A length-1 route (target directly adjacent) **falls through to the
+    existing single-step behaviour**, so the attribute picker is preserved for
+    adjacent attribute-node clicks. Scope: allocation-only (no dealloc preview).
 - **Hit-testing** uses fixed per-kind world radii (`KIND_RADIUS`, = half the GGG
   frame sprite native size); drawing sizes come from the atlas directly.
 - Allocation/encoding (`passive-alloc.js`, `passive-code.js`), pan/zoom, and the
@@ -236,6 +262,7 @@ classStarts, classes, ascStarts, ascByClass, ascArt, extent}`:
 | `scripts/build-passive-tree.js` | emit render artifact + cards + atlas-map copy |
 | `public/js/passive-tree.js` | canvas renderer (atlases, connectors, allocation, stat panel) |
 | `public/js/passive-stats-agg.js` | pure stat aggregation (strip→templatize→sum→categorize) |
+| `public/js/passive-path.js` | pure shortest-path finder (hover preview + one-click path allocation) |
 | `data/source/ggg-poe2/` | cached GGG data + atlas maps (gitignored) |
 | `public/img/passive-atlas/` | self-hosted atlas images (gitignored) |
 | `scripts/graph/passives.js` + `src/data/passiveTree.js` | **RePoE** passive pages/relationships (unchanged) |

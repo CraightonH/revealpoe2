@@ -35,6 +35,14 @@ const ATLAS_MAP = '/static/generated/passive-atlas'; // <name>.json (copied belo
 // GGG icon paths are .png; the same art is mirrored as webp via ggpk (.dds key).
 const iconWebp = (icon) => (icon ? ddsUrl(icon.replace(/\.png$/i, '.dds')) : null);
 
+// Dominant base attribute of a class → the default attribute for path-allocated
+// generic "+5 to any Attribute" nodes. Argmax of base str/dex/int, ties str>dex>int.
+function primaryAttr(str = 0, dex = 0, int = 0) {
+  if (str >= dex && str >= int) return 'str';
+  if (dex >= int) return 'dex';
+  return 'int';
+}
+
 export function buildArtifact() {
   const { nodes, edges, classStarts, classes, ascStarts, ascByClass, ascArt, extent } = parseGggTree();
 
@@ -50,6 +58,10 @@ export function buildArtifact() {
       offsetX: c.offsetX,
       offsetY: c.offsetY,
       start: c.start,
+      // Dominant base attribute (argmax of base str/dex/int), the default for
+      // path-allocated generic "+5 to any Attribute" nodes. Derived, not a
+      // hand table, so it tracks GGG's class stats across patches. Ties → str>dex>int.
+      attr: primaryAttr(c.str, c.dex, c.int),
     };
   }
 
