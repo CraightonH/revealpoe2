@@ -546,6 +546,7 @@ export default function init(canvas, data) {
     if (!n || !n.attr) return;
     if (allocated.has(h)) return;     // locked once selected — respec via node click
     if (!_canAllocateSync(h)) return; // not reachable from the allocated tree yet
+    if (!canAfford([h])) return;      // out of passive points — don't record a pick
     attrChoice.set(h, opt.getAttribute('data-attr'));
     _allocateSync(h);
     attrChoosing = null;
@@ -557,14 +558,29 @@ export default function init(canvas, data) {
     return nodeMap.get(h)?.k ?? '';
   }
 
+  // Allocation budgets: two independent pools (main passive points + ascendancy
+  // points). Undefined = unbounded (pre-budget artifact / staleness safety).
+  function budgets() {
+    return { main: meta.pointBudget ?? Infinity, ascendancy: meta.ascendancyBudget ?? Infinity };
+  }
+
+  // Whether the given new-node hashes fit in the remaining budget (all-or-nothing).
+  function canAfford(hashes) {
+    if (!_allocMod) return false;
+    return _allocMod.canAfford(allocated, nodeKindOf, hashes, budgets());
+  }
+
   function updatePoints() {
     if (!_allocMod) return;
     if (pointsEl) {
       const { main, ascendancy } = _allocMod.pointsSpent(allocated, nodeKindOf);
-      const budget = meta.pointBudget ?? 0;
-      pointsEl.textContent = budget
-        ? `${main} / ${budget} points · ${ascendancy} ascendancy`
-        : `${main} points · ${ascendancy} ascendancy`;
+      const b = budgets();
+      const mainTxt = b.main === Infinity ? `${main} points` : `${main} / ${b.main} points`;
+      const ascTxt  = b.ascendancy === Infinity
+        ? `${ascendancy} ascendancy`
+        : `${ascendancy} / ${b.ascendancy} ascendancy`;
+      pointsEl.textContent = `${mainTxt} · ${ascTxt}`;
+      pointsEl.classList.toggle('points-full', main >= b.main || ascendancy >= b.ascendancy);
     }
     renderStats();
   }
@@ -751,6 +767,7 @@ export default function init(canvas, data) {
 
   function _allocateSync(h) {
     if (!_allocMod) return;
+    if (!canAfford([h])) return; // out of points for this pool — no-op
     allocated = _allocMod.allocate(adj, allocated, starts, h);
     pruneAttrChoices();
     clearPathPreview(); // frontier changed → stale preview
@@ -836,6 +853,7 @@ export default function init(canvas, data) {
   // primary attribute; they stay re-pickable via the usual node-click respec.
   function _allocatePathSync(path) {
     if (!_allocMod || !path || !path.length) return;
+    if (!canAfford(path)) return; // route doesn't fit the remaining budget — no-op
     const primary = classPrimaryAttr();
     for (const h of path) {
       const n = nodeMap.get(h);

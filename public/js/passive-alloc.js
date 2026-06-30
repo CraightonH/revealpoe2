@@ -46,6 +46,27 @@ export function pointsSpent(allocated, nodeKindOf) {
   return { main, ascendancy };
 }
 
+// Points a candidate set of node hashes (about to be allocated) would consume,
+// split into the same two pools as pointsSpent.
+export function pointsNeeded(hashes, nodeKindOf) {
+  let main = 0, ascendancy = 0;
+  for (const h of hashes) {
+    if ((nodeKindOf(h) || '').startsWith('asc')) ascendancy += 1;
+    else main += 1;
+  }
+  return { main, ascendancy };
+}
+
+// Whether allocating `hashes` would keep both pools within budget. The pools are
+// independent (main passive points vs. ascendancy points). A missing/undefined
+// budget pool is treated as unbounded. Allocation is all-or-nothing per call.
+export function canAfford(allocated, nodeKindOf, hashes, budgets) {
+  const spent = pointsSpent(allocated, nodeKindOf);
+  const need = pointsNeeded(hashes, nodeKindOf);
+  return spent.main + need.main <= (budgets.main ?? Infinity) &&
+         spent.ascendancy + need.ascendancy <= (budgets.ascendancy ?? Infinity);
+}
+
 export function setMask(weaponState, hash) {
   return weaponState.has(hash) ? weaponState.get(hash) : 3;
 }

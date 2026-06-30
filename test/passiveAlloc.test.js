@@ -1,7 +1,7 @@
 // test/passiveAlloc.test.js
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { canAllocate, allocate, deallocate, pointsSpent, setMask, toggleSet } from '../public/js/passive-alloc.js';
+import { canAllocate, allocate, deallocate, pointsSpent, pointsNeeded, canAfford, setMask, toggleSet } from '../public/js/passive-alloc.js';
 
 // graph: 0-1-2-3 chain, start=0
 const adj = new Map([[0,[1]],[1,[0,2]],[2,[1,3]],[3,[2]]]);
@@ -51,6 +51,33 @@ test('pointsSpent splits main vs ascendancy pools', () => {
   const kindOf = (h) => ({ 1: 'small', 2: 'notable', 10: 'ascSmall', 11: 'ascNotable' }[h]);
   const res = pointsSpent(new Set([1, 2, 10, 11]), kindOf);
   assert.deepEqual(res, { main: 2, ascendancy: 2 });
+});
+
+test('pointsNeeded splits a candidate set of hashes into pools', () => {
+  const kindOf = (h) => ({ 1: 'small', 2: 'keystone', 10: 'ascSmall', 11: 'ascNotable' }[h]);
+  assert.deepEqual(pointsNeeded([1, 2, 10], kindOf), { main: 2, ascendancy: 1 });
+  assert.deepEqual(pointsNeeded([], kindOf), { main: 0, ascendancy: 0 });
+});
+
+test('canAfford gates main pool against its budget', () => {
+  const kindOf = (h) => 'small';
+  const allocated = new Set([1, 2]); // 2 main spent
+  const budgets = { main: 3, ascendancy: 8 };
+  assert.equal(canAfford(allocated, kindOf, [3], budgets), true);     // 2+1 <= 3
+  assert.equal(canAfford(allocated, kindOf, [3, 4], budgets), false); // 2+2  > 3
+});
+
+test('canAfford gates the ascendancy pool independently of main', () => {
+  const kindOf = (h) => (h >= 10 ? 'ascSmall' : 'small');
+  const allocated = new Set([10, 11, 12, 13, 14, 15, 16, 17]); // 8 asc spent (full)
+  const budgets = { main: 122, ascendancy: 8 };
+  assert.equal(canAfford(allocated, kindOf, [18], budgets), false); // asc full
+  assert.equal(canAfford(allocated, kindOf, [1], budgets), true);   // main has room
+});
+
+test('canAfford treats a missing budget as unbounded', () => {
+  const kindOf = (h) => 'small';
+  assert.equal(canAfford(new Set([1, 2, 3]), kindOf, [4], {}), true);
 });
 
 test('setMask defaults to both (3) when unset', () => {

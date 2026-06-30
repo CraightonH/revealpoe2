@@ -386,6 +386,7 @@ body {
   border-bottom: 1px solid var(--border);
   padding-bottom: 8px;
 }
+.tree-panel-points.points-full { color: var(--color-danger, #d9534f); }
 .tree-panel-field { display: flex; flex-direction: column; gap: 3px; }
 .tree-panel-label {
   font-size: 11px;
