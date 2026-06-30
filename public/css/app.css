@@ -494,6 +494,13 @@ body {
   transition: background-color 0.12s ease;
 }
 .tree-stats-line:hover { background: color-mix(in srgb, var(--color-unique, #c9aa71) 14%, transparent); }
+/* Pinned stat (its highlight lives in the search bar). Persistent, with a gold
+   rail so it reads as selected, not merely hovered. */
+.tree-stats-line.selected {
+  background: color-mix(in srgb, var(--color-unique, #c9aa71) 22%, transparent);
+  box-shadow: inset 2px 0 0 var(--color-unique, #c9aa71);
+}
+.tree-stats-line.selected .num { color: #fff; }
 .tree-stats-line .num { color: #fff; font-weight: 600; }
 .tree-stats-uniq .tree-stats-line { color: var(--color-unique, #c9aa71); }
 .tree-stats-uniq .tree-stats-line .xn { color: var(--text-muted, #9a8f7a); font-weight: 600; }

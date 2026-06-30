@@ -357,9 +357,14 @@ export default function init(canvas, data) {
   let templateIndex = null;
   let hoverSets = [];
   let hoverQueries = [];
+  let hoverTemplates = [];
   let hoverTimer = null;
   let hoverIdx = -1;
   const HOVER_DELAY = 500;
+  // The template of the stat line currently pinned into the search box (null =
+  // none). Tracked by template (not data-hl index) so the `.selected` marker
+  // survives panel re-renders, and so a click on the same stat can toggle it off.
+  let pinnedTemplate = null;
   const SEARCH_URL = '/static/generated/passive-search.json';
   function loadSearchIndex() {
     if (searchIndex) return Promise.resolve(searchIndex);
@@ -605,27 +610,31 @@ export default function init(canvas, data) {
 
     hoverSets = [];
     hoverQueries = [];
-    // Register a rendered line's highlight set + its pin-to-search query, and
-    // return its data-hl attribute (the index into both arrays).
+    hoverTemplates = [];
+    // Register a rendered line's highlight set + pin-to-search query + template,
+    // and return the `class`/`data-hl` attributes (data-hl indexes the arrays).
+    // The currently pinned template renders with the `.selected` marker.
     const tag = (template) => {
       const set = templateIndex.get(template);
       const i = hoverSets.length;
       hoverSets.push(set && set.size ? set : null);
       hoverQueries.push(_aggMod.templateToQuery(template));
-      return `data-hl="${i}"`;
+      hoverTemplates.push(template);
+      const sel = template === pinnedTemplate ? ' selected' : '';
+      return `class="tree-stats-line${sel}" data-hl="${i}"`;
     };
 
     let html = '';
     for (const cat of categories) {
       html += `<div class="tree-stats-cat"><div class="tree-stats-cat-head">${escHtml(cat.name)}</div>`;
-      for (const l of cat.lines) html += `<div class="tree-stats-line" ${tag(l.template)}>${numHtml(l.text)}</div>`;
+      for (const l of cat.lines) html += `<div ${tag(l.template)}>${numHtml(l.text)}</div>`;
       html += '</div>';
     }
     if (uniqueEffects.length) {
       html += '<div class="tree-stats-cat tree-stats-uniq"><div class="tree-stats-cat-head">Unique Effects</div>';
       for (const u of uniqueEffects) {
         const xn = u.count > 1 ? ` <span class="xn">×${u.count}</span>` : '';
-        html += `<div class="tree-stats-line" ${tag(u.template)}>${escHtml(u.text)}${xn}</div>`;
+        html += `<div ${tag(u.template)}>${escHtml(u.text)}${xn}</div>`;
       }
       html += '</div>';
     }
@@ -637,6 +646,12 @@ export default function init(canvas, data) {
   function clearStatHover() {
     clearTimeout(hoverTimer); hoverTimer = null; hoverIdx = -1;
     if (hoverHits) { hoverHits = null; requestDraw(); }
+  }
+  // Drop the pinned-stat marker (the search highlight itself is cleared by the
+  // caller). Used on deselect and when the user edits the search box by hand.
+  function unmarkSelected() {
+    pinnedTemplate = null;
+    if (statsListEl) for (const el of statsListEl.querySelectorAll('.tree-stats-line.selected')) el.classList.remove('selected');
   }
   if (statsListEl) {
     statsListEl.addEventListener('pointerover', (e) => {
@@ -664,8 +679,20 @@ export default function init(canvas, data) {
       const set = hoverSets[i];
       if (!set || !set.size) return;
       clearStatHover();
-      searchHits = set;
-      if (searchInput) searchInput.value = hoverQueries[i] || '';
+      const tpl = hoverTemplates[i];
+      if (tpl && tpl === pinnedTemplate) {
+        // Clicking the already-pinned stat toggles it off: clear search + marker.
+        unmarkSelected();
+        searchHits = null;
+        if (searchInput) searchInput.value = '';
+      } else {
+        // Pin this stat: replace any prior selection + search highlight.
+        unmarkSelected();
+        pinnedTemplate = tpl;
+        line.classList.add('selected');
+        searchHits = set;
+        if (searchInput) searchInput.value = hoverQueries[i] || '';
+      }
       requestDraw();
     });
   }
@@ -1252,7 +1279,9 @@ export default function init(canvas, data) {
   }
   if (searchInput) {
     searchInput.addEventListener('focus', loadSearchIndex, { once: true });
-    searchInput.addEventListener('input', () => runSearch(searchInput.value));
+    // Typing in the box is a free search — it no longer corresponds to a pinned
+    // panel stat, so drop the selection marker before running it.
+    searchInput.addEventListener('input', () => { unmarkSelected(); runSearch(searchInput.value); });
   }
 
   // ---------------------------------------------------------------------------
