@@ -1759,6 +1759,9 @@ export default function init(canvas, data) {
 
   // Load alloc + code (+ path) modules eagerly so click handlers have them ready.
   Promise.all([allocMod(), codeMod(), pathMod()]).then(() => {
+    // Show the (empty) point counter immediately — "0 / 122 · 0 / 8". A hash
+    // import below refreshes it once it decodes its allocations.
+    updatePoints();
     // Attempt hash import after modules are ready.
     importFromHash().catch((err) => console.warn('[passive-tree] importFromHash error:', err));
     // Initial draw.
