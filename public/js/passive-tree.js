@@ -264,26 +264,43 @@ export default function init(canvas, data) {
     return true;
   }
 
-  // Is a node "on" in the current view? In a weapon-set mode, the shared tree
-  // plus that set's nodes are on; the other set's nodes appear unallocated.
-  function viewAllocated(h) {
-    return allocated.has(h) || (wsMode != null && wsAlloc[wsMode].has(h));
+  // Is a node allocated in ANY layer (shared or either weapon set)? Allocated
+  // weapon-set nodes always render as allocated (with their set accent),
+  // regardless of which set is being edited.
+  function isAllocatedAnywhere(h) {
+    return allocated.has(h) || wsAlloc[1].has(h) || wsAlloc[2].has(h);
   }
 
   // Allocation state for a node: x = allocated/anchor, a = allocatable, u = else.
+  // 'x' is mode-independent (an allocated node always looks allocated); 'a' is
+  // mode-aware (only what the active mode can actually allocate is highlighted).
   function frameState(n) {
-    if (viewAllocated(n.h) || starts.includes(n.h)) return 'x';
+    if (isAllocatedAnywhere(n.h) || starts.includes(n.h)) return 'x';
     if (_canAllocateSync(n.h)) return 'a';
     return 'u';
   }
 
-  // Connector state between two nodes (a/b alloc states drive the line sprite).
-  function lineState(na, nb) {
-    const aa = viewAllocated(na.h) || starts.includes(na.h);
-    const ba = viewAllocated(nb.h) || starts.includes(nb.h);
-    if (aa && ba) return 'x';
-    if (aa || ba) return 'a';
-    return 'u';
+  // The solid-connector accent for an edge, or null if it isn't an allocated
+  // connector. A main connector (both ends shared) is gold; a weapon-set
+  // connector (both ends in the shared tree ∪ that set, at least one in the set)
+  // is the set's colour. Mode-independent, so allocated ws branches always show.
+  function solidConnectorColor(na, nb) {
+    const aMain = allocated.has(na.h) || starts.includes(na.h);
+    const bMain = allocated.has(nb.h) || starts.includes(nb.h);
+    if (aMain && bMain) return LINE_COLOR.x;
+    for (const k of [1, 2]) {
+      const ak = aMain || wsAlloc[k].has(na.h);
+      const bk = bMain || wsAlloc[k].has(nb.h);
+      if (ak && bk && (wsAlloc[k].has(na.h) || wsAlloc[k].has(nb.h))) return WS_COLOR[k].line;
+    }
+    return null;
+  }
+
+  // Rail (unallocated edge) brightness: 'a' if it touches any allocated node.
+  function railState(na, nb) {
+    const aOn = isAllocatedAnywhere(na.h) || starts.includes(na.h);
+    const bOn = isAllocatedAnywhere(nb.h) || starts.includes(nb.h);
+    return (aOn || bOn) ? 'a' : 'u';
   }
 
   // Initial view: center the tree in the canvas.
@@ -901,7 +918,11 @@ export default function init(canvas, data) {
   // and (in weapon-set mode) not already in the active set.
   function canTargetForPath(h) {
     if (allocated.has(h) || starts.includes(h)) return false;
-    if (wsMode != null && wsAlloc[wsMode].has(h)) return false;
+    if (wsMode != null) {
+      if (wsAlloc[wsMode].has(h)) return false;      // already in the active set
+    } else if (wsAlloc[1].has(h) || wsAlloc[2].has(h)) {
+      return false;                                  // ws nodes aren't editable from the shared view
+    }
     return true;
   }
 
@@ -1078,13 +1099,11 @@ export default function init(canvas, data) {
       if (!na || !nb) continue;
       if (!nodeVisible(na) || !nodeVisible(nb)) continue;
       if ((na.asc != null) !== (nb.asc != null)) continue; // no main↔ascendancy spokes
-      const state = lineState(na, nb);
-      const solid = state === 'x';
-      // An allocated connector touching the active set's nodes strokes in the
-      // set's accent (red/green) so the weapon-set branch reads at a glance.
-      const wsEdge = wsMode != null && solid &&
-        (wsAlloc[wsMode].has(na.h) || wsAlloc[wsMode].has(nb.h));
-      ctx.strokeStyle = wsEdge ? WS_COLOR[wsMode].line : LINE_COLOR[state];
+      // Allocated connectors are solid (main = gold, weapon-set = red/green and
+      // always shown); everything else draws as dim/highlighted rails.
+      const solidColor = solidConnectorColor(na, nb);
+      const solid = solidColor != null;
+      ctx.strokeStyle = solid ? solidColor : LINE_COLOR[railState(na, nb)];
       ctx.lineWidth = solid ? solidW : railW;
       ctx.beginPath();
       if (e.arc) {
@@ -1157,16 +1176,18 @@ export default function init(canvas, data) {
       const fk = FRAME_KEY[n.k];
       if (fk) drawSprite('frame', `frame:${fk[st]}`, n.x, n.y);
 
-      // Weapon-set ring: a node allocated in the active set gets an accent ring
-      // so it's distinct from shared/main allocations.
-      if (wsMode != null && wsAlloc[wsMode].has(n.h)) {
+      // Weapon-set ring: a node allocated in a set gets that set's accent ring,
+      // always (independent of the editing mode). A node in both sets gets both,
+      // at slightly different radii so neither hides the other.
+      for (const k of [1, 2]) {
+        if (!wsAlloc[k].has(n.h)) continue;
         ctx.save();
         ctx.shadowBlur = 0;
         ctx.globalAlpha = 1;
-        ctx.strokeStyle = WS_COLOR[wsMode].line;
+        ctx.strokeStyle = WS_COLOR[k].line;
         ctx.lineWidth = Math.max(1.5, WS_RING_W * view.scale);
         ctx.beginPath();
-        ctx.arc(sp.x, sp.y, radiusOf(n.k) * view.scale * 0.92, 0, Math.PI * 2);
+        ctx.arc(sp.x, sp.y, radiusOf(n.k) * view.scale * (k === 1 ? 0.92 : 1.08), 0, Math.PI * 2);
         ctx.stroke();
         ctx.restore();
       }
@@ -1416,6 +1437,9 @@ export default function init(canvas, data) {
     if (allocated.has(hit.h)) {
       _deallocateSync(hit.h); // also clears any attribute pick (pruneAttrChoices)
       attrChoosing = null;
+    } else if (wsAlloc[1].has(hit.h) || wsAlloc[2].has(hit.h)) {
+      // Allocated in a weapon set — edit it from that set's mode, not the shared
+      // view (so a shared-mode click can't pull it into the main pool too).
     } else {
       // A multi-node shortest route collapses into a single click (the "fewer
       // clicks" win); attr nodes on it default to the class primary attribute.
