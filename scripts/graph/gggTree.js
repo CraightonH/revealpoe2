@@ -107,6 +107,8 @@ export function parseGggTree() {
       lock,
       // "+5 to any Attribute" — the player picks Str/Int/Dex when allocating.
       attr: n.isGenericAttribute || undefined,
+      // Distilled Emotion "instill" recipe (3 emotion tokens) — notables only.
+      recipe: Array.isArray(n.recipe) && n.recipe.length ? n.recipe : undefined,
       hidden: classStartHashes.has(h) || undefined, // class-start roots: anchor only
       ws: 0,
     });

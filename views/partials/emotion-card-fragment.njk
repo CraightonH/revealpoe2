@@ -1,0 +1,25 @@
+{# Distilled Emotion card, styled to match the in-game currency tooltip: the
+   ItemsHeaderWhite scrollwork banner (shared with base-item cards, NOT the gem
+   header) + a tan currency title. Fetched on hover from /api/emotion/:key/card. #}
+<div class="newItemPopup NormalPopup EmotionPopup item-popup--poe2">
+  <div class="itemHeader doubleLine">
+    <div class="itemName"><span class="lc normal-name">{{ vm.name }}</span></div>
+    <div class="itemName typeLine"><span class="lc normal-type">Stackable Currency</span></div>
+  </div>
+  <div class="content">
+    {% if vm.iconUrl %}
+    <div class="emotion-body-icon"><img src="{{ vm.iconUrl }}" alt="{{ vm.name }}" loading="lazy" onerror="this.style.display='none'"></div>
+    {% endif %}
+    {% if vm.stackSize %}
+    <div class="Stats"><div class="property emotion-stack">Stack Size: <span class="colourDefault">1 / {{ vm.stackSize }}</span></div></div>
+    <div class="separator"></div>
+    {% endif %}
+    {% if vm.effectHtml %}
+    <div class="Stats"><div class="explicitMod">{{ vm.effectHtml | safe }}</div></div>
+    {% endif %}
+    {% if vm.directionsHtml %}
+    <div class="separator"></div>
+    <div class="FlavourText emotion-directions">{{ vm.directionsHtml | safe }}</div>
+    {% endif %}
+  </div>
+</div>

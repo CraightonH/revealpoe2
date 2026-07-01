@@ -1249,12 +1249,16 @@ details[open] > .affix-origin-title::before { transform: rotate(90deg); }
 .newItemPopup.PassivePopup {
   box-shadow: 0 0 18px var(--card-glow, rgba(139,48,48,0.45)), 0 0 6px var(--card-glow, rgba(139,48,48,0.3));
 }
+/* Passive tooltip headers use dedicated, rounded gold-bordered frames per node
+   kind (Notable / Keystone / Ascendancy) — the in-game passive look, NOT the
+   plain ItemsHeaderWhite item banner. Base = Notable (also covers small
+   passives); keystone + ascendancy override below. */
 .itemHeader.doubleLine.passiveHeader {
   background:
-    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderWhiteLeft.webp) left center no-repeat,
-    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderWhiteRight.webp) right center no-repeat,
-    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderWhiteMiddle.webp) 0 center repeat-x,
-    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderWhiteMiddle.webp) 24px center repeat-x;
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/NotablePassiveHeaderLeft.webp) left center no-repeat,
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/NotablePassiveHeaderRight.webp) right center no-repeat,
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/NotablePassiveHeaderMiddle.webp) 0 center repeat-x,
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/NotablePassiveHeaderMiddle.webp) 24px center repeat-x;
   /* Full texture height — the frame shows uncropped. (The top black gap was the
      collapsing page margin, fixed in app.css, not a texture margin.) */
   background-size: auto 100%, auto 100%, auto 100%, auto 100%;
@@ -1262,6 +1266,22 @@ details[open] > .affix-origin-title::before { transform: rotate(90deg); }
   padding: 2px 18px;
   justify-content: center;
   text-align: center;
+}
+.PassivePopup.is-keystone .passiveHeader {
+  background:
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/KeystonePassiveHeaderLeft.webp) left center no-repeat,
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/KeystonePassiveHeaderRight.webp) right center no-repeat,
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/KeystonePassiveHeaderMiddle.webp) 0 center repeat-x,
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/KeystonePassiveHeaderMiddle.webp) 24px center repeat-x;
+  background-size: auto 100%, auto 100%, auto 100%, auto 100%;
+}
+.PassivePopup.is-asc .passiveHeader {
+  background:
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/AscendancyPassiveHeaderLeft.webp) left center no-repeat,
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/AscendancyPassiveHeaderRight.webp) right center no-repeat,
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/AscendancyPassiveHeaderMiddle.webp) 0 center repeat-x,
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/AscendancyPassiveHeaderMiddle.webp) 24px center repeat-x;
+  background-size: auto 100%, auto 100%, auto 100%, auto 100%;
 }
 .PassivePopup .itemName .lc {
   padding: 2px 12px 0;
@@ -1282,6 +1302,87 @@ details[open] > .affix-origin-title::before { transform: rotate(90deg); }
   font-size: 12px;
   line-height: 1.35;
 }
+
+/* Instill recipe — the 3 Distilled Emotions that craft the Instilling Orb for
+   this Notable. Centered boxes, icon over name; each box is a nested tooltip. */
+.instillRecipe {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 8px 8px;
+}
+.instill-emotion {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 60px;
+  padding: 4px 3px;
+  border: 1px solid rgba(150, 130, 90, 0.35);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.03);
+  cursor: help;
+  transition: border-color 0.12s, background 0.12s;
+}
+.instill-emotion:hover {
+  border-color: var(--prop-color, #c8aa6e);
+  background: rgba(200, 170, 110, 0.1);
+}
+.instill-emotion__icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+.instill-emotion__placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--magic-color);
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 3px;
+}
+.instill-emotion__name {
+  font-size: 9px;
+  line-height: 1.15;
+  text-align: center;
+  color: var(--magic-color);
+}
+
+/* ---- Distilled Emotion card ------------------------------------------------
+   Matches the in-game currency tooltip: reuses the NormalPopup ItemsHeaderWhite
+   scrollwork banner + centered layout, overriding only the title to the warm
+   currency tan and the directions to a muted grey (vs the unique amber). */
+.EmotionPopup { max-width: 340px; }
+.EmotionPopup .normal-name { color: #c8b78a; }        /* currency tan title */
+/* Vial icon in the card body, centered above the stack-size line. */
+.EmotionPopup .emotion-body-icon {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0 2px;
+}
+.EmotionPopup .emotion-body-icon img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+.EmotionPopup .emotion-directions { color: var(--color-normal); }
+/* Currency items use their OWN ornate header (swirled left/right corners), not
+   the plain ItemsHeaderWhite the other base items use. */
+.EmotionPopup .itemHeader.doubleLine {
+  background:
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderCurrencyLeft.webp) top left no-repeat,
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderCurrencyRight.webp) top right no-repeat,
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderCurrencyMiddle.webp) 0 top repeat-x,
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderCurrencyMiddle.webp) 24px top repeat-x;
+  background-size: auto 100%, auto 100%, auto 100%, auto 100%;
+}
+/* Stack-size line: grey label, white count, centered like the in-game tooltip. */
+.EmotionPopup .emotion-stack {
+  color: var(--color-default);
+  text-align: center;
+}
+.EmotionPopup .emotion-stack .colourDefault { color: #fff; }
 
 /* Ascendancy grid — narrower page width than the other 200px-min grids. */
 .asc-grid {

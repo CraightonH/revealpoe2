@@ -2,6 +2,7 @@ import { buildGemViewModel, listGems, listGemCards, getDefaultSkillGemsForClass 
 import { buildUniqueViewModel, listUniqueCards, listUniqueClassFilters } from '../data/uniques.js';
 import { listBaseNav, getItemClass, buildBaseItemViewModel, affixBaseTargets, PER_BASE_NAV_CLASSES } from '../data/baseItems.js';
 import { listKeystones, getKeystone, listNotables, getNotable, getPassiveNode, listAscendancies, getAscendancy } from '../data/passiveTree.js';
+import { getEmotion } from '../data/emotions.js';
 
 // Register a detail page: reads the single route param, runs the builder,
 // renders `template` with { [contextKey]: result }, or 404s to home.njk.
@@ -87,6 +88,9 @@ export function registerPages(app) {
 
   detailRoute(app, '/keystone/:id', getKeystone, 'keystone.njk', 'k');
   cardRoute(app, '/keystone/:id/card', getKeystone, 'partials/passive-card-fragment.njk');
+
+  // Distilled Emotion detail card, nested inside a notable's instill recipe.
+  cardRoute(app, '/api/emotion/:key/card', getEmotion, 'partials/emotion-card-fragment.njk');
 
   app.get('/ascendancies', (_req, res) => {
     res.render('ascendancies.njk', { ascendancies: listAscendancies() });

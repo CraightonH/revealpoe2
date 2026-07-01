@@ -14,9 +14,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import nunjucks from 'nunjucks';
 import { parseGggTree } from './graph/gggTree.js';
-import { getDataDir } from './graph/source.js';
+import { getDataDir, REPOE } from './graph/source.js';
+import { buildEmotionIndex, resolveRecipe } from './graph/emotions.js';
 import { ddsUrl } from '../src/data/images.js';
-import { renderGameText, stripGameText } from '../src/data/keywords.js';
+import { renderGameText, stripGameText, escapeHtml } from '../src/data/keywords.js';
 import { hasDefinition } from '../src/data/keywordDefs.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -25,6 +26,7 @@ const OUT = path.join(GEN_DIR, 'passive-tree.json');
 const CARDS_OUT = path.join(GEN_DIR, 'passive-cards.json');
 const SEARCH_OUT = path.join(GEN_DIR, 'passive-search.json');
 const STATS_OUT = path.join(GEN_DIR, 'passive-stats.json');
+const EMOTIONS_OUT = path.join(GEN_DIR, 'instill-emotions.json');
 const ATLAS_SRC = path.join(getDataDir(), 'ggg-poe2', 'atlas');
 const ATLAS_OUT = path.join(GEN_DIR, 'passive-atlas');
 
@@ -34,6 +36,17 @@ const ATLAS_MAP = '/static/generated/passive-atlas'; // <name>.json (copied belo
 
 // GGG icon paths are .png; the same art is mirrored as webp via ggpk (.dds key).
 const iconWebp = (icon) => (icon ? ddsUrl(icon.replace(/\.png$/i, '.dds')) : null);
+
+// Distilled Emotion index, loaded once from base_items.json (the "instill"
+// recipes reference these currency items by de-spaced name).
+let _emotionIndex;
+function emotionIndex() {
+  if (!_emotionIndex) {
+    const p = path.join(getDataDir(), REPOE, 'base_items.json');
+    _emotionIndex = buildEmotionIndex(JSON.parse(fs.readFileSync(p, 'utf8')));
+  }
+  return _emotionIndex;
+}
 
 // Dominant base attribute of a class → the default attribute for path-allocated
 // generic "+5 to any Attribute" nodes. Argmax of base str/dex/int, ties str>dex>int.
@@ -136,10 +149,16 @@ export function buildCards() {
     { key: 'int', line: renderGameText('+5 to Intelligence', hasDefinition) },
     { key: 'dex', line: renderGameText('+5 to Dexterity', hasDefinition) },
   ];
+  const emo = emotionIndex();
   const { nodes } = parseGggTree();
   const cards = {};
   for (const n of nodes) {
     if (n.hidden) continue;
+    // Instill recipe → 3 ordered emotion boxes (duplicates preserved). An
+    // unknown token throws (fails the build) rather than dropping the relation.
+    const instill = n.recipe
+      ? resolveRecipe(emo, n.recipe).map((e) => ({ key: e.key, name: e.name, iconUrl: e.iconUrl }))
+      : null;
     const vm = {
       name: n.name,
       kind: n.k,
@@ -150,10 +169,42 @@ export function buildCards() {
       reminderText: [],
       flavourText: null,
       attrOptions: n.attr ? ATTR_OPTS : null,
+      instill,
     };
     cards[n.h] = tmpl.render({ vm });
   }
   return cards;
+}
+
+// Per-emotion detail cards (nested tooltip, keyword-glossary style) keyed by
+// slug, plus the served webp URLs so fetch-images can self-host the icons.
+// Only emotions actually referenced by a recipe are emitted.
+export function buildEmotions() {
+  const emo = emotionIndex();
+  const { nodes } = parseGggTree();
+  const used = new Set();
+  for (const n of nodes) for (const t of n.recipe || []) used.add(t);
+
+  const cards = {};
+  const icons = [];
+  for (const e of emo.byToken.values()) {
+    if (!used.has(e.name.replace(/\s+/g, ''))) continue;
+    const effectHtml = e.description
+      ? renderGameText(e.description, hasDefinition).replace(/\r?\n/g, '<br>')
+      : null;
+    const directionsHtml = e.directions
+      ? escapeHtml(e.directions).replace(/\r?\n/g, '<br>')
+      : null;
+    cards[e.key] = {
+      name: e.name,
+      iconUrl: e.iconUrl,
+      effectHtml,
+      directionsHtml,
+      stackSize: e.stackSize,
+    };
+    if (e.iconUrl) icons.push(e.iconUrl);
+  }
+  return { cards, icons };
 }
 
 // Lightweight search index: hash -> lowercased searchable text (node name plus
@@ -204,9 +255,19 @@ function copyAtlasMaps() {
 function main() {
   const art = buildArtifact();
   fs.mkdirSync(GEN_DIR, { recursive: true });
+
+  // Distilled Emotion detail cards + the icon URLs they reference. Stamp the
+  // icons into the tree artifact's meta so fetch-images self-hosts them (they're
+  // currency items, absent from build/graph.json's browsable set).
+  const emotions = buildEmotions();
+  art.meta.instillIcons = emotions.icons;
+
   fs.writeFileSync(OUT, JSON.stringify(art));
   const kb = (fs.statSync(OUT).size / 1024).toFixed(0);
   console.log(`build-passive-tree: ${art.nodes.length} nodes, ${art.edges.length} edges -> ${OUT} (${kb} KB)`);
+
+  fs.writeFileSync(EMOTIONS_OUT, JSON.stringify(emotions.cards));
+  console.log(`build-passive-tree: ${Object.keys(emotions.cards).length} instill emotions -> ${EMOTIONS_OUT}`);
 
   const maps = copyAtlasMaps();
   console.log(`build-passive-tree: ${maps} atlas maps -> ${ATLAS_OUT}`);

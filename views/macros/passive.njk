@@ -76,6 +76,24 @@
     <div class="separator"></div>
     <div class="FlavourText">{{ node.flavourText }}</div>
     {% endif %}
+    {% if node.instill %}
+    {# Instill recipe: the 3 Distilled Emotions that craft the Instilling Orb
+       granting this Notable. Centered boxes, icon over name; each box is a
+       nested tooltip (data-card-url) resolving the emotion's detail card. #}
+    <div class="separator"></div>
+    <div class="instillRecipe" aria-label="Instill recipe">
+      {% for e in node.instill %}
+      <div class="instill-emotion instill-emotion--{{ e.key }}" data-card-url="/api/emotion/{{ e.key }}/card">
+        {% if e.iconUrl %}
+        <img src="{{ e.iconUrl }}" alt="{{ e.name }}" class="instill-emotion__icon" loading="lazy" onerror="this.style.visibility='hidden'">
+        {% else %}
+        <div class="instill-emotion__icon instill-emotion__placeholder">{{ e.name[0] }}</div>
+        {% endif %}
+        <div class="instill-emotion__name">{{ e.name }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
   </div>
 </div>
 {% endmacro %}

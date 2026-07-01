@@ -274,6 +274,42 @@ overlaid on the shared main tree (PoE2's Weapon Set Passive Skills). Spec:
   `0x02`/`0x03`); import routes them into `wsAlloc[1/2]`, export emits them. Any
   edit clears `decodedState` so Copy Share Code rebuilds from current state.
 
+## Notable instill recipes
+
+Every tree Notable carries a GGG `recipe` — the **3 Distilled Emotions** that,
+combined into an Instilling Orb, stamp that Notable onto a jewel/amulet. Surfaced
+at the bottom of the notable's hover card as three centred boxes (emotion icon +
+name), each a nested tooltip resolving the emotion's detail card.
+
+- **Resolution** (`scripts/graph/emotions.js`, pure + node-tested in
+  `test/passiveInstill.test.js`): recipe tokens (`ConcentratedLiquidFear`) are the
+  emotion's `base_items.json` name with spaces stripped. `buildEmotionIndex()`
+  maps token → `DistilledEmotion*` currency item; `resolveRecipe()` **throws** on
+  an unknown token so a GGG rename fails the build rather than silently dropping
+  the relation. `gggTree.js` carries `recipe` onto notable nodes.
+- **Artifacts** (`build-passive-tree.js`): `buildCards` sets `vm.instill` (3
+  ordered boxes, duplicates preserved); `buildEmotions` emits
+  `public/generated/instill-emotions.json` (per-emotion detail card: effect
+  keyword-linkified, how-to-instill directions, stack size) and stamps
+  `meta.instillIcons` into the tree artifact.
+- **Passive card headers**: notable/keystone/ascendancy hover + detail cards use
+  the dedicated in-game passive banners (`NotablePassiveHeader` /
+  `KeystonePassiveHeader` / `AscendancyPassiveHeader`, rounded gold-bordered),
+  selected in `gem-card.css` by the popup's `is-notable`/`is-keystone`/`is-asc`
+  class — not the plain `ItemsHeaderWhite` item banner. CSS-referenced, so they
+  self-host via `ddsFromCss`.
+- **Emotion card look** (`partials/emotion-card-fragment.njk`): mirrors the
+  in-game currency tooltip — the `NormalPopup` frame with the ornate
+  `ItemsHeaderCurrency` banner (swirled corners, distinct from the plain
+  `ItemsHeaderWhite` other bases use) and a tan currency title. The currency
+  header slices enter the image set via `ddsFromCss` (CSS-referenced), not the
+  graph.
+- **Runtime**: `src/data/emotions.js` reads the artifact; `/api/emotion/:key/card`
+  (in `pages.js`, `partials/emotion-card-fragment.njk`) serves the nested card.
+  The box `data-card-url` is auto-discovered by `prerender.js` `passiveCardSeeds()`
+  and auto-fetched by `fetch-images.js` (`meta.instillIcons`, currency icons
+  aren't in the browsable graph) — no changes needed in either.
+
 ## Known gaps / deferrals
 
 - **Masteries** excluded (TODO #7).
@@ -286,7 +322,8 @@ overlaid on the shared main tree (PoE2's Weapon Set Passive Skills). Spec:
 | File | Role |
 |---|---|
 | `scripts/fetch-ggg-tree.js` | ingest GGG data + atlases (`npm run fetch:tree`) |
-| `scripts/graph/gggTree.js` | parse GGG JSON → nodes/edges/classes |
+| `scripts/graph/gggTree.js` | parse GGG JSON → nodes/edges/classes (carries `recipe`) |
+| `scripts/graph/emotions.js` | Distilled Emotion index + recipe resolver (instill UI) |
 | `scripts/build-passive-tree.js` | emit render artifact + cards + atlas-map copy |
 | `public/js/passive-tree.js` | canvas renderer (atlases, connectors, allocation, stat panel) |
 | `public/js/passive-stats-agg.js` | pure stat aggregation (strip→templatize→sum→categorize) |

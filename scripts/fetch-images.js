@@ -103,11 +103,15 @@ function ddsFromPassiveArtifact() {
   const out = new Set();
   const p = path.join(root, 'public', 'generated', 'passive-tree.json');
   if (!fs.existsSync(p)) return out;
-  const art = JSON.parse(fs.readFileSync(p, 'utf8'))?.meta?.ascendancyArt ?? {};
-  for (const a of Object.values(art)) {
-    const m = /^\/static\/img\/(.+)\.webp$/.exec(a?.img || '');
+  const meta = JSON.parse(fs.readFileSync(p, 'utf8'))?.meta ?? {};
+  const toDds = (url) => {
+    const m = /^\/static\/img\/(.+)\.webp$/.exec(url || '');
     if (m) out.add(`${m[1]}.dds`);
-  }
+  };
+  for (const a of Object.values(meta.ascendancyArt ?? {})) toDds(a?.img);
+  // Distilled Emotion currency icons for the instill recipe UI — not in the
+  // graph's browsable set, so they enter the fetch set via the tree artifact.
+  for (const url of meta.instillIcons ?? []) toDds(url);
   return out;
 }
 
