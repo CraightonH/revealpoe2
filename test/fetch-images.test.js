@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { syncGate } from '../scripts/fetch-images.js';
+import { syncGate, needsFetch } from '../scripts/fetch-images.js';
 
 const dds = new Set(['Art/a.dds', 'Art/b.dds']);
 const all = () => true;
@@ -32,4 +32,11 @@ test('does not skip when a referenced file is missing on disk', () => {
 test('--force never skips', () => {
   const { refHash } = syncGate({ dds, manifest: {}, exists: all, force: false });
   assert.equal(syncGate({ dds, manifest: { _refHash: refHash }, exists: all, force: true }).skip, false);
+});
+
+test('needsFetch: cached files are skipped, only missing/forced are fetched', () => {
+  assert.equal(needsFetch(false, false), true);  // missing → fetch
+  assert.equal(needsFetch(true, false), false);  // on disk → skip (cache of record)
+  assert.equal(needsFetch(true, true), true);    // --force → re-fetch even if cached
+  assert.equal(needsFetch(false, true), true);   // missing + force → fetch
 });

@@ -165,6 +165,13 @@ export function syncGate({ dds, manifest, exists, force }) {
   return { refHash, skip };
 }
 
+// Per-file gate: local disk is the cache of record. A file already on disk is
+// never re-fetched — only genuinely new (missing) files hit the network, so a
+// deploy that introduces art pulls just that art, not the whole set. `--force`
+// re-pulls everything. Trade-off (accepted): an upstream change to an asset
+// whose path is unchanged is only picked up on a `--force` pass.
+export function needsFetch(onDisk, force) { return force || !onDisk; }
+
 async function run() {
   if (!fs.existsSync(GRAPH)) {
     console.error('fetch-images: build/graph.json missing — run build:graph first.');
@@ -174,11 +181,12 @@ async function run() {
   const dds = new Set([...ddsFromGraph(), ...ddsFromCss(), ...ddsFromPassiveArtifact()]);
   const manifest = FORCE ? {} : await loadManifest();
 
-  // Gate the network sync on the referenced set (the bulk of this step's cost
-  // on a code-only deploy is ~3000 conditional round-trips that all 304). See
-  // syncGate. Trade-off: an upstream art change with no content change won't be
-  // seen until a `--force` pass. The scrape→deploy content loop always changes
-  // the graph (hence always does a full pass), so that's the rare exception.
+  // Two-tier gate. Tier 1 (syncGate): if the referenced set is byte-identical to
+  // last run and every file is on disk, skip the whole sync. Tier 2 (per-file,
+  // needsFetch): when the set changed, only NEW/missing files are fetched —
+  // cached files are trusted, no per-file revalidation round-trips. So a deploy
+  // that adds art pulls just that art. `--force` re-pulls everything; upstream
+  // changes to an unchanged-path asset are only picked up under --force.
   const { refHash, skip } = syncGate({
     dds, manifest, force: FORCE,
     exists: (d) => fs.existsSync(path.join(IMG_DIR, imageRelPath(d))),
@@ -208,38 +216,34 @@ async function run() {
     desiredFiles.add(rel);
     const dest = path.join(IMG_DIR, rel);
     const onDisk = fs.existsSync(dest);
-    const prev = manifest[ddsPath];
 
-    const commit = async (buf, etag, source) => {
+    // Per-file gate: a cached file is never re-fetched (see needsFetch). Only
+    // new/missing files — or everything under --force — reach the network, so
+    // adding art pulls just that art instead of revalidating the whole set.
+    if (!needsFetch(onDisk, FORCE)) { stats.fresh++; return; }
+
+    const commit = async (buf, source) => {
       await fsp.mkdir(path.dirname(dest), { recursive: true });
       await fsp.writeFile(dest, buf);
-      manifest[ddsPath] = { etag: etag || null, bytes: buf.length, ...(source ? { source } : {}) };
+      manifest[ddsPath] = { bytes: buf.length, ...(source ? { source } : {}) };
       if (onDisk) stats.updated++; else stats.added++;
       if (source === 'poe2db') stats.recovered++;
     };
 
-    // Primary: ggpk webp proxy, revalidated against our stored ETag when we
-    // already hold a ggpk-sourced copy. (A poe2db-sourced ETag means ggpk was
-    // failing last run — skip the conditional so a recovered ggpk serves 200.)
+    // Primary: ggpk webp proxy.
     let primary = 'no response';
     try {
-      const headers = { 'User-Agent': USER_AGENT };
-      if (!FORCE && onDisk && prev?.etag && prev.source !== 'poe2db') headers['If-None-Match'] = prev.etag;
-      const res = await fetchWithRetry(`${CDN}/${ddsPath}?format=webp`, headers);
-      if (res.status === 304) { stats.fresh++; return; }
-      if (res.status === 200) return commit(Buffer.from(await res.arrayBuffer()), res.headers.get('etag'));
+      const res = await fetchWithRetry(`${CDN}/${ddsPath}?format=webp`, { 'User-Agent': USER_AGENT });
+      if (res.status === 200) return commit(Buffer.from(await res.arrayBuffer()));
       primary = `HTTP ${res.status}`;
     } catch (err) {
       primary = err.message;
     }
 
-    // Fallback: poe2db. Recovers assets ggpk can't convert; revalidated against
-    // our stored ETag when the prior copy already came from poe2db.
+    // Fallback: poe2db recovers assets ggpk can't convert to webp.
     try {
-      const fbEtag = onDisk && prev?.source === 'poe2db' ? prev.etag : null;
-      const fb = await fetchFallback(rel, fbEtag);
-      if (fb.status === 304) { stats.fresh++; return; }
-      if (fb.status === 200) return commit(Buffer.from(await fb.arrayBuffer()), fb.headers.get('etag'), 'poe2db');
+      const fb = await fetchFallback(rel, null);
+      if (fb.status === 200) return commit(Buffer.from(await fb.arrayBuffer()), 'poe2db');
       if (onDisk) stats.failed.push([ddsPath, `kept stale: ggpk ${primary}, poe2db HTTP ${fb.status}`]);
       else { stats.missing++; stats.failed.push([ddsPath, `ggpk ${primary}, poe2db HTTP ${fb.status}`]); }
     } catch (err) {
