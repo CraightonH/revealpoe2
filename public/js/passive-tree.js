@@ -121,6 +121,12 @@ const ATTR_ICON = {
 // ~0.74 — clip there so the art fills the opening without bleeding over the ring.
 const CENTER_CLIP_FILL = 0.74;
 
+// Mastery-effect background patterns are drawn centred on the mastery node. The
+// atlas sprites are authored at ~488 world units; GGG renders them larger so the
+// pattern/glow fills the cluster ring. Tune this multiplier against the in-game
+// look (docs/passive-tree.md references image #4/#5).
+const MASTERY_SCALE = 1.5;
+
 // ---------------------------------------------------------------------------
 // Adjacency builder (with skip-guard for ghost nodes)
 // ---------------------------------------------------------------------------
@@ -160,6 +166,10 @@ function buildAdjacency(nodes, edges) {
 export default function init(canvas, data) {
   const ctx = canvas.getContext('2d');
   const { nodes, edges, meta } = data;
+  // Mastery background patterns (TODO #6): non-selectable decorations anchored at
+  // a cluster's mastery position. Each { h, x, y, e (effect path), t (trigger
+  // hashes), lock? }. Rendered lit when any trigger is allocated, dim otherwise.
+  const masteries = data.masteries ?? [];
 
   // Build a hash→node map for fast lookup.
   const nodeMap = new Map(nodes.map((n) => [n.h, n]));
@@ -223,8 +233,9 @@ export default function init(canvas, data) {
     if (!f) return false;
     const fr = f.frame;
     const inv = 1 / at.scale;
-    const w = (opts.w ?? fr.w * inv) * view.scale;
-    const h = (opts.h ?? fr.h * inv) * view.scale;
+    const mul = (opts.scale ?? 1) * view.scale;
+    const w = (opts.w ?? fr.w * inv) * mul;
+    const h = (opts.h ?? fr.h * inv) * mul;
     const s = worldToScreen(view, wx + (opts.ox || 0), wy + (opts.oy || 0));
     if (opts.rotate) {
       ctx.save();
@@ -1018,6 +1029,7 @@ export default function init(canvas, data) {
     ctx.save();
 
     drawCentre();
+    drawMasteryEffects(W, H); // background patterns, behind connectors + nodes
     drawEdges(W, H);
     drawPathEdges();      // preview route under the node frames (like allocated lines)
     drawNodes(W, H);
@@ -1111,6 +1123,36 @@ export default function init(canvas, data) {
     const w = im.naturalWidth * scale;
     const h = im.naturalHeight * scale;
     ctx.drawImage(im, c.x - w / 2, c.y - h / 2, w, h);
+  }
+
+  // Mastery background patterns (TODO #6). Non-selectable clusters carry a
+  // decorative "mastery effect" pattern behind them: dim when unengaged, lit when
+  // any node wired to the mastery is allocated (the active/disabled atlas swap
+  // mirrors GGG). Positioned at the mastery's own coords, under the connectors and
+  // nodes. Visibility follows the same lock gate as nodes (asc/unlock-gated
+  // masteries only show once their gating node + ascendancy are active).
+  function masteryVisible(m) {
+    return !(m.lock && !lockSatisfied(m.lock));
+  }
+  function masteryActive(m) {
+    for (const t of m.t) {
+      if (isAllocatedAnywhere(t) || starts.includes(t)) return true;
+    }
+    return false;
+  }
+  function drawMasteryEffects(W, H) {
+    // Cull margin ≥ the sprite's half-extent (~244 native × scale) so a pattern
+    // straddling the viewport edge isn't popped while still partly visible.
+    const cull = (260 * MASTERY_SCALE) * view.scale;
+    for (const m of masteries) {
+      if (!masteryVisible(m)) continue;
+      const sp = worldToScreen(view, m.x, m.y);
+      if (sp.x < -cull || sp.x > W + cull || sp.y < -cull || sp.y > H + cull) continue;
+      const active = masteryActive(m);
+      const name = active ? 'mastery-effect-active' : 'mastery-effect-disabled';
+      const key = (active ? 'masteryEffectActive:' : 'masteryEffectInactive:') + m.e;
+      drawSprite(name, key, m.x, m.y, { scale: MASTERY_SCALE });
+    }
   }
 
   // Connectors. Straight edges are lines; same-orbit edges are arcs drawn with

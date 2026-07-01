@@ -57,7 +57,7 @@ function primaryAttr(str = 0, dex = 0, int = 0) {
 }
 
 export function buildArtifact() {
-  const { nodes, edges, classStarts, classes, ascStarts, ascByClass, ascArt, extent } = parseGggTree();
+  const { nodes, edges, masteries, classStarts, classes, ascStarts, ascByClass, ascArt, extent } = parseGggTree();
 
   // Per-class central illustration: served atlas + frame key + placement offset.
   const classArt = {};
@@ -100,6 +100,13 @@ export function buildArtifact() {
       ...(n.hidden ? { hidden: 1 } : {}),
     })),
     edges,
+    // Mastery background patterns (TODO #6): non-selectable; a lit pattern is
+    // drawn behind the cluster when any `t` (trigger) node is allocated, a dim one
+    // otherwise. `e` = GGG effect-image path → mastery-effect atlas key.
+    masteries: masteries.map((m) => ({
+      h: m.h, x: m.x, y: m.y, e: m.effect, t: m.triggers,
+      ...(m.lock ? { lock: m.lock } : {}),
+    })),
     meta: {
       classStarts,
       classArt,

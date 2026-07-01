@@ -32,8 +32,8 @@ function cleanName(name) {
     .replace(/[[\]]/g, '');
 }
 
-// Node kind from GGG flags. Masteries are auto-activated pass-throughs (not
-// selectable — see TODO #7) and are dropped entirely, like the RePoE path did.
+// Node kind from GGG flags. Masteries are handled before this (they're not
+// selectable nodes — see the mastery collection below — so they never reach here).
 function kindOf(n) {
   if (n.isJewelSocket) return 'jewel';
   if (n.isAscendancyStart) return 'ascStart';
@@ -77,11 +77,33 @@ export function parseGggTree() {
 
   const nodes = [];
   const keep = new Set();
+  // Masteries aren't selectable nodes and are kept out of the node/edge/allocation
+  // graph (like before). Instead they anchor a background "mastery effect" pattern
+  // (TODO #6) that lights up when any node wired to the mastery is allocated. We
+  // collect them here with their position + effect image; triggers (the connected
+  // nodes that light them) are gathered from the edge pass below.
+  const masteryMap = new Map(); // hash -> { h, x, y, effect, triggers:Set, lock }
   const ascStarts = {}; // ascendancyId -> start node hash
   for (const [hStr, n] of Object.entries(rawNodes)) {
     if (hStr === 'root') continue;
-    if (n.isMastery) continue;
     if (n.x == null || n.y == null) continue;
+    if (n.isMastery) {
+      if (!n.activeEffectImage) continue; // no pattern to draw
+      const h = Number(hStr);
+      const uc = n.unlockConstraint;
+      const lock = uc && Array.isArray(uc.nodes) && uc.nodes.length
+        ? { nodes: uc.nodes.map(Number), asc: uc.ascendancy ?? null }
+        : undefined;
+      masteryMap.set(h, {
+        h,
+        x: Math.round(n.x),
+        y: Math.round(n.y),
+        effect: n.activeEffectImage,
+        triggers: new Set(),
+        lock,
+      });
+      continue;
+    }
     const h = Number(hStr);
     const k = kindOf(n);
     keep.add(h);
@@ -201,6 +223,16 @@ export function parseGggTree() {
   const edges = [];
   for (const e of d.edges) {
     const a = Number(e.from), b = Number(e.to);
+    // Edges touching a mastery aren't real connectors — they identify which
+    // allocatable node(s) light the mastery's background. Record the non-mastery
+    // endpoint as a trigger (the mastery's own `in` list misses ~40 of them) and
+    // skip: masteries never join the connector/adjacency graph.
+    const ma = masteryMap.get(a), mb = masteryMap.get(b);
+    if (ma || mb) {
+      if (ma && keep.has(b)) ma.triggers.add(b);
+      if (mb && keep.has(a)) mb.triggers.add(a);
+      continue;
+    }
     if (!keep.has(a) || !keep.has(b)) continue;
     const key = a < b ? `${a}-${b}` : `${b}-${a}`;
     if (seen.has(key)) continue;
@@ -216,9 +248,16 @@ export function parseGggTree() {
     }
   }
 
+  const masteries = [...masteryMap.values()].map((m) => ({
+    h: m.h, x: m.x, y: m.y, effect: m.effect,
+    triggers: [...m.triggers],
+    ...(m.lock ? { lock: m.lock } : {}),
+  }));
+
   return {
     nodes,
     edges,
+    masteries,
     classStarts,
     classes,
     ascStarts,

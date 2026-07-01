@@ -27,6 +27,23 @@ test('buildArtifact produces nodes/edges/meta from GGG data', () => {
   }
 });
 
+test('buildArtifact: masteries emit as background-effect records, out of the node/edge graph', () => {
+  const art = buildArtifact();
+  assert.ok(Array.isArray(art.masteries) && art.masteries.length > 300, 'masteries present');
+  const nodeHashes = new Set(art.nodes.map((n) => n.h));
+  for (const m of art.masteries) {
+    // Not selectable: a mastery never appears in the node graph.
+    assert.ok(!nodeHashes.has(m.h), `mastery ${m.h} kept out of nodes`);
+    // Effect path resolves to a mastery-effect atlas sprite.
+    assert.match(m.e, /MasteryBackgroundGraphic\/Mastery.*Pattern\.png$/);
+    assert.equal(typeof m.x, 'number');
+    assert.equal(typeof m.y, 'number');
+    // Every mastery is lit by at least one real (allocatable) node.
+    assert.ok(Array.isArray(m.t) && m.t.length > 0, `mastery ${m.h} has triggers`);
+    for (const t of m.t) assert.ok(nodeHashes.has(t), `trigger ${t} is a real node`);
+  }
+});
+
 test('buildArtifact: only live ascendancies are surfaced (no null-name placeholders)', () => {
   const art = buildArtifact();
   const { ascByClass, ascendancyArt } = art.meta;

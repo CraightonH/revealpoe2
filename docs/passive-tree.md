@@ -80,7 +80,8 @@ meta: { scale } }`. **`scale` is 0.5**, so a sprite's native (world-unit) size =
 | `group-background` | `startNode:MainCircle` (+ `…Active`) | central ornate class-frame ring (native 4000) |
 | `background-<class>` | `class<Class>:Class0` | central class illustration (native 3000) |
 | `line` | `LineConnector{Normal\|Intermediate\|Active}`, `Orbit{1-9}{state}` | **not currently used** — see Connectors below |
-| `jewel`, `jewel-radius`, `mastery-effect-*` | — | not yet rendered |
+| `mastery-effect-active` / `mastery-effect-disabled` | `masteryEffect{Active\|Inactive}:{effect-image-path}` | cluster background patterns (lit vs dim) — see Masteries below |
+| `jewel`, `jewel-radius` | — | not yet rendered |
 
 Icon sprites are authored smaller than their frame sprites (small icon 68 inside
 frame 102, etc.), so drawing both at native size, centred, nests correctly — no
@@ -92,8 +93,13 @@ manual fudge factor.
 
 `scripts/graph/gggTree.js` `parseGggTree()` reads the GGG JSON → `{nodes, edges,
 classStarts, classes, ascStarts, ascByClass, ascArt, extent}`:
-- node kind from the flags above (`kindOf`); **masteries are dropped** (TODO #7 —
-  non-selectable pass-throughs).
+- node kind from the flags above (`kindOf`). **Masteries are not selectable
+  nodes** — they're pulled out of the node/edge/allocation graph and collected
+  separately (`parseGggTree().masteries`) as background-effect records: `{ h, x,
+  y, effect, triggers[], lock? }`. `effect` is GGG's `activeEffectImage` (→
+  mastery-effect atlas key); `triggers` are the connected nodes (gathered from the
+  edge list — the node's own `in` misses ~40) that light the effect when
+  allocated. See **Masteries** under Renderer.
 - icon-kind prefix (`iconKindOf`) for the skills-atlas key.
 - arc params (`arcFor`): centre, radius, `a0`/`a1` (canvas-convention angles via
   `atan2`), and `ccw` chosen so the **minor** arc is drawn.
@@ -101,7 +107,9 @@ classStarts, classes, ascStarts, ascByClass, ascArt, extent}`:
   anchors but not drawn (covered by the frame's clover ornaments).
 
 `build-passive-tree.js` emits:
-- `public/generated/passive-tree.json` — `{nodes, edges, meta}`. Nodes carry
+- `public/generated/passive-tree.json` — `{nodes, edges, masteries, meta}`.
+  `masteries[]` = `{ h, x, y, e (effect path), t (trigger hashes), lock? }`; the
+  renderer draws these as background patterns (see **Masteries**). Nodes carry
   `h,x,y,k,name,icon,iconKind,asc,ws,(lock),(hidden)`. `lock` = GGG's
   `unlockConstraint` (`{nodes:[…], asc}`): the node is hidden until its gating
   node(s) are allocated — e.g. Oracle's "The Unseen Path" (5571) reveals ~176
@@ -152,6 +160,20 @@ classStarts, classes, ascStarts, ascByClass, ascArt, extent}`:
   cover the ring and **centred on origin** — GGG's per-ascendancy offset anchors
   to the cluster's native group centre, so it's dropped; the illustrations frame
   their figure centrally and centre cleanly).
+- **Masteries** (`drawMasteryEffects`, drawn after the centre, under connectors +
+  nodes): each `masteries[]` record anchors a decorative "mastery effect" pattern
+  at the cluster's mastery position. Drawn **dim** (`mastery-effect-disabled`
+  atlas) by default and **lit** (`mastery-effect-active`) when any of its `t`
+  trigger nodes is allocated in *any* layer (`masteryActive` → `isAllocatedAnywhere`
+  ∪ starts) — mirroring in-game, where connecting into a cluster lights its
+  background. The mastery node itself is never drawn (not a selectable node).
+  Visibility follows the same gate as nodes (`masteryVisible` → `lockSatisfied`),
+  so the ~21 unlock-gated masteries (e.g. Oracle's "Paths Not Taken" clusters)
+  only appear once their gating node + ascendancy are active. Sprites draw at
+  `MASTERY_SCALE`× their ~488-world native size (a tunable — GGG renders the
+  pattern/glow larger than native to fill the cluster ring). The atlas images +
+  maps are already synced by `fetch-ggg-tree` / `copyAtlasMaps` — no fetch-images
+  or prerender change needed.
 - **Class/ascendancy selector**: two `<select>`s (`#tree-class`, `#tree-ascendancy`)
   in the controls bar. Selecting a class swaps the art + start anchor and resets
   the tree; selecting an ascendancy sets `activeAsc`, reveals that cluster
@@ -312,7 +334,9 @@ name), each a nested tooltip resolving the emotion's detail card.
 
 ## Known gaps / deferrals
 
-- **Masteries** excluded (TODO #7).
+- **Mastery backgrounds** — done (TODO #6): dim/lit cluster patterns (see
+  **Masteries** under Renderer). The lit state is a static swap, not the animated
+  pulse GGG plays; the mastery nodes themselves remain non-selectable.
 - **Ascendancy placement & class/ascendancy selector** — done (TODO #6). Clusters
   are centred on their class start and hidden until selected; see Build + Renderer.
 - **Textured connectors** — deferred in favour of stroked lines.
