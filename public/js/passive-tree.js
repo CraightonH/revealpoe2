@@ -1357,6 +1357,52 @@ export default function init(canvas, data) {
     if (!rafId) rafId = requestAnimationFrame(() => { rafId = null; draw(); });
   }
 
+  // Show the pre-rendered hover card for a node (anchored at the node) and preview
+  // its allocation route. Shared by mouse-hover (pointermove) and touch-tap-inspect.
+  function showCardFor(node) {
+    const t = ensureTip();
+    if (!t) return;
+    const rect = canvas.getBoundingClientRect();
+    const sp = worldToScreen(view, node.x, node.y);
+    const cssScale = rect.width / canvas.width;
+    const rr = radiusOf(node.k) * view.scale * cssScale;
+    const cx = rect.left + sp.x * cssScale;
+    const cy = rect.top  + sp.y * cssScale;
+    tipRect = { x: cx - rr, y: cy - rr, w: rr * 2, h: rr * 2 };
+    if (node.h !== hoverHash) {
+      hoverHash = node.h;
+      attrChoosing = null; // new node → start at the resting (generic) view
+      loadCards().then((c) => {
+        if (hoverHash !== node.h) return; // moved on while the artifact loaded
+        t.setContent(c[node.h] || node.name || '');
+        t.show();
+        if (t.popperInstance) t.popperInstance.update();
+        if (node.attr) paintAttrChoice(t.popper, node.h);
+      });
+    } else if (t.popperInstance) {
+      t.popperInstance.update(); // keep anchored while panning
+    }
+    updatePathPreview(node); // hover/inspect route from the allocated frontier
+  }
+
+  // Hit-test the node under a screen point (CSS px). Returns the closest node
+  // whose radius covers the point, or null. Shared by hover + tap/click.
+  function nodeAtClient(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    const mx = (clientX - rect.left) * (canvas.width / rect.width);
+    const my = (clientY - rect.top)  * (canvas.height / rect.height);
+    const wp = screenToWorld(view, mx, my);
+    let best = null, bestDist2 = Infinity;
+    for (const n of nodes) {
+      if (!nodeVisible(n)) continue;
+      const r = radiusOf(n.k);
+      const dx = n.x - wp.x, dy = n.y - wp.y;
+      const d2 = dx * dx + dy * dy;
+      if (d2 < r * r && d2 < bestDist2) { best = n; bestDist2 = d2; }
+    }
+    return best;
+  }
+
   // Wheel: zoom about the cursor.
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
@@ -1381,113 +1427,45 @@ export default function init(canvas, data) {
     requestDraw();
   }, { passive: false });
 
-  // Pointer-drag: pan.
-  let dragging  = false;
-  let dragStart = { x: 0, y: 0, ox: 0, oy: 0 };
-  let dragMoved = false;
+  // Pan (1 pointer) + pinch-zoom (2 pointers). Tracked through a pointer map so a
+  // mouse drag, a one-finger pan, and a two-finger pinch all share one code path.
+  const pointers = new Map();       // pointerId -> { x, y } in CSS px
+  let panId      = null;            // the pointer currently driving a pan (null = none)
+  let dragStart  = null;            // { x, y, ox, oy } captured when the pan pointer went down
+  let dragMoved  = false;           // has this gesture crossed the pan threshold / been a pinch?
+  let pinch      = null;            // { startDist, startScale, worldX, worldY } for a 2-finger gesture
+  // Touch has no hover: the first tap on a node INSPECTS it (card + path preview),
+  // a second tap on the SAME node COMMITS. `touchInspect` holds the inspected hash.
+  let touchInspect = null;
 
-  canvas.addEventListener('pointerdown', (e) => {
-    dragging  = true;
-    dragMoved = false;
-    dragStart = { x: e.clientX, y: e.clientY, ox: view.ox, oy: view.oy };
-    // Do NOT hide the card here — a press that turns out to be a click must keep
-    // the card alive so the node-click can open the attribute picker in it. The
-    // card is dismissed only once a real pan begins (in pointermove below).
-    canvas.setPointerCapture(e.pointerId);
-  });
-
-  canvas.addEventListener('pointermove', (e) => {
-    if (dragging) {
-      // dragStart/clientX are in CSS pixels, but view.ox/oy live in buffer pixels
-      // (canvas.width = rect.width * devicePixelRatio). Scale the delta into buffer
-      // space so the grabbed world point tracks the cursor 1:1 — without this the
-      // content pans at 1/DPR of cursor speed (sluggish on HiDPI displays).
-      const r = canvas.getBoundingClientRect();
-      const cssDx = e.clientX - dragStart.x;
-      const cssDy = e.clientY - dragStart.y;
-      if (!dragMoved && (Math.abs(cssDx) > 3 || Math.abs(cssDy) > 3)) {
-        dragMoved = true;
-        hideTip(); // a real pan has begun → dismiss the hover card
-        clearPathPreview(); // …and the path preview
-      }
-      if (dragMoved) {
-        view.ox = dragStart.ox + cssDx * (canvas.width  / r.width);
-        view.oy = dragStart.oy + cssDy * (canvas.height / r.height);
-        requestDraw();
-      }
-      return; // while panning, skip the hover hit-test (don't re-show the card)
-    }
-
-    // Hover card: hit-test the node under the cursor, then show its pre-rendered
-    // card through the shared Tippy harness anchored at the node.
-    const t = ensureTip();
-    if (!t) return;
+  // Distance + midpoint (CSS px) between the two active pointers.
+  function pinchGeom() {
+    const [a, b] = [...pointers.values()];
+    return {
+      dist: Math.hypot(a.x - b.x, a.y - b.y),
+      midX: (a.x + b.x) / 2,
+      midY: (a.y + b.y) / 2,
+    };
+  }
+  // Snapshot the pinch so the world point under the initial midpoint stays pinned
+  // under the (moving) midpoint as the fingers spread/close — matching the wheel
+  // zoom's cursor-anchor behaviour.
+  function beginPinch() {
     const rect = canvas.getBoundingClientRect();
-    const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
-    const my = (e.clientY - rect.top)  * (canvas.height / rect.height);
-    const wp = screenToWorld(view, mx, my);
+    const g = pinchGeom();
+    const mx = (g.midX - rect.left) * (canvas.width  / rect.width);
+    const my = (g.midY - rect.top)  * (canvas.height / rect.height);
+    pinch = {
+      startDist: g.dist || 1,
+      startScale: view.scale,
+      worldX: (mx - view.ox) / view.scale,
+      worldY: (my - view.oy) / view.scale,
+    };
+  }
 
-    let best = null, bestDist2 = Infinity;
-    for (const n of nodes) {
-      if (!nodeVisible(n)) continue;
-      const r = radiusOf(n.k);
-      const dx = n.x - wp.x, dy = n.y - wp.y;
-      const d2 = dx * dx + dy * dy;
-      if (d2 < r * r && d2 < bestDist2) { best = n; bestDist2 = d2; }
-    }
-
-    if (best) {
-      clearTimeout(hideTimer);
-      // Node centre + radius in viewport CSS pixels for the virtual reference.
-      const sp = worldToScreen(view, best.x, best.y);
-      const cssScale = rect.width / canvas.width;
-      const rr = radiusOf(best.k) * view.scale * cssScale;
-      const cx = rect.left + sp.x * cssScale;
-      const cy = rect.top  + sp.y * cssScale;
-      tipRect = { x: cx - rr, y: cy - rr, w: rr * 2, h: rr * 2 };
-      if (best.h !== hoverHash) {
-        hoverHash = best.h;
-        attrChoosing = null; // new node → start at the resting (generic) view
-        loadCards().then((c) => {
-          if (hoverHash !== best.h) return; // moved on while the artifact loaded
-          t.setContent(c[best.h] || best.name || '');
-          t.show();
-          if (t.popperInstance) t.popperInstance.update();
-          if (best.attr) paintAttrChoice(t.popper, best.h);
-        });
-      } else if (t.popperInstance) {
-        t.popperInstance.update(); // keep anchored while panning
-      }
-      updatePathPreview(best); // hover route from the allocated frontier
-    } else {
-      scheduleHide();
-      clearPathPreview();
-    }
-  });
-
-  canvas.addEventListener('pointerup', (e) => {
-    const wasDragging = dragMoved;
-    dragging  = false;
-    dragMoved = false;
-    if (wasDragging) return; // pan gesture — skip click logic
-
-    // Hit-test: find node under pointer.
-    const rect = canvas.getBoundingClientRect();
-    const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
-    const my = (e.clientY - rect.top)  * (canvas.height / rect.height);
-    const wp = screenToWorld(view, mx, my);
-
-    let hit = null, hitDist2 = Infinity;
-    for (const n of nodes) {
-      if (!nodeVisible(n)) continue;
-      const r = radiusOf(n.k);
-      const dx = n.x - wp.x, dy = n.y - wp.y;
-      const d2 = dx * dx + dy * dy;
-      if (d2 < r * r && d2 < hitDist2) { hit = n; hitDist2 = d2; }
-    }
-
-    if (!hit) return;
-
+  // Allocate/deallocate the node under a committed tap/click. Mirrors the desktop
+  // click semantics exactly (weapon-set mode, path collapse, attr picker).
+  function commitTap(hit) {
     // Weapon-set editing mode acts on the active set's own pool, never the shared
     // backbone (managed in default mode). Ascendancy nodes are exempt — modeFor()
     // forces them to the shared/ascendancy pool below even with a set active.
@@ -1502,12 +1480,9 @@ export default function init(canvas, data) {
         if (path && path.length >= 2) _allocatePathSync(path);
         else if (_canAllocateSync(hit.h)) _wsAllocateSync(hit.h);
       }
-      return;
-    }
-
-    // Default / ascendancy — shared pool (also reached for ascendancy nodes while
-    // a weapon set is active, since modeFor() returns null for them).
-    if (allocated.has(hit.h)) {
+    } else if (allocated.has(hit.h)) {
+      // Default / ascendancy — shared pool (also reached for ascendancy nodes while
+      // a weapon set is active, since modeFor() returns null for them).
       _deallocateSync(hit.h); // also clears any attribute pick (pruneAttrChoices)
       attrChoosing = null;
     } else if (wsAlloc[1].has(hit.h) || wsAlloc[2].has(hit.h)) {
@@ -1530,18 +1505,141 @@ export default function init(canvas, data) {
         _allocateSync(hit.h);
       }
     }
-    // Keep the hovered attribute card in sync (resting/menu/chosen) after the click.
+    // Keep the attribute card in sync (resting/menu/chosen) after the commit.
     if (hit.attr && tip && hoverHash === hit.h) paintAttrChoice(tip.popper, hit.h);
+  }
+
+  canvas.addEventListener('pointerdown', (e) => {
+    canvas.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.size === 1) {
+      // Begin a pan. Do NOT hide the card here — a press that turns out to be a
+      // tap must keep it alive so the tap can open the attribute picker in it.
+      panId = e.pointerId;
+      dragMoved = false;
+      dragStart = { x: e.clientX, y: e.clientY, ox: view.ox, oy: view.oy };
+    } else if (pointers.size === 2) {
+      // Second finger down → pinch. Cancel the pan's tap candidacy and dismiss the
+      // hover card / path preview (a zoom is not an inspect).
+      beginPinch();
+      dragMoved = true;
+      touchInspect = null;
+      hideTip();
+      clearPathPreview();
+    }
   });
 
-  canvas.addEventListener('pointercancel', () => {
-    dragging  = false;
+  canvas.addEventListener('pointermove', (e) => {
+    if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    // Two-finger pinch: zoom toward the pinned world point and follow the midpoint.
+    if (pinch && pointers.size >= 2) {
+      const rect = canvas.getBoundingClientRect();
+      const g = pinchGeom();
+      const target = Math.min(maxScale, Math.max(minScale, pinch.startScale * (g.dist / pinch.startDist)));
+      const mx = (g.midX - rect.left) * (canvas.width  / rect.width);
+      const my = (g.midY - rect.top)  * (canvas.height / rect.height);
+      view.scale = target;
+      view.ox = mx - pinch.worldX * target;
+      view.oy = my - pinch.worldY * target;
+      requestDraw();
+      return;
+    }
+
+    // Single-pointer pan.
+    if (panId === e.pointerId && dragStart) {
+      // dragStart/clientX are in CSS pixels, but view.ox/oy live in buffer pixels
+      // (canvas.width = rect.width * devicePixelRatio). Scale the delta into buffer
+      // space so the grabbed world point tracks the cursor 1:1 — without this the
+      // content pans at 1/DPR of cursor speed (sluggish on HiDPI displays).
+      const r = canvas.getBoundingClientRect();
+      const cssDx = e.clientX - dragStart.x;
+      const cssDy = e.clientY - dragStart.y;
+      if (!dragMoved && (Math.abs(cssDx) > 3 || Math.abs(cssDy) > 3)) {
+        dragMoved = true;
+        touchInspect = null; // a pan cancels a pending touch inspection
+        hideTip(); // a real pan has begun → dismiss the hover card
+        clearPathPreview(); // …and the path preview
+      }
+      if (dragMoved) {
+        view.ox = dragStart.ox + cssDx * (canvas.width  / r.width);
+        view.oy = dragStart.oy + cssDy * (canvas.height / r.height);
+        requestDraw();
+      }
+      return; // while panning, skip the hover hit-test (don't re-show the card)
+    }
+
+    // No active press → mouse hover card. Touch has no hover (a moving finger is
+    // always a press), so skip; touch inspection is driven by taps in pointerup.
+    if (pointers.size !== 0 || e.pointerType === 'touch') return;
+    const t = ensureTip();
+    if (!t) return;
+    const best = nodeAtClient(e.clientX, e.clientY);
+    if (best) {
+      clearTimeout(hideTimer);
+      showCardFor(best);
+    } else {
+      scheduleHide();
+      clearPathPreview();
+    }
+  });
+
+  canvas.addEventListener('pointerup', (e) => {
+    const wasPan   = e.pointerId === panId;
+    const moved    = dragMoved;
+    const hadPinch = pointers.size >= 2 || pinch != null;
+    pointers.delete(e.pointerId);
+
+    // Lifting one finger of a pinch: end the pinch and, if a finger remains, hand
+    // off to a fresh pan from it (so the view doesn't jump on the next drag).
+    if (pinch && pointers.size < 2) {
+      pinch = null;
+      if (pointers.size === 1) {
+        const [id, p] = [...pointers.entries()][0];
+        panId = id;
+        dragStart = { x: p.x, y: p.y, ox: view.ox, oy: view.oy };
+        dragMoved = true; // the leftover finger's eventual lift isn't a tap
+      } else {
+        panId = null;
+      }
+      return;
+    }
+
+    if (!wasPan) return;   // a non-driving pointer lifted — nothing to commit
+    panId = null;
     dragMoved = false;
+    if (moved || hadPinch) return; // pan/pinch gesture — not a tap/click
+
+    const hit = nodeAtClient(e.clientX, e.clientY);
+
+    // Touch: first tap on a node inspects it (card + path preview); a second tap on
+    // the SAME node commits. A tap on empty space dismisses the inspection.
+    if (e.pointerType === 'touch') {
+      if (!hit) { touchInspect = null; hideTip(); clearPathPreview(); return; }
+      if (touchInspect !== hit.h) { touchInspect = hit.h; showCardFor(hit); return; }
+      touchInspect = null;
+      commitTap(hit);
+      clearPathPreview(); // no hover on touch to recompute it after the state change
+      return;
+    }
+
+    // Mouse: click commits immediately (unchanged desktop behaviour).
+    if (hit) commitTap(hit);
+  });
+
+  canvas.addEventListener('pointercancel', (e) => {
+    pointers.delete(e.pointerId);
+    if (pointers.size < 2) pinch = null;
+    if (e.pointerId === panId) { panId = null; dragMoved = false; }
+    touchInspect = null;
     scheduleHide();
     clearPathPreview();
   });
 
-  canvas.addEventListener('pointerleave', () => {
+  canvas.addEventListener('pointerleave', (e) => {
+    // Touch cards are dismissed by an empty tap, not by the finger leaving — a lift
+    // fires pointerleave and would otherwise close the just-opened inspect card.
+    if (e.pointerType === 'touch') return;
     // Delay so the cursor can travel into the (interactive) card without it closing.
     scheduleHide();
     clearPathPreview();

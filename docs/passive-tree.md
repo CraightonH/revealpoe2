@@ -252,8 +252,29 @@ classStarts, classes, ascStarts, ascByClass, ascArt, extent}`:
     respec). A length-1 route (target directly adjacent) **falls through to the
     existing single-step behaviour**, so the attribute picker is preserved for
     adjacent attribute-node clicks. Scope: allocation-only (no dealloc preview).
+- **Touch / mobile** (TODO #6): pan + zoom go through a single **pointer map**
+  (`pointers` Map in the interaction block) — one pointer = pan (unchanged mouse
+  drag), two pointers = **pinch-zoom** (`beginPinch`/`pinchGeom`: the world point
+  under the initial two-finger midpoint stays pinned under the moving midpoint,
+  same anchor math as the wheel zoom). Lifting one finger of a pinch hands off to a
+  fresh pan from the remaining finger so the view doesn't jump. The canvas sets
+  `touch-action: none` (CSS) so the browser doesn't steal gestures for page
+  scroll / double-tap-zoom. Touch has **no hover**, so allocation is a
+  **tap-inspect → tap-confirm** model: the first tap on a node shows its card +
+  shortest-path preview (`showCardFor`) without allocating; a second tap on the
+  **same** node commits via `commitTap` (the shared alloc/dealloc/path-collapse
+  body, also called by the desktop click). `touchInspect` holds the inspected
+  hash; a pan/pinch/other-node tap clears it. Mouse click still commits on the
+  first click — the touch two-step is gated on `e.pointerType === 'touch'`.
+  Narrow-viewport CSS (`@media max-width:640px`) caps both overlay panels to the
+  screen and scrolls their bodies; `@media (hover:none) and (pointer:coarse)`
+  grows tap targets to ~40–44px and hides the Fullscreen button (iOS Safari only
+  fullscreens `<video>`). The wrap uses `100dvh` so a collapsing mobile URL bar
+  doesn't clip the canvas.
 - **Hit-testing** uses fixed per-kind world radii (`KIND_RADIUS`, = half the GGG
   frame sprite native size); drawing sizes come from the atlas directly.
+  `nodeAtClient(clientX, clientY)` is the shared closest-visible-node hit-test used
+  by hover, tap, and click.
 - Allocation/encoding (`passive-alloc.js`, `passive-code.js`), pan/zoom, and the
   Tippy hover card are unchanged — adjacency is rebuilt from the GGG edges.
 
