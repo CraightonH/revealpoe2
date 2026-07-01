@@ -33,11 +33,12 @@ export function b64ToBytes(str) {
 //   Main section — repeated until the separator stops being a main separator:
 //     hash   uint16        passive node hash (validates against the tree artifact)
 //     sep    uint16        0x0000 = plain record (4 bytes total)
-//                          0x0002 = tagged record; a 2-byte group/proxy tag word
-//                                   follows (6 bytes total). The tag is metadata
-//                                   (observed 0x3a4f / 0x66b9 / 0xdebe) and is not
-//                                   needed to recover the allocation, but must be
-//                                   preserved for byte-exact re-encode (Task 11).
+//                          0x0002 = tagged record; a 2-byte tag word follows
+//                                   (6 bytes total). On generic-attribute nodes the
+//                                   tag is the GGG skillOverride id of the chosen
+//                                   attribute (0x66b9=Str / 0x3a4f=Dex / 0xdebe=Int;
+//                                   see ATTR_TAG/TAG_ATTR) — the player's Str/Int/Dex
+//                                   pick, recovered on import and preserved on encode.
 //     The main section ends at the first record whose sep is neither 0x0000 nor
 //     0x0002 — that record is the first trailing (sub-section) record.
 //
@@ -147,6 +148,59 @@ export function bytesToB64(bytes) {
     b64 = Buffer.from(bytes).toString('base64');
   }
   return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+// The tag word on a generic-attribute record is the GGG skillOverride skill id of
+// the attribute the player picked (from the GGG tree's `skillOverrides`:
+// generic_attribute_strength = 26297, _dexterity = 14927, _intelligence = 57022).
+// A tagged main record (sep 0x0002) or an ssType-0x03 trailing record carries it;
+// on import it recovers the Str/Int/Dex choice, on export it preserves it.
+export const ATTR_TAG = { str: 26297, dex: 14927, int: 57022 };
+export const TAG_ATTR = { 26297: 'str', 14927: 'dex', 57022: 'int' };
+
+/**
+ * Build a v7 codec state from a freshly-built (non-imported) allocation, so
+ * {@link encode} emits a code that round-trips the ascendancy and per-node
+ * attribute picks. Pure + node-testable; the caller supplies node semantics.
+ *
+ * Ascendancy nodes go into the trailing section (ssType 0x01, subType 0x01) — NOT
+ * the main section — and the header carries the 1-based ascendancy index, so the
+ * importer can recover both. Generic-attribute nodes carry the chosen-attribute
+ * tag word (see {@link ATTR_TAG}) so the Str/Int/Dex pick survives the round-trip.
+ *
+ * @param {object} a
+ * @param {Iterable<number>} a.allocated  main + ascendancy node hashes (ws excluded)
+ * @param {Iterable<number>} [a.ws1]      weapon-set I hashes
+ * @param {Iterable<number>} [a.ws2]      weapon-set II hashes
+ * @param {number} [a.ascByte]            1-based ascendancy index (0 = none)
+ * @param {(h:number)=>(string|null)} a.ascOf   node's ascendancy id, or null if main
+ * @param {(h:number)=>boolean} a.isAttr        node is a generic-attribute node
+ * @param {(h:number)=>('str'|'dex'|'int')} a.attrOf  chosen attribute for an attr node
+ * @returns {ReturnType<typeof decode>}
+ */
+export function synthesizeState({ allocated, ws1 = [], ws2 = [], ascByte = 0, ascOf, isAttr, attrOf }) {
+  const main = [];
+  const trailing = [];
+  for (const h of allocated) {
+    if (ascOf(h) != null) {
+      trailing.push({ hash: h, ssType: 0x01, subType: 0x01, tag: null });
+    } else if (isAttr(h)) {
+      main.push({ hash: h, tag: ATTR_TAG[attrOf(h)] ?? ATTR_TAG.str });
+    } else {
+      main.push({ hash: h, tag: null });
+    }
+  }
+  for (const h of ws1) trailing.push({ hash: h, ssType: 0x01, subType: 0x02, tag: null });
+  for (const h of ws2) trailing.push({ hash: h, ssType: 0x01, subType: 0x03, tag: null });
+  return {
+    version: 7,
+    charClass: 10,
+    ascendancy: ascByte,
+    nodes: main.map((r) => r.hash),
+    weaponSet: [...ws1, ...ws2],
+    ascNodes: trailing.filter((r) => r.subType === 0x01).map((r) => r.hash),
+    records: { main, trailing },
+  };
 }
 
 /**

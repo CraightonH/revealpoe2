@@ -170,8 +170,12 @@ classStarts, classes, ascStarts, ascByClass, ascArt, extent}`:
   `plusintelligence`, all in the skills atlas beside the generic `plusattribute`)
   and the card collapses to the chosen line. To change it, deallocate (node-click,
   which clears the pick via `pruneAttrChoices`) and re-pick. Per-node picks live in
-  `attrChoice` (`attrOf` defaults to Strength, e.g. for imported builds). Not yet encoded into
-  the share-code tag word.
+  `attrChoice` (`attrOf` defaults to Strength). Picks round-trip through the share
+  code as the per-record **tag word** — the GGG `skillOverride` id of the chosen
+  attribute (`generic_attribute_strength`=26297, `_dexterity`=14927,
+  `_intelligence`=57022; see `passive-code.js` `ATTR_TAG`/`TAG_ATTR`). Export writes
+  it (`synthesizeState`); `importFromHash` reads it back into `attrChoice`, so an
+  imported Intelligence node no longer replays as Strength.
 - **Ascendancy art self-hosting**: the illustrations have no GGG web atlas, so
   they ride the ggpk `.dds`→webp pipeline like node icons. `fetch-images.js`'s
   `ddsFromPassiveArtifact()` reverse-maps `meta.ascendancyArt[].img` URLs into the

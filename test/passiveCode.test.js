@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { decode, encode, b64ToBytes } from '../public/js/passive-code.js';
+import { decode, encode, b64ToBytes, synthesizeState, ATTR_TAG, TAG_ATTR } from '../public/js/passive-code.js';
 
 const fx = JSON.parse(fs.readFileSync(new URL('./fixtures/passive-tree-codes.json', import.meta.url)));
 const byName = Object.fromEntries(fx.vectors.map((v) => [v.name, v]));
@@ -42,4 +42,63 @@ test('encode(decode(code)) round-trips byte-for-byte for every fixture', () => {
     const reencoded = encode(decode(v.code));
     assert.deepEqual([...b64ToBytes(reencoded)], [...b64ToBytes(v.code)], v.name);
   }
+});
+
+// ---------------------------------------------------------------------------
+// synthesizeState — build a v7 state from a fresh (non-imported) allocation.
+// Regression cover for the two share-code replay bugs: a freshly-built tree
+// (no decodedState) must still round-trip its ascendancy and per-node attribute
+// picks through encode → decode.
+// ---------------------------------------------------------------------------
+
+test('ATTR_TAG / TAG_ATTR are inverse and cover str/dex/int', () => {
+  for (const attr of ['str', 'dex', 'int']) {
+    assert.equal(TAG_ATTR[ATTR_TAG[attr]], attr);
+  }
+});
+
+test('synthesizeState routes ascendancy nodes into the trailing section + sets the ascendancy byte', () => {
+  const state = synthesizeState({
+    allocated: [100, 200, 300], // 200,300 are ascendancy nodes
+    ascByte: 2,
+    ascOf: (h) => (h === 200 || h === 300 ? 'Warrior2' : null),
+    isAttr: () => false,
+    attrOf: () => 'str',
+  });
+  const d = decode(encode(state));
+  assert.equal(d.ascendancy, 2);
+  assert.deepEqual(d.nodes, [100]);
+  assert.deepEqual([...d.ascNodes].sort((a, b) => a - b), [200, 300]);
+});
+
+test('synthesizeState writes the chosen-attribute tag word on generic-attribute nodes', () => {
+  const state = synthesizeState({
+    allocated: [10, 11, 12], // all generic-attribute nodes, distinct picks
+    ascByte: 0,
+    ascOf: () => null,
+    isAttr: () => true,
+    attrOf: (h) => ({ 10: 'str', 11: 'dex', 12: 'int' }[h]),
+  });
+  const d = decode(encode(state));
+  const tagByHash = Object.fromEntries(d.records.main.map((r) => [r.hash, r.tag]));
+  assert.equal(TAG_ATTR[tagByHash[10]], 'str');
+  assert.equal(TAG_ATTR[tagByHash[11]], 'dex');
+  assert.equal(TAG_ATTR[tagByHash[12]], 'int');
+});
+
+test('synthesizeState keeps weapon-set nodes in their per-set trailing records', () => {
+  const state = synthesizeState({
+    allocated: [1],
+    ws1: [50],
+    ws2: [60],
+    ascByte: 0,
+    ascOf: () => null,
+    isAttr: () => false,
+    attrOf: () => 'str',
+  });
+  const d = decode(encode(state));
+  assert.deepEqual(d.nodes, [1]);
+  const ws = d.records.trailing.filter((r) => r.subType !== 0x01);
+  assert.deepEqual(ws.find((r) => r.hash === 50).subType, 0x02);
+  assert.deepEqual(ws.find((r) => r.hash === 60).subType, 0x03);
 });

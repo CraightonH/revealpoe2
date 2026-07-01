@@ -1775,32 +1775,20 @@ export default function init(canvas, data) {
         return cm.encode(decodedState);
       }
 
-      // Fresh allocation: synthesize a minimal records structure.
-      // charClass: use the decoded one if available, else 10 (default/Mercenary).
-      // ascendancy: 0 (no asc UI yet).
-      const allocArr = [...allocated];
-      const mainRecords = allocArr.map((h) => ({ hash: h, tag: null }));
-
-      // Weapon-set nodes as trailing records (ssType 0x01 + subType 0x02/0x03,
-      // matching the codec's weapon-set classification).
-      const wsArr = [...wsAlloc[1], ...wsAlloc[2]];
-      const trailing = [
-        ...[...wsAlloc[1]].map((h) => ({ hash: h, ssType: 0x01, subType: 0x02, tag: null })),
-        ...[...wsAlloc[2]].map((h) => ({ hash: h, ssType: 0x01, subType: 0x03, tag: null })),
-      ];
-
-      const state = {
-        version: 7,
-        charClass: 10,
-        ascendancy: 0,
-        nodes: allocArr,
-        weaponSet: wsArr,
-        ascNodes: [],
-        records: {
-          main: mainRecords,
-          trailing,
-        },
-      };
+      // Fresh allocation: synthesize the codec state from the live allocation so
+      // the code round-trips the ascendancy (its nodes + 1-based index) and each
+      // generic-attribute node's Str/Int/Dex pick. `allocated` holds main +
+      // ascendancy nodes; weapon-set nodes live in their own pools.
+      const ascByte = activeAsc ? Number(String(activeAsc).match(/\d+$/)?.[0] ?? 0) || 0 : 0;
+      const state = cm.synthesizeState({
+        allocated,
+        ws1: wsAlloc[1],
+        ws2: wsAlloc[2],
+        ascByte,
+        ascOf: (h) => nodeMap.get(h)?.asc ?? null,
+        isAttr: (h) => !!nodeMap.get(h)?.attr,
+        attrOf,
+      });
       return cm.encode(state);
     } catch (err) {
       console.error('buildShareCode failed:', err);
@@ -1887,6 +1875,16 @@ export default function init(canvas, data) {
     wsAlloc[2] = ws[2];
     wsMode = null;
     for (const b of wsBtns) b.classList.remove('is-active');
+
+    // Recover each generic-attribute node's Str/Int/Dex pick from its tag word
+    // (see passive-code.js TAG_ATTR). Without this every attribute node would fall
+    // back to ATTR_DEFAULT ('str') on import, so e.g. Intelligence nodes replay as
+    // Strength. Both tagged main records and ssType-0x03 weapon-set records carry it.
+    attrChoice.clear();
+    for (const r of [...(decoded.records?.main ?? []), ...(decoded.records?.trailing ?? [])]) {
+      const pick = r.tag != null ? cm.TAG_ATTR[r.tag] : null;
+      if (pick) attrChoice.set(r.hash, pick);
+    }
 
     // Keep decoded state for round-trip encode.
     decodedState = decoded;
