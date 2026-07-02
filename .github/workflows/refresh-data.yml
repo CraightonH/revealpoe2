@@ -1,0 +1,102 @@
+name: Refresh game data
+
+# The ONLY workflow that hits GGG / RePoE in bulk. It re-scrapes RePoE game data
+# (scrape.py) and re-fetches GGG's passive tree + sprite atlases (fetch:tree) —
+# both are unconditional full mirrors — then does a FULL build, deploys, and
+# uploads the refreshed build cache to R2 for deploy.yml's fast path to reuse.
+#
+# Run it manually after a game patch (Actions ▸ Refresh game data ▸ Run), or let
+# the weekly schedule catch patches nobody triggered. It never runs on push —
+# code changes take deploy.yml's cached path and never touch third parties.
+
+on:
+  workflow_dispatch:
+    inputs:
+      force_images:
+        description: "Re-pull ALL art (build:images --force), not just genuinely-new"
+        type: boolean
+        default: false
+  schedule:
+    - cron: "0 9 * * 1" # Mondays 09:00 UTC
+
+concurrency:
+  group: refresh-data
+  cancel-in-progress: false
+
+env:
+  CACHE_KEY: cache.tar.zst
+  R2_BUCKET: revealpoe2-cache
+  SITE_URL: https://revealpoe2.com
+  AWS_DEFAULT_REGION: auto
+  AWS_REQUEST_CHECKSUM_CALCULATION: WHEN_REQUIRED
+  AWS_RESPONSE_CHECKSUM_VALIDATION: WHEN_REQUIRED
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - run: npm ci
+
+      # Restore the prior cache so build:images only fetches genuinely-new art
+      # (a warm public/img means its per-file gate trusts existing files).
+      # Best-effort: a missing cache (very first run) just means a full art pull.
+      - name: Restore prior cache (best effort)
+        continue-on-error: true
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: https://${{ secrets.CLOUDFLARE_ACCOUNT_ID }}.r2.cloudflarestorage.com
+        run: |
+          set -uo pipefail
+          if aws s3 cp "s3://${R2_BUCKET}/${CACHE_KEY}" "${CACHE_KEY}" --endpoint-url "$R2_ENDPOINT"; then
+            tar --zstd -xf "${CACHE_KEY}" && rm -f "${CACHE_KEY}"
+          else
+            echo "No prior cache — this run will fetch everything (expected on first run)."
+          fi
+
+      - name: Scrape RePoE game data
+        run: python scripts/scrape.py
+
+      - name: Fetch GGG passive tree + atlases
+        run: npm run fetch:tree
+
+      - name: Build static site (full)
+        run: |
+          set -euo pipefail
+          npm run build:graph
+          if [ "${{ inputs.force_images }}" = "true" ]; then
+            npm run build:images -- --force
+          else
+            npm run build:images
+          fi
+          npm run build:index
+          npm run build:passives
+          npm run build:og
+          node scripts/prerender.js
+
+      - name: Deploy to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler pages deploy dist --branch main
+
+      - name: Upload refreshed cache to R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: https://${{ secrets.CLOUDFLARE_ACCOUNT_ID }}.r2.cloudflarestorage.com
+        run: |
+          set -euo pipefail
+          tar --zstd -cf "${CACHE_KEY}" data/source public/img public/og
+          aws s3 cp "${CACHE_KEY}" "s3://${R2_BUCKET}/${CACHE_KEY}" --endpoint-url "$R2_ENDPOINT"

@@ -76,9 +76,49 @@ CLAUDE.md → **Development Workflow**.
 
 `data/source/` is gitignored (~250 MB, regenerable). Cloudflare's Git-integration
 build would have **no source data** to build the graph from, so it cannot work.
-The model is therefore: **build on the machine that has the data, upload the
-prebuilt `dist/`.** `wrangler.toml` documents this; `npm run deploy` is the one
-command.
+The model is therefore: **build the graph where the data is, upload the prebuilt
+`dist/`.** `npm run deploy` does this locally; the GitHub Actions workflows below
+do it in CI by reproducing the data instead of relying on it being in the repo.
+
+## Continuous deployment (GitHub Actions + R2 cache)
+
+`data/source/` isn't in the repo, but it's **reproducible from public sources**
+(`scripts/scrape.py` mirrors `repoe-fork.github.io`; `fetch:tree` pulls GGG's
+web tree) — so CI can build without the data being committed. Two workflows:
+
+| Workflow | Trigger | What it does |
+|----------|---------|--------------|
+| `.github/workflows/deploy.yml` | push to `main`, manual | Restores the build cache from R2, runs `build:static:cached` (no `fetch:tree`), deploys. **Zero bulk third-party traffic** — see below. |
+| `.github/workflows/refresh-data.yml` | manual, weekly cron | Re-scrapes RePoE + re-fetches the GGG tree (the unconditional full mirrors), full build, deploys, and **uploads the refreshed cache to R2**. |
+
+**Why the split — never inundate GGG/RePoE.** `scrape.py` and `fetch:tree` are
+unconditional full re-mirrors; `build:images` is gated (warm cache ⇒ 0 requests,
+else only genuinely-new files). On ephemeral CI runners the disk starts empty, so
+the guarantee "only fetch what's new" comes from **persisting the cache in R2**
+(`data/source` + `public/img` + `public/og`, one `cache.tar.zst`) and confining
+the bulk fetchers to `refresh-data`. A code push therefore restores the cache and
+fetches nothing upstream; only `refresh-data` (manual or the weekly tick) hits
+GGG/RePoE — that's the "special build to refetch everything" (add `--force` to
+also re-pull unchanged-path art). R2 egress is free and the cache sits inside the
+free tier, so this costs nothing.
+
+**Seed once:** `refresh-data` creates the cache. Run it a single time before the
+first `deploy` (Actions ▸ *Refresh game data* ▸ *Run*) — until it has, `deploy`
+fails fast with a hint.
+
+**Secrets** (repo → Settings → Secrets and variables → Actions):
+
+| Secret | Scope | Used by |
+|--------|-------|---------|
+| `CLOUDFLARE_API_TOKEN` | Account ▸ *Cloudflare Pages: Edit* | `wrangler pages deploy` |
+| `CLOUDFLARE_ACCOUNT_ID` | (identifier, not sensitive — masked for hygiene) | R2 endpoint + wrangler |
+| `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | R2 ▸ *Object Read & Write*, this one bucket | cache push/pull (S3 API) |
+
+Least privilege: the R2 token is scoped to the `revealpoe2-cache` bucket only, so
+even a full leak reaches nothing but the build cache.
+
+The local `npm run deploy` / `deploy:preview` path still works unchanged for
+hands-on deploys off a machine that has the data.
 
 ## The prerender crawler (`scripts/prerender.js`)
 
