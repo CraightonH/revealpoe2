@@ -4,10 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Reveal · PoE2 Wiki{% endblock %}</title>
+  {# Canonical host: the same content serves on both the custom domain and the
+     permanent <project>.pages.dev subdomain — this points search engines at one. #}
+  {% if canonicalUrl %}<link rel="canonical" href="{{ canonicalUrl }}">{% endif %}
   {# Open Graph card so shared links unfurl with a preview image. Detail pages
      override og_title/og_desc/og_image; og:image must be an absolute URL
      (scrapers don't resolve relative paths) — see scripts/build-og.js. Twitter/X
      falls back to the og:* tags, so only twitter:card is needed here. #}
+  {% if canonicalUrl %}<meta property="og:url" content="{{ canonicalUrl }}">{% endif %}
   <meta property="og:site_name" content="Reveal">
   <meta property="og:type" content="{% block og_type %}website{% endblock %}">
   <meta property="og:title" content="{% block og_title %}Reveal · PoE2 Wiki{% endblock %}">
