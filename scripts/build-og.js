@@ -37,7 +37,7 @@ const SALT_VERSION = '1';
 // Fallback card for the home page and list/index pages that have no single
 // item to feature (referenced by base.njk's default og_image block).
 const DEFAULT_SPEC = {
-  name: 'PoE2 Wiki',
+  name: 'Reveal',
   typeLine: 'Path of Exile 2',
   lines: [
     'A beginner-friendly wiki for gems, uniques, and bases',

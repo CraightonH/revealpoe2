@@ -6,6 +6,6 @@
 #
 # Free tier: unlimited requests/bandwidth, 20,000 files/deploy (we use ~5.5k),
 # 25 MiB/file max, 500 builds/month.
-name = "poe2wiki"
+name = "revealpoe2"
 pages_build_output_dir = "dist"
 compatibility_date = "2026-06-25"

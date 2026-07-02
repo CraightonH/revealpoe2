@@ -210,7 +210,7 @@ SSR on Workers, or per-request KV reads — the static model avoids all three.
 
 ```bash
 npx wrangler login                                   # browser OAuth, once
-npx wrangler pages project create poe2wiki --production-branch main
+npx wrangler pages project create revealpoe2 --production-branch main
 ```
 
 ### Deploy
@@ -226,7 +226,7 @@ npm run deploy:preview    # same build, --branch preview-<git branch>           
   `main`, leaving production stale — so the script pins `--branch main` explicitly.
 - A deploy request means production unless a preview is explicitly asked for.
 - For a preview that leaves production untouched, `npm run deploy:preview` pins a
-  non-production branch name → a `https://<hash>.poe2wiki.pages.dev` URL.
+  non-production branch name → a `https://<hash>.revealpoe2.pages.dev` URL.
 
 ### Update after a game patch
 
@@ -244,7 +244,7 @@ only seconds to a normal deploy.)
 ### Rollback
 
 ```bash
-wrangler pages deployment list --project-name poe2wiki
+wrangler pages deployment list --project-name revealpoe2
 # Pages keeps every deployment; promote a prior one from the dashboard,
 # or simply redeploy a known-good local build.
 ```

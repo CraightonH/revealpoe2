@@ -1,4 +1,4 @@
-# PoE2 Wiki
+# Reveal
 
 A modern, beginner-friendly Path of Exile 2 wiki. The goal is the opposite of
 poe2db.tw: surface the *relationships* between game data (which support gems work

@@ -36,7 +36,7 @@ async function fetchStatic() {
     const timer = setTimeout(() => ctrl.abort(), 20_000);
     try {
       const r = await fetch(STATIC_URL, {
-        headers: { 'User-Agent': 'poe2wiki/fetch-exchange-ids (+https://poe2wiki.pages.dev)' },
+        headers: { 'User-Agent': 'revealpoe2/fetch-exchange-ids (+https://revealpoe2.com)' },
         signal: ctrl.signal,
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);

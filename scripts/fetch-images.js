@@ -39,7 +39,7 @@ const CDN = 'https://image.ggpk.exposed/poe2';
 // 302-errors on art it can't convert). Same path layout as imageRelPath.
 const FALLBACK_CDN = 'https://cdn.poe2db.tw/image';
 const FALLBACK_REFERER = 'https://poe2db.tw/';
-const USER_AGENT = 'poe2wiki-image-sync/1.0 (+self-hosting referenced art)';
+const USER_AGENT = 'revealpoe2-image-sync/1.0 (+self-hosting referenced art)';
 
 // Subdirectories of public/img managed by a DIFFERENT sync step, not this one —
 // they must be excluded from the orphan prune (their files won't be in the

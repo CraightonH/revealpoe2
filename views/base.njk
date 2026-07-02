@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}PoE2 Wiki{% endblock %}</title>
+  <title>{% block title %}Reveal · PoE2 Wiki{% endblock %}</title>
   {# Open Graph card so shared links unfurl with a preview image. Detail pages
      override og_title/og_desc/og_image; og:image must be an absolute URL
      (scrapers don't resolve relative paths) — see scripts/build-og.js. Twitter/X
      falls back to the og:* tags, so only twitter:card is needed here. #}
-  <meta property="og:site_name" content="PoE2 Wiki">
+  <meta property="og:site_name" content="Reveal">
   <meta property="og:type" content="{% block og_type %}website{% endblock %}">
-  <meta property="og:title" content="{% block og_title %}PoE2 Wiki{% endblock %}">
+  <meta property="og:title" content="{% block og_title %}Reveal · PoE2 Wiki{% endblock %}">
   <meta property="og:description" content="{% block og_desc %}A beginner-friendly Path of Exile 2 wiki — gems, uniques, bases, and how they relate.{% endblock %}">
   <meta property="og:image" content="{{ SITE_URL }}{% block og_image %}/static/og/default.png{% endblock %}">
   <meta name="twitter:card" content="summary_large_image">
@@ -48,7 +48,7 @@
 </head>
 <body>
   <header class="site-header">
-    <a class="brand" href="/">PoE2 Wiki</a>
+    <a class="brand" href="/">Reveal</a>
     <div class="search-box">
       <input type="search" name="q" placeholder="Search…"
              hx-get="/search" hx-trigger="input changed delay:200ms, search"

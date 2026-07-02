@@ -24,7 +24,7 @@ export function createApp() {
   });
   // Absolute origin for og:image/twitter:image URLs (scrapers need absolute).
   // Overridable for preview deploys; defaults to production.
-  env.addGlobal('SITE_URL', (process.env.SITE_URL || 'https://poe2wiki.pages.dev').replace(/\/$/, ''));
+  env.addGlobal('SITE_URL', (process.env.SITE_URL || 'https://revealpoe2.com').replace(/\/$/, ''));
   app.set('view engine', 'njk');
 
   app.use('/static', express.static(path.join(root, 'public')));

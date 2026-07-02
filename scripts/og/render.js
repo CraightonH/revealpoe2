@@ -107,8 +107,8 @@ function tree({ name, typeLine, lines, accent, glow, artUri }) {
       div(
         { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' },
         [
-          div({ fontFamily: 'Optimus', fontSize: '32px', color: '#e6c989', letterSpacing: '2px' }, 'PoE2 Wiki'),
-          div({ fontFamily: 'Fontin', fontSize: '24px', color: '#6b6b6b' }, 'poe2wiki.pages.dev'),
+          div({ fontFamily: 'Optimus', fontSize: '32px', color: '#e6c989', letterSpacing: '2px' }, 'Reveal'),
+          div({ fontFamily: 'Fontin', fontSize: '24px', color: '#6b6b6b' }, 'revealpoe2.com'),
         ],
       ),
     ],

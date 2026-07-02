@@ -121,10 +121,10 @@ ready to ship ─► npm run build:static                (full local build; catc
                                   │
                           npm run deploy              (build:static + wrangler ⇒ PRODUCTION)
                                   │
-                          verify on poe2wiki.pages.dev (Node fetch, not curl)
+                          verify on revealpoe2.pages.dev (Node fetch, not curl)
 ```
 
-**`npm run deploy` always publishes to PRODUCTION** (`--branch main`) regardless of the current git branch — assume a production deploy whenever a deploy is requested unless a **preview** is *explicitly* asked for. For a preview, use `npm run deploy:preview` (publishes to a `preview-<branch>` Pages branch → a `<hash>.poe2wiki.pages.dev` URL, leaving production untouched).
+**`npm run deploy` always publishes to PRODUCTION** (`--branch main`) regardless of the current git branch — assume a production deploy whenever a deploy is requested unless a **preview** is *explicitly* asked for. For a preview, use `npm run deploy:preview` (publishes to a `preview-<branch>` Pages branch → a `<hash>.revealpoe2.pages.dev` URL, leaving production untouched).
 
 The content-update loop after a game patch is just: `scrape.py` → `npm run deploy` (deploy runs `build:images` itself, so icons sync automatically — the manual `build:images` above is only for seeing them in `dev` first).
 

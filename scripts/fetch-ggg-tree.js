@@ -28,7 +28,7 @@ const ATLAS_DATA_DIR = path.join(DATA_DIR, 'atlas');
 const ATLAS_IMG_DIR = path.join(root, 'public', 'img', 'passive-atlas');
 
 const TREE_URL = 'https://pathofexile2.com/internal-api/content/game-passive-skill-tree';
-const UA = 'poe2wiki-tree-sync/1.0 (+self-hosting official tree data)';
+const UA = 'revealpoe2-tree-sync/1.0 (+self-hosting official tree data)';
 const TIMEOUT = 30_000;
 const RETRIES = 4;
 
