@@ -18,6 +18,12 @@
   <meta property="og:description" content="{% block og_desc %}A beginner-friendly Path of Exile 2 wiki — gems, uniques, bases, and how they relate.{% endblock %}">
   <meta property="og:image" content="{{ SITE_URL }}{% block og_image %}/static/og/default.png{% endblock %}">
   <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/static/logo/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/static/logo/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="icon" href="/static/logo/favicon-16.png" sizes="16x16" type="image/png">
+  <link rel="apple-touch-icon" href="/static/logo/apple-touch-icon.png">
+  <link rel="manifest" href="/static/logo/site.webmanifest">
+  <meta name="theme-color" content="#0b0c0a">
   <!-- Apply the saved card size before first paint to avoid a flash at default size. -->
   <script>
     (function () {
@@ -52,7 +58,13 @@
 </head>
 <body>
   <header class="site-header">
-    <a class="brand" href="/">Reveal</a>
+    {% set sigilSvg %}<svg class="brand-sigil" viewBox="0 0 66 66" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="33" cy="33" r="30" stroke-width="1.6" stroke-dasharray="4 5" opacity="0.85"/><path d="M22 47 L22 19 L38 19 Q47.5 19 47.5 28.5 Q47.5 37.5 38 37.5 L24 37.5 M37 37.5 L48 49" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"/></svg>{% endset %}
+    <a class="brand" href="/" aria-label="Reveal — home">
+      <span class="brand-lock" aria-hidden="true">
+        <span class="brand-layer brand-desecrated">{{ sigilSvg | safe }}<span class="brand-word">eveal</span></span>
+        <span class="brand-layer brand-revealed">{{ sigilSvg | safe }}<span class="brand-word">eveal</span></span>
+      </span>
+    </a>
     <div class="search-box">
       <input type="search" name="q" placeholder="Search…"
              hx-get="/search" hx-trigger="input changed delay:200ms, search"

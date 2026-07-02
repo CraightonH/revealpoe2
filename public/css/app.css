@@ -14,11 +14,30 @@ body {
   background: var(--bg-surface);
   border-bottom: 1px solid var(--border);
 }
-.site-header a.brand {
+.site-header a.brand { text-decoration: none; display: inline-flex; align-items: center; }
+/* Brand lockup: the sigil-R medallion leads into "eveal". Two stacked layers —
+   desecrated green in flow (sizes the box), revealed gold overlaid — so the gold
+   can wipe in over the green on load (see the reveal animation below). */
+.brand-lock { position: relative; display: inline-block; }
+.brand-layer { display: flex; align-items: center; gap: 2px; white-space: nowrap; }
+.brand-sigil { width: 30px; height: 30px; flex: 0 0 auto; }
+.brand-word {
   font-family: var(--font-display);
-  color: var(--color-unique);
-  text-decoration: none;
-  font-size: 20px;
+  font-size: 20px; line-height: 1;
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.brand-desecrated { position: relative; color: #9fe86a; filter: drop-shadow(0 0 6px rgba(159, 232, 106, 0.5)); }
+.brand-revealed { position: absolute; inset: 0; color: #e6c989; filter: drop-shadow(0 0 5px rgba(230, 201, 137, 0.35)); }
+
+/* On load the gold layer wipes in left-to-right and the green fades — the mark
+   performs the Well-of-Souls reveal on every page load. Honors reduced-motion. */
+@keyframes brand-wipe { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes brand-fade { 0%, 55% { opacity: 1; } 100% { opacity: 0; } }
+.brand-revealed { clip-path: inset(0 0 0 0); animation: brand-wipe 1.5s cubic-bezier(0.72, 0, 0.22, 1) both; }
+.brand-desecrated { animation: brand-fade 1.5s ease-in both; }
+@media (prefers-reduced-motion: reduce) {
+  .brand-revealed { animation: none; clip-path: inset(0 0 0 0); }
+  .brand-desecrated { animation: none; opacity: 0; }
 }
 .search-box { flex: 1; max-width: 480px; position: relative; }
 

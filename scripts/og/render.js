@@ -44,6 +44,17 @@ async function artDataUri(localPath) {
   }
 }
 
+// Brand sigil for the footer strip — the committed transparent favicon, inlined
+// as a data URI (satori embeds it like the card art). null if missing.
+const SIGIL_URI = (() => {
+  try {
+    const buf = fs.readFileSync(path.join(root, 'public', 'logo', 'og-sigil.png'));
+    return `data:image/png;base64,${buf.toString('base64')}`;
+  } catch {
+    return null;
+  }
+})();
+
 const div = (style, children) => ({ type: 'div', props: { style, children } });
 
 // Build the satori element tree for one card.
@@ -107,7 +118,10 @@ function tree({ name, typeLine, lines, accent, glow, artUri }) {
       div(
         { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' },
         [
-          div({ fontFamily: 'Optimus', fontSize: '32px', color: '#e6c989', letterSpacing: '2px' }, 'Reveal'),
+          div({ display: 'flex', alignItems: 'center', gap: '10px' }, [
+            SIGIL_URI ? { type: 'img', props: { src: SIGIL_URI, width: 42, height: 42 } } : null,
+            div({ fontFamily: 'Optimus', fontSize: '32px', color: '#e6c989', letterSpacing: '2px' }, SIGIL_URI ? 'eveal' : 'Reveal'),
+          ].filter(Boolean)),
           div({ fontFamily: 'Fontin', fontSize: '24px', color: '#6b6b6b' }, 'revealpoe2.com'),
         ],
       ),

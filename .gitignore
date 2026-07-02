@@ -3,6 +3,7 @@ node_modules/
 .DS_Store
 dist/
 .cache/
+.wrangler/
 .superpowers/
 build/
 # Generated client artifacts (search index + browse-card HTML), built from the
