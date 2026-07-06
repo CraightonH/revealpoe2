@@ -98,3 +98,120 @@ export function validateBuild(b) {
 
   return { ok: errors.length === 0, errors };
 }
+
+const deepCopy = (v) => JSON.parse(JSON.stringify(v));
+
+// Schema migrations, keyed by from-version; v1 has none. A future schema
+// bump adds `1: (build) => ({ ...migrated, schema: 2 })` here.
+const MIGRATIONS = {};
+
+function migrate(build) {
+  let b = build;
+  while (b.schema < SCHEMA_VERSION && MIGRATIONS[b.schema]) b = MIGRATIONS[b.schema](b);
+  return b;
+}
+
+/** Thrown when the backing storage rejects a write (quota). */
+export class StoreWriteError extends Error {
+  constructor(cause) {
+    super('build store write failed (storage quota?)');
+    this.name = 'StoreWriteError';
+    this.cause = cause;
+  }
+}
+
+/**
+ * Build store over a localStorage-like interface. All mutation goes through
+ * here; the raw keys are private to this module.
+ */
+export function createStore(storage, { now = defaultNow, uuid = defaultUuid } = {}) {
+  const subscribers = new Set();
+  const emit = (type, id = null) => { for (const fn of subscribers) fn({ type, id }); };
+
+  function read() {
+    const raw = storage.getItem(STORE_KEY);
+    if (raw === null) return { order: [], builds: {} };
+    try {
+      const state = JSON.parse(raw);
+      if (!state || !Array.isArray(state.order) || typeof state.builds !== 'object' || state.builds === null) {
+        throw new Error('bad shape');
+      }
+      for (const id of state.order) state.builds[id] = migrate(state.builds[id]);
+      return state;
+    } catch {
+      // Never silently destroy user data: park the corrupt payload, start empty.
+      storage.setItem(CORRUPT_KEY, raw);
+      storage.removeItem(STORE_KEY);
+      return { order: [], builds: {} };
+    }
+  }
+
+  function write(state) {
+    try {
+      storage.setItem(STORE_KEY, JSON.stringify(state));
+    } catch (e) {
+      throw new StoreWriteError(e);
+    }
+  }
+
+  return {
+    list() {
+      const s = read();
+      return s.order.map((id) => s.builds[id]);
+    },
+    get(id) {
+      return read().builds[id] ?? null;
+    },
+    create(partial = {}) {
+      const s = read();
+      const build = emptyBuild({ now, uuid, ...partial });
+      s.order.push(build.id);
+      s.builds[build.id] = build;
+      write(s);
+      emit('create', build.id);
+      return build;
+    },
+    update(id, patch) {
+      const s = read();
+      const cur = s.builds[id];
+      if (!cur) return null;
+      // Identity fields are store-owned; a patch never moves them.
+      const { id: _i, schema: _s, createdAt: _c, ...rest } = patch;
+      const next = { ...cur, ...rest, updatedAt: now() };
+      s.builds[id] = next;
+      write(s);
+      emit('update', id);
+      return next;
+    },
+    remove(id) {
+      const s = read();
+      if (!s.builds[id]) return false;
+      delete s.builds[id];
+      s.order = s.order.filter((x) => x !== id);
+      write(s);
+      emit('remove', id);
+      return true;
+    },
+    duplicate(id) {
+      const s = read();
+      const cur = s.builds[id];
+      if (!cur) return null;
+      const t = now();
+      const copy = { ...deepCopy(cur), id: uuid(), name: `${cur.name} (copy)`, createdAt: t, updatedAt: t };
+      s.order.push(copy.id);
+      s.builds[copy.id] = copy;
+      write(s);
+      emit('create', copy.id);
+      return copy;
+    },
+    subscribe(fn) {
+      subscribers.add(fn);
+      return () => subscribers.delete(fn);
+    },
+    // Re-read + notify. The browser host wires this to the cross-tab
+    // 'storage' event: e.key === STORE_KEY && store.refresh().
+    refresh() {
+      emit('refresh', null);
+    },
+  };
+}

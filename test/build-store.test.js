@@ -73,3 +73,100 @@ test('exported storage keys are stable', () => {
   assert.equal(STORE_KEY, 'reveal.builds.v1');
   assert.equal(CORRUPT_KEY, 'reveal.builds.corrupt');
 });
+
+import { createStore } from '../public/js/build-store.js';
+
+function memStorage(seed = {}) {
+  const m = new Map(Object.entries(seed));
+  return {
+    getItem: (k) => (m.has(k) ? m.get(k) : null),
+    setItem: (k, v) => { m.set(k, String(v)); },
+    removeItem: (k) => { m.delete(k); },
+    map: m,
+  };
+}
+
+function seqStore(storage = memStorage()) {
+  let t = 0; let n = 0;
+  return {
+    storage,
+    store: createStore(storage, { now: () => ++t, uuid: () => `id-${++n}` }),
+  };
+}
+
+test('create/list/get round trip, list follows creation order', () => {
+  const { store } = seqStore();
+  const a = store.create({ name: 'A' });
+  const b = store.create({ name: 'B' });
+  assert.deepEqual(store.list().map((x) => x.name), ['A', 'B']);
+  assert.equal(store.get(a.id).name, 'A');
+  assert.equal(store.get('nope'), null);
+  assert.notEqual(a.id, b.id);
+});
+
+test('state persists through the storage interface (new store, same storage)', () => {
+  const storage = memStorage();
+  let t = 0; let n = 0;
+  const s1 = createStore(storage, { now: () => ++t, uuid: () => `id-${++n}` });
+  const made = s1.create({ name: 'Persisted' });
+  const s2 = createStore(storage, { now: () => 99, uuid: () => 'other' });
+  assert.equal(s2.get(made.id).name, 'Persisted');
+});
+
+test('update shallow-merges, bumps updatedAt, protects identity fields', () => {
+  const { store } = seqStore();
+  const b = store.create({ name: 'A' });
+  const before = b.updatedAt;
+  const after = store.update(b.id, { name: 'A2', id: 'hack', schema: 99, createdAt: 555 });
+  assert.equal(after.name, 'A2');
+  assert.equal(after.id, b.id);
+  assert.equal(after.schema, b.schema);
+  assert.equal(after.createdAt, b.createdAt);
+  assert.ok(after.updatedAt > before);
+  assert.equal(store.update('nope', { name: 'x' }), null);
+});
+
+test('update passes unknown fields through (forward compatibility)', () => {
+  const { store } = seqStore();
+  const b = store.create({});
+  const after = store.update(b.id, { futureField: [1, 2] });
+  assert.deepEqual(store.get(b.id).futureField, [1, 2]);
+  assert.deepEqual(after.futureField, [1, 2]);
+});
+
+test('remove deletes and reports, duplicate deep-copies with new identity', () => {
+  const { store } = seqStore();
+  const b = store.create({ name: 'Orig' });
+  store.update(b.id, { unassigned: [{ kind: 'base', slug: 'x' }] });
+  const copy = store.duplicate(b.id);
+  assert.equal(copy.name, 'Orig (copy)');
+  assert.notEqual(copy.id, b.id);
+  assert.deepEqual(copy.unassigned, [{ kind: 'base', slug: 'x' }]);
+  copy.unassigned.push({ kind: 'base', slug: 'y' }); // mutation must not leak
+  assert.equal(store.get(b.id).unassigned.length, 1);
+  assert.equal(store.duplicate('nope'), null);
+  assert.equal(store.remove(b.id), true);
+  assert.equal(store.remove(b.id), false);
+  assert.deepEqual(store.list().map((x) => x.id), [copy.id]);
+});
+
+test('subscribe fires per mutation and unsubscribes; refresh re-reads storage', () => {
+  const storage = memStorage();
+  const { store } = seqStore(storage);
+  const events = [];
+  const off = store.subscribe((e) => events.push(e));
+  const b = store.create({});
+  store.update(b.id, { name: 'n' });
+  store.remove(b.id);
+  assert.deepEqual(events.map((e) => e.type), ['create', 'update', 'remove']);
+  assert.equal(events[0].id, b.id);
+  // refresh: another store writes to the same storage (cross-tab analogue)
+  const other = createStore(storage, { now: () => 50, uuid: () => 'id-x' });
+  other.create({ name: 'From other tab' });
+  store.refresh();
+  assert.deepEqual(events.at(-1), { type: 'refresh', id: null });
+  assert.equal(store.list().length, 1);
+  off();
+  store.create({});
+  assert.equal(events.filter((e) => e.type === 'create').length, 1);
+});
