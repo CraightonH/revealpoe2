@@ -1,0 +1,307 @@
+/* planner-art.css — in-game UI textures for the Build Planner (Phase 3
+   ingestion only).
+
+   This file is NOT loaded by any template yet — Phase 4 wires up the actual
+   planner page/layout and decides which of these classes get used where.
+   Its sole job right now is to be the "ingestion trigger": a same-origin
+   background-image url() reference, rooted at the site's static image path
+   and ending in the webp extension, anywhere in `public/css/*.css` is what
+   makes `scripts/fetch-images.js` (`ddsFromCss()`) discover and mirror the
+   corresponding `.dds` texture into `public/img/` on the next
+   `npm run build:images`. Positioning, sizing, and actual composition are
+   deliberately left as a skeleton — that layout work belongs to Phase 4.
+
+   Every asset referenced below is a confirmed row in the Task-1 catalog:
+   docs/ui/ingame-art-inventory.md — see that doc for what each texture is,
+   its Phase-4 component mapping, and probe provenance. Do not add a url()
+   here without a corresponding catalog row (a Task-3 guard test enforces
+   this). All refs are same-origin, under the site's own static image path —
+   never hotlink an external host. */
+
+:root {
+  --planner-art: /static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Skill panel                                                             */
+/* ---------------------------------------------------------------------- */
+
+.planner-skill-panel {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/skillgempanelbg.webp) top left no-repeat;
+}
+.planner-skill-panel-top {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/skillgempanelbgtop.webp) top left no-repeat;
+}
+.planner-skill-panel-bottom {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/skillgempanelbgbottom.webp) top left no-repeat;
+}
+.planner-skill-panel-fill {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/skillgempanelbgfill.webp) top left repeat-y;
+}
+.planner-skill-frame {
+  border-image: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/skillpanelframe.webp) 30 fill;
+}
+.planner-skill-frame--alt {
+  border-image: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/skillpanelframe2.webp) 30 fill;
+}
+.planner-gem-icon-frame {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/skillpanelskilliconframe.webp) center / contain no-repeat;
+}
+
+/* Support-gem socket rings, one class per fill state */
+.planner-support-socket--empty {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/skillssocketempty.webp) center / contain no-repeat;
+}
+.planner-support-socket--blue {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/skillssocketblue.webp) center / contain no-repeat;
+}
+.planner-support-socket--green {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/skillssocketgreen.webp) center / contain no-repeat;
+}
+.planner-support-socket--red {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/skillssocketred.webp) center / contain no-repeat;
+}
+.planner-support-socket--white {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/skillssocketwhite.webp) center / contain no-repeat;
+}
+/* Dual-attribute + special socket states */
+.planner-support-socket--blue-green {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/skillssocketbluegreen.webp) center / contain no-repeat;
+}
+.planner-support-socket--green-red {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/skillssocketgreenred.webp) center / contain no-repeat;
+}
+.planner-support-socket--red-blue {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/skillssocketredblue.webp) center / contain no-repeat;
+}
+.planner-support-socket--aura {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/skillssocketaura.webp) center / contain no-repeat;
+}
+.planner-support-socket-glow {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/skillssocketglow.webp) center / contain no-repeat;
+}
+
+/* Collapse/expand chevrons, one pair per collapsible section */
+.planner-chevron--default-collapsed {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/skillpanelcollapsedefault.webp) center / contain no-repeat;
+}
+.planner-chevron--default-expanded {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/skillpanelexpanddefault.webp) center / contain no-repeat;
+}
+.planner-chevron--gem-collapsed {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/skillpanelcollapsegem.webp) center / contain no-repeat;
+}
+.planner-chevron--gem-expanded {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/skillpanelexpandgem.webp) center / contain no-repeat;
+}
+.planner-chevron--item-collapsed {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/skillpanelcollapseitem.webp) center / contain no-repeat;
+}
+.planner-chevron--item-expanded {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/skillpanelexpanditem.webp) center / contain no-repeat;
+}
+.planner-chevron--granted-collapsed {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/skillpanelcollapsegranted.webp) center / contain no-repeat;
+}
+.planner-chevron--granted-expanded {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/skillpanelexpandgranted.webp) center / contain no-repeat;
+}
+.planner-chevron--ascendancy-collapsed {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/skillpanelcollapseascendancy.webp) center / contain no-repeat;
+}
+.planner-chevron--ascendancy-expanded {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/skillpanelexpandascendancy.webp) center / contain no-repeat;
+}
+.planner-chevron--sockets-expanded {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/skillpanelexpandsockets.webp) center / contain no-repeat;
+}
+
+/* Gem level / quality readout + XP bar */
+.planner-gem-level-bg {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/skillpanelamountbg.webp) center / contain no-repeat;
+}
+.planner-gem-xp-bar {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/skillpanelexpbar.webp) left center repeat-x;
+}
+.planner-gem-xp-bar-fill {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/skillpanelexpbarfill.webp) left center repeat-x;
+}
+
+/* Equipped-item silhouettes shown in the skill panel's item section */
+.planner-itemslot--amulet {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/itemslotamulet.webp) center / contain no-repeat;
+}
+.planner-itemslot--belt {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/itemslotbelt.webp) center / contain no-repeat;
+}
+.planner-itemslot--body {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/itemslotbody.webp) center / contain no-repeat;
+}
+.planner-itemslot--boots {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/itemslotboots.webp) center / contain no-repeat;
+}
+.planner-itemslot--gloves {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/itemslotgloves.webp) center / contain no-repeat;
+}
+.planner-itemslot--helmet {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/itemslothelmet.webp) center / contain no-repeat;
+}
+.planner-itemslot--ring {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/itemslotring.webp) center / contain no-repeat;
+}
+.planner-itemslot--weapon {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/itemslotweapon.webp) center / contain no-repeat;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Inventory paper-doll                                                    */
+/* ---------------------------------------------------------------------- */
+
+.planner-slot-well {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/InventoryPanel/inventorysquare.webp) center / cover no-repeat;
+}
+.planner-area-frame {
+  border-image: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/InventoryPanel/inventoryareaframe.webp) 20 fill;
+}
+.planner-paperdoll-bg-upper {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/InventoryPanel/inventorypanelupperbackground.webp) top center no-repeat;
+}
+.planner-paperdoll-bg-lower {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/InventoryPanel/panelbottom.webp) bottom center no-repeat;
+}
+.planner-slot--ring {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/InventoryPanel/inventorypanelringslot.webp) center / contain no-repeat;
+}
+.planner-slot--charms-1row {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/InventoryPanel/inventorypanelcharmslots3x1.webp) center / contain no-repeat;
+}
+.planner-slot--charms-2row {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/InventoryPanel/inventorypanelcharmslots3x2.webp) center / contain no-repeat;
+}
+.planner-slot--potion-life-left {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/InventoryPanel/inventorypanelpotionlifeleft.webp) center / contain no-repeat;
+}
+.planner-slot--potion-life-right {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/InventoryPanel/inventorypanelpotionliferight.webp) center / contain no-repeat;
+}
+.planner-slot--potion-mana-left {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/InventoryPanel/inventorypanelpotionmanaleft.webp) center / contain no-repeat;
+}
+.planner-slot--potion-mana-right {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/InventoryPanel/inventorypanelpotionmanaright.webp) center / contain no-repeat;
+}
+.planner-potions-area-frame {
+  border-image: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/InventoryPanel/potionsareaframe.webp) 12 fill;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Build Planner chrome (GGG's own in-game planner panel — optional/       */
+/* decorative reuse; not required for MVP fidelity)                       */
+/* ---------------------------------------------------------------------- */
+
+.planner-chrome-bg--expanded {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/BuildPlanner/plannerbgexpanded.webp) top left no-repeat;
+}
+.planner-chrome-bg--collapsed {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/BuildPlanner/plannerbgcollapsed.webp) top left no-repeat;
+}
+.planner-chrome-button {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/BuildPlanner/plannerbuttonregular.webp) center / contain no-repeat;
+}
+.planner-chrome-button:hover {
+  background-image: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/BuildPlanner/plannerbuttonhover.webp);
+}
+.planner-chrome-button:active {
+  background-image: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/BuildPlanner/plannerbuttonpressed.webp);
+}
+.planner-node-overlay--small {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/BuildPlanner/plannernodeoverlaysmall.webp) center / contain no-repeat;
+}
+.planner-node-overlay--medium {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/BuildPlanner/plannernodeoverlaymedium.webp) center / contain no-repeat;
+}
+.planner-node-overlay--large {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/BuildPlanner/plannernodeoverlaylarge.webp) center / contain no-repeat;
+}
+.planner-nav-icon {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/BuildPlanner/iconplannerblue.webp) center / contain no-repeat;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Character/stat chrome (reserved for Phase 7's light-math stat readout;  */
+/* catalogued in Task 1 while the directory was already enumerated)       */
+/* ---------------------------------------------------------------------- */
+
+.planner-stat-panel-frame {
+  border-image: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/CharacterPanel/characterpanelframe.webp) 24 fill;
+}
+.planner-stat--health {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/CharacterPanel/mainstathealth.webp) left center no-repeat;
+}
+.planner-stat--mana {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/CharacterPanel/mainstatmana.webp) left center no-repeat;
+}
+.planner-stat--energy-shield {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/CharacterPanel/mainstatenergyshield.webp) left center no-repeat;
+}
+.planner-stat-mainstats-bg {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/CharacterPanel/mainstatsbg.webp) left top repeat-x;
+}
+.planner-stat-resistances-bg {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/CharacterPanel/resistancestatsbg.webp) left top repeat-x;
+}
+.planner-stat-defensive-bg {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/CharacterPanel/defensivestatsbg.webp) left top repeat-x;
+}
+.planner-resist-icon--fire {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/CharacterPanel/iconfire.webp) center / contain no-repeat;
+}
+.planner-resist-icon--cold {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/CharacterPanel/iconcold.webp) center / contain no-repeat;
+}
+.planner-resist-icon--lightning {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/CharacterPanel/iconlightning.webp) center / contain no-repeat;
+}
+.planner-resist-icon--chaos {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/CharacterPanel/iconchaos.webp) center / contain no-repeat;
+}
+.planner-defensive-icon--block {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/CharacterPanel/iconblock.webp) center / contain no-repeat;
+}
+.planner-defensive-icon--dodge {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/CharacterPanel/icondodge.webp) center / contain no-repeat;
+}
+.planner-defensive-icon--evasion {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/CharacterPanel/iconevasion.webp) center / contain no-repeat;
+}
+.planner-defensive-icon--armour {
+  background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/CharacterPanel/iconphysicalreduction.webp) center / contain no-repeat;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Fallback: CSS-recreation placeholders (no usable in-game texture)      */
+/* ---------------------------------------------------------------------- */
+
+/* Paper-doll character mannequin/statue backdrop. In-game this is a
+   3D-rendered character model behind the equipped-item silhouettes, not a
+   2D UI texture — nothing under UIImages/InGame corresponds to it. Phase 4
+   can approximate it with a radial-gradient/vignette behind the
+   .planner-itemslot--* silhouettes, following the same idiom as
+   gem-card.css's `.UniquePopup .itemHeader.doubleLine` recreation of the
+   unique-item header gradient. Sketch (uncomment/adapt in Phase 4):
+
+.planner-paperdoll-statue-backdrop {
+  background: radial-gradient(ellipse at center 35%, rgba(90,80,60,0.35) 0%, rgba(20,18,14,0.55) 55%, rgba(0,0,0,0.85) 100%);
+}
+*/
+
+/* Socket connector lines between a skill gem and its linked supports.
+   SkillPanel/itemssocketconnection.dds exists upstream but was out of scope
+   for the Task-2 probed set (see docs/ui/ingame-art-inventory.md). Draw the
+   link with an SVG/CSS line instead of chasing that asset, unless a later
+   phase probes and confirms it:
+
+.planner-socket-connector {
+  background: linear-gradient(90deg, rgba(200,180,140,0.6), rgba(200,180,140,0.15));
+}
+*/
