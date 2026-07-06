@@ -65,6 +65,6 @@ The persistence and serialization layer every later phase builds on: a versioned
 
 ## Acceptance criteria
 
-- [ ] Both modules importable in node **and** shippable to the browser unchanged (no node-only imports at top level; zlib behind environment detection).
-- [ ] `npm test` green with new suites.
-- [ ] No UI, no route, no template changes. Nothing reads raw localStorage outside `build-store.js`.
+- [x] Both modules importable in node **and** shippable to the browser unchanged (no node-only imports at top level; zlib behind environment detection). *(Codec uses the Web `CompressionStream`/`DecompressionStream` API — global in Node ≥20 and evergreen browsers — instead of `node:zlib`, so no environment branch is needed at all.)*
+- [x] `npm test` green with new suites. *(438 tests pass — 414 pre-existing + 24 new across `build-store.test.js` (17) and `build-code.test.js` (7).)*
+- [x] No UI, no route, no template changes. Nothing reads raw localStorage outside `build-store.js`.

@@ -59,7 +59,7 @@ Phases 1, 2, 3 are independent and may run in parallel sessions. Phases 6, 7, 8 
 
 ### Status checklist
 
-- [ ] Phase 1 — Build store foundation
+- [x] Phase 1 — Build store foundation (654c2a5)
 - [ ] Phase 2 — Slot & socket data model
 - [ ] Phase 3 — In-game UI art ingestion
 - [ ] Phase 4a — /builds list + Add-to-Build affordance
