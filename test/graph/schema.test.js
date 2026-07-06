@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { KINDS, EDGE_TYPES, makeNode, makeEdge } from '../../scripts/graph/schema.js';
+import { KINDS, EDGE_TYPES, SOURCES, makeNode, makeEdge } from '../../scripts/graph/schema.js';
 
 test('makeNode returns a normalized node with defaults', () => {
   const n = makeNode({ id: 'X', kind: KINDS.GEM, name: 'Fireball', slug: 'fireball' });
@@ -42,4 +42,15 @@ test('makeEdge stamps source/via for derived overlay edges', () => {
 test('makeEdge rejects an invalid type and missing endpoints', () => {
   assert.throws(() => makeEdge({ type: 'nope', from: 'A', to: 'B' }), /invalid type/);
   assert.throws(() => makeEdge({ type: EDGE_TYPES.GRANTS, from: 'A' }), /from and to required/);
+});
+
+test('gear-slot kind and fits_slot edge type are registered', () => {
+  assert.equal(KINDS.GEAR_SLOT, 'gear-slot');
+  assert.equal(EDGE_TYPES.FITS_SLOT, 'fits_slot');
+  // Factories accept them (KIND_SET/EDGE_SET auto-derive from the enums).
+  const n = makeNode({ id: 'Slot/helmet', kind: KINDS.GEAR_SLOT, name: 'Helmet', slug: 'helmet', source: SOURCES.MANUAL });
+  assert.equal(n.kind, 'gear-slot');
+  const e = makeEdge({ type: EDGE_TYPES.FITS_SLOT, from: 'Base/X', to: 'Slot/helmet', source: SOURCES.DERIVED, via: 'manual:gear-slots' });
+  assert.equal(e.type, 'fits_slot');
+  assert.equal(e.via, 'manual:gear-slots');
 });

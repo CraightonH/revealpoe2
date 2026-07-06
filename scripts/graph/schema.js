@@ -1,14 +1,14 @@
 export const KINDS = {
   GEM: 'gem', SKILL: 'skill', BASE: 'base', UNIQUE: 'unique', AFFIX: 'affix',
   TAG: 'tag', KEYWORD: 'keyword', CLASS: 'class', PASSIVE: 'passive',
-  ASCENDANCY: 'ascendancy',
+  ASCENDANCY: 'ascendancy', GEAR_SLOT: 'gear-slot',
 };
 
 export const EDGE_TYPES = {
   GRANTS: 'grants', RECOMMENDS_SUPPORT: 'recommends_support', ROLLS_ON: 'rolls_on',
   HAS_BASE: 'has_base', TAGGED: 'tagged', REFERENCES_KEYWORD: 'references_keyword',
   IN_CLASS: 'in_class', IN_ASCENDANCY: 'in_ascendancy',
-  DEFAULT_SKILL: 'default_skill',
+  DEFAULT_SKILL: 'default_skill', FITS_SLOT: 'fits_slot',
 };
 
 // Provenance tier stamped on every node and edge (see CLAUDE.md "Data Provenance
