@@ -77,7 +77,7 @@
 .planner-support-socket--aura {
   background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/skillssocketaura.webp) center / contain no-repeat;
 }
-.planner-support-socket-glow {
+.planner-support-socket--glow {
   background: url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/SkillPanel/skillssocketglow.webp) center / contain no-repeat;
 }
 
