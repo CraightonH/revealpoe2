@@ -75,13 +75,17 @@ jobs:
         run: |
           set -euo pipefail
           npm run build:graph
+          npm run build:index
+          # build:passives writes public/generated/passive-tree.json, whose
+          # meta.instillIcons tells build:images which Distilled Emotion icons to
+          # self-host — so it MUST run first (public/generated is gitignored and
+          # not in the R2 cache, so the file is absent until this step recreates it).
+          npm run build:passives
           if [ "${{ inputs.force_images }}" = "true" ]; then
             npm run build:images -- --force
           else
             npm run build:images
           fi
-          npm run build:index
-          npm run build:passives
           npm run build:og
           node scripts/prerender.js
 
