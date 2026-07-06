@@ -170,3 +170,38 @@ test('subscribe fires per mutation and unsubscribes; refresh re-reads storage', 
   store.create({});
   assert.equal(events.filter((e) => e.type === 'create').length, 1);
 });
+
+import { StoreWriteError } from '../public/js/build-store.js';
+
+test('corrupt JSON is parked under CORRUPT_KEY, store starts empty', () => {
+  const storage = memStorage({ [STORE_KEY]: '{not json' });
+  const store = createStore(storage, { now: () => 1, uuid: () => 'id-1' });
+  assert.deepEqual(store.list(), []);
+  assert.equal(storage.getItem(CORRUPT_KEY), '{not json');
+  assert.equal(storage.getItem(STORE_KEY), null);
+  const b = store.create({ name: 'fresh' }); // store is usable after recovery
+  assert.equal(store.get(b.id).name, 'fresh');
+});
+
+test('wrong-shape JSON is treated as corrupt too', () => {
+  const storage = memStorage({ [STORE_KEY]: JSON.stringify({ hello: 'world' }) });
+  const store = createStore(storage, { now: () => 1, uuid: () => 'id-1' });
+  assert.deepEqual(store.list(), []);
+  assert.equal(storage.getItem(CORRUPT_KEY), JSON.stringify({ hello: 'world' }));
+});
+
+test('storage write failure surfaces as StoreWriteError', () => {
+  const storage = memStorage();
+  storage.setItem = () => { throw new Error('QuotaExceededError'); };
+  const store = createStore(storage, { now: () => 1, uuid: () => 'id-1' });
+  assert.throws(() => store.create({}), StoreWriteError);
+});
+
+test('a build from a newer schema passes through read untouched', () => {
+  const future = { ...emptyBuild({ now: () => 1, uuid: () => 'id-9' }), schema: 2, newField: true };
+  const storage = memStorage({
+    [STORE_KEY]: JSON.stringify({ order: ['id-9'], builds: { 'id-9': future } }),
+  });
+  const store = createStore(storage, { now: () => 1, uuid: () => 'id-1' });
+  assert.deepEqual(store.get('id-9'), future);
+});
