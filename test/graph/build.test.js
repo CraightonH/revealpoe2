@@ -78,3 +78,30 @@ test('buildGraph includes unique nodes with has_base and grants edges', () => {
     'a grants edge originates from a unique node',
   );
 });
+
+test('buildGraph includes gear-slot nodes and derived fits_slot edges', () => {
+  const g = buildGraph();
+  const slots = g.nodes.filter((n) => n.kind === 'gear-slot');
+  assert.equal(slots.length, 15, 'all 15 gear slots emitted');
+  assert.ok(slots.every((n) => n.source === 'manual'), 'slot nodes are manual-sourced');
+
+  const fits = g.edges.filter((e) => e.type === 'fits_slot');
+  assert.ok(fits.length > 0, 'fits_slot edges present');
+  assert.ok(fits.every((e) => e.source === 'derived' && e.via === 'manual:gear-slots'), 'derived + via stamped');
+
+  // Every base of a mapped class has an edge: e.g. all 152 body armours fit `body`.
+  const bodyEdges = fits.filter((e) => e.to === 'Slot/body');
+  const bodyBases = g.nodes.filter((n) => n.kind === 'base' && n.props.itemClass === 'Body Armour');
+  assert.equal(bodyEdges.length, bodyBases.length, 'one fits_slot edge per body-armour base');
+  assert.ok(bodyEdges.every((e) => g.nodes.find((n) => n.id === e.from)?.kind === 'base'), 'edges originate at base nodes');
+
+  // Quiver rule carries requiresMainhand on its edge props.
+  const quiverEdge = fits.find((e) => e.to === 'Slot/weapon1b' && g.nodes.find((n) => n.id === e.from)?.props.itemClass === 'Quiver');
+  assert.ok(quiverEdge && quiverEdge.props?.requiresMainhand?.[0] === 'bow', 'quiver edge requires a bow main-hand');
+});
+
+test('buildGraph provenance summary counts the new manual/derived contributions', () => {
+  const g = buildGraph();
+  assert.ok(g.meta.provenance.nodes.manual >= 15, 'gear-slot nodes counted as manual');
+  assert.ok(g.meta.provenance.edges.derived > 0, 'fits_slot edges counted as derived');
+});
