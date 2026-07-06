@@ -14,7 +14,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { makeEdge, EDGE_TYPES, SOURCES } from './schema.js';
+import { makeNode, makeEdge, KINDS, EDGE_TYPES, SOURCES } from './schema.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const MANUAL_DIR = path.join(ROOT, 'data', 'manual');
@@ -72,8 +72,75 @@ function expandWeaponDefaultSkills(data, ctx, via) {
   return { nodes: [], edges, errors, warnings: [] };
 }
 
+// "Gear slot taxonomy + class→slot rules." Overlay shape:
+//   { "kind": "gear-slots",
+//     "slots": [ { id, name, group?, accepts?, order? }, ... ],
+//     "classRules": [ { class: "<item class id>", slots: [slotId,...], requiresMainhand?: [classSlug,...] }, ... ] }
+// Emits a gear-slot node per slot (source:manual) and a derived fits_slot edge
+// from every base in each rule's class to each listed slot. Two-hand occupancy
+// is NOT authored here — it is derived from the source `twohand` tag downstream.
+function expandGearSlots(data, ctx, via) {
+  const nodes = [];
+  const edges = [];
+  const errors = [];
+  const warnings = [];
+
+  const slotIds = new Set();
+  for (const s of data.slots ?? []) {
+    if (!s.id || !s.name) { errors.push(`${via}: slot entry missing id/name (${JSON.stringify(s)})`); continue; }
+    slotIds.add(s.id);
+    nodes.push(makeNode({
+      id: `Slot/${s.id}`,
+      kind: KINDS.GEAR_SLOT,
+      name: s.name,
+      slug: s.id,
+      source: SOURCES.MANUAL,
+      props: {
+        group: s.group ?? null,
+        accepts: s.accepts ?? null,
+        order: s.order ?? null,
+      },
+    }));
+  }
+
+  const mapped = new Set();
+  for (const rule of data.classRules ?? []) {
+    const bases = ctx.basesByClassId(rule.class);
+    if (!bases.length) {
+      errors.push(`${via}: item class '${rule.class}' has no bases (renamed/removed in source?)`);
+      continue;
+    }
+    mapped.add(rule.class);
+    for (const slotId of rule.slots ?? []) {
+      if (!slotIds.has(slotId)) {
+        errors.push(`${via}: class '${rule.class}' references unknown slot '${slotId}'`);
+        continue;
+      }
+      const props = rule.requiresMainhand ? { requiresMainhand: rule.requiresMainhand } : undefined;
+      for (const base of bases) {
+        edges.push(makeEdge({
+          type: EDGE_TYPES.FITS_SLOT,
+          from: base.id,
+          to: `Slot/${slotId}`,
+          source: SOURCES.DERIVED,
+          via,
+          props,
+        }));
+      }
+    }
+  }
+
+  // Coverage audit: any source item class not mapped to a slot is surfaced (not silent).
+  for (const classId of ctx.classIds()) {
+    if (!mapped.has(classId)) warnings.push(`${via}: unmapped item class '${classId}' — no gear slot assigned`);
+  }
+
+  return { nodes, edges, errors, warnings };
+}
+
 const HANDLERS = {
   'weapon-default-skills': expandWeaponDefaultSkills,
+  'gear-slots': expandGearSlots,
 };
 
 // Read overlay files from disk as [{ name, data }] (sorted, deterministic). A
@@ -98,16 +165,27 @@ function loadOverlays() {
 export function applyOverlays({ nodes, edges, overlays }) {
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const basesByClass = new Map();
+  const basesByClassId = new Map();
+  const classIdSet = new Set();
   for (const n of nodes) {
     if (n.kind !== 'base') continue;
     const cs = n.props?.classSlug;
-    if (!cs) continue;
-    if (!basesByClass.has(cs)) basesByClass.set(cs, []);
-    basesByClass.get(cs).push(n);
+    if (cs) {
+      if (!basesByClass.has(cs)) basesByClass.set(cs, []);
+      basesByClass.get(cs).push(n);
+    }
+    const ci = n.props?.itemClass;
+    if (ci) {
+      classIdSet.add(ci);
+      if (!basesByClassId.has(ci)) basesByClassId.set(ci, []);
+      basesByClassId.get(ci).push(n);
+    }
   }
   const ctx = {
     node: (id) => byId.get(id) ?? null,
     basesByClassSlug: (slug) => basesByClass.get(slug) ?? [],
+    basesByClassId: (id) => basesByClassId.get(id) ?? [],
+    classIds: () => [...classIdSet],
   };
 
   const outNodes = [];

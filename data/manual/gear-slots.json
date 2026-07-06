@@ -1,0 +1,62 @@
+{
+  "kind": "gear-slots",
+  "description": "Gear-slot taxonomy and item-class -> slot rules for the Build Planner. NOT in RePoE source. `slots` is the irreducible slot list (paper-doll positions + weapon-set exclusivity groups); `classRules` maps each source item class to the slot(s) it fits. The builder expands each rule into a `derived` fits_slot edge per base in that class, and derives two-hand occupancy from the source `twohand` tag (not authored here). Uniques inherit slot legality at read time through their has_base edge. Verify class names against listItemClasses() before editing; a dangling class name FAILS the build.",
+  "slots": [
+    { "id": "weapon1a", "name": "Main Hand (Set I)", "group": "weaponset1", "accepts": "weapon", "order": 1 },
+    { "id": "weapon1b", "name": "Off Hand (Set I)", "group": "weaponset1", "accepts": "offhand", "order": 2 },
+    { "id": "weapon2a", "name": "Main Hand (Set II)", "group": "weaponset2", "accepts": "weapon", "order": 3 },
+    { "id": "weapon2b", "name": "Off Hand (Set II)", "group": "weaponset2", "accepts": "offhand", "order": 4 },
+    { "id": "helmet", "name": "Helmet", "accepts": "helmet", "order": 5 },
+    { "id": "body", "name": "Body Armour", "accepts": "body", "order": 6 },
+    { "id": "gloves", "name": "Gloves", "accepts": "gloves", "order": 7 },
+    { "id": "boots", "name": "Boots", "accepts": "boots", "order": 8 },
+    { "id": "belt", "name": "Belt", "accepts": "belt", "order": 9 },
+    { "id": "amulet", "name": "Amulet", "accepts": "amulet", "order": 10 },
+    { "id": "ring1", "name": "Ring 1", "accepts": "ring", "order": 11 },
+    { "id": "ring2", "name": "Ring 2", "accepts": "ring", "order": 12 },
+    { "id": "flask1", "name": "Life Flask", "accepts": "flask", "order": 13 },
+    { "id": "flask2", "name": "Mana Flask", "accepts": "flask", "order": 14 },
+    { "id": "charm1", "name": "Charm", "accepts": "charm", "order": 15 }
+  ],
+  "classRules": [
+    { "class": "Bow", "slots": ["weapon1a", "weapon2a"] },
+    { "class": "Claw", "slots": ["weapon1a", "weapon2a"] },
+    { "class": "Crossbow", "slots": ["weapon1a", "weapon2a"] },
+    { "class": "Dagger", "slots": ["weapon1a", "weapon2a"] },
+    { "class": "FishingRod", "slots": ["weapon1a", "weapon2a"] },
+    { "class": "Flail", "slots": ["weapon1a", "weapon2a"] },
+    { "class": "One Hand Axe", "slots": ["weapon1a", "weapon2a"] },
+    { "class": "One Hand Mace", "slots": ["weapon1a", "weapon2a"] },
+    { "class": "One Hand Sword", "slots": ["weapon1a", "weapon2a"] },
+    { "class": "Sceptre", "slots": ["weapon1a", "weapon2a"] },
+    { "class": "Spear", "slots": ["weapon1a", "weapon2a"] },
+    { "class": "Staff", "slots": ["weapon1a", "weapon2a"] },
+    { "class": "TrapTool", "slots": ["weapon1a", "weapon2a"] },
+    { "class": "Two Hand Axe", "slots": ["weapon1a", "weapon2a"] },
+    { "class": "Two Hand Mace", "slots": ["weapon1a", "weapon2a"] },
+    { "class": "Two Hand Sword", "slots": ["weapon1a", "weapon2a"] },
+    { "class": "Wand", "slots": ["weapon1a", "weapon2a"] },
+    { "class": "Warstaff", "slots": ["weapon1a", "weapon2a"] },
+    { "class": "Shield", "slots": ["weapon1b", "weapon2b"] },
+    { "class": "Buckler", "slots": ["weapon1b", "weapon2b"] },
+    { "class": "Focus", "slots": ["weapon1b", "weapon2b"] },
+    { "class": "Quiver", "slots": ["weapon1b", "weapon2b"], "requiresMainhand": ["bow"] },
+    { "class": "Body Armour", "slots": ["body"] },
+    { "class": "Helmet", "slots": ["helmet"] },
+    { "class": "Gloves", "slots": ["gloves"] },
+    { "class": "Boots", "slots": ["boots"] },
+    { "class": "Belt", "slots": ["belt"] },
+    { "class": "Amulet", "slots": ["amulet"] },
+    { "class": "Ring", "slots": ["ring1", "ring2"] },
+    { "class": "LifeFlask", "slots": ["flask1", "flask2"] },
+    { "class": "ManaFlask", "slots": ["flask1", "flask2"] },
+    { "class": "UtilityFlask", "slots": ["charm1"] }
+  ],
+  "_deferred": {
+    "note": "Intentionally unmapped — surfaced as build warnings by design (coverage audit).",
+    "cases": {
+      "Jewel": "Passive-tree jewel sockets, not a gear slot.",
+      "Talisman": "Source is contradictory: grouped under Accessories in itemTaxonomy.js but tagged two_hand_weapon. Not mapped until the intended slot is confirmed rather than fabricated."
+    }
+  }
+}
