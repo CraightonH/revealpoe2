@@ -35,7 +35,7 @@ export function gearViolations(build, plannerData) {
     const slug = cell?.item?.slug;
     if (!slug) continue;
     const info = items[slug];
-    if (info && !info.slots.includes(slotId)) {
+    if (info && Array.isArray(info.slots) && !info.slots.includes(slotId)) {
       out.push({ code: 'illegal-slot', slotId, message: `${slug} cannot be placed in ${slotId}` });
     }
   }
@@ -53,7 +53,7 @@ export function gearViolations(build, plannerData) {
         message: `a two-handed weapon in ${mainId} leaves no room for an off-hand`,
       });
     }
-    if (off?.requiresMainhand) {
+    if (Array.isArray(off?.requiresMainhand)) {
       const mainClass = main?.class ?? null;
       if (!mainClass || !off.requiresMainhand.includes(mainClass)) {
         out.push({

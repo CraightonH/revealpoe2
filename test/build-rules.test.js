@@ -66,6 +66,13 @@ test('gearViolations: item placed in a slot it does not fit', () => {
   assert.ok(gearViolations(b, PD).some((x) => x.code === 'illegal-slot' && x.slotId === 'body'));
 });
 
+test('gearViolations tolerates a malformed item record (missing slots) without throwing', () => {
+  const pd = { slots: [{ id: 'body' }], items: { foo: { class: 'x' } }, gems: {} };
+  const b = { gear: { body: { item: { kind: 'base', slug: 'foo' } } }, skills: [] };
+  assert.doesNotThrow(() => gearViolations(b, pd));
+  assert.deepEqual(gearViolations(b, pd), []); // can't prove illegal → no violation
+});
+
 test('setupViolations: duplicate support across setups', () => {
   const b = build({ skills: [
     { gem: { slug: 'fireball' }, supports: [{ slug: 'faster-casting' }] },
