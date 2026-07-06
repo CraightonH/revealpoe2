@@ -110,7 +110,19 @@ function expandGearSlots(data, ctx, via) {
       errors.push(`${via}: item class '${rule.class}' has no bases (renamed/removed in source?)`);
       continue;
     }
+    if (!Array.isArray(rule.slots) || rule.slots.length === 0) {
+      errors.push(`${via}: class '${rule.class}' has no slots`);
+      continue;
+    }
     mapped.add(rule.class);
+    if (Array.isArray(rule.requiresMainhand)) {
+      const knownSlugs = ctx.classSlugs();
+      for (const slug of rule.requiresMainhand) {
+        if (!knownSlugs.includes(slug)) {
+          errors.push(`${via}: class '${rule.class}' requiresMainhand references unknown class slug '${slug}'`);
+        }
+      }
+    }
     for (const slotId of rule.slots ?? []) {
       if (!slotIds.has(slotId)) {
         errors.push(`${via}: class '${rule.class}' references unknown slot '${slotId}'`);
@@ -186,6 +198,7 @@ export function applyOverlays({ nodes, edges, overlays }) {
     basesByClassSlug: (slug) => basesByClass.get(slug) ?? [],
     basesByClassId: (id) => basesByClassId.get(id) ?? [],
     classIds: () => [...classIdSet],
+    classSlugs: () => [...basesByClass.keys()],
   };
 
   const outNodes = [];

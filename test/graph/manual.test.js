@@ -69,6 +69,7 @@ const gearNodes = [
   { id: 'Base/Helm1', kind: 'base', name: 'Iron Helm', slug: 'iron-helm', props: { itemClass: 'Helmet', classSlug: 'helmet', tags: ['helmet','armour'] }, source: 'repoe' },
   { id: 'Base/2HMace1', kind: 'base', name: 'Great Mace', slug: 'great-mace', props: { itemClass: 'Two Hand Mace', classSlug: 'two-hand-mace', tags: ['mace','twohand','weapon'] }, source: 'repoe' },
   { id: 'Base/Quiver1', kind: 'base', name: 'Broadhead Quiver', slug: 'broadhead-quiver', props: { itemClass: 'Quiver', classSlug: 'quiver', tags: ['quiver'] }, source: 'repoe' },
+  { id: 'Base/Bow1', kind: 'base', name: 'Crude Bow', slug: 'crude-bow', props: { itemClass: 'Bow', classSlug: 'bow', tags: ['bow', 'weapon'] }, source: 'repoe' },
 ];
 const gearOverlay = (data) => [{ name: 'gear-slots', data: { kind: 'gear-slots', ...data } }];
 const SLOTS = [
@@ -132,6 +133,23 @@ test('gear-slots: a rule referencing an unknown slot id is a build error', () =>
     overlays: gearOverlay({ slots: SLOTS, classRules: [{ class: 'Helmet', slots: ['nonexistent-slot'] }] }),
   });
   assert.ok(r.errors.some((e) => /unknown slot 'nonexistent-slot'/.test(e)));
+});
+
+test('gear-slots: requiresMainhand naming an unknown class slug is a build error', () => {
+  const r = applyOverlays({
+    nodes: gearNodes, edges: [],
+    overlays: gearOverlay({ slots: SLOTS, classRules: [{ class: 'Quiver', slots: ['weapon1b', 'weapon2b'], requiresMainhand: ['nonexistent-mainhand'] }] }),
+  });
+  assert.ok(r.errors.some((e) => /requiresMainhand references unknown class slug 'nonexistent-mainhand'/.test(e)));
+});
+
+test('gear-slots: a classRule with empty slots is a build error and does not suppress the coverage warning', () => {
+  const r = applyOverlays({
+    nodes: gearNodes, edges: [],
+    overlays: gearOverlay({ slots: SLOTS, classRules: [{ class: 'Helmet', slots: [] }] }),
+  });
+  assert.ok(r.errors.some((e) => /class 'Helmet' has no slots/.test(e)));
+  assert.ok(r.warnings.some((w) => /unmapped item class 'Helmet'/.test(w)));
 });
 
 test('gear-slots: unmapped item classes produce a coverage warning', () => {

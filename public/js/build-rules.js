@@ -46,7 +46,8 @@ export function gearViolations(build, plannerData) {
     const offFilled = Boolean(gear[offId]?.item?.slug);
     const off = infoAt(offId);
 
-    if (main?.twoHanded && offFilled) {
+    const offIsCompanion = Array.isArray(off?.requiresMainhand) && off.requiresMainhand.includes(main?.class);
+    if (main?.twoHanded && offFilled && !offIsCompanion) {
       out.push({
         code: 'two-hander-blocks-offhand',
         slotId: offId,

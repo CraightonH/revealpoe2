@@ -56,9 +56,11 @@ test('gearViolations: quiver requires a bow in the same-set main hand', () => {
     weapon1a: { item: { kind: 'base', slug: 'war-bow' } },
     weapon1b: { item: { kind: 'base', slug: 'broadhead-quiver' } },
   } });
-  // war-bow is two-handed, so quiver is satisfied on the bow requirement but the
-  // two-hander still blocks the off-hand — assert the requires-mainhand rule passed.
-  assert.ok(!gearViolations(withBow, PD).some((x) => x.code === 'requires-mainhand'));
+  // war-bow is two-handed, but a quiver is a companion off-hand for bows (a legal
+  // PoE2 combo) — neither requires-mainhand nor two-hander-blocks-offhand should fire.
+  const v = gearViolations(withBow, PD);
+  assert.ok(!v.some((x) => x.code === 'requires-mainhand'));
+  assert.ok(!v.some((x) => x.code === 'two-hander-blocks-offhand'));
 });
 
 test('gearViolations: item placed in a slot it does not fit', () => {
