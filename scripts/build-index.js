@@ -20,6 +20,7 @@ import { listGemCards } from '../src/data/gems.js';
 import { listUniqueCards } from '../src/data/uniques.js';
 import { listItemClasses, getItemClass } from '../src/data/baseItems.js';
 import { listKeystones, listNotables } from '../src/data/passiveTree.js';
+import { plannerData } from '../src/data/planner.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
@@ -68,5 +69,12 @@ fs.writeFileSync(path.join(OUT, 'search-index.json'), JSON.stringify(docs));
 const cards = browseCards();
 fs.writeFileSync(path.join(OUT, 'browse-cards.json'), JSON.stringify(cards));
 
+const planner = plannerData();
+fs.writeFileSync(path.join(OUT, 'planner-data.json'), JSON.stringify(planner));
+
 const count = Object.values(cards).reduce((n, m) => n + Object.keys(m).length, 0);
-console.log(`build-index: ${docs.length} docs, ${count} browse cards -> public/generated/`);
+console.log(
+  `build-index: ${docs.length} docs, ${count} browse cards, ` +
+  `${planner.slots.length} slots / ${Object.keys(planner.items).length} items / ${Object.keys(planner.gems).length} gems ` +
+  `-> public/generated/`,
+);
