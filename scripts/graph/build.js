@@ -6,6 +6,7 @@ import { getDataDir, REPOE } from './source.js';
 import { gemNodes, skillNodes, gemEdges } from './gems.js';
 import { baseNodes, classNodes, tagNodes, baseEdges } from './bases.js';
 import { affixNodes, affixEdges } from './affixes.js';
+import { augmentNodes, augmentEdges } from './augments.js';
 import { uniqueNodes, uniqueEdges } from './uniques.js';
 import { passiveNodes, ascendancyNodes, passiveEdges } from './passives.js';
 import { keywordNodes } from './keywords.js';
@@ -20,6 +21,7 @@ const SOURCE_FILES = [
   `${REPOE}/item_classes.json`,
   `${REPOE}/mods.json`,
   `${REPOE}/mods_by_base.json`,
+  `${REPOE}/augments.json`,
   `${REPOE}/stat_translations/stat_descriptions.json`,
   `${REPOE}/stat_translations/passive_skill_stat_descriptions.json`,
   `${REPOE}/uniques.json`,
@@ -60,12 +62,13 @@ export function buildGraph() {
   const cNodes = classNodes();
   const tNodes = tagNodes(baseRecs);
   const { nodes: aNodes, records: affixRecs } = affixNodes();
+  const { nodes: augNodes, records: augRecs } = augmentNodes();
   const { nodes: uNodes, records: uniqueRecs } = uniqueNodes();
   const { nodes: pNodes, records: passiveRecs } = passiveNodes();
   const ascNodes = ascendancyNodes();
   const { nodes: kNodes } = keywordNodes();
 
-  const srcNodes = [...gNodes, ...sNodes, ...bNodes, ...cNodes, ...tNodes, ...aNodes, ...uNodes, ...pNodes, ...ascNodes, ...kNodes];
+  const srcNodes = [...gNodes, ...sNodes, ...bNodes, ...cNodes, ...tNodes, ...aNodes, ...augNodes, ...uNodes, ...pNodes, ...ascNodes, ...kNodes];
   const nodeIds = new Set(srcNodes.map((n) => n.id));
   const gemIds = new Set(gNodes.map((n) => n.id));
   const ascIds = new Set(ascNodes.map((n) => n.id));
@@ -73,6 +76,7 @@ export function buildGraph() {
     ...gemEdges(gemRecs, nodeIds),
     ...baseEdges(baseRecs, nodeIds),
     ...affixEdges(affixRecs, baseRecs, nodeIds),
+    ...augmentEdges(augRecs, nodeIds),
     ...uniqueEdges(uniqueRecs, baseRecs, sNodes),
     ...passiveEdges(passiveRecs, gemIds, ascIds),
   ];

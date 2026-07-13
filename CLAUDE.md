@@ -89,7 +89,9 @@ Key layout patterns already established (do not drift from these):
 - `.newItemPopup` — outer popup wrapper; `--card-border` / `--card-glow` CSS variables set per rarity
 - `.itemHeader.doubleLine` — header banner with item name and type line; gems use `GemHoverTitle.dds` background, unique items override with a dark gradient header
 - `.Stats` / `.explicitMod` / `.implicitMod` / `.separator` / `.FlavourText` — inner content structure matching poe2db class names exactly
-- **Item art goes outside the popup** in `.itemboximage` beside `.newItemPopup` (poe2db pattern) — not inside the header
+- **Icon placement depends on item bulk** (two rules, by item kind):
+  - **Equipment** (weapons/armour/jewels — large art): art goes **outside** the popup in `.itemboximage` beside `.newItemPopup` (poe2db pattern), not inside the header.
+  - **Stackable items** (`item_class: "StackableCurrency"` / has `stack_size` — augments, currency): icon goes **inside** the popup, **between the header banner and the first body line** (matches the in-game stackable tooltip). See the augment card (`views/macros/augment-cards.njk`).
 - poe2db URL pattern: `https://poe2db.tw/us/{ItemName_snake_case}` — use to cross-reference layout and class names
 
 ## Architecture Decisions
