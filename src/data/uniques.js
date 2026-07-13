@@ -7,6 +7,7 @@ import { parseLocalMods, computeProperties } from './itemStats.js';
 import { hasDefinition } from './keywordDefs.js';
 import { linkifyPhrases } from './keywords.js';
 import { nodesByKind, nodeBySlug, edgesTo, getNode } from './graph.js';
+import { augmentsForUnique } from './augments.js';
 
 // Presentation adapter over the build-time graph (build/graph.json). Unique
 // identity, variant resolution, resolved class/icon/flavour, and the has_base /
@@ -197,5 +198,8 @@ export function buildUniqueViewModel(slug) {
     // node (charms/flasks/jewels and PoB variant-parse artifacts). The macro
     // renders the base as plain text rather than a dead link when this is null.
     baseSlug: baseRecord?.slug ?? null,
+    // Socketables (augments) that slot into this unique's base class, grouped by
+    // family — the reverse of the augment nodes' sockets_into edges.
+    augments: augmentsForUnique(u),
   };
 }

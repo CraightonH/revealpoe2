@@ -1,6 +1,7 @@
 import { buildGemViewModel, listGems, listGemCards, getDefaultSkillGemsForClass } from '../data/gems.js';
 import { buildUniqueViewModel, listUniqueCards, listUniqueClassFilters } from '../data/uniques.js';
 import { listBaseNav, getItemClass, buildBaseItemViewModel, affixBaseTargets, PER_BASE_NAV_CLASSES } from '../data/baseItems.js';
+import { getAugmentVM } from '../data/augments.js';
 import { listKeystones, getKeystone, listNotables, getNotable, getPassiveNode, listAscendancies, getAscendancy } from '../data/passiveTree.js';
 import { getEmotion } from '../data/emotions.js';
 
@@ -64,6 +65,10 @@ export function registerPages(app) {
   });
   detailRoute(app, '/base/:slug', buildBaseItemViewModel, 'base-item.njk', 'vm');
   cardRoute(app, '/base/:slug/card', buildBaseItemViewModel, 'partials/base-card-fragment.njk');
+
+  // Augments have no standalone page (they're only meaningful relative to an item),
+  // but the condensed grid card hovers to this full fragment (all tiers).
+  cardRoute(app, '/augment/:slug/card', getAugmentVM, 'partials/augment-card-fragment.njk');
 
   // Mods have no standalone page — they aren't meaningful in isolation. Instead,
   // affix search results link/flyout to the bases that can roll them. This serves

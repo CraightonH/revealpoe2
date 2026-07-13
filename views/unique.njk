@@ -1,5 +1,6 @@
 {% extends "base.njk" %}
 {% from "macros/unique-card.njk" import uniqueCard %}
+{% from "macros/augment-cards.njk" import socketablesSection %}
 {% block title %}{{ vm.name }} — Reveal · PoE2 Wiki{% endblock %}
 {% block og_type %}article{% endblock %}
 {% block og_title %}{{ vm.name }} — Reveal · PoE2 Wiki{% endblock %}
@@ -9,6 +10,7 @@
 <div class="page">
   <div class="gem-detail">
     {{ uniqueCard(vm) }}
+    {{ socketablesSection(vm.augments) }}
   </div>
 </div>
 {% endblock %}

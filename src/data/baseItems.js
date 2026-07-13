@@ -1,6 +1,7 @@
 import { ddsUrl } from './images.js';
 import { tradeUrl } from './trade.js';
 import { getModsForClass, getCorruptedForClass, getDesecratedForClass } from './mods.js';
+import { augmentsForClass } from './augments.js';
 import { getGemRefByKey } from './gems.js';
 import { hasDefinition } from './keywordDefs.js';
 import { linkifyRequirement, linkifyPhrases, renderGameText } from './keywords.js';
@@ -239,7 +240,10 @@ export function getItemClass(classSlug) {
         tagFamilies(affixes.desecrated.prefix, 'desecratedPrefix');
         tagFamilies(affixes.desecrated.suffix, 'desecratedSuffix');
       }
-      return { ...info, classId, classSlug, bases, affixes, attrSubtypes, topBases: topTierBases(bases) };
+      // Socketables (augments) that can slot into this class — the reverse of the
+      // augment nodes' sockets_into edges, grouped by family for display.
+      const augments = augmentsForClass(classId);
+      return { ...info, classId, classSlug, bases, affixes, attrSubtypes, augments, topBases: topTierBases(bases) };
     }
   }
   return null;

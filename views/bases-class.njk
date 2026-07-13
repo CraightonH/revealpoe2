@@ -4,6 +4,7 @@
 {% from "macros/affix-tables.njk" import affixSection %}
 {% from "macros/base-card.njk" import baseListCard %}
 {% from "macros/gem-card.njk" import gemBrowseCard %}
+{% from "macros/augment-cards.njk" import socketablesSection %}
 {% block title %}{{ cls.name }} — Base Items — Reveal · PoE2 Wiki{% endblock %}
 {% block content %}
 <div class="page page--column">
@@ -58,5 +59,6 @@
   </details>
   {% endif %}
   {{ affixSection(cls.affixes, 'a ' + cls.name) }}
+  {{ socketablesSection(cls.augments) }}
 </div>
 {% endblock %}

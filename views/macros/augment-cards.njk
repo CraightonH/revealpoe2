@@ -1,0 +1,109 @@
+{# Augment (socketable) cards. Two renders share the .newItemPopup chrome:
+   - augmentCard: the CONDENSED grid card (name + icon + effect + bonded). It carries
+     data-card-url so the shared card-tooltip (card-tooltip.js) shows the full card
+     on hover.
+   - augmentCardFull: the FULL hover/detail card — every tier expanded, stack, flavour.
+   Stackable rule: the icon renders INSIDE the popup, between header and first body
+   line (unlike equipment art, which sits outside in .itemboximage). Cards show the
+   highest (Perfect) tier by default; all tiers live in the hover tooltip. #}
+
+{# One per-slot grant line: "Category: value, value" (category inlined, not a heading). #}
+{% macro _augGrant(cat, bonded=false) %}
+<div class="augment-cat">
+  <span class="augment-cat-label">{{ cat.categoryHtml | safe }}:</span>
+  {% for line in cat.lines %}<span class="augment-cat-line{% if bonded %} augment-cat-line--bonded{% endif %}">{{ line | safe }}</span>{% if not loop.last %}<span class="augment-cat-sep">, </span>{% endif %}{% endfor %}
+</div>
+{% endmacro %}
+
+{# Isolated "Bonded" block (Shaman-ascendancy bonus), shown for completeness. #}
+{% macro _augBonded(bonded) %}
+{% if bonded.length %}
+<div class="augment-bonded">
+  <div class="augment-bonded-label">Bonded</div>
+  {% for cat in bonded %}{{ _augGrant(cat, true) }}{% endfor %}
+</div>
+{% endif %}
+{% endmacro %}
+
+{# Condensed grid card. #}
+{% macro augmentCard(aug) %}
+<div class="newItemPopup NormalPopup newItemPopup--stackable item-popup--poe2 augment-card"
+     data-card-url="/augment/{{ aug.slug }}/card" tabindex="0">
+  <div class="itemHeader doubleLine">
+    <div class="itemName"><span class="lc augment-name">{{ aug.name }}</span></div>
+  </div>
+  <div class="augment-icon">
+    {% if aug.iconUrl %}
+    <img loading="lazy" src="{{ aug.iconUrl }}" alt="{{ aug.name }}" onerror="this.style.visibility='hidden'">
+    {% else %}
+    <div class="augment-icon-placeholder">{{ aug.placeholder.initials }}</div>
+    {% endif %}
+  </div>
+  <div class="content">
+    <div class="Stats augment-grants">
+      {% for cat in aug.categories %}{% if cat.lines.length %}{{ _augGrant(cat) }}{% endif %}{% endfor %}
+    </div>
+    {{ _augBonded(aug.bonded) }}
+  </div>
+</div>
+{% endmacro %}
+
+{# Full hover/detail card — every tier expanded (Perfect → Lesser). #}
+{% macro augmentCardFull(aug) %}
+<div class="newItemPopup NormalPopup newItemPopup--stackable item-popup--poe2 augment-card augment-card--full">
+  <div class="itemHeader doubleLine">
+    <div class="itemName"><span class="lc augment-name">{{ aug.name }}</span></div>
+  </div>
+  <div class="augment-icon">
+    {% if aug.iconUrl %}
+    <img loading="lazy" src="{{ aug.iconUrl }}" alt="{{ aug.name }}" onerror="this.style.visibility='hidden'">
+    {% else %}
+    <div class="augment-icon-placeholder">{{ aug.placeholder.initials }}</div>
+    {% endif %}
+  </div>
+  <div class="content">
+    <div class="Stats">
+      <div class="property typeLine augment-type">{{ aug.familyLabel }}</div>
+      {% if aug.stackSize %}<div class="property">Stack Size: <span class="colourDefault">{{ aug.stackSize }}</span></div>{% endif %}
+      {% if aug.limit %}<div class="property">Limit: <span class="colourDefault">{{ aug.limit }}</span></div>{% endif %}
+    </div>
+    {% for t in aug.allTiers %}
+    <div class="separator"></div>
+    <div class="augment-full-tier">
+      {% if aug.hasTiers %}<div class="augment-full-tier-head">{% if t.iconUrl %}<img class="augment-tier-icon" loading="lazy" src="{{ t.iconUrl }}" alt="" onerror="this.style.display='none'">{% endif %}{{ t.tierLabel or t.name }}{% if t.requiredLevel %} <span class="augment-tier-lvl">Level {{ t.requiredLevel }}</span>{% endif %}</div>{% endif %}
+      <div class="Stats augment-grants">
+        {% for cat in t.categories %}{% if cat.lines.length %}{{ _augGrant(cat) }}{% endif %}{% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+    {% if aug.bonded.length %}<div class="separator"></div>{{ _augBonded(aug.bonded) }}{% endif %}
+    {% if aug.flavourHtml %}
+    <div class="separator"></div>
+    <div class="FlavourText">{{ aug.flavourHtml | safe }}</div>
+    {% endif %}
+  </div>
+</div>
+{% endmacro %}
+
+{# "Augments" section for an item class / unique page: collapsible per-family panels
+   (Rune / Soul Core / …), each tinted like the affix-origin sections. Runes further
+   split into Common / Ancient / Kalguuran subgroups. Gated by the caller. #}
+{% macro socketablesSection(groups) %}
+{% if groups.length %}
+<section class="augment-section">
+  <h2 class="augment-section-title">Augments</h2>
+  <p class="augment-section-hint">Socketables that fit this item, and what each grants here.</p>
+  {% for group in groups %}
+  <details class="augment-family augment-family--{{ group.family | lower }}" open>
+    <summary class="augment-family-title">{{ group.familyLabel }} <span class="augment-family-count">{{ group.augments.length }}</span></summary>
+    {% for sg in group.subgroups %}
+    {% if sg.label %}<h4 class="augment-subfamily-title">{{ sg.label }} <span class="augment-family-count">{{ sg.augments.length }}</span></h4>{% endif %}
+    <div class="augment-grid">
+      {% for aug in sg.augments %}{{ augmentCard(aug) }}{% endfor %}
+    </div>
+    {% endfor %}
+  </details>
+  {% endfor %}
+</section>
+{% endif %}
+{% endmacro %}
