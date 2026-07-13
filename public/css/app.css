@@ -114,6 +114,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  cursor: pointer; /* href rows get this by default; hover-only rows (augment/affix) need it explicitly */
 }
 .search-result-name {
   flex: 1;

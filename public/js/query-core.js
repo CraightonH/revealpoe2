@@ -75,6 +75,7 @@ export const GROUPS = [
   { category: 'keystone', label: 'Keystones' },
   { category: 'notable',  label: 'Notables' },
   { category: 'base',     label: 'Base Items' },
+  { category: 'augment',  label: 'Augments' },
 ];
 
 // Run a query over `docs`, returning grouped raw matches. Mirrors the shape the
@@ -108,7 +109,7 @@ export function groupQuery(q, { docs, capPerGroup = 100 } = {}) {
 const CATEGORY_LABEL = {
   gem: 'Skill', support: 'Support', spirit: 'Spirit',
   unique: 'Unique', affix: 'Affix', keystone: 'Keystone',
-  notable: 'Notable', base: 'Base',
+  notable: 'Notable', base: 'Base', augment: 'Augment',
 };
 
 // Hover-card fragment URL. Most categories serve it at `${pageUrl}/card`;
@@ -119,7 +120,7 @@ function cardUrlFor(category, url) {
 }
 
 // Round-robin order across categories for the capped dropdown.
-const CAT_ORDER = ['gem', 'support', 'spirit', 'unique', 'keystone', 'affix', 'notable', 'base'];
+const CAT_ORDER = ['gem', 'support', 'spirit', 'unique', 'keystone', 'affix', 'notable', 'base', 'augment'];
 
 // Lowercase, leading non-alphanumerics dropped so a symbol-prefixed affix
 // ("+# to maximum Life") sorts by its first real letter.
@@ -134,9 +135,11 @@ export function toSearchDocs(rawDocs) {
     const label = isAffix && d.genericText ? d.genericText : d.name;
     return {
       name: label,
-      slug: d.url ? d.url.split('/').pop() : (d.typeSlug ?? null),
+      slug: d.url ? d.url.split('/').pop() : (d.typeSlug ?? d.slug ?? null),
       url: d.url ?? null,
-      cardUrl: isAffix ? (d.cardUrl ?? null) : cardUrlFor(d.category, d.url),
+      // Prefer an explicit hover-card URL (affixes, augments — no standalone page);
+      // otherwise derive it from the page URL.
+      cardUrl: d.cardUrl ?? (d.url ? cardUrlFor(d.category, d.url) : null),
       cat: d.category,
       category: CATEGORY_LABEL[d.category] ?? d.category,
       nameHaystack: label.toLowerCase(),

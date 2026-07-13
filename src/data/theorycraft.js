@@ -2,6 +2,7 @@ import { listGems, listGemCards, buildGemViewModel, getGem } from './gems.js';
 import { listUniques, listUniqueCards } from './uniques.js';
 import { listItemClasses, getItemClass, affixBaseTargets } from './baseItems.js';
 import { listKeystones, listNotables } from './passiveTree.js';
+import { listAugments } from './augments.js';
 import { listModGroups } from './mods.js';
 import { getNode } from './graph.js';
 import { parseQuery, docMatches, groupQuery } from '../../public/js/query-core.js';
@@ -29,6 +30,7 @@ function cardMaps() {
     base: bySlug(bases),
     keystone: byId(listKeystones()),
     notable: byId(listNotables()),
+    augment: bySlug(listAugments()),
   };
   return _cardMaps;
 }
@@ -173,6 +175,30 @@ function nodeDocs(list, category, urlBase) {
   }));
 }
 
+// Augments have no standalone page — hover-only, like affixes: no `url`, a
+// `cardUrl` to the full-tier tooltip fragment. Text spans name, family, every
+// per-slot grant line, and the tier names so effect/tier searches surface them.
+function augmentDocs() {
+  return listAugments().map((a) => ({
+    name: a.name,
+    slug: a.slug,
+    url: null,
+    cardUrl: `/augment/${a.slug}/card`,
+    category: 'augment',
+    iconUrl: a.iconUrl || null,
+    subtitle: a.familyLabel || '',
+    color: '',
+    tags: [String(a.family || '').toLowerCase(), String(a.tierLabel || '').toLowerCase()].filter(Boolean),
+    req: [],
+    grants: [],
+    text: norm([
+      a.name, a.sortName, a.familyLabel,
+      ...a.categories.flatMap((c) => [c.category, ...c.lines]),
+      ...a.allTiers.map((t) => t.name),
+    ]),
+  }));
+}
+
 function baseDocs() {
   return listItemClasses().flatMap((group) =>
     group.classes.flatMap((cls) => {
@@ -205,6 +231,7 @@ export function allDocs() {
     ...nodeDocs(listKeystones(), 'keystone', 'keystone'),
     ...nodeDocs(listNotables(), 'notable', 'notable'),
     ...baseDocs(),
+    ...augmentDocs(),
   ];
   return _docs;
 }

@@ -38,7 +38,9 @@ if (input && target) {
     if (r.url) attrs.push(`href="${esc(r.url)}"`);
     else if (r.cardUrl) attrs.push('tabindex="0"', 'role="button"');
     if (r.cardUrl) attrs.push(`data-card-url="${esc(r.cardUrl)}"`);
-    const caret = r.cardUrl && !r.url
+    // Chevron cues a hover submenu/flyout — only affixes have one ("Can roll on"
+    // bases). Other hover-only results (augments) show a plain tooltip, no chevron.
+    const caret = r.category === 'Affix' && r.cardUrl && !r.url
       ? '<span class="search-result-caret" aria-hidden="true">&rsaquo;</span>' : '';
     return `<a class="search-result-row" ${attrs.join(' ')}>` +
       `<span class="search-result-name">${esc(r.name)}</span>` +

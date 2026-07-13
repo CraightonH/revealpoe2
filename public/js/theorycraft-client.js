@@ -60,6 +60,7 @@ if (input && target) {
     if (category === 'gem' || category === 'support' || category === 'spirit') return 'gem-browse-grid';
     if (category === 'unique' || category === 'base') return 'bases-list-grid';
     if (category === 'keystone' || category === 'notable') return 'keystone-index-grid';
+    if (category === 'augment') return 'augment-grid';
     return 'tc-result-grid';
   }
 

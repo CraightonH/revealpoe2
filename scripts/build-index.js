@@ -20,6 +20,7 @@ import { listGemCards } from '../src/data/gems.js';
 import { listUniqueCards } from '../src/data/uniques.js';
 import { listItemClasses, getItemClass } from '../src/data/baseItems.js';
 import { listKeystones, listNotables } from '../src/data/passiveTree.js';
+import { listAugments } from '../src/data/augments.js';
 import { plannerData } from '../src/data/planner.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -44,21 +45,23 @@ function browseCards() {
   const renderBase = compileCard('macros/base-card.njk', 'baseListCard');
   const renderKeystone = compileCard('macros/passive.njk', 'passiveBrowseCard', ', "keystone"');
   const renderNotable = compileCard('macros/passive.njk', 'passiveBrowseCard', ', "notable"');
+  const renderAugment = compileCard('macros/augment-cards.njk', 'augmentCard');
 
   const bases = listItemClasses().flatMap((g) =>
     g.classes.flatMap((cl) => getItemClass(cl.classSlug)?.bases ?? []),
   );
 
-  const gem = {}, unique = {}, base = {}, keystone = {}, notable = {};
+  const gem = {}, unique = {}, base = {}, keystone = {}, notable = {}, augment = {};
   for (const c of listGemCards()) gem[c.slug] = renderGem(c);
   for (const c of listUniqueCards()) unique[c.slug] = renderUnique(c);
   for (const c of bases) base[c.slug] = renderBase(c);
   for (const c of listKeystones()) keystone[c.id] = renderKeystone(c);
   for (const c of listNotables()) notable[c.id] = renderNotable(c);
+  for (const c of listAugments()) augment[c.slug] = renderAugment(c);
 
   // gem/support/spirit results all map to the gem card set, matching the
   // server's cardMapFor(); the client mirrors that lookup.
-  return { gem, unique, base, keystone, notable };
+  return { gem, unique, base, keystone, notable, augment };
 }
 
 fs.mkdirSync(OUT, { recursive: true });

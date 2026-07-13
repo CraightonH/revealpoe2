@@ -2,6 +2,7 @@
 {% from "macros/unique-card.njk" import uniqueListCard %}
 {% from "macros/base-card.njk" import baseListCard %}
 {% from "macros/passive.njk" import passiveBrowseCard %}
+{% from "macros/augment-cards.njk" import augmentCard %}
 
 {# Compact fallback card — used for affixes (no browse card) and for the rare
    card-backed result that has no card object resolved. Affixes have no page:
@@ -29,6 +30,7 @@
   {% elif category == 'base' %}{{ baseListCard(it.card) }}
   {% elif category == 'keystone' %}{{ passiveBrowseCard(it.card, 'keystone') }}
   {% elif category == 'notable' %}{{ passiveBrowseCard(it.card, 'notable') }}
+  {% elif category == 'augment' %}{{ augmentCard(it.card) }}
   {% else %}{{ compactCard(it, category) }}{% endif %}
 {% else %}{{ compactCard(it, category) }}{% endif %}
 {% endmacro %}
@@ -49,6 +51,7 @@
 {% if g.category in ['gem', 'support', 'spirit'] %}{% set gridClass = 'gem-browse-grid' %}
 {% elif g.category in ['unique', 'base'] %}{% set gridClass = 'bases-list-grid' %}
 {% elif g.category in ['keystone', 'notable'] %}{% set gridClass = 'keystone-index-grid' %}
+{% elif g.category == 'augment' %}{% set gridClass = 'augment-grid' %}
 {% else %}{% set gridClass = 'tc-result-grid' %}{% endif %}
 <section class="tc-group">
   <h2 class="tc-group-heading">{{ g.label }} ({{ g.total }})</h2>
