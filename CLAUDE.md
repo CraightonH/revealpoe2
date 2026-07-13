@@ -117,25 +117,25 @@ Stack: Express + Nunjucks server-rendered pages, reading the pre-built `build/gr
 ```
 edit code/templates/data  ─► npm run dev            (iterate on localhost)
                                   │
-game patch? ─► python scripts/scrape.py ─► npm run build:images   (refresh data + icons)
+game patch? ─► python scripts/scrape.py ─► npm run build:images   (refresh data + icons for dev)
                                   │
 ready to ship ─► npm run build:static                (full local build; catches static-only breakage)
                                   │
-                          npm run deploy              (build:static + wrangler ⇒ PRODUCTION)
+                          git commit + git push origin main    (⇒ CI deploys to PRODUCTION)
                                   │
                           verify on revealpoe2.pages.dev (Node fetch, not curl)
 ```
 
-**`npm run deploy` always publishes to PRODUCTION** (`--branch main`) regardless of the current git branch — assume a production deploy whenever a deploy is requested unless a **preview** is *explicitly* asked for. For a preview, use `npm run deploy:preview` (publishes to a `preview-<branch>` Pages branch → a `<hash>.revealpoe2.pages.dev` URL, leaving production untouched).
+**Deploys are CI, triggered by pushing to `main` — do NOT run `npm run deploy`/`wrangler` by hand.** The `.github/workflows/deploy.yml` ("Deploy (cached)") action restores the build cache (`data/source` + art + OG) from R2, runs `build:static:cached`, and publishes to production Cloudflare Pages. So "ship it" = commit + `git push origin main`; the local `npm run build:static` above is a pre-push verification of static-only failure modes, not the deploy itself. (`npm run deploy` still exists for an emergency manual publish, but the CI path is canonical.)
 
-The content-update loop after a game patch is just: `scrape.py` → `npm run deploy` (deploy runs `build:images` itself, so icons sync automatically — the manual `build:images` above is only for seeing them in `dev` first).
+The content-update loop after a game patch: `scrape.py` locally for dev, then the **`refresh-data.yml`** workflow re-scrapes + reseeds the R2 cache and deploys; ordinary code changes just push to `main`.
 
 ## Deployment: Static Site
 
 Production is a **static prerender** of the app, hosted on **Cloudflare Pages** (free tier). The full reference is `docs/deploy-cloudflare.md`; the essentials:
 
-- **One command:** `npm run deploy` → `build:static` (`build:graph` → `build:index` → `scripts/prerender.js` into `dist/`) → `wrangler pages deploy dist --branch main` (**always PRODUCTION**; `npm run deploy:preview` for a preview).
-- **Build locally, upload `dist/`** — never Git-integration CI. `data/source/` is gitignored, so Cloudflare's build box has no data to compile; the local machine that has the data is the build box. Content update loop after a patch: `python scripts/scrape.py` → `npm run deploy`.
+- **Push to deploy:** `git push origin main` runs `deploy.yml` → restores the R2 build cache → `build:static:cached` (`build:graph` → `build:index` → `scripts/prerender.js` into `dist/`, skipping `fetch:tree`) → `wrangler pages deploy dist --branch main` on the CI runner. **Do not deploy manually**; the runner holds the game data via the R2 cache (seeded/refreshed by `refresh-data.yml`), so it — not the local machine — is the build box now. `npm run deploy` remains only as an emergency manual fallback.
+- **Local `build:static` is the pre-push check** — run it (or a preview) to catch static-only breakage before pushing, since CI deploys straight to production on push.
 - **Prerender is a link crawler** (`scripts/prerender.js`): it boots the real app and walks every internally reachable URL (`href`, `hx-get`, `data-card-url`, and `data-keyword` → `/api/keyword/*`), so it renders exactly what's linked and a dead internal link **fails the build**.
 - **⚠️ New client-fetched endpoints must be crawler-discoverable.** The crawler only finds URLs present in those attributes. JS that fetches a URL built another way (bare id, computed path) won't be prerendered and will 404 on the static site (this is the bug that hit keyword popups). Expose it via a crawlable attribute, or extend `extractLinks()` in `prerender.js`.
 - **Dynamic features are client-rendered.** `/search` and `/theorycraft/results` are excluded from the crawl; `search-client.js` / `theorycraft-client.js` render from prebuilt artifacts in `public/generated/` (`search-index.json` = `allDocs()`; `browse-cards.json` = real macro-rendered cards) using the shared `query-core.js`. They strip the `hx-*` attributes at load so htmx never fires. The server routes + `hx-get` attributes stay (tests, dev parity, no-JS fallback) — do not remove them.
