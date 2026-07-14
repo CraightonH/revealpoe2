@@ -17,4 +17,9 @@ public/img/
 public/og/
 # Scraped game data — large, regenerable via scripts/scrape.py. Not committed.
 # (data/manual/ IS committed — hand-authored overlays.)
-data/source/
+# EXCEPTION: per-folder CLAUDE.md files ARE committed so the "how to regenerate
+# this data" guide ships on a fresh clone (when the folders are otherwise empty)
+# and auto-loads when you work in that folder.
+data/source/**
+!data/source/**/
+!data/source/**/CLAUDE.md

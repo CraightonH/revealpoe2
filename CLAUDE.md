@@ -10,6 +10,8 @@ A modern, beginner-friendly Path of Exile 2 wiki. The target experience is the o
 
 All game data is in `data/source/` — gitignored (large, ~250M, regenerable via `scripts/scrape.py`), so never committed. Paths below are relative to `data/source/`. (Hand-authored overlays under `data/manual/` *are* committed — see **Data Provenance**.)
 
+**Each `data/source/<folder>/` has its own committed `CLAUDE.md`** (a `.gitignore` exception — the guides ship even though the data doesn't) covering how to regenerate that mirror if empty and how to work with it. They auto-load when you work in that folder. `data/CLAUDE.md` is the overview. Regenerate commands: `python scripts/scrape.py` (repoe-poe2, pob-uniques), `npm run fetch:tree` (ggg-poe2), `npm run fetch:dat` (ggpk-poe2 — raw `.datc64`, see `docs/ggpk-datamining.md`).
+
 ### Primary tables (most-used)
 
 | File | Contents |
