@@ -20,6 +20,7 @@ All game data is in `data/source/` — gitignored (large, ~250M, regenerable via
 | `repoe-poe2/mods.json` | Mod definitions with stat ranges and item eligibility |
 | `repoe-poe2/stat_translations/` | Stat-id → display text (human-readable mod descriptions) |
 | `pob-uniques/*.json` | Full unique item stats (PoB hand-maintained); each file is a list of raw text blocks |
+| `ggpk-poe2/tables/*.datc64` | **Raw** game data tables mined from ggpk.exposed for data RePoE omits (e.g. cultivated/mutated unique mod pools). Manual datamining only — NOT in the graph. See **`docs/ggpk-datamining.md`**; explore with `npm run dat -- …`. |
 
 ### Key cross-references
 
