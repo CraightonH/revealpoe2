@@ -122,7 +122,7 @@ function uniqueDocs() {
     tags: [String(u.itemClass || '').toLowerCase()].filter(Boolean),
     req: [],
     grants: [],
-    text: norm([u.name, u.base, ...(u.stats || []), ...(u.flavour || [])]),
+    text: norm([u.name, u.base, u.origin, ...(u.stats || []), ...(u.flavour || [])]),
   }));
 }
 
