@@ -10,7 +10,7 @@
 // Query parsing
 // ---------------------------------------------------------------------------
 
-const FIELDS = new Set(['type', 'color', 'tag', 'req', 'grants']);
+const FIELDS = new Set(['type', 'color', 'tag', 'req', 'grants', 'origin']);
 
 // Tokenize a raw query into terms, honoring "quoted phrases", -exclusion,
 // and field:value. Bare words, quoted phrases, and unknown field names all
@@ -51,6 +51,10 @@ function termMatches(doc, term) {
       case 'tag':    hit = doc.tags.some((t) => t.includes(term.value)); break;
       case 'req':    hit = doc.req.some((r) => r.includes(term.value)); break;
       case 'grants': hit = doc.grants.some((g) => g.includes(term.value)); break;
+      // Cultural origin (uniques only): Kalguuran/Ezomyte/Vaal. Non-unique docs
+      // carry no origin, so they never match — an origin: term implicitly narrows
+      // to uniques of that origin.
+      case 'origin': hit = (doc.origin || '').includes(term.value); break;
       default:       hit = doc.text.includes(term.value);
     }
   }
