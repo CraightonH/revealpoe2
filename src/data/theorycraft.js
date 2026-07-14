@@ -63,6 +63,9 @@ export function runQuery(q, { docs = allDocs(), capPerGroup = 100 } = {}) {
 }
 
 const stripHtml = (s) => String(s ?? '').replace(/<[^>]*>/g, ' ');
+// Flatten RePoE keyword markup to its display words for the search blob:
+// "[ElementalDamage|Elemental] Damage with [Attack|Attacks]" -> "Elemental Damage with Attacks".
+const stripKw = (s) => String(s ?? '').replace(/\[[^\]|]*\|([^\]]*)\]/g, '$1').replace(/\[([^\]|]*)\]/g, '$1');
 const norm = (parts) => stripHtml(parts.filter(Boolean).join(' ')).toLowerCase();
 
 function gemCategory(gemType) {
@@ -123,7 +126,7 @@ function uniqueDocs() {
     req: [],
     grants: [],
     origin: (u.origin || '').toLowerCase(),
-    text: norm([u.name, u.base, u.origin, ...(u.stats || []), ...(u.flavour || [])]),
+    text: norm([u.name, u.base, u.origin, ...(u.stats || []), ...(u.flavour || []), ...(u.cultivatedText || []).map(stripKw)]),
   }));
 }
 

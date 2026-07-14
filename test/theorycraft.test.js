@@ -117,6 +117,13 @@ test('runQuery: per-group cap reports shown vs total', () => {
 
 import { allDocs } from '../src/data/theorycraft.js';
 
+test('allDocs: cultivated mod text is searchable (origin:vaal fork -> Atziri)', () => {
+  const docs = allDocs();
+  const r = runQuery('origin:vaal fork', { docs });
+  const uniques = (r.groups.find((g) => g.category === 'unique')?.items ?? []).map((i) => i.name);
+  assert.ok(uniques.includes("Atziri's Contempt"), 'a cultivated Fork mod should match');
+});
+
 test('allDocs: builds a multi-category index', () => {
   const docs = allDocs();
   assert.ok(docs.length > 100, 'expected a large index');

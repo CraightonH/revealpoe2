@@ -70,6 +70,9 @@ function toUnique(node, variantIndex) {
     // Cultural origin (Kalguuran/Ezomyte/Vaal) where GGG assigns one, else null.
     // Overlay-derived (manual:unique-origins); see scripts/graph/manual.js.
     origin: p.origin ?? null,
+    // Raw cultivated-mod display lines (RePoE "[Id|Display]" markup intact) — for
+    // the search index. The rendered {text,html} form is built in the VMs.
+    cultivatedText: (p.cultivatedMods ?? []).flatMap((m) => m.texts),
     tradeUrl: tradeUrl({ kind: 'unique', name: node.name, type: p.base }),
   };
 }
