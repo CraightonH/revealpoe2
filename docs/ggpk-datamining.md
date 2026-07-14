@@ -37,6 +37,121 @@ with row counts and relationships.
 
 Grep everything for the mechanic prefix: `npm run dat -- grep incursion2`.
 
+## Working with the mirror
+
+Everything below reads the local mirror only (offline, no TLS handling needed).
+Run `npm run fetch:dat` once first.
+
+### CLI reference
+
+**`ls [pattern]`** — list mirrored table names; `pattern` is a case-insensitive regex.
+```
+npm run dat -- ls corrupt
+→ EndgameCorruptionMods
+  Incursion2CorruptionCurrencies
+  …
+```
+
+**`schema <Table>`** — the column layout plus both directions of its relationships.
+This is your primary orientation tool: it shows every column's type, which tables
+each foreign key points **to**, and (from a scan of the whole schema) which tables
+point **back** at this one.
+```
+npm run dat -- schema EndgameCorruptionMods
+→ columns:
+   0  CorruptionMod   foreignrow -> Mods
+   1  SpawnWeight     i32[]
+   2  col2            bool
+  references: Mods
+  referenced by: (none)
+```
+
+**`grep <keyword> [--values]`** — find a table when you don't know its name.
+Searches table + column names instantly. Add `--values` to also scan every
+**string cell** in every table (parses all ~1020 tables — takes a few seconds, and
+capped at 200 hits).
+```
+npm run dat -- grep mutat            # names/columns only
+npm run dat -- grep "of the Brute" --values   # find which table/row holds a string
+```
+
+**`dump <Table> [--resolve] [--limit N] [--out file]`** — decode rows to JSON on
+stdout. `--resolve` follows foreign keys one level (see below); `--limit` caps
+rows; `--out` writes to a file instead of stdout.
+```
+npm run dat -- dump Incursion2MutatedUniqueModsClient --resolve
+npm run dat -- dump Mods --limit 5
+npm run dat -- dump Mods --out /tmp/mods.json     # then jq/grep at leisure
+```
+
+**`catalog`** — regenerate `CATALOG.md` (also runs automatically after `fetch:dat`).
+
+### How rows are shaped
+
+Each row is a JSON object keyed by the schema's column names (anonymous columns
+become `col<i>`). Cell types map like this:
+
+| Schema type | In `dump` (raw) | With `--resolve` |
+|---|---|---|
+| `string`, `i32`, `f32`, `bool` | the scalar value | unchanged |
+| `foreignrow -> T` | **integer row index** into table `T` (or `null`) | `T`'s row `Id` (else its first string, else `#<index>`) |
+| `foreignrow[] -> T` | array of indices | array of labels |
+| `row -> Self` | index into the **same** table | resolved the same way |
+| `enumrow -> E` | **integer** (see enum note) | still the integer — enums are not auto-resolved |
+| `i32[]` etc. | array of scalars | unchanged |
+
+A foreign key is just a **row index**, so `dump <T>` and counting from row 0 gets
+you the referenced row directly. `--resolve` does that lookup for you.
+
+### Recipes
+
+**Follow a relationship.** `schema` tells you the target table; `dump --resolve`
+renders the labels. To go deeper than one level, dump the target table too:
+```
+npm run dat -- dump Incursion2MutatedUniqueModsClient --resolve   # -> Mods Ids
+npm run dat -- schema Mods                                         # Mods -> Stats, ModType, …
+```
+
+**Turn a mod into readable stat text.** The mirror has *mod structure*, not
+display text. A `Mods` row carries `Stat1..Stat6 -> Stats` and `Stat1Value..`;
+resolve gives you the stat **id** (e.g. `additional_strength`). The human text
+lives in RePoE, which we already mirror — cross-reference the stat id there:
+```
+npm run dat -- dump Mods --resolve --limit 1
+#   Stat1: "additional_strength", Stat1Value: 5 …
+grep -rl additional_strength data/source/repoe-poe2/stat_translations/
+```
+
+**Resolve an enum value.** `enumrow` columns come back as integers; the labels are
+in the pinned schema's `enumerations` block, indexed by `value - indexing`:
+```
+node -e "const s=require('./data/source/ggpk-poe2/schema.min.json');
+  const e=Object.values(s.enumerations).find(x=>x.name==='ModDomains');
+  console.log(e.enumerators[1 - e.indexing]);"   # Domain 1 -> ITEM
+```
+(GenerationType `2` → `SUFFIX`, etc. Many niche enums have empty `enumerators` —
+not yet reversed by the community.)
+
+**Filter/transform.** `dump` is just JSON — pipe it:
+```
+npm run dat -- dump Mods --resolve | jq '[.[] | select(.Domain==1)] | length'
+```
+
+**Cross-check a suspicious table.** If a dump looks like garbage, the schema's
+column order is likely wrong/partial for that table (offsets misalign). Browse the
+same tables at [ggpk.exposed](https://ggpk.exposed) (adapter `poe2`, path
+`data/balance/`) to compare, or re-pull a fresh raw copy directly:
+`https://ggpk.exposed/files?q=download&adapter=poe2&path=poe2://data/balance/<name>.datc64`.
+
+### Limits of `--resolve`
+
+- **One level only** — it labels foreign keys but doesn't recurse. Dump the target
+  table for the next hop.
+- **Enums stay numeric** — resolve them via the `enumerations` block (recipe above).
+- **No stat display text** — bridge mod stat ids to `data/source/repoe-poe2/stat_translations/`.
+- Labels are best-effort (`Id` → first string → `#index`); a table with no string
+  column resolves to `#<index>`, which is still a valid pointer for a manual dump.
+
 ## How it works
 
 ```
