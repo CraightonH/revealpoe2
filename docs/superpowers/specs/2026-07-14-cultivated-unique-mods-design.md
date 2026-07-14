@@ -48,7 +48,9 @@ Investigated exhaustively against the `ggpk-poe2` mirror + ggpk.exposed (`docs/g
    - The 8 mirrored tables lacking a dat-schema entry — all irrelevant (mobile/atlas/tencent).
    - `metadata/items/**` `.it` resource files — declare base structure only, no mod lists;
      `weapons/uniques/` has no per-unique files.
-   - `Words` / `UniqueOrigins` — no cultivated-variant naming or linkage.
+   - `Words` / `UniqueOrigins` — no cultivated-variant naming or mod linkage. (`UniqueOrigins`
+     *does* segment the 48 Vaal-origin uniques — used below as the bootstrap candidate filter —
+     but it maps unique → cultural origin only, never unique → mods.)
 
    This mirrors why RePoE omits unique mods and PoB hand-maintains them: GGG compiles unique
    mod assignments into item generation, not into datamineable data. poe2db has the mapping
@@ -121,7 +123,13 @@ node.props.cultivatedMods = [
 
 Generates/refreshes the overlay. Not invoked by `dev`, `build:*`, `test`, or CI.
 
-- Iterate RePoE uniques; fetch each poe2db page (`https://poe2db.tw/us/{Name_snake_case}`),
+- **Restrict candidates to Vaal-origin uniques.** Only Vaal uniques are cultivable, so the
+  script does not probe all 449 uniques. The candidate set is ggpk `UniqueOrigins` where
+  `Origin = "Vaal"` — **48** uniques (e.g. Atziri's Contempt), joined to RePoE uniques by
+  name. (`UniqueOrigins` is read only here, in the dev bootstrap; ggpk still never enters the
+  build.) Not every Vaal-origin unique necessarily has a cultivated section — the run reports
+  those with none, so the final overlay is the ~30–40 that do.
+- For each candidate, fetch its poe2db page (`https://poe2db.tw/us/{Name_snake_case}`) and
   extract the "Cultivated Uniques" section when present. (Rate-limited, disk-cached, TLS via
   `env -u SSL_CERT_FILE NODE_EXTRA_CA_CERTS`, matching the other network fetchers.)
 - Match each poe2db mod line → a RePoE `UniqueMutatedVaal*` id by **normalized stat text +
