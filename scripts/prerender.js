@@ -16,6 +16,7 @@
 
 import { createApp } from '../src/server.js';
 import { allDocs } from '../src/data/theorycraft.js';
+import { toSearchDocs } from '../public/js/query-core.js';
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
@@ -27,7 +28,7 @@ const DIST = path.join(root, 'dist');
 const PUBLIC = path.join(root, 'public');
 
 // Where the crawl starts. Everything else is discovered from links on these.
-const SEEDS = ['/', '/gems', '/uniques', '/bases', '/keystones', '/ascendancies'];
+const SEEDS = ['/', '/gems', '/uniques', '/bases', '/passives'];
 
 // Affix flyout fragments (/mod/:typeSlug/card) are the one card type the link
 // crawl can't reach: mods have no page, so their data-card-url lives ONLY in
@@ -56,6 +57,23 @@ export function passiveCardSeeds() {
   for (const html of Object.values(cards)) {
     for (const m of html.matchAll(ATTR_RE)) out.add(m[1]);           // href / hx-get / data-card-url
     for (const m of html.matchAll(KW_RE)) out.add(keywordUrl(m[1])); // data-keyword
+  }
+  return [...out];
+}
+
+// Keystone/notable detail pages and their hover-card fragments used to be
+// link-reachable only through the /keystones index. That browse page is gone
+// (the interactive tree replaced it), so seed them the same divergence-proof way
+// affixCardSeeds does: from toSearchDocs(allDocs()) — the exact doc set the
+// client search dropdown and Theory Crafting read — so every page URL a result
+// links (d.url) and every hover-card URL it opens (d.cardUrl) is prerendered.
+// keystone: /keystone/:id (+ /card); notable: /notable/:id (+ /passive/:id/card).
+export function passiveDocSeeds() {
+  const out = new Set();
+  for (const d of toSearchDocs(allDocs())) {
+    if (d.cat !== 'keystone' && d.cat !== 'notable') continue;
+    if (d.url) out.add(d.url);
+    if (d.cardUrl) out.add(d.cardUrl);
   }
   return [...out];
 }
@@ -144,6 +162,9 @@ async function run() {
   for (const u of affixCardSeeds()) { const n = normalize(u); if (n) enqueue(n); }
   // Passive-tree card links live only in the JSON artifact (see passiveCardSeeds).
   for (const u of passiveCardSeeds()) { const n = normalize(u); if (n) enqueue(n); }
+  // Keystone/notable pages + cards, formerly reached via the deleted /keystones
+  // index (see passiveDocSeeds).
+  for (const u of passiveDocSeeds()) { const n = normalize(u); if (n) enqueue(n); }
 
   async function handle(urlPath) {
     let res;

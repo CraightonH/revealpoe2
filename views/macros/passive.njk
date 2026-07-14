@@ -24,7 +24,20 @@
 </a>
 {% endmacro %}
 
-{% macro passiveDetail(node) %}
+{# Theory Crafting result: the full in-game passive tooltip (passiveDetail),
+   wrapped in a click-through link to the detail page. `urlBase` is 'keystone' or
+   'notable'. Used by both the server results partial and build-index.js (which
+   bakes the identical HTML into browse-cards.json for the client-rendered static
+   page), so the two paths can't diverge. #}
+{% macro passiveResultCard(node, urlBase='keystone') %}
+<a class="tc-passive-card" href="/{{ urlBase }}/{{ node.id }}">{{ passiveDetail(node) }}</a>
+{% endmacro %}
+
+{# `showIcon` (default true) adds the node artwork at the top of the tooltip as an
+   at-a-glance recognition cue. The interactive tree passes false — the node art is
+   already on the canvas there — so the icon shows only on tooltips OUTSIDE the tree
+   (detail pages, search hovers, Theory Crafting results). #}
+{% macro passiveDetail(node, showIcon=true) %}
 {% if node.ascColor %}
 <div class="newItemPopup PassivePopup item-popup--poe2 is-asc" style="--card-border: {{ node.ascColor }}; --card-glow: color-mix(in srgb, {{ node.ascColor }} 45%, transparent); --passive-name-color: {{ node.ascColor }};">
 {% else %}
@@ -35,6 +48,11 @@
     <div class="itemName typeLine"><span class="lc">{% if node.ascendancyName %}{{ node.ascendancyName }}{% elif node.typeLabel %}{{ node.typeLabel }}{% elif node.kind == 'keystone' %}Keystone{% else %}Notable Passive{% endif %}</span></div>
   </div>
   <div class="content">
+    {% if showIcon and node.iconUrl %}
+    <div class="passive-art">
+      <img src="{{ node.iconUrl }}" alt="" loading="lazy" onerror="this.closest('.passive-art').remove()">
+    </div>
+    {% endif %}
     {% if node.grantedSkill %}
     <div class="Stats">
       <div class="explicitMod">

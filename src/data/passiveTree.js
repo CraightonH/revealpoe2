@@ -2,7 +2,7 @@ import { ddsUrl } from './images.js';
 import { renderGameText, stripGameText } from './keywords.js';
 import { hasDefinition } from './keywordDefs.js';
 import { getGemRefByKey } from './gems.js';
-import { nodesByKind, nodeBySlug, edgesFrom, edgesTo, getNode } from './graph.js';
+import { nodesByKind, nodeBySlug, edgesFrom } from './graph.js';
 
 // Presentation adapter over the build-time graph (build/graph.json). Passive
 // identity, resolved stat strings, flavour/reminder text, and the grants /
@@ -105,32 +105,3 @@ export function getPassiveNode(id) {
   return rec;
 }
 
-// Notables that sit in an ascendancy — the reverse of the in_ascendancy edge.
-function ascNotables(ascNode) {
-  return edgesTo(ascNode.id, 'in_ascendancy')
-    .map((e) => getNode(e.from))
-    .filter(Boolean)
-    .map(nodeRecord)
-    .sort((a, b) => a.name.localeCompare(b.name));
-}
-
-function ascRecord(node) {
-  return {
-    id: node.slug,
-    name: node.name,
-    charClass: node.props.charClass,
-    color: ASC_COLORS[node.slug] || ASC_COLOR_DEFAULT,
-    notables: ascNotables(node),
-  };
-}
-
-export function listAscendancies() {
-  return nodesByKind('ascendancy')
-    .map(ascRecord)
-    .sort((a, b) => a.charClass.localeCompare(b.charClass) || a.name.localeCompare(b.name));
-}
-
-export function getAscendancy(ascId) {
-  const n = nodeBySlug('ascendancy', ascId);
-  return n ? ascRecord(n) : null;
-}

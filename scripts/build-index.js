@@ -43,8 +43,8 @@ function browseCards() {
   const renderGem = compileCard('macros/gem-card.njk', 'gemBrowseCard');
   const renderUnique = compileCard('macros/unique-card.njk', 'uniqueListCard');
   const renderBase = compileCard('macros/base-card.njk', 'baseListCard');
-  const renderKeystone = compileCard('macros/passive.njk', 'passiveBrowseCard', ', "keystone"');
-  const renderNotable = compileCard('macros/passive.njk', 'passiveBrowseCard', ', "notable"');
+  const renderKeystone = compileCard('macros/passive.njk', 'passiveResultCard', ', "keystone"');
+  const renderNotable = compileCard('macros/passive.njk', 'passiveResultCard', ', "notable"');
   const renderAugment = compileCard('macros/augment-cards.njk', 'augmentCard');
 
   const bases = listItemClasses().flatMap((g) =>

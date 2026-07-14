@@ -1,7 +1,7 @@
 {% from "macros/gem-card.njk" import gemBrowseCard %}
 {% from "macros/unique-card.njk" import uniqueListCard %}
 {% from "macros/base-card.njk" import baseListCard %}
-{% from "macros/passive.njk" import passiveBrowseCard %}
+{% from "macros/passive.njk" import passiveResultCard %}
 {% from "macros/augment-cards.njk" import augmentCard %}
 
 {# Compact fallback card — used for affixes (no browse card) and for the rare
@@ -28,8 +28,8 @@
   {% if category in ['gem', 'support', 'spirit'] %}{{ gemBrowseCard(it.card) }}
   {% elif category == 'unique' %}{{ uniqueListCard(it.card) }}
   {% elif category == 'base' %}{{ baseListCard(it.card) }}
-  {% elif category == 'keystone' %}{{ passiveBrowseCard(it.card, 'keystone') }}
-  {% elif category == 'notable' %}{{ passiveBrowseCard(it.card, 'notable') }}
+  {% elif category == 'keystone' %}{{ passiveResultCard(it.card, 'keystone') }}
+  {% elif category == 'notable' %}{{ passiveResultCard(it.card, 'notable') }}
   {% elif category == 'augment' %}{{ augmentCard(it.card) }}
   {% else %}{{ compactCard(it, category) }}{% endif %}
 {% else %}{{ compactCard(it, category) }}{% endif %}
@@ -50,7 +50,7 @@
 {# Each group lays its cards out on the same grid its browse page uses. #}
 {% if g.category in ['gem', 'support', 'spirit'] %}{% set gridClass = 'gem-browse-grid' %}
 {% elif g.category in ['unique', 'base'] %}{% set gridClass = 'bases-list-grid' %}
-{% elif g.category in ['keystone', 'notable'] %}{% set gridClass = 'keystone-index-grid' %}
+{% elif g.category in ['keystone', 'notable'] %}{% set gridClass = 'tc-passive-grid' %}
 {% elif g.category == 'augment' %}{% set gridClass = 'augment-grid' %}
 {% else %}{% set gridClass = 'tc-result-grid' %}{% endif %}
 <section class="tc-group">

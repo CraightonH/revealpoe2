@@ -8,24 +8,24 @@ html[data-card-size="xl"] .gem-detail { zoom: 1.5; }
 
 /* Condensed browse-card grids scale with the same control: base items / uniques
    / highest-tier (.bases-list-grid), gems (.gem-browse-grid), ascendancies
-   (.asc-grid), keystones + per-ascendancy nodes (.keystone-index-grid). Zoom the
+   keystones + per-ascendancy nodes (.keystone-index-grid). Zoom the
    grid as a unit so the gap and column tracks scale proportionally and the cards
    stay aligned. */
 html[data-card-size="s"] .bases-list-grid,
 html[data-card-size="s"] .bases-class-grid,
 html[data-card-size="s"] .gem-browse-grid,
-html[data-card-size="s"] .asc-grid,
-html[data-card-size="s"] .keystone-index-grid { zoom: 0.85; }
+html[data-card-size="s"] .keystone-index-grid,
+html[data-card-size="s"] .tc-passive-grid { zoom: 0.85; }
 html[data-card-size="l"] .bases-list-grid,
 html[data-card-size="l"] .bases-class-grid,
 html[data-card-size="l"] .gem-browse-grid,
-html[data-card-size="l"] .asc-grid,
-html[data-card-size="l"] .keystone-index-grid { zoom: 1.25; }
+html[data-card-size="l"] .keystone-index-grid,
+html[data-card-size="l"] .tc-passive-grid { zoom: 1.25; }
 html[data-card-size="xl"] .bases-list-grid,
 html[data-card-size="xl"] .bases-class-grid,
 html[data-card-size="xl"] .gem-browse-grid,
-html[data-card-size="xl"] .asc-grid,
-html[data-card-size="xl"] .keystone-index-grid { zoom: 1.5; }
+html[data-card-size="xl"] .keystone-index-grid,
+html[data-card-size="xl"] .tc-passive-grid { zoom: 1.5; }
 
 /* The rollable-affix browser on /bases/:class scales with the same control.
    Zoom the whole section as a unit so the heading, two-column layout, gaps and
@@ -398,9 +398,8 @@ a.lc.unique-type:hover {
 }
 
 /* Shared card-grid geometry. Two column-width variants (160px / 200px min);
-   most are centered at page width (asc overrides max-width to 800px). */
-.bases-class-grid,
-.asc-grid {
+   most are centered at page width. */
+.bases-class-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
 }
@@ -415,8 +414,7 @@ a.lc.unique-type:hover {
 }
 .unique-index-grid,
 .keystone-index-grid,
-.bases-list-grid,
-.asc-grid {
+.bases-list-grid {
   width: 100%;
   max-width: 900px;
   padding: 16px 0;
@@ -1190,50 +1188,57 @@ details[open] > .affix-origin-title::before { transform: rotate(90deg); }
 .affix-tier-row { background: rgba(0,0,0,0.18); }
 .affix-tier-row > td { padding: 3px 8px; font-size: 12.5px; }
 
-/* --- Ascendancy cards (list page) — dark shell tinted to the colorway --- */
-.asc-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  background: color-mix(in srgb, var(--asc-color, var(--card-dark-border)) 8%, var(--card-dark-bg));
-  border: 1px solid color-mix(in srgb, var(--asc-color, var(--card-dark-border)) 30%, var(--card-dark-border));
-  border-radius: 4px;
-  color: var(--color-default);
-  text-decoration: none;
-  transition: border-color 0.15s, background 0.15s;
-}
-.asc-card:hover {
-  border-color: var(--asc-color, var(--card-hover-border));
-}
-
-/* Ascendancy notable browse cards — keystone-index-card shape, tinted to the
-   selected ascendancy's colorway instead of the keystone blue. */
-.asc-notable-card {
-  color: var(--asc-color);
-  background: color-mix(in srgb, var(--asc-color) 12%, var(--bg-surface));
-  border-color: color-mix(in srgb, var(--asc-color) 30%, var(--border));
-}
-.asc-notable-card:hover {
-  border-color: var(--asc-color);
-}
-/* Header banner + name tinted to the ascendancy colorway (not keystone blue) */
-.asc-notable-card .keystone-index-header {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--asc-color) 20%, transparent), rgba(0,0,0,0.35));
-}
-.asc-notable-card .keystone-index-name { color: var(--asc-color); }
-.asc-notable-placeholder {
-  background: color-mix(in srgb, var(--asc-color) 25%, transparent);
-  color: var(--asc-color);
-}
 /* Granted-skill name (plain span here, not a link) — gem teal */
 .keystone-index-card .skill-grant-link { color: var(--color-gem); }
+
+/* Theory Crafting passive results: a grid of full in-game tooltips (not condensed
+   browse cards). Column tracks size to the popup's max-width; each card is a
+   click-through link to the detail page. Popups drop their page-layout top margin
+   here — the grid gap owns the spacing. */
+.tc-passive-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  align-items: start;
+  gap: 12px;
+  width: 100%;
+  max-width: 900px;
+  padding: 16px 0;
+}
+.tc-passive-card {
+  display: block;
+  text-decoration: none;
+}
+.tc-passive-grid .PassivePopup {
+  margin: 0;
+  max-width: none;
+}
 
 /* Passive detail popup — keystone/notable, reuses .newItemPopup chrome.
    No banner image (passives have none); the header is a flat bar. */
 .PassivePopup {
   max-width: 360px;
   margin: 16px auto 0;
+}
+
+/* Node artwork at the top of the tooltip — an at-a-glance recognition cue on
+   passive tooltips shown OUTSIDE the interactive tree (the tree passes
+   showIcon=false; its node art is already on the canvas). Circular to match the
+   in-game node art, ringed in the node-kind color (--passive-name-color, set on
+   the popup per keystone / notable / ascendancy). */
+.passive-art {
+  display: flex;
+  justify-content: center;
+  padding: 10px 0 2px;
+}
+.passive-art img {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 40%, rgba(0,0,0,0.25), rgba(0,0,0,0.6));
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--passive-name-color, var(--color-notable)) 60%, transparent),
+    0 0 10px color-mix(in srgb, var(--passive-name-color, var(--color-notable)) 30%, transparent);
 }
 .PassivePopup.is-keystone {
   --passive-name-color: var(--color-keystone);
@@ -1386,36 +1391,6 @@ details[open] > .affix-origin-title::before { transform: rotate(90deg); }
   text-align: center;
 }
 .EmotionPopup .emotion-stack .colourDefault { color: #fff; }
-
-/* Ascendancy grid — narrower page width than the other 200px-min grids. */
-.asc-grid {
-  gap: 12px;
-  max-width: 800px;
-}
-
-.asc-card {
-  gap: 4px;
-  padding: 14px 10px;
-}
-
-.asc-class {
-  font-size: 10px;
-  color: var(--color-default);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.asc-name {
-  font-size: 14px;
-  color: var(--asc-color, var(--color-normal));
-  font-weight: 600;
-}
-
-.asc-count {
-  font-size: 10px;
-  color: var(--color-default);
-  opacity: 0.7;
-}
 
 /* ── Augments (socketables) ─────────────────────────────────────────────────
    The "Socketables" section on /bases/:class and unique pages: augment cards

@@ -96,13 +96,6 @@ test('GET /base/stellar-amulet points to the class affix page', async () => {
   assert.ok(!res.text.includes('affix-table'), 'no per-base affix tables');
 });
 
-test('GET /keystones returns 200 with Keystones heading', async () => {
-  const app = createApp();
-  const res = await request(app).get('/keystones');
-  assert.equal(res.status, 200);
-  assert.ok(res.text.includes('Keystones'));
-});
-
 test("GET /keystone/passive_keystone_zealots_oath returns 200 with Zealot's Oath", async () => {
   const app = createApp();
   const res = await request(app).get('/keystone/passive_keystone_zealots_oath');
@@ -116,25 +109,14 @@ test('GET /keystone/not-a-real-keystone returns 404', async () => {
   assert.equal(res.status, 404);
 });
 
-test('GET /ascendancies returns 200 with Ascendancies heading', async () => {
-  const app = createApp();
-  const res = await request(app).get('/ascendancies');
-  assert.equal(res.status, 200);
-  assert.ok(res.text.includes('Ascendancies'));
-});
-
-test('GET /ascendancy/Ranger1 returns 200 with Deadeye', async () => {
-  const app = createApp();
-  const res = await request(app).get('/ascendancy/Ranger1');
-  assert.equal(res.status, 200);
-  assert.ok(res.text.includes('Deadeye'));
-});
-
-test('GET /ascendancy/NotReal returns 404', async () => {
-  const app = createApp();
-  const res = await request(app).get('/ascendancy/NotReal');
-  assert.equal(res.status, 404);
-});
+// The old passive browse pages were deprecated in favor of the interactive
+// passive tree (/passives); their routes are gone.
+for (const gone of ['/keystones', '/ascendancies', '/ascendancy/Ranger1']) {
+  test(`GET ${gone} is deprecated (404)`, async () => {
+    const res = await request(createApp()).get(gone);
+    assert.equal(res.status, 404);
+  });
+}
 
 test('GET /gems returns 200 with gem sections', async () => {
   const app = createApp();

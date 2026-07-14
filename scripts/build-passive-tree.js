@@ -145,7 +145,9 @@ function typeLabelForKind(k) {
 export function buildCards() {
   const env = nunjucks.configure(path.join(__dirname, '..', 'views'), { autoescape: true });
   const tmpl = nunjucks.compile(
-    '{% from "macros/passive.njk" import passiveDetail %}{{ passiveDetail(vm) }}',
+    // showIcon=false: on the tree the node art is already on the canvas, so the
+    // in-card icon (shown on tooltips elsewhere) would be redundant here.
+    '{% from "macros/passive.njk" import passiveDetail %}{{ passiveDetail(vm, false) }}',
     env,
   );
   // Generic-attribute nodes ("+5 to any Attribute") render as a 3-way choice

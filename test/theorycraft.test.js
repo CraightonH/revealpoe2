@@ -142,6 +142,17 @@ test('GET /theorycraft/results?q=herald returns grouped results', async () => {
   assert.match(res.text, /Herald of Ash/);
 });
 
+test('GET /theorycraft/results renders keystone matches as the full in-game tooltip', async () => {
+  const res = await request(createApp()).get('/theorycraft/results?q=zealot');
+  assert.equal(res.status, 200);
+  // Full passive tooltip (passiveDetail) in a click-through wrapper, on the
+  // tooltip-sized grid — not the old condensed keystone-index browse card.
+  assert.match(res.text, /tc-passive-grid/);
+  assert.match(res.text, /tc-passive-card/);
+  assert.match(res.text, /PassivePopup/);
+  assert.ok(!/keystone-index-card/.test(res.text), 'must not use the old compact browse card');
+});
+
 test('GET /theorycraft/results with empty q shows the prompt', async () => {
   const res = await request(createApp()).get('/theorycraft/results?q=');
   assert.equal(res.status, 200);

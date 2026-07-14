@@ -1,6 +1,6 @@
 import { describe, it, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { listKeystones, getKeystone, listNotables, getNotable, getPassiveNode, listAscendancies, getAscendancy } from '../src/data/passiveTree.js';
+import { listKeystones, getKeystone, listNotables, getNotable, getPassiveNode } from '../src/data/passiveTree.js';
 import { passiveNodes } from '../scripts/graph/passives.js';
 
 test('passiveNodes emits keystones + notables with resolved stat lines', () => {
@@ -92,44 +92,6 @@ describe('passiveTree', () => {
     });
     it('returns null for unknown id', () => {
       assert.equal(getNotable('nope'), null);
-    });
-  });
-
-  describe('listAscendancies', () => {
-    it('returns 23 valid ascendancies', () => {
-      assert.equal(listAscendancies().length, 23);
-    });
-    it('each ascendancy has id, name, charClass, notables array', () => {
-      const a = listAscendancies()[0];
-      assert.ok(a.id);
-      assert.ok(a.name);
-      assert.ok(a.charClass);
-      assert.ok(Array.isArray(a.notables));
-    });
-    it('no ascendancy name contains [DNT', () => {
-      assert.ok(listAscendancies().every((a) => !a.name.includes('[DNT')));
-    });
-  });
-
-  describe('getAscendancy', () => {
-    it('returns Deadeye by id Ranger1', () => {
-      const a = getAscendancy('Ranger1');
-      assert.ok(a);
-      assert.equal(a.name, 'Deadeye');
-      assert.equal(a.charClass, 'Ranger');
-    });
-    it('Deadeye has notables', () => {
-      const a = getAscendancy('Ranger1');
-      assert.ok(a.notables.length > 0);
-    });
-    it('returns null for unknown id', () => {
-      assert.equal(getAscendancy('Blah99'), null);
-    });
-    it('carries an ascendancy colorway', () => {
-      assert.equal(getAscendancy('Druid1').color, '#4fa3a3');
-    });
-    it('every ascendancy has a color', () => {
-      assert.ok(listAscendancies().every((a) => /^#[0-9a-f]{6}$/i.test(a.color)));
     });
   });
 

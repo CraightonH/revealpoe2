@@ -66,6 +66,8 @@ test('GET /keystone/:id renders a keystone passive popup', async () => {
   const popupIdx = res.text.indexOf('newItemPopup');
   const detailIdx = res.text.indexOf('gem-detail');
   assert.ok(detailIdx > -1 && detailIdx < popupIdx, 'passive card must be wrapped in .gem-detail');
+  // node artwork shows on tooltips outside the tree (at-a-glance recognition cue)
+  assert.match(res.text, /class="passive-art"/);
 });
 
 test('GET /notable/:id renders a notable passive popup', async () => {
@@ -96,29 +98,6 @@ test('GET /keystone/:id/card returns 404 empty body for unknown id', async () =>
   assert.equal(res.text, '');
 });
 
-test('GET /keystones renders aligned index cards with hover previews', async () => {
-  const res = await request(createApp()).get('/keystones');
-  assert.equal(res.status, 200);
-  // compact index-card layout (mirrors /uniques), not the old verbose tile
-  assert.match(res.text, /keystone-index-grid/);
-  assert.match(res.text, /keystone-index-card/);
-  assert.ok(!/passive-node-card/.test(res.text), 'keystones page must not use the old passive-node-card tile');
-  // hover-preview wiring + keystone header accent
-  assert.match(res.text, /data-card-url="\/keystone\/[^"]+\/card"/);
-  assert.match(res.text, /color:var\(--color-keystone\)/);
-});
-
-test('ascendancy page renders colorway-tinted notable index cards', async () => {
-  const res = await request(createApp()).get('/ascendancy/Druid1');
-  assert.equal(res.status, 200);
-  // compact index cards, not the old verbose passive-node tiles
-  assert.match(res.text, /asc-notable-card/);
-  assert.ok(!/passive-node-card/.test(res.text), 'ascendancy must not use the old passive-node-card tile');
-  // colorway var set on the page + hover preview wiring to the generic passive card
-  assert.match(res.text, /--asc-color: #4fa3a3/); // Oracle (Druid1) teal
-  assert.match(res.text, /data-card-url="\/passive\/[^"]+\/card"/);
-});
-
 test('GET /passive/:id and /card serve an ascendancy notable themed to its colorway', async () => {
   const card = await request(createApp()).get('/passive/AscendancyDruid1Notable4/card');
   assert.equal(card.status, 200);
@@ -128,8 +107,9 @@ test('GET /passive/:id and /card serve an ascendancy notable themed to its color
   const page = await request(createApp()).get('/passive/AscendancyDruid1Notable4');
   assert.equal(page.status, 200);
   assert.match(page.text, /gem-detail/);
-  // breadcrumb links back to the parent ascendancy
-  assert.match(page.text, /href="\/ascendancy\/Druid1"/);
+  // breadcrumb links back to the passive tree (the deprecated /ascendancy page is gone)
+  assert.match(page.text, /href="\/passives"/);
+  assert.ok(!/href="\/ascendancy\//.test(page.text), 'no link to the removed ascendancy page');
 });
 
 test('GET /passive/:id returns 404 for unknown id', async () => {
@@ -157,12 +137,6 @@ test('granted-by passive card carries its Grants Skill line (Inevitable Agony <-
   const section = res.text.slice(grantedIdx);
   assert.match(section, /Inevitability/);
   assert.match(section, /Grants Skill:/);
-});
-
-test('ascendancies list tints each card to its colorway', async () => {
-  const res = await request(createApp()).get('/ascendancies');
-  assert.equal(res.status, 200);
-  assert.match(res.text, /--asc-color: #4fa3a3/); // Oracle teal present among the cards
 });
 
 test('layout loads Popper before Tippy before the keyword glue', async () => {
