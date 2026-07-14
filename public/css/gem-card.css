@@ -384,6 +384,9 @@ a.lc.unique-type:hover {
   padding: 1px 0 4px;
   opacity: 0.92;
 }
+/* Mod body reads Vaal-red; the white .mod-value numbers and teal .kw keywords
+   keep their own explicit colors, so only the surrounding prose turns red. */
+.cultivatedMods .explicitMod { color: var(--color-corrupted); }
 
 /* Cultural-origin badge (Kalguuran/Ezomyte/Vaal) on the class line. */
 .unique-origin {
