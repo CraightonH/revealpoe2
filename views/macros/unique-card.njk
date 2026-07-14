@@ -72,7 +72,7 @@
     </div>
     <div class="content">
       <div class="Stats">
-        <div class="property">{{ vm.className }}</div>
+        <div class="property">{{ vm.className }}{% if vm.origin %} <span class="unique-origin unique-origin--{{ vm.origin | lower }}">{{ vm.origin }}</span>{% endif %}</div>
         {% for prop in vm.properties %}
         <div class="property">{{ prop.labelHtml | safe }}: <span class="{{ prop.colorClass }}">{{ prop.value }}</span></div>
         {% endfor %}
@@ -93,6 +93,13 @@
       {% if vm.explicits.length %}
       <div class="Stats">
         {% for stat in vm.explicits %}{{ modLine(stat) }}{% endfor %}
+      </div>
+      {% endif %}
+      {% if vm.cultivatedMods.length %}
+      <div class="separator"></div>
+      <div class="Stats cultivatedMods">
+        <div class="cultivatedMods-label">Cultivated Mods</div>
+        {% for stat in vm.cultivatedMods %}{{ modLine(stat) }}{% endfor %}
       </div>
       {% endif %}
       {% if vm.flavour.length %}

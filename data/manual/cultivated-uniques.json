@@ -1,0 +1,382 @@
+{
+  "kind": "cultivated-uniques",
+  "entries": [
+    {
+      "unique": "Apep's Supremacy",
+      "vid": "FourUniqueFocus7_",
+      "mods": [
+        "UniqueMutatedVaalChaosResistance1",
+        "UniqueMutatedVaalLifeRegenerationRatePercentage",
+        "UniqueMutatedVaalPoisonEffectWhilePoisoned"
+      ]
+    },
+    {
+      "unique": "Atziri's Acuity",
+      "vid": "FourUniqueGlovesStr5",
+      "mods": [
+        "UniqueMutatedVaalAddedMaximumEnergyShield",
+        "UniqueMutatedVaalIncreasedLifePercent",
+        "UniqueMutatedVaalChanceToBleed"
+      ]
+    },
+    {
+      "unique": "Atziri's Contempt",
+      "vid": "FourUniqueSpear14_",
+      "mods": [
+        "UniqueMutatedVaalIncreasedWeaponElementalDamagePercent",
+        "UniqueMutatedVaalLocalBaseCriticalStrikeChance",
+        "UniqueMutatedVaalTreatResistsAsInvertedChance",
+        "UniqueMutatedVaalProjectileForkChanceIfMeleeRecently"
+      ]
+    },
+    {
+      "unique": "Atziri's Disdain",
+      "vid": "FourUniqueHelmetInt6",
+      "mods": [
+        "UniqueMutatedVaalDamageRemovedFromManaBeforeLife",
+        "UniqueMutatedVaalIncreasedLifePercent",
+        "UniqueMutatedVaalPercentDamageGoesToMana"
+      ]
+    },
+    {
+      "unique": "Atziri's Rule",
+      "vid": "FourUniqueStaff17",
+      "mods": [
+        "UniqueMutatedVaalSpellChanceToFireTwoAdditionalProjectiles1",
+        "UniqueMutatedVaalLifeCostEfficiency2",
+        "UniqueMutatedVaalMaximumLifeConvertedToEnergyShield",
+        "UniqueMutatedVaalSpellDamageLifeLeech"
+      ]
+    },
+    {
+      "unique": "Atziri's Splendour",
+      "vid": "FourUniqueBodyStrDexInt2",
+      "mods": [
+        "UniqueMutatedVaalSkillCostEfficiency2",
+        "UniqueMutatedVaalLocalSoulCoreEffect",
+        "UniqueMutatedVaalAtziriSplendourArmour1",
+        "UniqueMutatedVaalAtziriSplendourEvasion1",
+        "UniqueMutatedVaalAtziriSplendourEnergyShield1",
+        "UniqueMutatedVaalLocalSoulCoreAlsoGainBenefitsFromBoots",
+        "UniqueMutatedVaalLocalSoulCoreAlsoGainBenefitsFromGloves",
+        "UniqueMutatedVaalLocalSoulCoreAlsoGainBenefitsFromHelmet"
+      ]
+    },
+    {
+      "unique": "Atziri's Step",
+      "vid": "FourUniqueBootsDex9",
+      "mods": [
+        "UniqueMutatedVaalGlobalDeflectionRatingWhileMoving",
+        "UniqueMutatedVaalLocalEvasionRating",
+        "UniqueMutatedVaalGlancingBlows"
+      ]
+    },
+    {
+      "unique": "Constricting Command",
+      "vid": "FourUniqueHelmetDex6",
+      "mods": [
+        "UniqueMutatedVaalAttackDamageWhileSurrounded",
+        "UniqueMutatedVaalLifeRegenerationWhileSurrounded",
+        "UniqueMutatedVaalLocalPhysicalDamageReductionRating1",
+        "UniqueMutatedVaalSurroundedAreaOfEffect1"
+      ]
+    },
+    {
+      "unique": "Corona of the Red Sun",
+      "vid": "FourUniqueHelmetStr6",
+      "mods": [
+        "UniqueMutatedVaalGlobalIncreaseMinionSpellSkillGemLevel",
+        "UniqueMutatedVaalPresenceRadius2",
+        "UniqueMutatedVaalLocalPhysicalDamageReductionRating"
+      ]
+    },
+    {
+      "unique": "Coward's Legacy",
+      "vid": "FourUniqueBelt13",
+      "mods": [
+        "UniqueMutatedVaalLifeRegenerationOnLowLife",
+        "UniqueMutatedVaalBeltIncreasedFlaskChargesGained",
+        "UniqueMutatedVaalEvasionOnLowLife"
+      ]
+    },
+    {
+      "unique": "Demon Stitcher",
+      "vid": "FourUniqueGlovesInt5",
+      "mods": [
+        "UniqueMutatedVaalSkillCostEfficiency",
+        "UniqueMutatedVaalMaximumLifeConvertedToEnergyShield",
+        "UniqueMutatedVaalSpellLifeCostPercent",
+        "UniqueMutatedVaalArcaneSurgeEffect"
+      ]
+    },
+    {
+      "unique": "Doryani's Prototype",
+      "vid": "FourUniqueBodyStrDex6",
+      "mods": [
+        "UniqueMutatedVaalLightningResistancePenetration",
+        "UniqueMutatedVaalLightningResistance",
+        "UniqueMutatedVaalElementalPenetrationBelowZero",
+        "UniqueMutatedVaalLocalPhysicalDamageReductionRating3"
+      ]
+    },
+    {
+      "unique": "Dream Fragments",
+      "vid": "FourUniqueRing11",
+      "mods": [
+        "UniqueMutatedVaalDamageRemovedFromManaBeforeLife",
+        "UniqueMutatedVaalIceCrystalMaximumLife",
+        "UniqueMutatedVaalMaximumManaOnKillPercent",
+        "UniqueMutatedVaalVolatilityDamageTakenAsColdPercent"
+      ]
+    },
+    {
+      "unique": "Drillneck",
+      "vid": "FourUniqueQuiver12",
+      "mods": [
+        "UniqueMutatedVaalProjectileSpeed",
+        "UniqueMutatedVaalEvasionRatingPercentWhileSprinting",
+        "UniqueMutatedVaalAdditionalArrowPierce"
+      ]
+    },
+    {
+      "unique": "Glimpse of Chaos",
+      "vid": "FourUniqueUltimatum1",
+      "mods": [
+        "UniqueMutatedVaalLocalEnegyShield",
+        "UniqueMutatedVaalChaosDamagePercentage",
+        "UniqueMutatedVaalColdDamagePercentage",
+        "UniqueMutatedVaalLightningDamagePercentage",
+        "UniqueMutatedVaalFireDamagePercentage",
+        "UniqueMutatedVaalChaosResistance"
+      ]
+    },
+    {
+      "unique": "Greed's Embrace",
+      "vid": "FourUniqueBodyStr8",
+      "mods": [
+        "UniqueMutatedVaalPresenceRadius",
+        "UniqueMutatedVaalAttackDamageWhileSurrounded"
+      ]
+    },
+    {
+      "unique": "Hateforge",
+      "vid": "FourUniqueUltimatum4",
+      "mods": [
+        "UniqueMutatedVaalIncreasedAttackSpeed",
+        "UniqueMutatedVaalMaximumRagePerGlorySkillUsed",
+        "UniqueMutatedVaalMaxRageFromRageOnHitChance"
+      ]
+    },
+    {
+      "unique": "Idle Hands",
+      "vid": "FourUniqueGlovesDex4",
+      "mods": [
+        "UniqueMutatedVaalManaLeechPermyriad",
+        "UniqueMutatedVaalMaximumManaIncreasePercent",
+        "UniqueMutatedVaalManaCostEfficiency",
+        "UniqueMutatedVaalEnergyOnFullMana"
+      ]
+    },
+    {
+      "unique": "Mahuxotl's Machination",
+      "vid": "FourUniqueUltimatum3",
+      "mods": [
+        "UniqueMutatedVaalEnergyShieldDelay1",
+        "UniqueMutatedVaalArmourAppliesToElementalDamage"
+      ]
+    },
+    {
+      "unique": "Mask of the Stitched Demon",
+      "vid": "FourUniqueHelmetInt5",
+      "mods": [
+        "UniqueMutatedVaalLocalEnergyShield2",
+        "UniqueMutatedVaalIncreasedLife1",
+        "UniqueMutatedVaalAllAttributes"
+      ]
+    },
+    {
+      "unique": "Powertread",
+      "vid": "FourUniqueBootsDexInt3_",
+      "mods": [
+        "UniqueMutatedVaalCriticalStrikeMultiplierIfConsumedPowerChargeRecently",
+        "UniqueMutatedVaalIncreasedPowerChargeDuration",
+        "UniqueMutatedVaalChanceToGainAdditionalPowerCharge"
+      ]
+    },
+    {
+      "unique": "Quatl's Molt",
+      "vid": "FourUniqueBodyDex8",
+      "mods": [
+        "UniqueMutatedVaalIncreasedChaosDamage",
+        "UniqueMutatedVaalDeflectDamageTakenRecoupedAsLife",
+        "UniqueMutatedVaalPoisonStackCount"
+      ]
+    },
+    {
+      "unique": "Quecholli",
+      "vid": "FourUniqueTwoHandMace8",
+      "mods": [
+        "UniqueMutatedVaalAreaOfEffectIfKilledRecently",
+        "UniqueMutatedVaalAftershockChance",
+        "UniqueMutatedVaalPercentageStrength",
+        "UniqueMutatedVaalLocalPhysicalDamage1"
+      ]
+    },
+    {
+      "unique": "Rathpith Globe",
+      "vid": "FourUniqueFocus8",
+      "mods": [
+        "UniqueMutatedVaalLifeCostEfficiency",
+        "UniqueMutatedVaalSpellAilmentEffectPerLife",
+        "UniqueMutatedVaalSpellCriticalChancePerMana",
+        "UniqueMutatedVaalSpellDamagePerMana"
+      ]
+    },
+    {
+      "unique": "Rearguard",
+      "vid": "FourUniqueQuiver5__",
+      "mods": [
+        "UniqueMutatedVaalLocalEvasionRating",
+        "UniqueMutatedVaalSurroundedAreaOfEffect",
+        "UniqueMutatedVaalIncreasedAttackSpeed",
+        "UniqueMutatedVaalGlobalDeflectionRating"
+      ]
+    },
+    {
+      "unique": "Redflare Conduit",
+      "vid": "FourUniqueBodyDexInt5",
+      "mods": [
+        "UniqueMutatedVaalLocalIncreasedEvasionAndEnergyShield",
+        "UniqueMutatedVaalManaGainedOnPowerChargeConsumption",
+        "UniqueMutatedVaalGainPowerChargesNotLostRecently",
+        "UniqueMutatedVaalReducedShockEffectOnSelf"
+      ]
+    },
+    {
+      "unique": "Rise of the Phoenix",
+      "vid": "FourUniqueShieldStrInt6",
+      "mods": [
+        "UniqueMutatedVaalBurningEnemiesExplodeChance",
+        "UniqueMutatedVaalIgniteChanceIncrease",
+        "UniqueMutatedVaalGlobalFireGemLevel",
+        "UniqueMutatedVaalLifeRegenerationRatePercentageWhileIgnited"
+      ]
+    },
+    {
+      "unique": "Saitha's Spear",
+      "vid": "FourUniqueSpear7",
+      "mods": [
+        "UniqueMutatedVaalFireExposureOnHit",
+        "UniqueMutatedVaalIgniteChanceIncrease1",
+        "UniqueMutatedVaalLocalPhysicalDamagePercent",
+        "UniqueMutatedVaalGlobalFireGemLevel",
+        "UniqueMutatedVaalCullingStrikeLocalVsBleeding"
+      ]
+    },
+    {
+      "unique": "Snakebite",
+      "vid": "FourUniqueGlovesDex5_",
+      "mods": [
+        "UniqueMutatedVaalPoisonDurationIfConsumedFrenzyChargeRecently",
+        "UniqueMutatedVaalReducedPoisonDuration",
+        "UniqueMutatedVaalRecoverLifeOnKillingPoisonedEnemyPerPoison"
+      ]
+    },
+    {
+      "unique": "Snakepit",
+      "vid": "FourUniqueRing24",
+      "mods": [
+        "UniqueMutatedVaalSpellChanceToFireTwoAdditionalProjectiles",
+        "UniqueMutatedVaalManaCostEfficiency3",
+        "UniqueMutatedVaalEnergyGeneration",
+        "UniqueMutatedVaalSpellSkillProjectileSpeed",
+        "UniqueMutatedVaalChanceToNotConsumeInfusion"
+      ]
+    },
+    {
+      "unique": "Soul Mantle",
+      "vid": "FourUniqueBodyStrInt6",
+      "mods": [
+        "UniqueMutatedVaalAttackAndCastSpeedOnPlacingTotem",
+        "UniqueMutatedVaalTotemDamagePerCurseOnSelf",
+        "UniqueMutatedVaalTotemDuration",
+        "UniqueMutatedVaalBaseSpirit1",
+        "UniqueMutatedVaalLocalEnergyShield3"
+      ]
+    },
+    {
+      "unique": "Soul Tether",
+      "vid": "FourUniqueBelt8_",
+      "mods": [
+        "UniqueMutatedVaalEnergyShieldRecoveryRate",
+        "UniqueMutatedVaalLifeDegenerationPercentGracePeriod",
+        "UniqueMutatedVaalIncreasedLifeLeechRate",
+        "UniqueMutatedVaalZealotsOath"
+      ]
+    },
+    {
+      "unique": "Tetzlapokal's Desire",
+      "vid": "FourUniqueBodyInt7",
+      "mods": [
+        "UniqueMutatedVaalEnergyShieldRechargeRatePer4Strength",
+        "UniqueMutatedVaalMaximumLifeConvertedToEnergyShield",
+        "UniqueMutatedVaalIncreasedLife"
+      ]
+    },
+    {
+      "unique": "The Adorned",
+      "vid": "FourUniqueJewel9",
+      "mods": [
+        "UniqueMutatedVaalPhysicalDamagePercent",
+        "UniqueMutatedVaalCorruptedRareJewelModEffect",
+        "UniqueMutatedVaalFireDamagePercentage1",
+        "UniqueMutatedVaalColdDamagePercentage1",
+        "UniqueMutatedVaalLightningDamagePercentage1",
+        "UniqueMutatedVaalIncreasedChaosDamage1",
+        "UniqueMutatedVaalIncreasedArmourForJewel",
+        "UniqueMutatedVaalIncreasedEvasionForJewel",
+        "UniqueMutatedVaalIncreasedEnergyShieldForJewel",
+        "UniqueMutatedVaalMinionDamage"
+      ]
+    },
+    {
+      "unique": "The Covenant",
+      "vid": "FourUniqueBodyInt8",
+      "mods": [
+        "UniqueMutatedVaalLifeCostEfficiency1",
+        "UniqueMutatedVaalIncreasedLifePercent",
+        "UniqueMutatedVaalLifeRegenerationRatePercentage1"
+      ]
+    },
+    {
+      "unique": "The Vertex",
+      "vid": "FourUniqueHelmetDexInt5__",
+      "mods": [
+        "UniqueMutatedVaalPercentageAllAttributes",
+        "UniqueMutatedVaalManaCostEfficiency2",
+        "UniqueMutatedVaalAilmentChance",
+        "UniqueMutatedVaalCurseGemLevel"
+      ]
+    },
+    {
+      "unique": "Zerphi's Genesis",
+      "vid": "FourUniqueUltimatum2",
+      "mods": [
+        "UniqueMutatedVaalBeltIncreasedCharmChargesGained",
+        "UniqueMutatedVaalBeltFlaskLifeRecovery",
+        "UniqueMutatedVaalCharmChargeGeneration",
+        "UniqueMutatedVaalRemoveBleedOnLifeFlaskUse"
+      ]
+    },
+    {
+      "unique": "Zerphi's Serape",
+      "vid": "FourUniqueBodyDexInt6",
+      "mods": [
+        "UniqueMutatedVaalPresenceRadius1",
+        "UniqueMutatedVaalLocalEnergyShield",
+        "UniqueMutatedVaalGainSoulEaterStackOnHit",
+        "UniqueMutatedVaalSkillCostEfficiency1"
+      ]
+    }
+  ]
+}

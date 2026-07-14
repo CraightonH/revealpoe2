@@ -226,6 +226,7 @@ export function uniqueNodes() {
         itemClass: rawItemClass,
         className,
         classSlug,
+        vid: meta?.visual_identity?.id ?? null,
         iconDds: meta?.visual_identity?.dds_file ?? null,
         flavour,
         inventorySize: meta ? { w: meta.inventory_width, h: meta.inventory_height } : null,

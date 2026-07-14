@@ -1,0 +1,565 @@
+{
+  "kind": "unique-origins",
+  "entries": [
+    {
+      "unique": "Adonia's Ego",
+      "vid": "FourUniqueWand4",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Alkem Eira",
+      "vid": "FourUniqueShieldStrInt1",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Amor Mandragora",
+      "vid": "FourUniqueTalisman1",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Apep's Supremacy",
+      "vid": "FourUniqueFocus7_",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "Arakaali's Gift",
+      "vid": "FourUniqueCharm3",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "Ashrend",
+      "vid": "FourUniqueBodyDex3",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Atziri's Acuity",
+      "vid": "FourUniqueGlovesStr5",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "Atziri's Contempt",
+      "vid": "FourUniqueSpear14_",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "Atziri's Disdain",
+      "vid": "FourUniqueHelmetInt6",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "Atziri's Rule",
+      "vid": "FourUniqueStaff17",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "Atziri's Splendour",
+      "vid": "FourUniqueBodyStrDexInt2",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "Atziri's Step",
+      "vid": "FourUniqueBootsDex9",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "Beira's Anguish",
+      "vid": "FourUniqueCharm4",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Blackbraid",
+      "vid": "FourUniqueBodyStr2",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Brain Rattler",
+      "vid": "FourUniqueTwoHandMace4",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Bramblejack",
+      "vid": "FourUniqueBodyStr1",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Briarpatch",
+      "vid": "FourUniqueBootsDex2",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Briskwrap",
+      "vid": "FourUniqueBodyDex5",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Bristleboar",
+      "vid": "FourUniqueBodyDex1___",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Brynhand's Mark",
+      "vid": "FourUniqueOneHandMace1",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Bushwhack",
+      "vid": "FourUniqueBootsDex5",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Candlemaker",
+      "vid": "FourUniqueGlovesInt2",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Chernobog's Pillar",
+      "vid": "FourUniqueShieldStr13",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Constricting Command",
+      "vid": "FourUniqueHelmetDex6",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "Corona of the Red Sun",
+      "vid": "FourUniqueHelmetStr6",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "Coward's Legacy",
+      "vid": "FourUniqueBelt13",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "Crown of Thorns",
+      "vid": "FourUniqueHelmetInt1",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Cursecarver",
+      "vid": "FourUniqueWand7",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Deathblow",
+      "vid": "FourUniqueGlovesStrDex3",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Deidbell",
+      "vid": "FourUniqueHelmetStr5",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Demon Stitcher",
+      "vid": "FourUniqueGlovesInt5",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "Dionadair",
+      "vid": "FourUniqueShieldStr1",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Doryani's Prototype",
+      "vid": "FourUniqueBodyStrDex6",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "Dream Fragments",
+      "vid": "FourUniqueRing11",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "Drillneck",
+      "vid": "FourUniqueQuiver12",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "Duality",
+      "vid": "FourUniqueQuarterstaff14",
+      "origin": "Kalguuran"
+    },
+    {
+      "unique": "Dunkelhalt",
+      "vid": "FourUniqueShieldDex1",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Dusk Vigil",
+      "vid": "FourUniqueStaff1",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Edyrn's Tusks",
+      "vid": "FourUniqueBodyStr3",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Elevore",
+      "vid": "FourUniqueHelmetDex5",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Erian's Cobble",
+      "vid": "FourUniqueHelmetStrDex2",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Eventide Petals",
+      "vid": "FourUniqueAmulet22",
+      "origin": "Kalguuran"
+    },
+    {
+      "unique": "Eyes of the Runefather",
+      "vid": "FourUniqueShieldStrDex12",
+      "origin": "Kalguuran"
+    },
+    {
+      "unique": "Ezomyte Peak",
+      "vid": "FourUniqueHelmetStr2",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Facebreaker",
+      "vid": "FourUniqueGlovesStr1",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Foxshade",
+      "vid": "FourUniqueBodyDex2",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Glimpse of Chaos",
+      "vid": "FourUniqueUltimatum1",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "Goregirdle",
+      "vid": "FourUniqueBelt10",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Greed's Embrace",
+      "vid": "FourUniqueBodyStr8",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "Greymake",
+      "vid": "FourUniqueHelmetStrDex1_",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Hateforge",
+      "vid": "FourUniqueUltimatum4",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "Heroic Tragedy",
+      "vid": "FourUniqueJewel5",
+      "origin": "Kalguuran"
+    },
+    {
+      "unique": "Hoghunt",
+      "vid": "FourUniqueTwoHandMace1",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Horns of Bynden",
+      "vid": "FourUniqueHelmetStr1a",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Hrimnor's Hymn",
+      "vid": "FourUniqueTwoHandMace2",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Idle Hands",
+      "vid": "FourUniqueGlovesDex4",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "Ironbound",
+      "vid": "FourUniqueBow3",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Keeper of the Arc",
+      "vid": "FourUniqueExpedition2",
+      "origin": "Kalguuran"
+    },
+    {
+      "unique": "Kingsguard",
+      "vid": "FourUniqueBodyStr7",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Legionstride",
+      "vid": "FourUniqueBootsStr1",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Lifesprig",
+      "vid": "FourUniqueWand3",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Mahuxotl's Machination",
+      "vid": "FourUniqueUltimatum3",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "Mask of the Stitched Demon",
+      "vid": "FourUniqueHelmetInt5",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "Merit of Service",
+      "vid": "FourUniqueShieldStrDex2_",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Midnight Braid",
+      "vid": "FourUniqueBelt2",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Mjölner",
+      "vid": "FourUniqueOneHandMace13",
+      "origin": "Kalguuran"
+    },
+    {
+      "unique": "Northpaw",
+      "vid": "FourUniqueGlovesDex1____",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Oaksworn",
+      "vid": "FourUniqueShieldStrInt2",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Obern's Bastion",
+      "vid": "FourUniqueBootsStrDex3",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Olroth's Resolve",
+      "vid": "FourUniqueExpedition3_",
+      "origin": "Kalguuran"
+    },
+    {
+      "unique": "Olrovasara",
+      "vid": "FourUniqueExpedition4",
+      "origin": "Kalguuran"
+    },
+    {
+      "unique": "Powertread",
+      "vid": "FourUniqueBootsDexInt3_",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "Quatl's Molt",
+      "vid": "FourUniqueBodyDex8",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "Quecholli",
+      "vid": "FourUniqueTwoHandMace8",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "Quill Rain",
+      "vid": "FourUniqueBow2",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Rathpith Globe",
+      "vid": "FourUniqueFocus8",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "Rearguard",
+      "vid": "FourUniqueQuiver5__",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "Redflare Conduit",
+      "vid": "FourUniqueBodyDexInt5",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "Rise of the Phoenix",
+      "vid": "FourUniqueShieldStrInt6",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "Rondel de Ezo",
+      "vid": "FourUniqueShieldDex3",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Runeseeker's Call",
+      "vid": "FourUniqueWand16_",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Saitha's Spear",
+      "vid": "FourUniqueSpear7",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "Serle's Grit",
+      "vid": "FourUniqueOneHandMace15",
+      "origin": "Kalguuran"
+    },
+    {
+      "unique": "Snakebite",
+      "vid": "FourUniqueGlovesDex5_",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "Snakepit",
+      "vid": "FourUniqueRing24",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "Soul Mantle",
+      "vid": "FourUniqueBodyStrInt6",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "Soul Tether",
+      "vid": "FourUniqueBelt8_",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "Spiteful Floret",
+      "vid": "FourUniqueTalisman2_",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Starkonja's Head",
+      "vid": "FourUniqueHelmetDex8",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Svalinn",
+      "vid": "FourUniqueExpedition1",
+      "origin": "Kalguuran"
+    },
+    {
+      "unique": "Tetzlapokal's Desire",
+      "vid": "FourUniqueBodyInt7",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "The Adorned",
+      "vid": "FourUniqueJewel9",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "The Blood Thorn",
+      "vid": "FourUniqueQuarterstaff1",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "The Covenant",
+      "vid": "FourUniqueBodyInt8",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "The Fall of the Axe",
+      "vid": "FourUniqueCharm7_",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "The Knight-errant",
+      "vid": "FourUniqueBootsStrDex1",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "The Sentry",
+      "vid": "FourUniqueQuarterstaff3",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "The Smiling Knight",
+      "vid": "FourUniqueHelmetStrDex4",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "The Unleashed",
+      "vid": "FourUniqueBodyStrInt15",
+      "origin": "Kalguuran"
+    },
+    {
+      "unique": "The Vertex",
+      "vid": "FourUniqueHelmetDexInt5__",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "The Vile Knight",
+      "vid": "FourUniqueHelmetStrDex5",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Trampletoe",
+      "vid": "FourUniqueBootsStr4_",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Trenchtimbre",
+      "vid": "FourUniqueOneHandMace4",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Twisted Empyrean",
+      "vid": "FourUniqueTwoHandMace14_",
+      "origin": "Kalguuran"
+    },
+    {
+      "unique": "Tyranny's Grip",
+      "vid": "FourUniqueSpear2",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Uhtred's Chalice",
+      "vid": "FourUniqueManaFlask2",
+      "origin": "Kalguuran"
+    },
+    {
+      "unique": "Wanderlust",
+      "vid": "FourUniqueBootsInt2",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Wings of Caelyn",
+      "vid": "FourUniqueHelmetStr1b",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Wulfsbane",
+      "vid": "FourUniqueShieldStr2",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Wylund's Stake",
+      "vid": "FourUniqueOneHandMace2_",
+      "origin": "Ezomyte"
+    },
+    {
+      "unique": "Zerphi's Genesis",
+      "vid": "FourUniqueUltimatum2",
+      "origin": "Vaal"
+    },
+    {
+      "unique": "Zerphi's Serape",
+      "vid": "FourUniqueBodyDexInt6",
+      "origin": "Vaal"
+    }
+  ]
+}

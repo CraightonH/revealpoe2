@@ -161,3 +161,70 @@ test('gear-slots: unmapped item classes produce a coverage warning', () => {
   assert.ok(r.warnings.some((w) => /unmapped item class 'Two Hand Mace'/.test(w)));
   assert.ok(r.warnings.some((w) => /unmapped item class 'Quiver'/.test(w)));
 });
+
+// --- unique-origins & cultivated-uniques overlays (prop patches by vid) ------
+// Fresh nodes per test: these handlers MUTATE the matched node's props in place.
+const uNodes = () => ([
+  { id: 'Unique/Atz', kind: 'unique', name: "Atziri's Contempt", slug: 'atziris-contempt', props: { vid: 'FourUniqueSpear14_' }, source: 'repoe' },
+  { id: 'Unique/DupA', kind: 'unique', name: 'Dup A', slug: 'dup-a', props: { vid: 'SharedVid' }, source: 'repoe' },
+  { id: 'Unique/DupB', kind: 'unique', name: 'Dup B', slug: 'dup-b', props: { vid: 'SharedVid' }, source: 'repoe' },
+]);
+const originsOv = (entries) => [{ name: 'unique-origins', data: { kind: 'unique-origins', entries } }];
+const cultivatedOv = (entries) => [{ name: 'cultivated-uniques', data: { kind: 'cultivated-uniques', entries } }];
+
+test('unique-origins: attaches props.origin to the node matched by vid', () => {
+  const nodes = uNodes();
+  const r = applyOverlays({ nodes, edges: [], overlays: originsOv([{ unique: "Atziri's Contempt", vid: 'FourUniqueSpear14_', origin: 'Vaal' }]) });
+  assert.equal(r.errors.length, 0, r.errors.join('\n'));
+  assert.equal(nodes[0].props.origin, 'Vaal');
+});
+
+test('unique-origins: an unknown origin value is a build error', () => {
+  const nodes = uNodes();
+  const r = applyOverlays({ nodes, edges: [], overlays: originsOv([{ unique: "Atziri's Contempt", vid: 'FourUniqueSpear14_', origin: 'Atlantean' }]) });
+  assert.ok(r.errors.some((e) => /unknown origin 'Atlantean'/.test(e)));
+  assert.equal(nodes[0].props.origin, undefined);
+});
+
+test('unique-origins: an unresolved vid is a build error', () => {
+  const nodes = uNodes();
+  const r = applyOverlays({ nodes, edges: [], overlays: originsOv([{ unique: 'Ghost', vid: 'NoSuchVid', origin: 'Vaal' }]) });
+  assert.ok(r.errors.some((e) => /no unique node for vid 'NoSuchVid'/.test(e)));
+});
+
+test('unique-origins: an ambiguous vid (>1 node) is a build error', () => {
+  const nodes = uNodes();
+  const r = applyOverlays({ nodes, edges: [], overlays: originsOv([{ unique: 'Dup A', vid: 'SharedVid', origin: 'Ezomyte' }]) });
+  assert.ok(r.errors.some((e) => /vid 'SharedVid' is ambiguous/.test(e)));
+});
+
+test('unique-origins: a name that disagrees with the node warns but still patches', () => {
+  const nodes = uNodes();
+  const r = applyOverlays({ nodes, edges: [], overlays: originsOv([{ unique: 'Stale Name', vid: 'FourUniqueSpear14_', origin: 'Vaal' }]) });
+  assert.equal(r.errors.length, 0);
+  assert.ok(r.warnings.some((w) => /name mismatch for vid 'FourUniqueSpear14_'/.test(w)));
+  assert.equal(nodes[0].props.origin, 'Vaal');
+});
+
+test('cultivated-uniques: resolves mod ids to texts via the injected resolver', () => {
+  const nodes = uNodes();
+  const resolveModTexts = (id) => ({ ModA: ['(1-2)% increased X'], ModB: ['+3 to Y'] }[id] ?? []);
+  const r = applyOverlays({
+    nodes, edges: [], resolveModTexts,
+    overlays: cultivatedOv([{ unique: "Atziri's Contempt", vid: 'FourUniqueSpear14_', mods: ['ModA', 'ModB'] }]),
+  });
+  assert.equal(r.errors.length, 0, r.errors.join('\n'));
+  assert.deepEqual(nodes[0].props.cultivatedMods, [
+    { modId: 'ModA', texts: ['(1-2)% increased X'] },
+    { modId: 'ModB', texts: ['+3 to Y'] },
+  ]);
+});
+
+test('cultivated-uniques: a mod id RePoE cannot resolve is a build error', () => {
+  const nodes = uNodes();
+  const r = applyOverlays({
+    nodes, edges: [], resolveModTexts: () => [],
+    overlays: cultivatedOv([{ unique: "Atziri's Contempt", vid: 'FourUniqueSpear14_', mods: ['GoneModId'] }]),
+  });
+  assert.ok(r.errors.some((e) => /mod 'GoneModId'.*not resolvable/.test(e)));
+});

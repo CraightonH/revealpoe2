@@ -5,7 +5,7 @@ import { getGem } from './gems.js';
 import { getBaseByName, listItemClasses } from './baseItems.js';
 import { parseLocalMods, computeProperties } from './itemStats.js';
 import { hasDefinition } from './keywordDefs.js';
-import { linkifyPhrases } from './keywords.js';
+import { linkifyPhrases, renderGameText } from './keywords.js';
 import { nodesByKind, nodeBySlug, edgesTo, getNode } from './graph.js';
 import { augmentsForUnique } from './augments.js';
 
@@ -67,8 +67,22 @@ function toUnique(node, variantIndex) {
     iconUrl: ddsUrl(p.iconDds),
     flavour: p.flavour,
     implicitCount: cur.implicits.length,
+    // Cultural origin (Kalguuran/Ezomyte/Vaal) where GGG assigns one, else null.
+    // Overlay-derived (manual:unique-origins); see scripts/graph/manual.js.
+    origin: p.origin ?? null,
     tradeUrl: tradeUrl({ kind: 'unique', name: node.name, type: p.base }),
   };
+}
+
+// Cultivated (mutated Vaal) mods this unique can gain via the Vaal Cultivation
+// Orb — overlay-derived (manual:cultivated-uniques), variant-independent. Each
+// stored mod holds display-text line(s) carrying RePoE "[Id|Display]" keyword
+// markup, so they render via renderGameText (resolves tokens + keyword hovers) —
+// the same path base implicits use — NOT the plain-text affix renderer.
+function renderCultivatedMods(node) {
+  const cm = node.props.cultivatedMods;
+  if (!cm || !cm.length) return [];
+  return cm.flatMap((m) => m.texts).map((text) => ({ text, html: renderGameText(text, hasDefinition) }));
 }
 
 export function listUniques() {
@@ -149,6 +163,7 @@ function uniqueCardVM(node, variantIndex) {
     requirements: baseRecord?.requirements ?? [],
     implicits: parsed.slice(0, u.implicitCount),
     explicits: parsed.slice(u.implicitCount),
+    origin: u.origin,
     tradeUrl: u.tradeUrl,
   };
 }
@@ -169,8 +184,9 @@ export function getUniqueCard(slug, variantIndex) {
 }
 
 export function buildUniqueViewModel(slug) {
-  const u = getUnique(slug);
-  if (!u) return null;
+  const node = nodeBySlug('unique', slug);
+  if (!node) return null;
+  const u = toUnique(node);
 
   const baseRecord = getBaseByName(u.base);
   const mods = parseLocalMods(u.stats);
@@ -188,6 +204,7 @@ export function buildUniqueViewModel(slug) {
     stats: parsedStats,
     implicits,
     explicits,
+    cultivatedMods: renderCultivatedMods(node),
     properties,
     requirements,
     // Prefer the base's display name ("Spears") over the raw item class ("Spear").

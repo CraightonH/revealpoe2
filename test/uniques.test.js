@@ -106,3 +106,19 @@ test('buildUniqueViewModel handles item with no variants', () => {
   assert.ok(vm, 'bijouborne should exist');
   assert.ok(vm.stats.length > 0);
 });
+
+test('buildUniqueViewModel surfaces cultivated mods + origin for a Vaal unique', () => {
+  const vm = buildUniqueViewModel('atziris-contempt');
+  assert.equal(vm.origin, 'Vaal');
+  assert.equal(vm.cultivatedMods.length, 4, 'Atziri\'s Contempt has 4 cultivated mods');
+  const texts = vm.cultivatedMods.map((m) => m.text);
+  assert.ok(texts.some((t) => /Elemental.*Damage with.*Attack/i.test(t)));
+  assert.ok(texts.some((t) => /Fork/i.test(t)));
+  assert.ok(vm.cultivatedMods.every((m) => typeof m.html === 'string' && m.html.length));
+});
+
+test('a non-cultivable unique has no origin/cultivated mods', () => {
+  const vm = buildUniqueViewModel('astramentis');
+  assert.equal(vm.origin, null);
+  assert.deepEqual(vm.cultivatedMods, []);
+});
