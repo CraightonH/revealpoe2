@@ -14,18 +14,51 @@ import { loadJson } from './loader.js';
 import { REPOE } from './source.js';
 import { makeNode, makeEdge, KINDS, EDGE_TYPES } from './schema.js';
 import { resolveStatLines } from './passiveSource.js';
+import { parseGggTree } from './gggTree.js';
+import { buildEmotionIndex, resolveRecipe } from './emotions.js';
+
+// Instill recipes (the 3 Distilled Emotions that craft the Instilling Orb
+// granting a Notable) are GGG-tree data — RePoE carries none. Bridge them onto
+// graph passives by hash (RePoE key === GGG node hash) so the notable tooltip
+// shows its recipe everywhere the graph is read (detail pages, search hover,
+// Theory Crafting), matching the interactive tree. Build-time resolution, same
+// helpers the tree render uses (single source, can't diverge).
+//
+// Degrades gracefully: `build:graph` runs RePoE-only on a fresh checkout (before
+// `fetch:tree`), so if the GGG source is absent we simply omit instill rather
+// than fail the build.
+function instillByHash() {
+  let gg;
+  try {
+    gg = parseGggTree();
+  } catch {
+    return new Map(); // GGG tree source not present — skip instill
+  }
+  const emo = buildEmotionIndex(loadJson(`${REPOE}/base_items.json`));
+  const map = new Map();
+  for (const n of gg.nodes) {
+    if (!n.recipe) continue;
+    map.set(
+      n.h,
+      resolveRecipe(emo, n.recipe).map((e) => ({ key: e.key, name: e.name, iconUrl: e.iconUrl })),
+    );
+  }
+  return map;
+}
 
 // ---------------------------------------------------------------------------
 // passiveNodes — keystones + notables (incl. ascendancy notables).
 // ---------------------------------------------------------------------------
 export function passiveNodes() {
   const tree = loadJson(`${REPOE}/passive_skill_trees/Default.json`);
+  const instill = instillByHash();
   const nodes = [];
   const records = [];
-  for (const p of Object.values(tree.passives)) {
+  for (const [hStr, p] of Object.entries(tree.passives)) {
     if (!p.is_keystone && !p.is_notable) continue;
     if (!p.name) continue; // unreleased placeholders (8 Ranger2 notables) — no name to label
     const id = `Passive/${p.id}`;
+    const hash = Number(hStr);
     const statLines = resolveStatLines(p.stats);
     const flavourText = p.flavour_text || '';
     const props = {
@@ -35,6 +68,12 @@ export function passiveNodes() {
       reminderText: Array.isArray(p.reminder_text) ? p.reminder_text : [],
       iconDds: p.icon ?? null,
       ascendancy: p.ascendancy ?? null,
+      // GGG tree node hash (the RePoE passives key). It equals the interactive
+      // tree's node id, so a search/theorycraft result can deep-link straight to
+      // /passives?node=<hash> and the client centers the camera on it.
+      hash,
+      // Instill recipe (Distilled Emotions), when this node is instillable.
+      ...(instill.has(hash) ? { instill: instill.get(hash) } : {}),
     };
     const search = [p.name, ...statLines, flavourText].join(' ').toLowerCase();
     nodes.push(makeNode({ id, kind: KINDS.PASSIVE, name: p.name, slug: p.id, props, search }));

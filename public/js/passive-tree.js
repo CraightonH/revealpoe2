@@ -1262,6 +1262,23 @@ export default function init(canvas, data) {
         ctx.stroke();
         ctx.restore();
       }
+
+      // Deep-link focus ring: a gold ring that pulses and fades over
+      // FOCUS_PULSE_MS, spotlighting the node the user arrived on from search.
+      if (focusHash === n.h) {
+        const t = Math.min(1, (performance.now() - focusStart) / FOCUS_PULSE_MS);
+        const pulse = 0.5 + 0.5 * Math.sin(t * Math.PI * 6);   // 0..1 oscillation
+        ctx.save();
+        ctx.shadowColor = 'rgba(255, 216, 120, 0.95)';
+        ctx.shadowBlur = 24 * view.scale;
+        ctx.globalAlpha = 1 - t;                                // fade out
+        ctx.strokeStyle = `rgba(255, 243, 196, ${0.55 + 0.45 * pulse})`;
+        ctx.lineWidth = Math.max(2, 3.5 * view.scale);
+        ctx.beginPath();
+        ctx.arc(sp.x, sp.y, radiusOf(n.k) * view.scale * (1.35 + 0.22 * pulse), 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
     }
     ctx.globalAlpha = 1;
     ctx.shadowBlur = 0;
@@ -1355,6 +1372,45 @@ export default function init(canvas, data) {
   let rafId = null;
   function requestDraw() {
     if (!rafId) rafId = requestAnimationFrame(() => { rafId = null; draw(); });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Deep link: /passives?node=<hash> arrives from a search/theorycraft result.
+  // Center the camera on that node at a close zoom and pulse a ring around it so
+  // the user immediately sees which node they came for. Applied once, right after
+  // the first real-dimension fit (see the ResizeObserver) so it isn't clobbered
+  // by the opening origin-centered view.
+  // ---------------------------------------------------------------------------
+  const deepLinkHash = (() => {
+    const raw = new URLSearchParams(location.search).get('node');
+    const h = raw == null ? NaN : Number(raw);
+    return Number.isFinite(h) ? h : null;
+  })();
+  let didDeepLink = false;
+  const FOCUS_ZOOM = 9;          // baseFit multiple — between the opening view (5) and the cap (13)
+  const FOCUS_PULSE_MS = 2600;   // ring pulse + fade duration
+  let focusHash = null;
+  let focusStart = 0;
+
+  function focusNode(hash) {
+    const n = nodeMap.get(hash);
+    if (!n) return;
+    const baseFit = maxScale / MAX_SCALE_FACTOR;
+    view.scale = Math.min(maxScale, Math.max(minScale, baseFit * FOCUS_ZOOM));
+    view.ox = canvas.width  / 2 - n.x * view.scale;
+    view.oy = canvas.height / 2 - n.y * view.scale;
+    // Pulse the node: a self-terminating rAF loop that requests redraws until the
+    // fade completes. drawNodes reads focusHash/focusStart to paint the ring.
+    focusHash = hash;
+    focusStart = performance.now();
+    const tick = () => {
+      if (focusHash !== hash) return;                 // superseded / cleared
+      if (performance.now() - focusStart >= FOCUS_PULSE_MS) { focusHash = null; requestDraw(); return; }
+      requestDraw();
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+    requestDraw();
   }
 
   // Show the pre-rendered hover card for a node (anchored at the node) and preview
@@ -1662,6 +1718,12 @@ export default function init(canvas, data) {
     if (!fitted) {
       fitView();
       fitted = true;
+      // Now that the camera is fit to real dimensions, honor a ?node= deep link
+      // by centering on that node instead of the origin (once).
+      if (deepLinkHash != null && !didDeepLink) {
+        didDeepLink = true;
+        focusNode(deepLinkHash);
+      }
     } else if (prevW && prevH) {
       view.ox += (canvas.width  - prevW) / 2;
       view.oy += (canvas.height - prevH) / 2;

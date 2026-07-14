@@ -75,7 +75,12 @@ test('search finds notables by name', () => {
 
 test('search finds notables by stat text', () => {
   const hits = search('damaging ailments');
-  assert.ok(hits.some((h) => h.url && h.url.includes('ailments38')));
+  // The notable is surfaced; its click-through now deep-links the interactive
+  // tree (/passives?node=<hash>) while the hover card still points at the
+  // detail fragment (/passive/ailments38/card).
+  const hit = hits.find((h) => h.cardUrl && h.cardUrl.includes('ailments38'));
+  assert.ok(hit, 'expected the ailments38 notable among the hits');
+  assert.match(hit.url, /^\/passives\?node=\d+$/);
 });
 
 test('affixes never link to a standalone mod page', () => {
@@ -91,9 +96,10 @@ test('affixes never link to a standalone mod page', () => {
 
 test('search returns category Keystone for keystones', () => {
   const hits = search('zealot');
-  const k = hits.find((h) => h.url.includes('passive_keystone_zealots_oath'));
+  const k = hits.find((h) => h.cardUrl && h.cardUrl.includes('passive_keystone_zealots_oath'));
   assert.ok(k);
   assert.equal(k.category, 'Keystone');
+  assert.match(k.url, /^\/passives\?node=\d+$/); // click-through goes to the tree
 });
 
 test('search returns category Notable for notables', () => {

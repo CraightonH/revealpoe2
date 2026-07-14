@@ -30,7 +30,7 @@
    bakes the identical HTML into browse-cards.json for the client-rendered static
    page), so the two paths can't diverge. #}
 {% macro passiveResultCard(node, urlBase='keystone') %}
-<a class="tc-passive-card" href="/{{ urlBase }}/{{ node.id }}">{{ passiveDetail(node) }}</a>
+<a class="tc-passive-card" href="{% if node.hash %}/passives?node={{ node.hash }}{% else %}/{{ urlBase }}/{{ node.id }}{% endif %}">{{ passiveDetail(node) }}</a>
 {% endmacro %}
 
 {# `showIcon` (default true) adds the node artwork at the top of the tooltip as an

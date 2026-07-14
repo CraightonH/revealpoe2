@@ -50,6 +50,7 @@ function nodeRecord(node) {
   const grant = edgesFrom(node.id, 'grants')[0];
   return {
     id: node.slug,
+    hash: p.hash ?? null,
     name: node.name,
     iconUrl: ddsUrl(p.iconDds),
     statLines: p.statLines.map((line) => renderGameText(line, hasDefinition)),
@@ -59,6 +60,9 @@ function nodeRecord(node) {
     ascendancy: p.ascendancy,
     kind: p.kind,
     grantedSkill: grant ? getGemRefByKey(grant.to) : null,
+    // Instill recipe (Distilled Emotions) for instillable notables — resolved at
+    // build time onto the graph node; passiveDetail renders the recipe boxes.
+    instill: p.instill || null,
   };
 }
 

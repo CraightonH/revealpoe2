@@ -70,6 +70,16 @@ test('GET /keystone/:id renders a keystone passive popup', async () => {
   assert.match(res.text, /class="passive-art"/);
 });
 
+test('instillable notable shows its Distilled Emotion recipe on the card (search/theorycraft parity with the tree)', async () => {
+  // Fast Acting Toxins (ailments38) is instillable; its recipe is GGG-tree data
+  // bridged onto the graph node by hash, so the tooltip renders it everywhere the
+  // graph is read — here the hover-card fragment used by search + theorycraft.
+  const res = await request(createApp()).get('/passive/ailments38/card');
+  assert.equal(res.status, 200);
+  assert.match(res.text, /instillRecipe/);
+  assert.match(res.text, /\/api\/emotion\/[^"/]+\/card/); // nested emotion hover cards
+});
+
 test('GET /notable/:id renders a notable passive popup', async () => {
   const res = await request(createApp()).get('/notable/armour_and_evasion53');
   assert.equal(res.status, 200);

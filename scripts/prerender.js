@@ -61,19 +61,20 @@ export function passiveCardSeeds() {
   return [...out];
 }
 
-// Keystone/notable detail pages and their hover-card fragments used to be
-// link-reachable only through the /keystones index. That browse page is gone
-// (the interactive tree replaced it), so seed them the same divergence-proof way
-// affixCardSeeds does: from toSearchDocs(allDocs()) — the exact doc set the
-// client search dropdown and Theory Crafting read — so every page URL a result
-// links (d.url) and every hover-card URL it opens (d.cardUrl) is prerendered.
-// keystone: /keystone/:id (+ /card); notable: /notable/:id (+ /passive/:id/card).
+// Keystone/notable detail pages + hover-card fragments aren't link-reachable by
+// the crawler: the /keystones index is gone (the tree replaced it) and search /
+// theorycraft results now deep-link the tree (/passives?node=<hash>), not the
+// detail page. So seed them the same divergence-proof way affixCardSeeds does —
+// from toSearchDocs(allDocs()), the exact doc set the client search dropdown and
+// Theory Crafting read. d.cardUrl is the hover fragment (keystone /keystone/:id/card,
+// notable /passive/:id/card); stripping the trailing /card gives the detail page.
 export function passiveDocSeeds() {
   const out = new Set();
   for (const d of toSearchDocs(allDocs())) {
     if (d.cat !== 'keystone' && d.cat !== 'notable') continue;
-    if (d.url) out.add(d.url);
-    if (d.cardUrl) out.add(d.cardUrl);
+    if (!d.cardUrl) continue;
+    out.add(d.cardUrl);                          // hover-card fragment
+    out.add(d.cardUrl.replace(/\/card$/, ''));   // detail page (still a direct-link fallback)
   }
   return [...out];
 }

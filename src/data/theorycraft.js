@@ -160,10 +160,18 @@ function affixDocs() {
 }
 
 function nodeDocs(list, category, urlBase) {
+  // Click destination is the interactive tree, centered on this node
+  // (/passives?node=<hash>), not the standalone detail page — the tree shows the
+  // node in context. The hover card still resolves to the detail /card fragment
+  // (keystone → /keystone/:id/card, notable → /passive/:id/card), so cardUrl is
+  // set explicitly rather than derived from url. A node missing its tree hash
+  // (shouldn't happen for keystones/notables) falls back to the detail page.
+  const cardBase = category === 'keystone' ? 'keystone' : 'passive';
   return list.map((n) => ({
     name: n.name,
     slug: n.id,
-    url: `/${urlBase}/${n.id}`,
+    url: n.hash != null ? `/passives?node=${n.hash}` : `/${urlBase}/${n.id}`,
+    cardUrl: `/${cardBase}/${n.id}/card`,
     category,
     iconUrl: n.iconUrl || null,
     subtitle: '',

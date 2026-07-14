@@ -1213,6 +1213,17 @@ details[open] > .affix-origin-title::before { transform: rotate(90deg); }
   max-width: none;
 }
 
+/* On Theory Crafting, the notable and augment results render as full in-game
+   popups (colored border + glow), which stand out against the flat gem/unique/
+   base result cards. Flatten them — neutral border, no glow — so the grid reads
+   uniformly. Scoped to #tc-results so item pages and hover tooltips keep the
+   in-game chrome. Keystones intentionally keep their accent. */
+#tc-results .PassivePopup.is-notable,
+#tc-results .augment-card {
+  border-color: var(--border);
+  box-shadow: none;
+}
+
 /* Passive detail popup — keystone/notable, reuses .newItemPopup chrome.
    No banner image (passives have none); the header is a flat bar. */
 .PassivePopup {
