@@ -85,6 +85,19 @@ test('runQuery: color and tag fields', () => {
   assert.equal(runQuery('tag:cold', { docs: FIXTURE }).total, 1);
 });
 
+test('runQuery: origin field constrains to uniques of that origin', () => {
+  const docs = [
+    { name: 'Vaal Unq', url: '/unique/v', category: 'unique', iconUrl: null, subtitle: '', color: '', tags: [], req: [], grants: [], origin: 'vaal', text: 'vaal unq' },
+    { name: 'Ezo Unq', url: '/unique/e', category: 'unique', iconUrl: null, subtitle: '', color: '', tags: [], req: [], grants: [], origin: 'ezomyte', text: 'ezo unq' },
+    // A gem that merely mentions "vaal" in its text must NOT match origin:vaal.
+    { name: 'Vaal Gem', url: '/gem/g', category: 'gem', iconUrl: null, subtitle: '', color: '', tags: [], req: [], grants: [], text: 'vaal themed gem' },
+  ];
+  const r = runQuery('origin:vaal', { docs });
+  assert.equal(r.total, 1);
+  assert.equal(r.groups[0].category, 'unique');
+  assert.equal(r.groups[0].items[0].name, 'Vaal Unq');
+});
+
 test('runQuery: empty query is flagged empty', () => {
   const r = runQuery('', { docs: FIXTURE });
   assert.equal(r.empty, true);
@@ -103,6 +116,13 @@ test('runQuery: per-group cap reports shown vs total', () => {
 });
 
 import { allDocs } from '../src/data/theorycraft.js';
+
+test('allDocs: cultivated mod text is searchable (origin:vaal fork -> Atziri)', () => {
+  const docs = allDocs();
+  const r = runQuery('origin:vaal fork', { docs });
+  const uniques = (r.groups.find((g) => g.category === 'unique')?.items ?? []).map((i) => i.name);
+  assert.ok(uniques.includes("Atziri's Contempt"), 'a cultivated Fork mod should match');
+});
 
 test('allDocs: builds a multi-category index', () => {
   const docs = allDocs();

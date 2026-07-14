@@ -15,6 +15,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { makeNode, makeEdge, KINDS, EDGE_TYPES, SOURCES } from './schema.js';
+import { resolveImplicitTexts } from './affixes.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const MANUAL_DIR = path.join(ROOT, 'data', 'manual');
@@ -150,9 +151,77 @@ function expandGearSlots(data, ctx, via) {
   return { nodes, edges, errors, warnings };
 }
 
+// The three cultural origins GGG assigns (ggpk Origin table). A unique either has
+// one of these or none — the overlay only lists those that do.
+const ORIGINS = new Set(['Kalguuran', 'Ezomyte', 'Vaal']);
+
+// "Cultural origin per unique." Overlay shape:
+//   { "kind": "unique-origins",
+//     "entries": [ { unique, vid, origin }, ... ] }
+// vid = RePoE visual_identity.id (durable, ASCII-safe join key). Attaches
+// props.origin to the one unique node with that vid. `unique` (human name) is a
+// readability + drift cross-check only, not the join key.
+function expandUniqueOrigins(data, ctx, via) {
+  const patches = [];
+  const errors = [];
+  const warnings = [];
+  for (const e of data.entries ?? []) {
+    if (!e || !e.vid) { errors.push(`${via}: entry missing vid (${JSON.stringify(e)})`); continue; }
+    if (!ORIGINS.has(e.origin)) { errors.push(`${via}: '${e.vid}' (${e.unique}) has unknown origin '${e.origin}'`); continue; }
+    const node = resolveVid(ctx, e, via, errors, warnings);
+    if (!node) continue;
+    patches.push({ id: node.id, props: { origin: e.origin } });
+  }
+  return { nodes: [], edges: [], patches, errors, warnings };
+}
+
+// "Cultivated (mutated Vaal) mods per unique." Overlay shape:
+//   { "kind": "cultivated-uniques",
+//     "entries": [ { unique, vid, mods: [<repoe mod id>, ...] }, ... ] }
+// Resolves each RePoE mod id -> display-text line(s) via the injected resolver and
+// attaches props.cultivatedMods = [ { modId, texts:[...] }, ... ]. An unresolvable
+// mod id (renamed/removed in a RePoE re-scrape) fails the build.
+function expandCultivatedUniques(data, ctx, via) {
+  const patches = [];
+  const errors = [];
+  const warnings = [];
+  for (const e of data.entries ?? []) {
+    if (!e || !e.vid) { errors.push(`${via}: entry missing vid (${JSON.stringify(e)})`); continue; }
+    const node = resolveVid(ctx, e, via, errors, warnings);
+    if (!node) continue;
+    const cultivatedMods = [];
+    for (const modId of e.mods ?? []) {
+      const texts = ctx.resolveModTexts(modId);
+      if (!texts || !texts.length) {
+        errors.push(`${via}: mod '${modId}' (${e.unique}) not resolvable in RePoE mods.json`);
+        continue;
+      }
+      cultivatedMods.push({ modId, texts });
+    }
+    if (cultivatedMods.length) patches.push({ id: node.id, props: { cultivatedMods } });
+  }
+  return { nodes: [], edges: [], patches, errors, warnings };
+}
+
+// Resolve an overlay entry's `vid` to exactly one live unique node. Missing or
+// ambiguous vid is a build ERROR (a rename/removal can't silently drop data); a
+// name that disagrees with the resolved node is a soft WARNING (stale vid).
+function resolveVid(ctx, entry, via, errors, warnings) {
+  const matches = ctx.nodesByVid(entry.vid);
+  if (!matches.length) { errors.push(`${via}: no unique node for vid '${entry.vid}' (${entry.unique})`); return null; }
+  if (matches.length > 1) { errors.push(`${via}: vid '${entry.vid}' is ambiguous — ${matches.map((n) => n.name).join(', ')}`); return null; }
+  const node = matches[0];
+  if (entry.unique && entry.unique !== node.name) {
+    warnings.push(`${via}: name mismatch for vid '${entry.vid}' — overlay '${entry.unique}' vs node '${node.name}' (stale vid?)`);
+  }
+  return node;
+}
+
 const HANDLERS = {
   'weapon-default-skills': expandWeaponDefaultSkills,
   'gear-slots': expandGearSlots,
+  'unique-origins': expandUniqueOrigins,
+  'cultivated-uniques': expandCultivatedUniques,
 };
 
 // Read overlay files from disk as [{ name, data }] (sorted, deterministic). A
@@ -174,12 +243,20 @@ function loadOverlays() {
 // unit-testable. `overlays` is [{ name, data } | { name, parseError }].
 // Returns the overlay's own nodes/edges plus build-blocking `errors` and
 // non-blocking `warnings` (e.g. retirement notices).
-export function applyOverlays({ nodes, edges, overlays }) {
+// `resolveModTexts(modId) -> string[]` resolves a RePoE mod id to its display-text
+// line(s); injected so applyOverlays stays pure/testable (build wires the real
+// affixes-backed resolver; tests pass a stub). Defaults to "unknown" (empty).
+export function applyOverlays({ nodes, edges, overlays, resolveModTexts = () => [] }) {
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const basesByClass = new Map();
   const basesByClassId = new Map();
   const classIdSet = new Set();
+  const nodesByVid = new Map();
   for (const n of nodes) {
+    if (n.kind === 'unique' && n.props?.vid) {
+      if (!nodesByVid.has(n.props.vid)) nodesByVid.set(n.props.vid, []);
+      nodesByVid.get(n.props.vid).push(n);
+    }
     if (n.kind !== 'base') continue;
     const cs = n.props?.classSlug;
     if (cs) {
@@ -199,6 +276,8 @@ export function applyOverlays({ nodes, edges, overlays }) {
     basesByClassId: (id) => basesByClassId.get(id) ?? [],
     classIds: () => [...classIdSet],
     classSlugs: () => [...basesByClass.keys()],
+    nodesByVid: (vid) => nodesByVid.get(vid) ?? [],
+    resolveModTexts,
   };
 
   const outNodes = [];
@@ -222,6 +301,21 @@ export function applyOverlays({ nodes, edges, overlays }) {
     outEdges.push(...res.edges);
     errors.push(...res.errors);
     warnings.push(...res.warnings);
+    // Prop patches mutate an existing (source-built) node in place. build.js
+    // spreads the same node objects into the artifact, so the merged prop ships.
+    // Retirement guard: if source ever populates the same prop, warn to remove
+    // the overlay entry (source wins) rather than silently overwriting.
+    for (const p of res.patches ?? []) {
+      const node = byId.get(p.id);
+      if (!node) { errors.push(`${via}: patch target '${p.id}' not found`); continue; }
+      for (const [k, v] of Object.entries(p.props)) {
+        if (node.props[k] !== undefined && node.props[k] !== null) {
+          warnings.push(`retire ${via}: node ${p.id} already has prop '${k}' from source — remove the overlay entry`);
+          continue;
+        }
+        node.props[k] = v;
+      }
+    }
   }
 
   // Retirement detection: if source already expresses an identical relationship
@@ -242,7 +336,10 @@ export function applyOverlays({ nodes, edges, overlays }) {
 }
 
 // Build-facing entry: load overlays from data/manual and apply them. `nodes`/
-// `edges` are the source-derived graph built so far.
+// `edges` are the source-derived graph built so far. Injects the real mod-text
+// resolver (RePoE mods.json via the shared affix renderer) for overlays that
+// resolve mod ids to display text (cultivated-uniques).
 export function manualOverlay({ nodes, edges }) {
-  return applyOverlays({ nodes, edges, overlays: loadOverlays() });
+  const resolveModTexts = (modId) => resolveImplicitTexts([modId]).map((x) => x.text);
+  return applyOverlays({ nodes, edges, overlays: loadOverlays(), resolveModTexts });
 }
