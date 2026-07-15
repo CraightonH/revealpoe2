@@ -1,0 +1,34 @@
+{# Per-level scaling table for a gem's granted skill. Rendered from vm.levelTable
+   (see src/data/gems.js renderLevelTable). Reuses the collapsible rec-group shell
+   for visual consistency with Recommended Supports. Only the level-20 row (the max
+   a skill gem reaches without external modifiers) is highlighted. #}
+{% macro gemLevelTable(vm) %}
+{% if vm.levelTable %}
+<details class="rec-group gem-levels" open style="--rec-accent:var(--color-gem)">
+  <summary class="rec-group-title">Per-level scaling <span class="rec-group-count">{{ vm.levelTable.rows.length }} levels</span></summary>
+  <p class="rec-group-hint">Stat and cost values at each gem level. Level 20 is the highest a skill gem reaches without external modifiers.</p>
+  <div class="gem-levels-scroll">
+    <table class="gem-levels-table">
+      <thead>
+        <tr>
+          <th class="gem-levels-lvl" scope="col">Level</th>
+          {% for col in vm.levelTable.columns %}
+          <th class="gem-levels-col gem-levels-col--{{ col.kind }}" scope="col">{{ col.headerHtml | safe }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in vm.levelTable.rows %}
+        <tr class="gem-levels-row{% if row.cap %} gem-levels-row--cap{% endif %}">
+          <th class="gem-levels-lvl" scope="row">{{ row.level }}{% if row.cap %} <span class="gem-levels-cap-badge">max</span>{% endif %}</th>
+          {% for cell in row.cells %}
+          <td class="gem-levels-cell">{{ cell | safe }}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</details>
+{% endif %}
+{% endmacro %}

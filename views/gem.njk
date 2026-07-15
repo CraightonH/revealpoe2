@@ -4,6 +4,7 @@
 {% from "macros/granted-by-equipping.njk" import grantedByEquipping %}
 {% from "macros/recommended-supports.njk" import recommendedSupports %}
 {% from "macros/recommended-by.njk" import recommendedBy %}
+{% from "macros/gem-level-table.njk" import gemLevelTable %}
 {% block title %}{{ vm.name }} — Reveal · PoE2 Wiki{% endblock %}
 {% block og_type %}article{% endblock %}
 {% block og_title %}{{ vm.name }} — Reveal · PoE2 Wiki{% endblock %}
@@ -13,6 +14,7 @@
 <div class="page">
   <div class="gem-detail">
     {{ gemCard(vm) }}
+    {{ gemLevelTable(vm) }}
     {{ recommendedSupports(vm) }}
     {{ recommendedBy(vm) }}
     {{ grantedBy(vm) }}

@@ -1,6 +1,8 @@
 # Complete-Graph Roadmap
 
-**Status:** direction agreed; execution starting at Phase 1 (ailment glossary).
+**Status:** original Phase 1 (buffs) and Phase 2 (character classes) both scrapped
+after evaluation/investigation — see **Scrapped phases (decision record)** below.
+Active work now begins at Phase 1 (gem/skill per-level scaling).
 **This document is the cross-session tracking surface** for the long-term effort to
 make `build/graph.json` a *complete, source-derived* model of PoE2 game content.
 Each executing session authors the phase's design spec (if not present), builds it,
@@ -99,8 +101,10 @@ dominant driver *overall* is art.
 2. **Client-render concept cards from bundled JSON** instead of one prerendered
    fragment each (the `/search` pattern). Converts N files → 1 per kind. Migrating
    the existing card-only kinds (keyword 467, augment 240, mod 375) reclaims ~1k+
-   files and makes every *future* concept kind (buffs, currency, …) cost ~1 file
-   regardless of taxonomy size. **Phase 1 pilots this pattern with buffs.**
+   files and makes every *future* concept kind (currency, …) cost ~1 file
+   regardless of taxonomy size. (This was to be piloted by the scrapped buffs phase;
+   the pattern is proven by `/search` + `/theorycraft` but not yet by a graph *kind*,
+   so the first future large-taxonomy kind that warrants shipping establishes it.)
 3. **Collapse the page+`/card` split** where the page can embed/derive the card
    client-side — roughly halves per-node file cost for the kinds that keep pages.
 
@@ -117,43 +121,80 @@ Execution protocol per phase:
 3. Verify acceptance criteria, incl. `npm run build:static` when pages/artifacts change.
 4. Tick the checkbox below, note the completing commit, commit.
 
-The first four phases are deliberately sequenced so each also *establishes a
-reusable rail* the rest of the effort depends on.
+The remaining phases are sequenced so each also *establishes a reusable rail* the
+rest of the effort depends on. (Original Phases 1–2 were scrapped; see the decision
+record below. Numbering was compacted rather than left with holes.)
 
 | # | Phase | Source | Establishes rail | Spec |
 |---|-------|--------|------------------|------|
-| 1 | Buffs (effect entities) + provider edges | RePoE `buffs.json` | **two rails:** (a) rule-based cross-domain edge (`grants_buff` provider→effect) on clean data; (b) **client-rendered, file-cheap surface** (principle 7 pilot — buffs ship as ~1 bundled JSON, not per-node files) | `2026-07-14-buffs-graph-design.md` |
-| 2 | Character classes | RePoE `characters.json` | — (quick win; `ascendancy→class` edge) | TBA |
-| 3 | Gem/skill per-level scaling | RePoE `skills.json` `per_level` | **load-on-demand side-artifact** convention | TBA |
-| 4 | Currency effects | GGPK (pilot) | **`.datc64` ingestion + semantic canary** harness | TBA |
+| 1 | Gem/skill per-level scaling | RePoE `skills.json` `per_level` | *(none — inlined as a node prop; see note)* | `2026-07-15-gem-per-level-scaling-design.md` |
+| 2 | Currency effects | GGPK (pilot) | **`.datc64` ingestion + semantic canary** harness | TBA |
 
-After Phase 4 both rails (side-artifacts, GGPK-with-canaries) are proven, and Tier
-B/C tables can be pulled in one use case at a time with bounded, known effort.
+> **Phase 1 no longer establishes the side-artifact rail.** That was a holdover from
+> the scrapped phases. On investigation the per-level scaling payload is small (~0.7 MB
+> across all skills, level-capped and stripped of duplicated stat text), so it ships as
+> a plain `levelTable` prop on **skill** nodes — no side-artifact, no load-on-demand
+> mechanism. The load-on-demand rail (principle 5) is deferred to the first genuinely
+> heavy payload (monster stats / map data), which will establish it when scheduled.
+
+After Phase 2 the GGPK-with-canaries rail is proven, and Tier B/C tables can be pulled
+in one use case at a time with bounded, known effort.
 
 ### Why this order
 
-Phase 1 is the purest expression of the whole thesis — a game concept (a buff/
-effect entity) that many providers grant, so the reverse lookup "what grants
-Onslaught / this herald?" falls out of `edgesTo(buff, 'grants_buff')`. It runs on
-the *easiest* substrate (clean RePoE JSON) so we shake out the rule-based
-cross-domain join before doing it on raw `.datc64`, and it **doubles as the pilot
-for principle 7** — buffs are a large kind surfaced entirely via a client-rendered
-`buffs.json` bundle (the `/search` pattern), adding ~1 file regardless of how big
-the buff taxonomy grows. Modeling note: the buff *effect* is its own node, distinct
-from its *provider* (a gem/unique/passive that already exists) and from any prose
-*keyword* of the same name; providers link to it, and buffs with no provider (or
-non-gem providers) still have a home because the node is the home. Phase 3 is the first
-genuinely heavy payload, so it forces the side-artifact decision once, for all
-future heavy tables. Phase 4 proves the expensive GGPK path against the
-highest-value content gap on the site (currency effects — 867 `StackableCurrency` +
-50 `Omen` items exist as bare bases today with **no effect text**).
+Phase 1 (per-level scaling) is a cheap, high-value RePoE ingestion that fills the most
+visible gap on the gem pages (the tooltip collapses all scaling into one `(min—max)`
+range). Phase 2 (currency effects) proves the expensive
+GGPK path against the highest-value content gap on the site — currency effects: 867
+`StackableCurrency` + 50 `Omen` items exist as bare bases today with **no effect
+text** — and establishes the `.datc64` ingestion + semantic-canary harness every
+future GGPK pull reuses.
 
 ### Status checklist
 
-- [ ] Phase 1 — Buffs (effect entities) + provider edges (+ client-render pilot)
-- [ ] Phase 2 — Character classes
-- [ ] Phase 3 — Gem/skill per-level scaling (+ side-artifact rail)
-- [ ] Phase 4 — Currency effects (+ GGPK canary rail)
+- [x] Phase 1 — Gem/skill per-level scaling (inlined `levelTable` prop on skill nodes;
+  per-level table on the gem page). Spec: `2026-07-15-gem-per-level-scaling-design.md`.
+- [ ] Phase 2 — Currency effects (+ GGPK canary rail)
+
+Scrapped (see **Scrapped phases (decision record)** below): ~~Buffs~~, ~~Character classes~~.
+
+### Scrapped phases (decision record)
+
+**Buffs (effect entities) — scrapped.** Built and evaluated; little to no added
+value. The buff-effect node + `grants_buff` provider edges duplicated relationships
+already legible from gem/unique/keyword data without earning a distinct surface.
+
+**Character classes — scrapped (never built).** Investigated 2026-07-15. Character
+classes and the ascendancy→class relationship are **already fully surfaced by the
+passive tree**, and that is where they belong:
+
+- The passive tree is a *separate artifact* from `build/graph.json` (built by
+  `scripts/build-passive-tree.js` from GGG `passive-tree.json` + atlases — the
+  documented "passive tree is the exception to everything-from-RePoE"). It already
+  exposes a **Character Class** dropdown and, via `meta.ascByClass`
+  (className → `[{id,name}]`), the class→ascendancy grouping — a working UI.
+- Class + ascendancy selection is **encoded in the tree share code (v7)**: the class
+  is the allocation's start-root, the ascendancy is a 1-based byte. Selecting a class
+  *is* picking a tree start — not a separate build field needing a home.
+- The main graph's `ascendancy` nodes (23) exist only as grouping anchors for
+  `in_ascendancy` edges from ascendancy notables; `charClass` is a bare label string.
+  There are **no** character-class nodes (the graph's `class` kind is *item* classes).
+  We deliberately do **not** give classes/ascendancies dedicated pages — the tree
+  serves them.
+- Phase 2 as originally specced (12 `characters.json` nodes + one `ascendancy→class`
+  edge) would be a redundant second modeling of an existing relationship, from a
+  *different source* (RePoE vs GGG), with divergence risk and no surface.
+
+**Forward-looking (build planner).** When the build planner needs to select a
+class/ascendancy for a build, it **consumes the passive-tree layer** — reuse
+`ascByClass` / `classStarts` and let the class/ascendancy fall out of the tree share
+code (single source of truth; a separate graph-sourced field could disagree with a
+pasted tree code). RePoE `characters.json` earns a place **only if** the planner
+later does character-sheet/DPS math needing per-class base stats (str/dex/int, life,
+mana) — and then as a small **class-keyed stats side-artifact** (principle 5),
+load-on-demand, keyed by the tree's class name, **not** as browsable nodes. At that
+join, add a **semantic canary** asserting the RePoE character-name set == the tree's
+class-name set, so the two sources can't silently diverge.
 
 ## Backlog (not scheduled — pulled in per principle 3 as use cases arise)
 

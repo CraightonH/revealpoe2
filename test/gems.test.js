@@ -55,6 +55,41 @@ test('buildGemViewModel produces card fields', () => {
   assert.ok(vm.recommendedSupports[0].supports[0].slug);
 });
 
+test('buildGemViewModel exposes a rendered per-level scaling table', () => {
+  const vm = buildGemViewModel('fireball');
+  const t = vm.levelTable;
+  assert.ok(t, 'fireball should have a level table');
+  // a cost column and the fire-damage stat column, headers rendered to HTML
+  assert.ok(t.columns.some((c) => c.kind === 'cost' && c.headerHtml === 'Mana'));
+  assert.ok(t.columns.some((c) => c.kind === 'stat' && /Fire.*Damage/.test(c.headerHtml)));
+  // rows descending; level 20 flagged as the cap
+  assert.ok(t.rows[0].level > t.rows[t.rows.length - 1].level);
+  const cap = t.rows.find((r) => r.level === 20);
+  assert.equal(cap.cap, true);
+  // cells are per-column arrays of rendered HTML (numbers wrapped for scanning)
+  assert.equal(cap.cells.length, t.columns.length);
+  assert.ok(cap.cells.some((c) => /mod-value/.test(c)));
+});
+
+test('buildGemViewModel aggregates effect + quality across all granted skills', () => {
+  // Artillery Ballista grants a deploy skill ("Ballista") AND a "Bolts" projectile
+  // sub-skill that carries the Pins quality; the page must show both, not just the
+  // first granted skill. (Section label uses the display name, not the raw id.)
+  const vm = buildGemViewModel('artillery-ballista');
+  const labels = vm.sections.map((s) => s.label);
+  assert.ok(labels.includes('Ballista'), `expected Ballista section, got ${labels}`);
+  assert.ok(labels.includes('Bolts'), `expected Bolts section (not raw id), got ${labels}`);
+  const bolts = vm.sections.find((s) => s.label === 'Bolts');
+  assert.ok(bolts.quality.some((q) => /Pins/.test(q) && /\(0—200\)/.test(q)),
+    'Bolts quality (from the 2nd granted skill) should be shown');
+});
+
+test('gems with no per-level variance expose no level table', () => {
+  // A gem whose granted skill has nothing scaling by level → null (not shown).
+  const vm = buildGemViewModel('blink');
+  assert.equal(vm.levelTable, null);
+});
+
 test('getRecommendedSupports groups into ascending tiers by crafting_level', () => {
   // herald-of-ash has a populated recommendation list spanning multiple tiers.
   const vm = buildGemViewModel('herald-of-ash');

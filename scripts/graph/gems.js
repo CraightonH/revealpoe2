@@ -4,7 +4,7 @@ import { REPOE } from './source.js';
 import { slugify } from '../../src/data/slug.js';
 import { grantedSkillNames } from './uniques.js';
 import { makeNode, makeEdge, KINDS, EDGE_TYPES } from './schema.js';
-import { buildSections } from '../../src/data/statText.js';
+import { buildSections, buildLevelTable } from '../../src/data/statText.js';
 
 // Mirrors src/data/gems.js — placeholder/unreleased gem-table entries to drop.
 const GARBAGE_RE = /Coming Soon|Removed Skill|Playtest|\{0\}/;
@@ -68,9 +68,27 @@ export function selectGemRecords() {
 
 const GEM_LEVEL_CAP = 20; // matches src/data/gems.js display cap
 
-function effectSections(skill) {
-  return buildSections(skill, GEM_LEVEL_CAP)
-    .map((s) => ({ label: s.label, lines: s.lines, quality: s.quality }));
+// Effect sections for a gem: the union of ALL its granted skills' sections. A gem
+// can grant several skills whose effects/quality live on different ones — e.g.
+// Artillery Ballista's deploy skill carries the "Ballista" section while its
+// "Bolts" projectile sub-skill carries the Pins quality — and poe2db shows every
+// section. We concatenate in grants order and de-duplicate identical sections so a
+// gem that grants the same section twice doesn't render it twice.
+function effectSections(skillKeys, skills) {
+  const seen = new Set();
+  const out = [];
+  for (const key of skillKeys ?? []) {
+    const skill = skills[key];
+    if (!skill) continue;
+    for (const s of buildSections(skill, GEM_LEVEL_CAP)) {
+      const sec = { label: s.label, lines: s.lines, quality: s.quality };
+      const sig = JSON.stringify([sec.label, sec.lines, sec.quality]);
+      if (seen.has(sig)) continue;
+      seen.add(sig);
+      out.push(sec);
+    }
+  }
+  return out;
 }
 
 export function gemNodes() {
@@ -79,8 +97,7 @@ export function gemNodes() {
   const baseItems = loadJson(`${REPOE}/base_items.json`);
   const gemTags = loadJson(`${REPOE}/gem_tags.json`);
   const nodes = records.map((r) => {
-    const skill = skills[r.raw.grants_skills?.[0]] ?? null;
-    const sections = effectSections(skill);
+    const sections = effectSections(r.raw.grants_skills, skills);
     // The faceted inventory-gem icon (distinct from icon_dds_file, the skill icon),
     // looked up in base_items via the gem's item id.
     const baseItem = baseItems[r.raw.base_item?.id];
@@ -140,6 +157,9 @@ export function skillNodes(records) {
           types: skill.active_skill?.types ?? [],
           description: skill.active_skill?.description ?? null,
           reservation,
+          // Per-level scaling table (null when nothing varies). Heavy-ish but
+          // small (~0.7MB across all skills); inlined as a prop, no side-artifact.
+          levelTable: buildLevelTable(skill),
         },
         search: name.toLowerCase(),
       }));

@@ -386,6 +386,28 @@ export function getDefaultSkillGemsForClass(classSlug) {
   return out;
 }
 
+// Render the skill node's per-level scaling table (props.levelTable, built by
+// scripts/graph/gems.js) to view HTML: headers and any token-bearing cells go
+// through renderGameText (same path as effect lines), and cells are flattened to
+// a per-column array so the template needn't key by the raw stat-id (which can
+// contain newlines). Returns null when the skill has no scaling table.
+function renderLevelTable(table) {
+  if (!table) return null;
+  const columns = table.columns.map((c) => ({
+    kind: c.kind,
+    headerHtml: renderGameText(c.header, hasDefinition),
+  }));
+  const rows = table.rows.map((r) => ({
+    level: r.level,
+    cap: r.cap,
+    cells: table.columns.map((c) => {
+      const v = r.cells[c.key];
+      return v == null ? '' : renderGameText(v, hasDefinition);
+    }),
+  }));
+  return { columns, rows };
+}
+
 export function buildGemViewModel(slug) {
   const gem = getGem(slug);
   if (!gem) return null;
@@ -454,6 +476,9 @@ export function buildGemViewModel(slug) {
       ? renderGameText(sp.description, hasDefinition)
       : null,
     sections,
+    // Per-level scaling table (level → stat/cost values), rendered from the
+    // granted skill's levelTable prop. Null when nothing scales by level.
+    levelTable: renderLevelTable(sp?.levelTable),
     footer: sp?.isActiveSkill ? SKILL_PANEL_FOOTER : null,
     // Sources that grant this gem's skill (reverse of the grants edge). Usually
     // empty; uniques and passive-tree nodes are rendered as separate groups.
