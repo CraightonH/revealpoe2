@@ -1,7 +1,6 @@
 {# Per-level scaling table for a gem's granted skill. Rendered from vm.levelTable
    (see src/data/gems.js renderLevelTable). Reuses the collapsible rec-group shell
-   for visual consistency with Recommended Supports. Only the level-20 row (the max
-   a skill gem reaches without external modifiers) is highlighted. #}
+   for visual consistency with Recommended Supports. #}
 {% macro gemLevelTable(vm) %}
 {% if vm.levelTable %}
 <details class="rec-group gem-levels" open style="--rec-accent:var(--color-gem)">
@@ -19,8 +18,8 @@
       </thead>
       <tbody>
         {% for row in vm.levelTable.rows %}
-        <tr class="gem-levels-row{% if row.cap %} gem-levels-row--cap{% endif %}" data-level="{{ row.level }}">
-          <th class="gem-levels-lvl" scope="row">{{ row.level }}{% if row.cap %} <span class="gem-levels-cap-badge">max</span>{% endif %}</th>
+        <tr class="gem-levels-row" data-level="{{ row.level }}">
+          <th class="gem-levels-lvl" scope="row">{{ row.level }}</th>
           {% for cell in row.cells %}
           <td class="gem-levels-cell">{{ cell | safe }}</td>
           {% endfor %}

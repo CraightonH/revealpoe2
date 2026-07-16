@@ -176,6 +176,8 @@ test('GET /gem/fireball renders the per-level scaling table outside the card pop
   assert.ok(!/Per-level scaling/.test(popupToTable), 'table must render outside the card');
   // number-blanked, keyword-resolved column header
   assert.match(res.text, /Deals _ to _ <span class="kw" data-keyword="Fire">Fire<\/span> Damage/);
-  // level-20 cap row + badge
-  assert.match(res.text, /gem-levels-row--cap"[\s\S]*?>20 <span class="gem-levels-cap-badge">max<\/span>/);
+  // level-20 row present, rendered plainly (no cap badge / permanent highlight)
+  assert.match(res.text, /<tr class="gem-levels-row" data-level="20">[\s\S]*?>20<\/th>/);
+  assert.ok(!/gem-levels-cap-badge/.test(res.text), 'no max badge');
+  assert.ok(!/gem-levels-row--cap/.test(res.text), 'no permanent level-20 highlight');
 });

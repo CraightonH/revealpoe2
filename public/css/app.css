@@ -1096,30 +1096,9 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
 .gem-levels-row:hover .gem-levels-lvl {
   background: color-mix(in srgb, var(--color-gem) 7%, transparent);
 }
-/* Level 20 — the max without external modifiers. */
-.gem-levels-row--cap td,
-.gem-levels-row--cap .gem-levels-lvl {
-  background: color-mix(in srgb, var(--color-gem) 16%, transparent);
-}
-.gem-levels-row--cap .gem-levels-lvl {
-  color: var(--color-gem);
-  font-weight: bold;
-}
 /* Row matching the gem card's currently-selected level (driven by gem-level-select.js). */
 .gem-levels-row--sel td,
 .gem-levels-row--sel .gem-levels-lvl {
   background: color-mix(in srgb, var(--color-gem) 26%, transparent);
   box-shadow: inset 2px 0 0 var(--color-gem);
-}
-.gem-levels-cap-badge {
-  display: inline-block;
-  margin-left: 4px;
-  padding: 0 5px;
-  font-family: var(--font-smallcaps);
-  font-size: 10px;
-  line-height: 15px;
-  border-radius: 3px;
-  color: var(--bg-base);
-  background: var(--color-gem);
-  vertical-align: middle;
 }

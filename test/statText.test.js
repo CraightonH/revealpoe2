@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { rangeMerge, resolveQuality, buildSections, buildLevelTable } from '../src/data/statText.js';
+import { rangeMerge, resolveQuality, buildSections, buildLevelTable, buildScalingSections } from '../src/data/statText.js';
 import { loadJson } from '../scripts/graph/loader.js';
 
 test('rangeMerge combines differing numbers into a range', () => {
@@ -164,4 +164,23 @@ test('buildLevelTable omits a constant damage_multiplier', () => {
     stat_sets: [{ per_level: { 1: { damage_multiplier: 100 }, 2: { damage_multiplier: 100 } } }],
   });
   assert.equal(t, null);
+});
+
+test('buildScalingSections emits a varying "Base Damage" line for a damage_multiplier-only skill', () => {
+  // Volcanic Steps scales ONLY via damage_multiplier (60 → 245) with no per-level
+  // stat_text, so without a Base Damage line the card body never changes with level.
+  const skills = loadJson('repoe-poe2/skills.json');
+  const secs = buildScalingSections(skills['AncestralCryShockwavePlayer'], 40);
+  const line = secs.flatMap((s) => s.lines).find((l) => l.segs && /Base Damage/.test(l.segs.join('')));
+  assert.ok(line, 'expected a varying Base Damage line');
+  assert.deepEqual(line.byLevel[1], ['60']);
+  assert.deepEqual(line.byLevel[20], ['245']);
+});
+
+test('buildScalingSections omits a constant damage_multiplier', () => {
+  const secs = buildScalingSections({
+    stat_sets: [{ per_level: { 1: { damage_multiplier: 100 }, 2: { damage_multiplier: 100 } } }],
+  }, 40);
+  const line = secs.flatMap((s) => s.lines).find((l) => /Base Damage/.test((l.segs ?? [l.text]).join('')));
+  assert.equal(line, undefined);
 });

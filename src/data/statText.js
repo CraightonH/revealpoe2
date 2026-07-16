@@ -282,6 +282,22 @@ export function buildScalingSections(skill, maxLevel = 40) {
       lines.push({ segs: ref.segs, byLevel });
     }
 
+    // Bare per-level damage_multiplier — the skill's base-damage scaling — has no
+    // stat_text sentence (see buildLevelTable's "Base Damage" column). Emit it as a
+    // varying line so the card body actually changes with level for skills that scale
+    // ONLY here (e.g. Ancestral Cry's Volcanic Steps / Volcanic Eruption). Prepended
+    // so the damage line reads first, as in-game tooltips do.
+    const dmg = new Map();
+    for (const l of levels) {
+      const m = perLevel[String(l)]?.damage_multiplier;
+      if (m != null) dmg.set(l, String(m));
+    }
+    if (dmg.size && new Set(dmg.values()).size > 1) {
+      const byLevel = {};
+      for (const [l, v] of dmg) byLevel[l] = [v];
+      lines.unshift({ segs: ['Deals ', '% of Base Damage'], byLevel });
+    }
+
     const quality = [];
     for (const q of set.static?.quality_stats ?? []) {
       const r = resolveQuality(q);
