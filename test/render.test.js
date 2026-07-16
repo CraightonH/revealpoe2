@@ -165,15 +165,15 @@ test('layout loads Popper before Tippy before the keyword glue', async () => {
   assert.ok(tippy < glue, 'Tippy must load before keywords.js');
 });
 
-test('GET /gem/fireball renders the per-level scaling table outside the card popup', async () => {
+test('GET /gem/fireball renders the scaling table outside the card popup', async () => {
   const res = await request(createApp()).get('/gem/fireball');
   assert.equal(res.status, 200);
-  // section present
-  const idx = res.text.indexOf('Per-level scaling');
-  assert.ok(idx > -1, 'per-level scaling section should be present');
+  // section present (renamed from "Per-level scaling" to "Scaling")
+  const idx = res.text.indexOf('>Scaling ');
+  assert.ok(idx > -1, 'scaling section should be present');
   // rendered outside the in-game card popup (like Recommended Supports)
   const popupToTable = res.text.slice(res.text.indexOf('newItemPopup'), idx);
-  assert.ok(!/Per-level scaling/.test(popupToTable), 'table must render outside the card');
+  assert.ok(!/>Scaling </.test(popupToTable), 'table must render outside the card');
   // number-blanked, keyword-resolved column header
   assert.match(res.text, /Deals _ to _ <span class="kw" data-keyword="Fire">Fire<\/span> Damage/);
   // level-20 row present, rendered plainly (no cap badge / permanent highlight)

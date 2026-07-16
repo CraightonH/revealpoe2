@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { rangeMerge, resolveQuality, buildSections, buildLevelTable, buildScalingSections } from '../src/data/statText.js';
+import { rangeMerge, resolveQuality, buildSections, buildLevelTable, buildScalingSections, buildQualityTable, buildGemQualityTable } from '../src/data/statText.js';
 import { loadJson } from '../scripts/graph/loader.js';
 
 test('rangeMerge combines differing numbers into a range', () => {
@@ -183,4 +183,155 @@ test('buildScalingSections omits a constant damage_multiplier', () => {
   }, 40);
   const line = secs.flatMap((s) => s.lines).find((l) => /Base Damage/.test((l.segs ?? [l.text]).join('')));
   assert.equal(line, undefined);
+});
+
+test('buildQualityTable shows only true breakpoints for a floored count (Arc)', () => {
+  const skills = loadJson('repoe-poe2/skills.json');
+  const t = buildQualityTable(skills['ArcPlayer']);
+  assert.ok(t, 'expected a quality table');
+
+  // single quality column; header keeps markup and blanks the number
+  assert.equal(t.columns.length, 1);
+  const col = t.columns[0];
+  assert.equal(col.kind, 'quality');
+  assert.equal(col.header, '[Chain|Chains] _ times');
+
+  // chains = floor(Q/10): a breakpoint every 10% → rows are exactly 100,90,…,10 (no
+  // rows between breakpoints), descending.
+  assert.deepEqual(t.rows.map((r) => r.quality), [100, 90, 80, 70, 60, 50, 40, 30, 20, 10]);
+  const at = (q) => t.rows.find((r) => r.quality === q);
+  assert.equal(at(10).cells[col.key], '1');
+  assert.equal(at(20).cells[col.key], '2');
+  assert.equal(at(100).cells[col.key], '10');
+});
+
+test('buildQualityTable uses the coarse 5% grid with expandable bands for a smooth gem (Archmage)', () => {
+  const skills = loadJson('repoe-poe2/skills.json');
+  const t = buildQualityTable(skills['ArchmagePlayer']);
+  assert.ok(t, 'expected a quality table');
+
+  const col = t.columns[0];
+  assert.equal(col.header, '_% increased [Reservation] [Efficiency]');
+  const at = (q) => t.rows.find((r) => r.quality === q);
+
+  // no steppy count → coarse rows every 5%, descending; 0.5%/1% floored to integer %
+  assert.deepEqual(t.rows.map((r) => r.quality),
+    [100, 95, 90, 85, 80, 75, 70, 65, 60, 55, 50, 45, 40, 35, 30, 25, 20, 15, 10, 5]);
+  assert.equal(at(20).cells[col.key], '10');
+  assert.equal(at(100).cells[col.key], '50');
+  // the 20% row's band holds the off-grid breakpoints between 15% and 20% — 18→9 and
+  // 16→8 — skipping 17/19 which add only ½% and don't tick the floored value. Descending,
+  // matching the surrounding table.
+  assert.deepEqual((at(20).band ?? []).map((b) => `${b.quality}:${b.cells[col.key]}`), ['18:9', '16:8']);
+});
+
+test('buildQualityTable floors a distance stat to tenths, a row every 5% (Fragments)', () => {
+  const skills = loadJson('repoe-poe2/skills.json');
+  const t = buildQualityTable(skills['FragmentsOfThePastPlayer']);
+  assert.ok(t, 'expected a quality table');
+  const col = t.columns[0];
+  assert.equal(col.header, 'Eruption radius is _ metres');
+  const at = (q) => t.rows.find((r) => r.quality === q);
+  // 0.1 metre per 5% (divide_by_ten_1dp) → a breakpoint exactly every 5%
+  assert.deepEqual(t.rows.map((r) => r.quality), [100, 95, 90, 85, 80, 75, 70, 65, 60, 55, 50, 45, 40, 35, 30, 25, 20, 15, 10, 5]);
+  assert.equal(at(5).cells[col.key], '0.1');
+  assert.equal(at(20).cells[col.key], '0.4');
+  assert.equal(at(100).cells[col.key], '2');
+});
+
+test('buildQualityTable blanks base-skill reference tokens (Arctic Armour)', () => {
+  const skills = loadJson('repoe-poe2/skills.json');
+  const t = buildQualityTable(skills['ArcticArmourPlayer']);
+  assert.ok(t, 'expected a quality table');
+  // the frequency token carries no quality value → blanked; only max-Stages scales
+  const col = t.columns[0];
+  assert.equal(col.header, 'Gains a Stage every  seconds, up to a maximum of _ Stages');
+  const at = (q) => t.rows.find((r) => r.quality === q);
+  // 50 permille → floor(Q/20): a breakpoint every 20%, rows 100,80,60,40,20
+  assert.deepEqual(t.rows.map((r) => r.quality), [100, 80, 60, 40, 20]);
+  assert.equal(at(20).cells[col.key], '1');
+  assert.equal(at(40).cells[col.key], '2');
+});
+
+test('a steppy gem shows a sparse alt effect’s own breakpoints as rows', () => {
+  // count (chains, every 10%) + a slow % alt (0.2%/1% → a step every 5%): the alt is
+  // sparse enough to be discrete, so its off-count breakpoints (5,15,25…) become rows.
+  const t = buildGemQualityTable([{
+    skill: { stat_sets: [{ static: { quality_stats: [{ stat: '[Chain|Chains] {number_of_chains} times', stats: { number_of_chains: 100 } }] } }] },
+    name: 'X',
+    altStats: [{ stat: '{x}% more Damage', stats: { x: 200 } }],
+  }]);
+  assert.ok(t);
+  const qs = t.rows.map((r) => r.quality);
+  assert.ok(qs.includes(5) && qs.includes(15) && qs.includes(25), `alt breakpoints missing: ${qs}`);
+  assert.ok(t.rows.every((r) => !r.band), 'steppy gem → no bands');
+});
+
+test('a steppy gem samples a dense alt effect instead of letting it flood the rows', () => {
+  // count (chains, every 10%) + a dense % alt (1%/1% → a step every 1%): the alt is too
+  // dense to drive rows, so rows stay at the chain breakpoints and the alt is sampled.
+  const t = buildGemQualityTable([{
+    skill: { stat_sets: [{ static: { quality_stats: [{ stat: '[Chain|Chains] {number_of_chains} times', stats: { number_of_chains: 100 } }] } }] },
+    name: 'X',
+    altStats: [{ stat: '{y}% more Damage', stats: { y: 1000 } }],
+  }]);
+  assert.ok(t);
+  assert.deepEqual(t.rows.map((r) => r.quality), [100, 90, 80, 70, 60, 50, 40, 30, 20, 10]);
+  const altCol = t.columns.find((c) => c.kind === 'alt-quality');
+  assert.equal(t.rows.find((r) => r.quality === 20).cells[altCol.key], '20'); // sampled: 1×20
+});
+
+test('buildQualityTable returns null when no quality stat varies', () => {
+  assert.equal(buildQualityTable({ stat_sets: [] }), null);
+  // permille 0 → constant across all quality → skipped
+  assert.equal(buildQualityTable({
+    stat_sets: [{ static: { quality_stats: [{ stat: 'Nothing {x} here', stats: { x: 0 } }] } }],
+  }), null);
+});
+
+test('buildGemQualityTable captions columns when two skills each scale (Fragments of the Past)', () => {
+  const skills = loadJson('repoe-poe2/skills.json');
+  const t = buildGemQualityTable([
+    { skill: skills['FragmentsOfThePastPlayer'], name: 'Fragments of the Past' },
+    { skill: skills['FragmentsOfThePastFragmentPlayer'], name: 'Ice Fragments' },
+  ]);
+  assert.ok(t);
+  // two radius columns (one per skill) + the Fragments-of-the-Past alt-quality duration
+  const std = t.columns.filter((c) => c.kind === 'quality');
+  assert.deepEqual(std.map((c) => c.header).sort(),
+    ['Eruption radius is _ metres', 'Explosion radius is _ metres']);
+  // every standard column carries its granting skill's caption
+  assert.deepEqual(std.map((c) => c.skill).sort(), ['Fragments of the Past', 'Ice Fragments']);
+});
+
+test('buildGemQualityTable folds in Gemling alt-quality effects as tagged columns (Archmage)', () => {
+  const skills = loadJson('repoe-poe2/skills.json');
+  const t = buildGemQualityTable([{
+    skill: skills['ArchmagePlayer'],
+    name: 'Archmage',
+    altStats: [
+      { stat: 'Non-Channelling Spells Gain {a}% of Damage as extra Lightning', stats: { a: 50 } },
+      { stat: 'Non-Channelling Spells cost an additional {b/divide_by_one_hundred_2dp_if_required}% of your maximum Mana', stats: { b: 10000 } },
+    ],
+  }]);
+  assert.ok(t);
+  const alt = t.columns.filter((c) => c.kind === 'alt-quality');
+  assert.equal(alt.length, 2, 'two alt-quality columns');
+  const at = (q) => t.rows.find((r) => r.quality === q);
+  const gain = alt.find((c) => /extra Lightning/.test(c.header));
+  const cost = alt.find((c) => /maximum Mana/.test(c.header));
+  assert.equal(at(20).cells[gain.key], '1'); // 50/1000 × 20 = 1, floored
+  assert.equal(at(20).cells[cost.key], '2'); // 10000/1000 × 20 / 100 = 2
+});
+
+test('buildGemQualityTable drops dummy/empty skills and omits captions for a single scaler (Explosive Shot)', () => {
+  const skills = loadJson('repoe-poe2/skills.json');
+  const t = buildGemQualityTable([
+    { skill: skills['ExplosiveShotAmmoPlayer'], name: 'Load Explosive Shot' }, // dummy-only → dropped
+    { skill: skills['ExplosiveShotPlayer'], name: 'Explosive Shot' },
+  ]);
+  assert.ok(t);
+  const std = t.columns.filter((c) => c.kind === 'quality');
+  assert.equal(std.length, 1); // only the ignite-magnitude effect (deduped)
+  assert.equal(std[0].skill, undefined); // single contributor → no caption
 });

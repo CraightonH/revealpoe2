@@ -54,11 +54,15 @@ function genericIdx() {
 // A skill's per-set translation_file (specific_skill_stat_descriptions/*.json)
 // carries skill-specific phrasing and takes precedence over the generic tables.
 // Keyed by the `.csd`/`.json` path from skills.json stat_sets[i].translation_file.
+// The path keeps its subdirectory — the specific tables live under
+// stat_translations/specific_skill_stat_descriptions/, so basename() would look in
+// the wrong place and silently fall back to the generic tables (skipping skill-only
+// stats like archmage_*, base_skill_effect_duration).
 const _specificCache = new Map();
 function specificIdx(translationFile) {
   if (!translationFile) return null;
   if (_specificCache.has(translationFile)) return _specificCache.get(translationFile);
-  const rel = `${REPOE}/stat_translations/${path.basename(translationFile).replace(/\.csd$/, '.json')}`;
+  const rel = `${REPOE}/stat_translations/${translationFile.replace(/\.csd$/, '.json')}`;
   const m = new Map();
   try {
     for (const e of loadJson(rel)) {
@@ -99,18 +103,30 @@ function pickBlock(entry, value) {
   return pool[0];
 }
 
-// Render one alt stat {id, permille} for a skill's stat set to a display string
-// (effect at max 20% quality, as "(0—N)…"), or null if no template resolves.
-function renderAltStat(statId, permille, translationFile) {
+// Resolve one alt stat {id, permille} for a skill's stat set into a standard
+// quality-stat object { stat, stats } — the SAME shape as source quality_stats — or
+// null if no template resolves. Shared by the card (rendered at 20% via
+// resolveQuality) and the quality scaling table (scaled per quality). A `format:
+// ['ignore']` block is a constant string with no scaling token → stats is empty.
+function altQualityStat(statId, permille, translationFile) {
   const entry = findEntry(statId, translationFile);
   if (!entry) return null;
   const block = pickBlock(entry, permille);
   if (!block) return null;
-  if (block.format?.[0] === 'ignore') return block.string;
+  if (block.format?.[0] === 'ignore') return { stat: block.string, stats: {} };
   const handler = block.index_handlers?.[0] ?? [];
   const token = handler.length ? `{${statId}/${handler[0]}}` : `{${statId}}`;
-  // Reuse the exact standard-quality resolver: /50 scaling + unit handler + range.
-  return resolveQuality({ stat: block.string.replace('{0}', token), stats: { [statId]: permille } });
+  return { stat: block.string.replace('{0}', token), stats: { [statId]: permille } };
+}
+
+// Render one alt stat to a display string (effect at max 20% quality, as "(0—N)…"),
+// or null if no template resolves.
+function renderAltStat(statId, permille, translationFile) {
+  const q = altQualityStat(statId, permille, translationFile);
+  if (!q) return null;
+  // A constant ('ignore') block has no quality token → pass it through as-is.
+  if (!Object.keys(q.stats).length) return q.stat;
+  return resolveQuality(q); // /50 scaling + unit handler + range
 }
 
 // Load the committed generated overlay: skillKey -> [{ set, stats:[{id,permille}] }].
@@ -137,6 +153,24 @@ export function altQualityLines(skillKey, statSetIndex, translationFile) {
     for (const s of e.stats ?? []) {
       const line = renderAltStat(s.id, s.permille, translationFile);
       if (line) out.push(line);
+    }
+  }
+  return out;
+}
+
+// Alt-quality effects for (skillKey, statSetIndex) as standard quality-stat objects
+// { stat, stats } — the shape buildGemQualityTable consumes so Gemling second-quality
+// effects scale in the Quality table the same way standard quality does. Skips
+// constant ('ignore') blocks, which carry no per-quality scaling. Returns [].
+export function altQualityStats(skillKey, statSetIndex, translationFile) {
+  const entries = loadAltQuality()[skillKey];
+  if (!entries) return [];
+  const out = [];
+  for (const e of entries) {
+    if (e.set !== statSetIndex) continue;
+    for (const s of e.stats ?? []) {
+      const q = altQualityStat(s.id, s.permille, translationFile);
+      if (q && Object.keys(q.stats).length) out.push(q);
     }
   }
   return out;

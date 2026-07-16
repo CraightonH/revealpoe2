@@ -1,7 +1,7 @@
 // test/graph/gemQuality.test.js — Gemling Legionnaire alternate quality.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { altQualityLines, loadAltQuality } from '../../scripts/graph/gemQuality.js';
+import { altQualityLines, altQualityStats, loadAltQuality } from '../../scripts/graph/gemQuality.js';
 import { gemNodes } from '../../scripts/graph/gems.js';
 import { loadJson } from '../../scripts/graph/loader.js';
 import { REPOE } from '../../scripts/graph/source.js';
@@ -30,6 +30,24 @@ test('altQualityLines uses active-skill phrasing, not support-gem phrasing', () 
 
 test('altQualityLines returns [] for a skill without alt quality', () => {
   assert.deepEqual(altQualityLines('NonexistentSkillKey', 0, null), []);
+});
+
+test('altQualityLines resolves stats that live only in the per-skill translation file', () => {
+  // Regression: specificIdx used to drop the specific_skill_stat_descriptions/ subdir,
+  // so skill-only stats (archmage_*) never resolved and Archmage showed no alt quality.
+  const lines = altQualityLines('ArchmagePlayer', 0, tfOf('ArchmagePlayer', 0));
+  assert.ok(lines.some((l) => /extra \[Lightning\] damage for each 100 maximum Mana/.test(l)), `got: ${JSON.stringify(lines)}`);
+  assert.ok(lines.some((l) => /cost an additional \(0—2\)% of your maximum Mana/.test(l)));
+});
+
+test('altQualityStats returns parseable { stat, stats } objects for the table', () => {
+  const stats = altQualityStats('ArchmagePlayer', 0, tfOf('ArchmagePlayer', 0));
+  assert.equal(stats.length, 2);
+  for (const s of stats) {
+    assert.equal(typeof s.stat, 'string');
+    assert.ok(s.stat.includes('{'), 'keeps the scaling token for per-quality resolution');
+    assert.ok(Object.keys(s.stats).length >= 1);
+  }
 });
 
 test('generated overlay covers a broad set of skills and is well-formed', () => {

@@ -1,33 +1,99 @@
-{# Per-level scaling table for a gem's granted skill. Rendered from vm.levelTable
-   (see src/data/gems.js renderLevelTable). Reuses the collapsible rec-group shell
-   for visual consistency with Recommended Supports. #}
-{% macro gemLevelTable(vm) %}
-{% if vm.levelTable %}
-<details class="rec-group gem-levels" open style="--rec-accent:var(--color-gem)">
-  <summary class="rec-group-title">Per-level scaling <span class="rec-group-count">{{ vm.levelTable.rows.length }} levels</span></summary>
-  <p class="rec-group-hint">Stat and cost values at each gem level. Level 20 is the highest a skill gem reaches without external modifiers.</p>
-  <div class="gem-levels-scroll">
-    <table class="gem-levels-table">
-      <thead>
-        <tr>
-          <th class="gem-levels-lvl" scope="col">Level</th>
-          {% for col in vm.levelTable.columns %}
-          <th class="gem-levels-col gem-levels-col--{{ col.kind }}" scope="col">{% if col.skill %}<span class="gem-levels-col-skill">{{ col.skill }}</span>{% endif %}{{ col.headerHtml | safe }}</th>
-          {% endfor %}
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in vm.levelTable.rows %}
-        <tr class="gem-levels-row" data-level="{{ row.level }}">
-          <th class="gem-levels-lvl" scope="row">{{ row.level }}</th>
-          {% for cell in row.cells %}
-          <td class="gem-levels-cell">{{ cell | safe }}</td>
-          {% endfor %}
-        </tr>
+{# "Scaling" section for a gem's granted skill(s): a Levels table (vm.levelTable) and,
+   for gems with varying quality effects, a Quality table (vm.qualityTable). When both
+   exist a Levels|Quality toggle swaps them (scaling-toggle.js — pure visibility, so the
+   static build matches the server). Reuses the collapsible rec-group shell + the
+   gem-levels-table styling. The Quality table has one row per true breakpoint — a
+   quality at which some effect ticks up (values round down; see buildGemQualityTable). #}
+
+{% macro _levelTable(t) %}
+<div class="gem-levels-scroll">
+  <table class="gem-levels-table">
+    <thead>
+      <tr>
+        <th class="gem-levels-lvl" scope="col">Level</th>
+        {% for col in t.columns %}
+        <th class="gem-levels-col gem-levels-col--{{ col.kind }}" scope="col">{% if col.skill %}<span class="gem-levels-col-skill">{{ col.skill }}</span>{% endif %}{{ col.headerHtml | safe }}</th>
         {% endfor %}
-      </tbody>
-    </table>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in t.rows %}
+      <tr class="gem-levels-row" data-level="{{ row.level }}">
+        <th class="gem-levels-lvl" scope="row">{{ row.level }}</th>
+        {% for cell in row.cells %}
+        <td class="gem-levels-cell">{{ cell | safe }}</td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endmacro %}
+
+{% macro _qualityTable(t) %}
+<div class="gem-levels-scroll">
+  <table class="gem-levels-table gem-qual-table">
+    <thead>
+      <tr>
+        <th class="gem-levels-lvl" scope="col">Quality</th>
+        {% for col in t.columns %}
+        <th class="gem-levels-col gem-levels-col--{{ col.kind }}" scope="col">{% if col.skill %}<span class="gem-levels-col-skill">{{ col.skill }}</span>{% endif %}{{ col.headerHtml | safe }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in t.rows %}
+      {% set expandable = row.band.length > 0 %}
+      <tr class="gem-levels-row gem-qual-row" data-quality="{{ row.quality }}"{% if expandable %} tabindex="0" role="button" aria-expanded="false" aria-label="Show intermediate breakpoints below {{ row.quality }}% quality"{% endif %}>
+        <th class="gem-levels-lvl" scope="row"><span class="gem-qual-caret{% if not expandable %} gem-qual-caret--empty{% endif %}" aria-hidden="true">▸</span>{{ row.quality }}%</th>
+        {% for cell in row.cells %}
+        <td class="gem-levels-cell">{{ cell | safe }}</td>
+        {% endfor %}
+      </tr>
+      {% for b in row.band %}
+      <tr class="gem-qual-band-row" data-band-of="{{ row.quality }}" hidden>
+        <th class="gem-levels-lvl" scope="row">{{ b.quality }}%</th>
+        {% for cell in b.cells %}
+        <td class="gem-levels-cell">{{ cell | safe }}</td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endmacro %}
+
+{% macro gemLevelTable(vm) %}
+{% set lv = vm.levelTable %}
+{% set qual = vm.qualityTable %}
+{% if lv or qual %}
+{% set both = lv and qual %}
+{% set qlabel = '' %}
+{% if qual %}{% set qlabel = qual.rows.length ~ (' breakpoint' if qual.rows.length == 1 else ' breakpoints') %}{% endif %}
+<details class="rec-group gem-levels" open style="--rec-accent:var(--color-gem)">
+  <summary class="rec-group-title">Scaling <span class="rec-group-count" data-scaling-count>{% if lv %}{{ lv.rows.length }} levels{% else %}{{ qlabel }}{% endif %}</span></summary>
+
+  {% if both %}
+  <div class="scaling-modes" role="tablist" aria-label="Scaling mode">
+    <button type="button" class="scaling-mode is-active" role="tab" aria-selected="true" data-scaling-mode="levels" data-scaling-label="{{ lv.rows.length }} levels">Levels</button>
+    <button type="button" class="scaling-mode" role="tab" aria-selected="false" data-scaling-mode="quality" data-scaling-label="{{ qlabel }}">Quality</button>
   </div>
+  {% endif %}
+
+  {% if lv %}
+  <div class="scaling-panel" data-scaling-panel="levels">
+    <p class="rec-group-hint">Stat and cost values at each gem level. Level 20 is the highest a skill gem reaches without external modifiers.</p>
+    {{ _levelTable(lv) }}
+  </div>
+  {% endif %}
+
+  {% if qual %}
+  <div class="scaling-panel" data-scaling-panel="quality"{% if both %} hidden{% endif %}>
+    <p class="rec-group-hint">Effect values by quality (values round down, so a row marks each breakpoint where an effect ticks up). 20% is the normal maximum; higher quality (Gemling Legionnaire, catalysts) is shown up to 100%. Rows with a <span class="gem-qual-caret-inline">▸</span> expand to show finer steps.</p>
+    {{ _qualityTable(qual) }}
+  </div>
+  {% endif %}
 </details>
 {% endif %}
 {% endmacro %}

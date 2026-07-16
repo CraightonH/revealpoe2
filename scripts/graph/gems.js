@@ -4,8 +4,8 @@ import { REPOE } from './source.js';
 import { slugify } from '../../src/data/slug.js';
 import { grantedSkillNames } from './uniques.js';
 import { makeNode, makeEdge, KINDS, EDGE_TYPES } from './schema.js';
-import { buildSections, buildLevelTable, buildScalingSections, costByLevel } from '../../src/data/statText.js';
-import { altQualityLines } from './gemQuality.js';
+import { buildSections, buildLevelTable, buildGemQualityTable, buildScalingSections, costByLevel } from '../../src/data/statText.js';
+import { altQualityLines, altQualityStats } from './gemQuality.js';
 import { weaponReqLabel } from './weaponReqs.js';
 
 // Mirrors src/data/gems.js — placeholder/unreleased gem-table entries to drop.
@@ -235,6 +235,22 @@ export function gemNodes() {
       effectSections: sections,
       // Per-level card data for the level selector (null when the gem has no scaling).
       levelScaling: levelScaling(r.raw.grants_skills, skills, r.raw.base_item?.display_name),
+      // Merged per-quality scaling table (null when no quality effect varies) — the
+      // Quality mode of the gem detail page's "Scaling" table. Merged across granted
+      // skills here at build time so band rows resolve for every column (see
+      // buildGemQualityTable), and each skill's Gemling second-quality effects are
+      // folded in as alt-quality columns. Support gems have no quality → stays null.
+      qualityTable: buildGemQualityTable(
+        (r.raw.grants_skills ?? [])
+          .map((key) => {
+            const skill = skills[key];
+            if (!skill) return null;
+            const altStats = (skill.stat_sets ?? [])
+              .flatMap((set, i) => altQualityStats(key, i, set.translation_file));
+            return { skill, name: skill.active_skill?.display_name || key, altStats };
+          })
+          .filter(Boolean),
+      ),
       weaponReq,
     };
     const search = [r.raw.base_item.display_name, r.raw.gem_type, ...sections.flatMap((s) => s.lines)]

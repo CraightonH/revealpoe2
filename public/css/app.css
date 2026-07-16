@@ -1036,10 +1036,9 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
   display: block;
 }
 
-/* ── Gem per-level scaling table ─────────────────────────────────────────────
+/* ── Gem scaling table (Levels + Quality) ────────────────────────────────────
    Rendered inside the rec-group collapsible shell (see gem-level-table.njk).
-   High-contrast numbers for at-a-glance scanning down a level; the level-20 row
-   is accented as the no-external-modifiers ceiling. */
+   High-contrast numbers for at-a-glance scanning down a level / quality. */
 .gem-levels-scroll {
   overflow-x: auto;             /* wide skills scroll here, never the page body */
   margin-top: 4px;
@@ -1102,3 +1101,56 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
   background: color-mix(in srgb, var(--color-gem) 26%, transparent);
   box-shadow: inset 2px 0 0 var(--color-gem);
 }
+
+/* ── Scaling: Levels ⇄ Quality mode toggle (scaling-toggle.js) ──────────────── */
+.scaling-modes {
+  display: inline-flex;
+  gap: 2px;
+  margin: 8px 0 4px;
+  padding: 2px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--color-gem) 8%, transparent);
+}
+.scaling-mode {
+  font-family: var(--font-smallcaps);
+  font-size: 13px;
+  padding: 3px 14px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-default);
+  cursor: pointer;
+}
+.scaling-mode:hover { color: var(--text); }
+.scaling-mode.is-active {
+  background: color-mix(in srgb, var(--color-gem) 24%, var(--bg-surface));
+  color: var(--color-gem);
+}
+.scaling-mode:focus-visible { outline: 1px solid var(--color-gem); outline-offset: 1px; }
+
+/* ── Scaling: Quality table ──────────────────────────────────────────────────
+   Steppy gems show breakpoint rows; smooth gems show a coarse 5% grid whose rows
+   expand (affix-accordion style) into their off-grid breakpoints. Gemling
+   second-quality columns take the in-game "second quality" colour. */
+.gem-levels-col--alt-quality { color: var(--color-crafted); }
+.gem-qual-row[aria-expanded] { cursor: pointer; }
+.gem-qual-row:focus-visible { outline: 1px solid var(--color-gem); outline-offset: -1px; }
+.gem-qual-caret,
+.gem-qual-caret-inline {
+  display: inline-block;
+  width: 10px;
+  margin-right: 6px;
+  color: var(--color-gem);
+  font-size: 10px;
+  transition: transform 0.12s ease;
+}
+.gem-qual-caret-inline { margin: 0 2px; }
+.gem-qual-row[aria-expanded="true"] .gem-qual-caret { transform: rotate(90deg); }
+.gem-qual-caret--empty { visibility: hidden; }
+.gem-qual-band-row > td,
+.gem-qual-band-row > .gem-levels-lvl {
+  background: rgba(0, 0, 0, 0.18);
+  font-size: 12px;
+  color: var(--color-default);
+}
+.gem-qual-band-row .gem-levels-lvl { padding-left: 26px; } /* indent under the caret */

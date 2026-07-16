@@ -39,72 +39,92 @@ gems that carry varying `quality_stats` get a Quality table.
   HTML, so it works identically on the static build. Global scripts are wired in
   `views/base.njk` (deferred).
 
+> **Revision (2026-07-16, post-review):** the row model and value rounding below reflect the
+> shipped implementation after several rounds of review. Superseded ideas: a `cap: true` flag
+> on the 20% row (dropped — mirrors the level-20 badge removed in `ceae77e`); a count-vs-
+> magnitude predicate that floored only counts (dropped — everything floors now); a
+> pure-union-breakpoint model (dropped — 77% of gems hit 51–100 rows); rendering smooth
+> effects as a range line (dropped); and a purely density-based split (dropped — it made
+> Archmage a 5-row table, but a count-less gem should stay coarse+band). Final rule is the
+> **count-gated breakpoints vs coarse grid** below.
+
 ## Data model
 
-### Quality table shape (mirrors the level table)
+### Quality table shape
 
-`buildQualityTable(skill)` returns `null` (no varying quality) or:
+The merged table is built at **build time** (`buildGemQualityTable`, `src/data/statText.js`)
+and stored on the gem node, then rendered by `renderQualityTable` (`src/data/gems.js`):
 
 ```
 {
-  columns: [ { key, header, kind: 'quality' } ],   // one per varying quality effect
-  rows:    [ { quality, cap, band: [ … ], cells: { <key>: <displayValue> } } ]
+  columns: [ { key, header, kind: 'quality' | 'alt-quality', skill? } ],
+  rows:    [ { quality, cells: { <key>: <displayValue> }, band?: [ { quality, cells } ] } ]
 }
 ```
 
-- **Columns** — one per `quality_stats` entry whose value **actually varies** across
-  quality `1..100`. The `header` keeps the RePoE `[Id|Display]` markup and the number
-  blanked to `_` (same convention as level-table headers, e.g. `"Chains _ times"`), so it
-  resolves through `renderGameText` at render time. Entries that resolve to no scaling token
-  (base-skill references, `dummy_stat_display_nothing`, permille `0`) are dropped.
-- **Rows** — **coarse rows at every 5%** (`100, 95, …, 10, 5`, descending to match the level
-  table). The **20% row carries `cap: true`** (the standard-quality ceiling, the exact
-  analogue of the level-20 `cap` flag). The all-zero 0% baseline row is omitted.
-  - Each coarse row's `band` holds the 1% rows strictly between it and the next-lower coarse
-    step (e.g. the 25% row's band = `[24, 23, 22, 21]`; the 5% row's band = `[4, 3, 2, 1]`),
-    each as `{ quality, cells }`. `band` is present (non-empty) **only if some column's
-    display value changes within it**; otherwise the band is omitted and the coarse row is
-    not expandable.
-- **Cells** — the display value at that quality. Just the scalar (prose lives in the column
-  header), same as level-table cells.
+- **Columns** — one per quality effect whose value **actually varies** across quality
+  `1..100`. Standard quality (`skill.stat_sets[].static.quality_stats`) → `kind:'quality'`;
+  Gemling second-quality (`gemQuality.altQualityStats`) → `kind:'alt-quality'`. The `header`
+  keeps RePoE `[Id|Display]` markup with the number blanked to `_`. Entries with no scaling
+  token (base-skill references, `dummy_stat_display_nothing`, permille `0`) are dropped. A
+  per-column `skill` caption is added only when the gem has >1 contributing skill.
+- **Rows — count-gated breakpoints vs coarse grid.** A gem is **"truly steppy"** iff it has
+  an integer-**count** column (chains, stages, projectiles; `isCountToken`) — only ~10–20 gems.
+  - **Steppy gem** → one row at each quality where a **discrete** column ticks up (no grid, no
+    bands). "Discrete" = any column that breaks at most once per 5% (`≤ 20` breakpoints over
+    1–100): the count itself, plus a *slow* companion effect (e.g. a Gemling % that ticks
+    every ~7%). So Arc shows chains' 10% steps **and** its alt's off-count breakpoints — the
+    27% row that makes "go to 30% for the next step, not just 27%" obvious. A column that ticks
+    every ~1% is **not** discrete: it's sampled at the chosen rows rather than flooding them
+    (Arctic Armour → 5 stage rows, its every-1% alt sampled).
+  - **Otherwise** (no count column: Archmage, Fragments) → the coarse **5% grid**: keep a row
+    only when a value changed since the previous grid mark, off-grid breakpoints in an
+    expandable **`band`** (Archmage's 20% band is `[16, 18]`, skipping the ½% steps). Rationale:
+    a pure-breakpoint model made 77% of gems 51–100 rows long, because many magnitudes change
+    every 1%.
+  - Descending, like the level table. **No `cap` flag** — the 20% row gets no special
+    treatment (mirrors the level-20 badge removed in `ceae77e`).
+- **Cells** — the floored display value at that quality. Just the scalar (prose lives in the
+  header).
 
-### Value display — floor integer counts, exact for magnitudes
+### Value rounding — floor everything to its natural precision
 
-`value(raw, Q, handler) = applyHandler(handler, raw × Q / 1000)`, then displayed as:
+`value(raw, Q, handler) = floor( applyHandler(handler, raw × Q / 1000) )` at the stat's
+display precision. **The game rounds every quality effect DOWN** (you can never have half a
+chain *or* half a percent), so a value is shown as a true integer/fixed-precision step and its
+breakpoint lands on the exact quality.
 
-- **Count/integer stats** (chains, stages, projectiles, stacks, swarms — bare `{stat}` count
-  templates): **floored** to an integer. This is what makes breakpoints visible: Arc
-  `number_of_chains=100` shows `10%→1, 15%→1, 20%→2` — the jump lands exactly at 20%, as
-  in-game. Without flooring, `15%→1.5` reads as wrong and no flat breakpoint appears.
-- **Magnitude/percent stats** (`…_+%`, `…metres`, `…seconds`, decimal unit handlers):
-  the **exact** scaled value at its natural precision (reuse `resolveQuality`'s
-  `round(x, 2)`), e.g. Archmage reservation efficiency `500 → 0.5%/1% → 10% at 20%`.
+- **Precision** is derived from the unit handler (`precisionOf`): no handler → `0dp` (integer
+  counts *and* integer percents); an explicit `_Ndp` → N; `divide_by_ten` → 1dp;
+  `divide_by_one_hundred` / `milliseconds_to_seconds` / `per_minute` → 2dp.
+- ~~Count-vs-magnitude predicate~~ **Dropped.** Flooring to precision subsumes it: counts and
+  `_+%` percents are both `0dp`, so both floor to integers; distance/duration floor to their
+  handler's dp. Examples: Arc chains → `floor(Q/10)` (breaks every 10%); Archmage reservation
+  efficiency `500` → `floor(0.5·Q)` integer % (breaks every 2%, band skips the ½% steps);
+  Fragments radius `200` via `divide_by_ten_1dp` → `floor` to tenths (breaks every 5%).
 
-**Count-vs-magnitude predicate** (the reverse-engineering to verify): treat a stat as an
-integer count — and therefore floor it — when its template token has **no decimal-producing
-unit handler** and the stat is **not a percentage/magnitude** (stat id does not contain `%`
-and the template does not render the token immediately followed by `%`). Everything else is
-a magnitude shown exactly.
+> **Verification (done):** on-cap (20%) values match poe2db — Arc 2 chains, Arctic Armour 1
+> stage, Archmage 10% / alt "(0—1)…extra Lightning" + "(0—2)% mana cost", Fragments 0.4 m /
+> alt "(0—1) s". A full-dataset audit of every quality stat confirmed no stat floors to an
+> implausible value.
 
-> **Verification gate (implementation):** confirm the predicate + flooring against poe2db for
-> at least: Arc (chains, floor), Arctic Armour (stages, floor), Archmage (reservation
-> efficiency %, exact), Ball Lightning / Elemental Surge (AoE radius in metres, exact). If the
-> game rounds rather than floors counts, adjust to match observed in-game values. Do not ship
-> the predicate unverified.
+## Build & runtime wiring
 
-## Build & runtime wiring (parallels the level table exactly)
-
-1. **`src/data/statText.js`** — add `buildQualityTable(skill)` and the value/predicate
-   helpers. Export it.
-2. **`scripts/graph/gems.js`** — in `skillNodes`, add `qualityTable: buildQualityTable(skill)`
-   to each skill node's `props` (next to `levelTable`). Same size/inline treatment.
-3. **`src/data/gems.js`** — add `mergeQualityTables(gem)` (parallel to `mergeLevelTables`:
-   union columns across `grants_skills`, dedupe, add a per-column `skill` caption when the
-   gem grants >1 contributing skill) and `renderQualityTable()` (parallel to
-   `renderLevelTable`: headers + cells through `renderGameText`). In `buildGemViewModel`, set
-   `qualityTable: renderQualityTable(mergeQualityTables(gem))`.
-   - Row order and the `cap` flag follow `buildQualityTable`; `renderQualityTable` also renders
-     each row's `band` cells so the template can emit hidden 1% rows.
+1. **`src/data/statText.js`** — `buildQualityTable(skill)` (single skill) and
+   `buildGemQualityTable(contributors)` (merged across a gem's granted skills, folding in each
+   skill's alt-quality `{stat,stats}`), plus `precisionOf`/`floorTo`/`parseQualityStat`/
+   `qualityValueAt`/`assembleQualityTable` helpers.
+2. **`scripts/graph/gemQuality.js`** — `altQualityStats(skillKey, set, translationFile)`
+   returns Gemling second-quality effects as parseable `{stat,stats}` objects (factored out of
+   `renderAltStat`). **Bug fix:** `specificIdx` kept `path.basename`, which dropped the
+   `specific_skill_stat_descriptions/` subdir so per-skill alt templates never loaded — now it
+   keeps the subpath. This also fixes alt-quality on the gem **card**.
+3. **`scripts/graph/gems.js`** — in `gemNodes`, set `props.qualityTable = buildGemQualityTable(
+   grants_skills.map(k => ({ skill, name, altStats })))`. Merged here (not at runtime) so band
+   rows resolve from the live value formulas across all contributing skills.
+4. **`src/data/gems.js`** — `renderQualityTable(gem.qualityTable)` (headers + coarse & band
+   cells through `renderGameText`, `kind` preserved). `getGem` exposes `qualityTable`;
+   `buildGemViewModel` sets `qualityTable: renderQualityTable(gem.qualityTable)`.
 
 ## View
 
@@ -116,14 +136,15 @@ a magnitude shown exactly.
   `<details>`; render **both** tables, the Quality one `hidden` by default. If only one
   exists, render just that table with no toggle (header still "Scaling"). Levels remains the
   default visible mode.
-- The count badge (`.rec-group-count`) reflects the active mode ("N levels" / "N quality
-  breakpoints"); default = Levels count, updated by JS on toggle.
-- **Quality table markup** mirrors `gem-levels-table` for column styling, but rows use the
-  affix-accordion structure: each coarse row is a `<tr>` (with `▸` caret, `role="button"`,
-  `aria-expanded="false"`, `tabindex="0"`) when it has a `band`; the band's 1% rows follow as
-  `hidden` sibling `<tr class="gem-qual-band-row">`. Coarse rows without a band render as a
-  plain `<tr>` with an empty-caret spacer (affix `--empty` convention). The 20% row gets a
-  `cap` class/marker like the level table's cap row.
+- The count badge (`.rec-group-count`) reflects the active mode ("N levels" / "N breakpoints");
+  default = Levels count, updated by JS on toggle.
+- **Quality table markup** mirrors `gem-levels-table` for column styling. On a smooth gem the
+  rows use the affix-accordion structure: an expandable coarse row is a `<tr>` (with `▸` caret,
+  `role="button"`, `aria-expanded="false"`, `tabindex="0"`) and its band rows follow as
+  `hidden` sibling `<tr class="gem-qual-band-row">`; non-expandable rows (all steppy rows, and
+  smooth rows with no off-grid breakpoint) render plain with an empty-caret spacer. **No cap
+  treatment.** `alt-quality` columns get `gem-levels-col--alt-quality` (the second-quality
+  colour `--color-crafted`) — **no header chip** (removed per review).
 
 ## Client JS
 
@@ -132,33 +153,36 @@ a magnitude shown exactly.
   clicked. Scoped to each `.gem-levels` details block (multiple cards per page stay
   independent). Pure visibility toggle over server-rendered HTML — no data resolution — so the
   static build behaves identically (same discipline as `gem-level-select.js`).
-- **Band expansion** reuses the affix accordion behavior. Simplest path: give the coarse rows
-  and band rows the affix classes/attributes so the existing `affix-accordion.js` handles them
-  — **or** generalize its selector. Decide during implementation; do not duplicate the
-  toggle logic.
-- `gem-level-select.js`'s row-highlight already scopes to `.gem-levels-row[data-level]`, so it
-  only affects the Levels table — no change needed; the Quality table uses different row
-  classes.
+- **Band expansion** lives in `scaling-toggle.js` alongside the mode toggle (walk the
+  `gem-qual-band-row` siblings, toggle `aria-expanded` + `hidden`). Same behaviour as
+  `affix-accordion.js`; kept self-contained rather than overloading the affix classes.
+- `gem-level-select.js`'s row-highlight scopes to `.gem-levels-row[data-level]`; Quality rows
+  have no `data-level`, so it only affects the Levels table — no change needed.
 
 ## Testing
 
-- **Unit (`node:test`)** for `buildQualityTable`:
-  - Arc → single `chains` column; coarse rows show `…,10→1,…,20→2,…`; 20% row `cap: true`;
-    breakpoints on 5%-multiples ⇒ **no bands** (not expandable).
-  - Archmage (or any `_+%` continuous) → every coarse row has a non-empty `band` (1% detail).
-  - A gem with a non-5%-multiple discrete breakpoint (if one exists) → band present on the
-    straddling coarse row and its 1% rows show where the value changes.
-  - Support gem / gem with no `quality_stats` → `buildQualityTable` returns `null`.
-  - `mergeQualityTables` on a multi-skill gem → columns carry `skill` captions.
-- **Static build** (`npm run build:static`): the Quality table is server-rendered and JS only
-  toggles visibility, so the crawler renders it and no new client-fetched URL is introduced —
-  confirm no static-only breakage and that both tables appear in `dist/` gem pages.
+- **Unit (`node:test`, `statText.test.js`)**:
+  - Arc (steppy) → single `chains` column; breakpoint rows `100,90,…,10`; no bands.
+  - Archmage (smooth) → coarse 5% rows `100,95,…,5`, integer-% floor; 20% band `[16,18]`.
+  - Fragments (smooth) → distance floored to tenths, coarse rows every 5%, no bands.
+  - Arctic Armour (steppy) → blanked base-skill token; breakpoints every 20% (`100,80,…,20`).
+  - Count-gate: a steppy gem with a *sparse* alt shows the alt's breakpoints as rows; with a
+    *dense* (every-1%) alt, rows stay on the count and the alt is sampled.
+  - `buildGemQualityTable` → captions on a two-skill gem; folds in tagged `alt-quality` cols.
+  - No `quality_stats` / permille 0 → `null`.
+- **`gemQuality.test.js`** — regression: a spec-file-only stat (`archmage_*`) now resolves.
+- **Static build**: Quality table is server-rendered, JS only toggles visibility, no new
+  client-fetched URL — prerender covers it; no static-only breakage.
 - Keep existing gem/level-table tests green.
 
 ## Out of scope (YAGNI)
 
 - No quality selector on the gem card body (card stays level-driven).
-- Gemling **alt-quality** ("second quality") columns in the Quality table — the card already
-  shows alt-quality lines; a separate alt-quality scaling column set is deferred.
 - Quality above 100%.
+
+## Delivered beyond the original scope
+
+- **Gemling alt-quality** ("second quality") effects are now **in** the Quality table as
+  `alt-quality` columns (the original draft deferred them). This required the `specificIdx`
+  bug fix, which also restores alt-quality on the gem card.
 ```

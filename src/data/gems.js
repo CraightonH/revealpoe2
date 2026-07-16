@@ -101,6 +101,8 @@ function toGem(node) {
     reqLevels: p.reqLevels ?? null,
     // Per-level card data for the level selector (cost + effect scaling), or null.
     levelScaling: p.levelScaling ?? null,
+    // Merged per-quality scaling table (Quality mode of the "Scaling" table), or null.
+    qualityTable: p.qualityTable ?? null,
   };
 }
 
@@ -547,6 +549,30 @@ function renderLevelTable(table) {
   return { columns, rows };
 }
 
+// Render the merged gem-quality table (see buildGemQualityTable) to view HTML,
+// parallel to renderLevelTable: headers and cells go through renderGameText, cells
+// flatten to a per-column array. A row's `band` (off-grid breakpoints on a smooth gem,
+// present only when the row is expandable) is rendered the same way. `kind` (quality |
+// alt-quality) is preserved so the view can tint Gemling effects. Null when no table.
+function renderQualityTable(table) {
+  if (!table) return null;
+  const columns = table.columns.map((c) => ({
+    kind: c.kind,
+    skill: c.skill ?? null,
+    headerHtml: renderGameText(c.header, hasDefinition),
+  }));
+  const renderCells = (cells) => table.columns.map((c) => {
+    const v = cells[c.key];
+    return v == null ? '' : renderGameText(v, hasDefinition);
+  });
+  const rows = table.rows.map((r) => ({
+    quality: r.quality,
+    cells: renderCells(r.cells),
+    band: (r.band ?? []).map((b) => ({ quality: b.quality, cells: renderCells(b.cells) })),
+  }));
+  return { columns, rows };
+}
+
 // Value from a { [level]: value } map at level L, holding the nearest lower level's
 // value when L itself is absent (a skill that stops scaling at 20 freezes across 21..40,
 // mirroring mergeLevelTables' requirement hold). Falls back to the lowest level present.
@@ -742,6 +768,7 @@ export function buildGemViewModel(slug) {
     // the gem's granted skills so every skill's scaling shows. Null when nothing
     // scales by level.
     levelTable: renderLevelTable(mergeLevelTables(gem)),
+    qualityTable: renderQualityTable(gem.qualityTable),
     footer: sp?.isActiveSkill ? SKILL_PANEL_FOOTER : null,
     // Sources that grant this gem's skill (reverse of the grants edge). Usually
     // empty; uniques and passive-tree nodes are rendered as separate groups.
