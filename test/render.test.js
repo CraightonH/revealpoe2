@@ -20,16 +20,18 @@ test('GET /gem/herald-of-ash renders the card', async () => {
   assert.match(res.text, /data-keyword="Herald"/);
   // section headers
   assert.match(res.text, /<span class="ItemType">Explosion<\/span>/);
-  // per-level range line — numeric value highlighted white (em-dash range kept
-  // intact as one .mod-value span)
-  assert.match(res.text, /<span class="mod-value">\(16\.67—23\)<\/span>%/);
+  // level selector, defaulting to level 20 (the max without external modifiers)
+  assert.match(res.text, /<select class="gem-level-select colourDefault"/);
+  assert.match(res.text, /<option value="20" selected>20<\/option>/);
+  // the visible (level-20) snapshot shows the single-level Ignite-damage value, not a range
+  assert.match(res.text, /<span class="mod-value">23<\/span>% of/);
   // footer
   assert.match(res.text, /Skills can be managed in the Skills Panel\./);
-  // requirements row: level range (always) + attribute (fixed display ranges)
+  // requirements row: the selected level's true requirement (level 20 → Level 90, 157 Str)
   assert.match(res.text, /Requires:/);
-  assert.match(res.text, /Level \(1—90\)/);
+  assert.match(res.text, /Level 90/);
   // "Str" abbreviation is linked to the Strength glossary keyword
-  assert.match(res.text, /\(4—157\) <span class="kw" data-keyword="Strength">Str<\/span>/);
+  assert.match(res.text, /157 <span class="kw" data-keyword="Strength">Str<\/span>/);
   // Recommended Supports must NOT be inside the in-game card popup...
   const supIdx = res.text.indexOf('Recommended Supports');
   assert.ok(supIdx > -1, 'recommended-supports section should be present on the page');

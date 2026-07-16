@@ -55,14 +55,37 @@ test('buildGemViewModel produces card fields', () => {
   assert.ok(vm.recommendedSupports[0].supports[0].slug);
 });
 
-test('buildGemViewModel exposes the activation cost as a range with unit', () => {
-  // Fireball's Mana cost scales 10 (lvl 1) → 104 (lvl 20).
+test('buildGemViewModel exposes the activation cost at the selected level', () => {
+  // The card shows a single level (default 20). Fireball's Mana cost is 104 at level 20,
+  // and the per-level snapshot carries the whole 10 (lvl 1) → 629 (lvl 40) curve.
   const vm = buildGemViewModel('fireball');
-  assert.equal(vm.cost, '(10—104) Mana');
+  assert.equal(vm.cost, '104 Mana');
+  assert.equal(vm.levelData[1].cost, '10 Mana');
+  assert.equal(vm.levelData[40].cost, '629 Mana');
   // A pure-reservation gem (Herald of Ash) reserves Spirit and has no activation cost.
   const herald = buildGemViewModel('herald-of-ash');
   assert.equal(herald.cost, null);
   assert.equal(herald.reservation, '30 Spirit');
+});
+
+test('buildGemViewModel exposes a level selector with a per-level snapshot', () => {
+  const vm = buildGemViewModel('fireball');
+  assert.equal(vm.levelSelect, true);
+  assert.equal(vm.level, 20); // default selection = the max-without-modifiers cap
+  assert.equal(vm.levels[0], 1);
+  assert.equal(vm.levels[vm.levels.length - 1], 40); // scales past the cap
+  assert.equal(vm.levelRange, null); // range line replaced by the selector
+  // Every selectable level has a rendered snapshot (cost / requirements / sections).
+  for (const L of vm.levels) {
+    assert.ok(vm.levelData[L], `level ${L} snapshot`);
+    assert.ok(Array.isArray(vm.levelData[L].sections));
+  }
+  // Effect numbers scale with the level: fireball's base fire damage grows 1 → 40.
+  const fireAt = (L) => vm.levelData[L].sections
+    .flatMap((s) => s.lines).find((l) => /Fire.*Damage/.test(l));
+  assert.notEqual(fireAt(1), fireAt(40));
+  // A gem with no scaling (item-granted, constant) shows no selector.
+  assert.equal(buildGemViewModel('abiding-hex').levelSelect, false);
 });
 
 test('buildGemViewModel renders the weapon requirement as a hoverable keyword', () => {
@@ -217,14 +240,16 @@ test('buildGemViewModel emits rich card fields for Herald of Ash', () => {
   const tagTexts = vm.tags.map((t) => t.replace(/<[^>]+>/g, ''));
   assert.deepEqual(tagTexts, ['Persistent', 'AoE', 'Fire', 'Duration', 'Herald']);
   assert.equal(vm.tier, 4);
-  assert.deepEqual(vm.levelRange, { min: 1, max: 20 });
+  assert.equal(vm.levelSelect, true); // scaling gem → level selector, not a fixed range
+  assert.equal(vm.level, 20);
   assert.equal(vm.reservation, '30 Spirit');
   assert.equal(vm.footer, 'Skills can be managed in the Skills Panel.');
 
   const labels = vm.sections.map((s) => s.label);
   assert.deepEqual(labels, ['Buff', 'Explosion']);
-  // section lines are rendered to safe HTML (bracket tokens -> spans)
-  assert.ok(vm.sections[1].lines.some((l) => /<span class="mod-value">\(16\.67—23\)<\/span>%/.test(l)));
+  // section lines are rendered to safe HTML (bracket tokens -> spans), at the selected
+  // level (20): the Ignite-damage line shows its single level-20 value, not a range.
+  assert.ok(vm.sections[1].lines.some((l) => /<span class="mod-value">23<\/span>% of/.test(l)));
   assert.ok(vm.sections[1].lines.some((l) => /<span class="kw"/.test(l)));
 });
 
@@ -328,14 +353,18 @@ test('attributeRequirements is empty for no/zero requirement', () => {
   assert.deepEqual(attributeRequirements(null), []);
 });
 
-test('buildGemViewModel emits requirements (level always, attributes when present)', () => {
-  // Str/Dex/Int abbreviations are linked to their glossary keyword (safe HTML).
+test('buildGemViewModel emits requirements at the selected level (attributes when present)', () => {
+  // Str/Dex/Int abbreviations are linked to their glossary keyword (safe HTML). With a
+  // level selector the card shows the TRUE level-20 requirement, not the fixed range.
   const str = '<span class="kw" data-keyword="Strength">Str</span>';
   const dex = '<span class="kw" data-keyword="Dexterity">Dex</span>';
-  assert.deepEqual(buildGemViewModel('herald-of-ash').requirements, ['Level (1—90)', `(4—157) ${str}`]);
-  assert.deepEqual(buildGemViewModel('armour-piercing-rounds').requirements, ['Level (1—90)', `(2—79) ${str}`, `(2—79) ${dex}`]);
+  assert.deepEqual(buildGemViewModel('herald-of-ash').requirements, ['Level 90', `157 ${str}`]);
+  assert.deepEqual(buildGemViewModel('armour-piercing-rounds').requirements, ['Level 90', `86 ${str}`, `86 ${dex}`]);
   // all-zero attribute weights -> still shows the level requirement, no attribute line
-  assert.deepEqual(buildGemViewModel('align-fate').requirements, ['Level (1—90)']);
+  assert.deepEqual(buildGemViewModel('align-fate').requirements, ['Level 90']);
+  // level 1 requirements come from the same per-level curve
+  assert.deepEqual(buildGemViewModel('armour-piercing-rounds').levelData[1].requirements,
+    ['Level 0', `4 ${str}`, `4 ${dex}`]);
 });
 
 test('typeLine never leaks known internal mechanic tokens across active gems', () => {

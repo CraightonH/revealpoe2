@@ -1105,6 +1105,12 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
   color: var(--color-gem);
   font-weight: bold;
 }
+/* Row matching the gem card's currently-selected level (driven by gem-level-select.js). */
+.gem-levels-row--sel td,
+.gem-levels-row--sel .gem-levels-lvl {
+  background: color-mix(in srgb, var(--color-gem) 26%, transparent);
+  box-shadow: inset 2px 0 0 var(--color-gem);
+}
 .gem-levels-cap-badge {
   display: inline-block;
   margin-left: 4px;

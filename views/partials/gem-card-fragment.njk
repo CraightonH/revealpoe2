@@ -1,2 +1,5 @@
 {% from "macros/gem-card.njk" import gemCard %}
-{{ gemCard(vm) }}
+{# Hover-tooltip card: a fixed snapshot at the default level — no interactive level
+   selector (awkward in a transient tooltip, and the per-level variants would bloat
+   every fetch). The full gem page renders the interactive selector. #}
+{{ gemCard(vm, { static: true }) }}

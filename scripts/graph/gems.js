@@ -4,7 +4,7 @@ import { REPOE } from './source.js';
 import { slugify } from '../../src/data/slug.js';
 import { grantedSkillNames } from './uniques.js';
 import { makeNode, makeEdge, KINDS, EDGE_TYPES } from './schema.js';
-import { buildSections, buildLevelTable } from '../../src/data/statText.js';
+import { buildSections, buildLevelTable, buildScalingSections, costByLevel } from '../../src/data/statText.js';
 import { altQualityLines } from './gemQuality.js';
 import { weaponReqLabel } from './weaponReqs.js';
 
@@ -140,6 +140,68 @@ function effectSections(skillKeys, skills, gemName) {
   return out;
 }
 
+// Per-level card data for the gem detail page's level selector. The union of ALL granted
+// skills' scaling sections (same union/dedup as effectSections, so the two stay in sync),
+// plus the first granted skill's per-level cost (matching where the card's Cost line is
+// sourced). Compact: prose skeletons stored once, numbers per level (see buildScalingSections).
+// `varies` records whether any stat or cost actually changes across levels — the runtime uses
+// it (together with the gem's reqLevels curve, added later by the manual overlay) to decide
+// whether a selector is worth showing. Returns null when the gem has no per-level data at all.
+function levelScaling(skillKeys, skills, gemName) {
+  const keys = skillKeys ?? [];
+  const multi = keys.length > 1;
+  const gemNameLc = (gemName ?? '').toLowerCase();
+  const seen = new Set();
+  const sections = [];
+  const levelSet = new Set();
+  let varies = false;
+
+  const addLevels = (skill) => {
+    for (const set of skill.stat_sets ?? []) {
+      for (const l of Object.keys(set.per_level ?? {})) {
+        const L = Number(l);
+        if (Number.isFinite(L) && L >= 1 && L <= 40) levelSet.add(L);
+      }
+    }
+  };
+
+  for (const key of keys) {
+    const skill = skills[key];
+    if (!skill) continue;
+    addLevels(skill);
+    const skillName = skill.active_skill?.display_name ?? '';
+    const nameFallback =
+      multi && skillName && skillName.toLowerCase() !== gemNameLc ? skillName : null;
+    for (const s of buildScalingSections(skill, 40)) {
+      const label = s.label || nameFallback || '';
+      const tf = skill.stat_sets?.[s.setIndex]?.translation_file ?? null;
+      const altQuality = altQualityLines(key, s.setIndex, tf);
+      const sec = { label, lines: s.lines, quality: s.quality };
+      if (altQuality.length) sec.altQuality = altQuality;
+      const sig = JSON.stringify([sec.label, sec.lines, sec.quality, sec.altQuality ?? []]);
+      if (seen.has(sig)) continue;
+      seen.add(sig);
+      if (s.lines.some((l) => l.segs)) varies = true;
+      sections.push(sec);
+    }
+  }
+
+  // Cost comes from the FIRST granted skill (matches the card's Cost line source).
+  const cost = costByLevel(skills[keys[0]], 40);
+  if (cost) {
+    for (const L of Object.keys(cost)) levelSet.add(Number(L));
+    const byKind = {};
+    for (const entries of Object.values(cost)) {
+      for (const e of entries) (byKind[e.kind] ??= new Set()).add(e.amount);
+    }
+    for (const k of Object.keys(byKind)) if (byKind[k].size > 1) varies = true;
+  }
+
+  const levels = [...levelSet].filter(Number.isFinite).sort((a, b) => a - b);
+  if (!levels.length || (!sections.length && !cost)) return null;
+  return { levels, cap: GEM_LEVEL_CAP, maxLevel: Math.max(...levels), varies, cost, sections };
+}
+
 export function gemNodes() {
   const records = selectGemRecords();
   const skills = loadJson(`${REPOE}/skills.json`);
@@ -171,6 +233,8 @@ export function gemNodes() {
       hoverDds: r.raw.ui_image ?? null,
       grantsSkills: r.raw.grants_skills ?? [],
       effectSections: sections,
+      // Per-level card data for the level selector (null when the gem has no scaling).
+      levelScaling: levelScaling(r.raw.grants_skills, skills, r.raw.base_item?.display_name),
       weaponReq,
     };
     const search = [r.raw.base_item.display_name, r.raw.gem_type, ...sections.flatMap((s) => s.lines)]

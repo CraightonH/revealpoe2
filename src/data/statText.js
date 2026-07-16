@@ -199,6 +199,100 @@ export function buildLevelTable(skill) {
   return { columns, rows };
 }
 
+// Split a stat string into its non-number segments and its numbers, such that
+// interleaving them reconstructs the original: "Deals 12 to 18 Fire" ->
+// { segs: ['Deals ', ' to ', ' Fire'], nums: ['12', '18'] }. Collision-proof
+// (no sentinel char): reconstruction is segs[0]+nums[0]+segs[1]+…
+export function splitNumbers(text) {
+  const nums = text.match(NUM) ?? [];
+  const segs = text.split(NUM);
+  return { segs, nums };
+}
+
+// Inverse of splitNumbers: weave per-level numbers back into a template's segments.
+export function interleave(segs, nums) {
+  let out = segs[0] ?? '';
+  for (let i = 1; i < segs.length; i += 1) out += (nums[i - 1] ?? '') + segs[i];
+  return out;
+}
+
+// A skill's activation cost per gem level (1..maxLevel), as { [level]: [{kind, amount}] }.
+// Unlike skillCosts (which summarises to a min/max range), this keeps every level so the
+// gem card's level selector can show the exact cost at the chosen level. Returns null when
+// the skill has no per-level cost at all. Kind → display label is applied by the app.
+export function costByLevel(skill, maxLevel = 40) {
+  const perLevel = skill?.per_level ?? {};
+  const out = {};
+  for (const l of Object.keys(perLevel)) {
+    const L = Number(l);
+    if (!Number.isFinite(L) || L < 1 || L > maxLevel) continue;
+    const costs = perLevel[l]?.costs;
+    if (!costs) continue;
+    const entries = Object.entries(costs).map(([kind, amount]) => ({ kind, amount }));
+    if (entries.length) out[L] = entries;
+  }
+  return Object.keys(out).length ? out : null;
+}
+
+// Build ordered sections for the gem card's LEVEL SELECTOR — the per-level analogue of
+// buildSections. Same section/line structure and order, but each line is either constant
+// ({ text }) or varying ({ segs, byLevel }): the prose skeleton is stored once and only the
+// numbers vary per level, so the payload stays compact (mirrors buildLevelTable). Quality is
+// level-independent (shown at max 20% quality), so it carries a single resolved list, same as
+// buildSections. A line whose numeric skeleton drifts across levels (rare) degrades to the
+// highest-level text as a constant line. maxLevel defaults to 40 (skills scale past the 20 cap).
+export function buildScalingSections(skill, maxLevel = 40) {
+  const sets = skill?.stat_sets ?? [];
+  const sections = [];
+  for (let setIndex = 0; setIndex < sets.length; setIndex += 1) {
+    const set = sets[setIndex];
+    const label = set.label?.[1] ?? set.label?.[0] ?? '';
+    const order = set.static?.tooltip_order ?? Object.keys(set.static?.stat_text ?? {});
+    const constText = set.static?.stat_text ?? {};
+    const perLevel = set.per_level ?? {};
+    const levels = Object.keys(perLevel)
+      .map(Number)
+      .filter((n) => Number.isFinite(n) && n <= maxLevel)
+      .sort((x, y) => x - y);
+
+    const lines = [];
+    for (const key of order) {
+      const c = constText[key];
+      if (typeof c === 'string' && c.trim()) { lines.push({ text: c }); continue; }
+      const texts = new Map(); // level → stat_text at that level
+      for (const l of levels) {
+        const t = perLevel[l]?.stat_text?.[key];
+        if (t != null) texts.set(l, t);
+      }
+      if (texts.size === 0) continue;
+      const distinct = new Set(texts.values());
+      if (distinct.size === 1) { lines.push({ text: [...distinct][0] }); continue; }
+      // Varying: use the highest level's skeleton as the reference template.
+      const hi = Math.max(...texts.keys());
+      const ref = splitNumbers(texts.get(hi));
+      const refSkel = ref.segs.join('\x00');
+      const byLevel = {};
+      let ok = true;
+      for (const [l, t] of texts) {
+        const s = splitNumbers(t);
+        if (s.segs.join('\x00') !== refSkel) { ok = false; break; }
+        byLevel[l] = s.nums;
+      }
+      if (!ok) { lines.push({ text: texts.get(hi) }); continue; } // skeleton drift → constant
+      lines.push({ segs: ref.segs, byLevel });
+    }
+
+    const quality = [];
+    for (const q of set.static?.quality_stats ?? []) {
+      const r = resolveQuality(q);
+      if (r) quality.push(r);
+    }
+
+    if (lines.length || quality.length) sections.push({ label, lines, quality, setIndex });
+  }
+  return sections;
+}
+
 // Build ordered sections from a granted skill record. maxLevel caps the
 // per-level range (display cap is 20).
 export function buildSections(skill, maxLevel = 20) {

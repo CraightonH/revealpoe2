@@ -43,7 +43,38 @@
 </section>
 {% endmacro %}
 
-{% macro gemCard(vm) %}
+{# Effect sections block (skill effect lines + quality). Shared by the static card and by
+   each per-level variant the level selector toggles. #}
+{% macro gemSections(sections) %}
+{% for section in sections %}
+{% if section.label %}
+<div class="hybridHeader gemTabs">
+  <div class="TextGem TitleBar"><span class="ItemType">{{ section.label }}</span></div>
+</div>
+{% endif %}
+<div class="Stats">
+  {% for line in section.lines %}
+  <div class="explicitMod">{{ line | safe }}</div>
+  {% endfor %}
+  {% if section.quality.length or section.altQuality.length %}
+  <div class="quality-text"><br><span class="white">Additional Effects From Quality:</span></div>
+  {% for q in section.quality %}
+  <div class="qualityMod">{{ q | safe }}</div>
+  {% endfor %}
+  {# Gemling Legionnaire alternate quality — same layout, in-game #b4b4ff colour, no extra label. #}
+  {% for q in section.altQuality %}
+  <div class="qualityMod altQualityMod">{{ q | safe }}</div>
+  {% endfor %}
+  {% endif %}
+</div>
+{% endfor %}
+{% endmacro %}
+
+{# opts.static: render a fixed snapshot at the default level (no <select>, no per-level
+   variants). Used by the hover-tooltip fragment, where an interactive dropdown is awkward
+   and the 40 variant blocks would bloat every tooltip fetch. #}
+{% macro gemCard(vm, opts={}) %}
+{% set interactive = vm.levelSelect and not opts.static %}
 <div class="newItemPopup GemPopup item-popup--poe2{% if vm.borderColor2 %} hybrid-border{% endif %}"
      style="--card-border: {{ vm.borderColor }}; --card-glow: {{ vm.glowColor }};
             {% if vm.borderColor2 %}--card-border-2: {{ vm.borderColor2 }}; --card-glow-2: {{ vm.glowColor2 }};{% endif %}
@@ -72,17 +103,27 @@
         {% if vm.tier %}
         <div class="property">Tier: <span class="colourDefault">{{ vm.tier }}</span></div>
         {% endif %}
-        {% if vm.levelRange %}
+        {% if interactive %}
+        <div class="property gem-level-line">Level:
+          <select class="gem-level-select colourDefault" aria-label="Gem level">
+            {% for lvl in vm.levels | reverse %}
+            <option value="{{ lvl }}"{% if lvl == vm.level %} selected{% endif %}>{{ lvl }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% elif vm.levelSelect %}
+        <div class="property">Level: <span class="colourDefault">{{ vm.level }}</span></div>
+        {% elif vm.levelRange %}
         <div class="property">Level: <span class="colourDefault">({{ vm.levelRange.min }}—{{ vm.levelRange.max }})</span></div>
         {% endif %}
         {% if vm.cost %}
-        <div class="property">Cost: <span class="colourDefault">{{ vm.cost }}</span></div>
+        <div class="property">Cost: {% if interactive %}{% for lvl in vm.levels %}<span class="gem-lv colourDefault" data-level="{{ lvl }}"{% if lvl != vm.level %} hidden{% endif %}>{{ vm.levelData[lvl].cost }}</span>{% endfor %}{% else %}<span class="colourDefault">{{ vm.cost }}</span>{% endif %}</div>
         {% endif %}
         {% if vm.reservation %}
         <div class="property">Reservation: <span class="colourDefault">{{ vm.reservation }}</span></div>
         {% endif %}
         {% if vm.requirements.length %}
-        <div class="requirements">Requires: {% for r in vm.requirements %}<span class="colourDefault">{{ r | safe }}</span>{% if not loop.last %}, {% endif %}{% endfor %}</div>
+        <div class="requirements">Requires: {% if interactive %}{% for lvl in vm.levels %}<span class="gem-lv" data-level="{{ lvl }}"{% if lvl != vm.level %} hidden{% endif %}>{% for r in vm.levelData[lvl].requirements %}<span class="colourDefault">{{ r | safe }}</span>{% if not loop.last %}, {% endif %}{% endfor %}</span>{% endfor %}{% else %}{% for r in vm.requirements %}<span class="colourDefault">{{ r | safe }}</span>{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}</div>
         {% endif %}
         {% if vm.weaponReq %}
         <div class="requirements">Requires: {{ vm.weaponReq | safe }}</div>
@@ -94,28 +135,13 @@
         {% endif %}
       </div>
 
-      {% for section in vm.sections %}
-      {% if section.label %}
-      <div class="hybridHeader gemTabs">
-        <div class="TextGem TitleBar"><span class="ItemType">{{ section.label }}</span></div>
-      </div>
-      {% endif %}
-      <div class="Stats">
-        {% for line in section.lines %}
-        <div class="explicitMod">{{ line | safe }}</div>
-        {% endfor %}
-        {% if section.quality.length or section.altQuality.length %}
-        <div class="quality-text"><br><span class="white">Additional Effects From Quality:</span></div>
-        {% for q in section.quality %}
-        <div class="qualityMod">{{ q | safe }}</div>
-        {% endfor %}
-        {# Gemling Legionnaire alternate quality — same layout, in-game #b4b4ff colour, no extra label. #}
-        {% for q in section.altQuality %}
-        <div class="qualityMod altQualityMod">{{ q | safe }}</div>
-        {% endfor %}
-        {% endif %}
-      </div>
+      {% if interactive %}
+      {% for lvl in vm.levels %}
+      <div class="gem-lv" data-level="{{ lvl }}"{% if lvl != vm.level %} hidden{% endif %}>{{ gemSections(vm.levelData[lvl].sections) }}</div>
       {% endfor %}
+      {% else %}
+      {{ gemSections(vm.sections) }}
+      {% endif %}
 
       {% if vm.footer %}
       <div class="separator"></div>

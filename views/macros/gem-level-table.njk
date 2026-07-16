@@ -19,7 +19,7 @@
       </thead>
       <tbody>
         {% for row in vm.levelTable.rows %}
-        <tr class="gem-levels-row{% if row.cap %} gem-levels-row--cap{% endif %}">
+        <tr class="gem-levels-row{% if row.cap %} gem-levels-row--cap{% endif %}" data-level="{{ row.level }}">
           <th class="gem-levels-lvl" scope="row">{{ row.level }}{% if row.cap %} <span class="gem-levels-cap-badge">max</span>{% endif %}</th>
           {% for cell in row.cells %}
           <td class="gem-levels-cell">{{ cell | safe }}</td>

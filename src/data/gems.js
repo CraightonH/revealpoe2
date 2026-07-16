@@ -1,4 +1,5 @@
 import { renderGameText, linkifyRequirement } from './keywords.js';
+import { interleave } from './statText.js';
 import { ddsUrl } from './images.js';
 import { tradeUrl, gemExchangeUrl } from './trade.js';
 import { hasDefinition } from './keywordDefs.js';
@@ -98,6 +99,8 @@ function toGem(node) {
     // Required character level per gem level (1..20), from the GGPK-derived
     // gem-levels overlay. Null for gems with no leveling curve (item-granted skills).
     reqLevels: p.reqLevels ?? null,
+    // Per-level card data for the level selector (cost + effect scaling), or null.
+    levelScaling: p.levelScaling ?? null,
   };
 }
 
@@ -544,6 +547,69 @@ function renderLevelTable(table) {
   return { columns, rows };
 }
 
+// Value from a { [level]: value } map at level L, holding the nearest lower level's
+// value when L itself is absent (a skill that stops scaling at 20 freezes across 21..40,
+// mirroring mergeLevelTables' requirement hold). Falls back to the lowest level present.
+function valueAtLevel(byLevel, L) {
+  if (byLevel[L] != null) return byLevel[L];
+  const keys = Object.keys(byLevel).map(Number).sort((a, b) => a - b);
+  let pick = keys[0];
+  for (const k of keys) if (k <= L) pick = k;
+  return byLevel[pick];
+}
+
+// A single effect line at level L: constant lines pass through; varying lines weave the
+// level's numbers back into the stored prose skeleton (see statText.buildScalingSections).
+function lineTextAt(line, L) {
+  if (line.text != null) return line.text;
+  return interleave(line.segs, valueAtLevel(line.byLevel, L) ?? []);
+}
+
+// The activation-cost display string at level L (e.g. "44 Mana"), or null.
+function costStringAt(scaling, L) {
+  if (!scaling?.cost) return null;
+  const entries = valueAtLevel(scaling.cost, L);
+  if (!entries) return null;
+  return entries
+    .map(({ kind, amount }) => `${amount} ${COST_LABEL[kind] ?? kind}`)
+    .join(', ') || null;
+}
+
+// Requirement lines (Level + attributes) at a specific gem level, using the true per-level
+// magnitudes from the reqLevels curve. Requirements freeze at their level-20 value past the
+// cap (a corrupted / +level gem needs no more than its level-20 requirement), matching
+// mergeLevelTables. Falls back to the fixed display ranges when the gem has no reqLevels curve.
+function requirementsAt(gem, L) {
+  const reqLevels = gem.reqLevels;
+  if (!Array.isArray(reqLevels)) {
+    return [
+      `Level (${CHAR_LEVEL_RANGE.min}—${CHAR_LEVEL_RANGE.max})`,
+      ...attributeRequirements(gem.requirement_weights),
+    ];
+  }
+  const rl = reqLevels[Math.min(L, GEM_LEVEL_CAP) - 1];
+  const out = [`Level ${rl}`];
+  const weights = gem.requirement_weights ?? {};
+  for (const attr of ATTR_ORDER) {
+    const pct = weights[attr];
+    if (!pct) continue;
+    out.push(`${attrRequirementAt(rl, pct)} ${ATTR_ABBR[attr]}`);
+  }
+  return out;
+}
+
+// Render a level's effect sections (scaling data → view HTML), same shape the template's
+// section loop consumes. Quality/altQuality are level-independent but re-rendered per level
+// for a uniform structure.
+function renderScalingSectionsAt(scaling, L) {
+  return (scaling?.sections ?? []).map((s) => ({
+    label: s.label,
+    lines: s.lines.map((line) => renderGameText(lineTextAt(line, L), hasDefinition)),
+    quality: (s.quality ?? []).map((t) => renderGameText(t, hasDefinition)),
+    altQuality: (s.altQuality ?? []).map((t) => renderGameText(t, hasDefinition)),
+  }));
+}
+
 export function buildGemViewModel(slug) {
   const gem = getGem(slug);
   if (!gem) return null;
@@ -595,6 +661,44 @@ export function buildGemViewModel(slug) {
     altQuality: (s.altQuality ?? []).map((t) => renderGameText(t, hasDefinition)),
   }));
 
+  // Range-based requirement display (fixed approximation) — the default when there is no
+  // level selector. The selector path replaces it with true per-level requirements.
+  const rangeRequirements = [
+    `Level (${CHAR_LEVEL_RANGE.min}—${CHAR_LEVEL_RANGE.max})`,
+    ...attributeRequirements(gem.requirement_weights),
+  ].map((r) => linkifyRequirement(r, hasDefinition));
+
+  // Level selector: show it when the gem meaningfully scales — either a stat/cost varies
+  // (levelScaling.varies) or it carries a per-level requirement curve (reqLevels). The
+  // selectable levels are the union the scaling data spans (1..40 for most active skills),
+  // falling back to the 1..20 reqLevels range for gems that only scale their requirements.
+  const scaling = gem.levelScaling;
+  const hasReq = Array.isArray(gem.reqLevels);
+  const selectorLevels = scaling?.levels?.length
+    ? scaling.levels
+    : (hasReq ? gem.reqLevels.map((_, i) => i + 1) : null);
+  const levelSelect =
+    !!selectorLevels && selectorLevels.length >= 2 && (scaling?.varies || hasReq);
+  const defaultLevel = levelSelect ? Math.min(GEM_LEVEL_CAP, Math.max(...selectorLevels)) : null;
+
+  // Per-level snapshot: cost / requirements / effect sections rendered at each level, so the
+  // template can emit every level as a toggleable variant (no client-side data resolution).
+  // Effect sections come from levelScaling when present; otherwise the (constant) range
+  // sections are reused for every level.
+  let levelData = null;
+  if (levelSelect) {
+    levelData = {};
+    for (const L of selectorLevels) {
+      levelData[L] = {
+        cost: costStringAt(scaling, L) ?? cost,
+        requirements: requirementsAt(gem, L).map((r) => linkifyRequirement(r, hasDefinition)),
+        sections: scaling?.sections?.length ? renderScalingSectionsAt(scaling, L) : sections,
+      };
+    }
+  }
+
+  const active = levelSelect ? levelData[defaultLevel] : null;
+
   return {
     slug,
     name: gem.name,
@@ -609,25 +713,31 @@ export function buildGemViewModel(slug) {
     typeLineHtml: renderGameText(`[${typeLine}]`, hasDefinition),
     tags: tagTokens.map((t) => renderGameText(t, hasDefinition)),
     tier: gem.crafting_level ?? null,
-    // Fixed display range (not derived per-gem) — see GEM_LEVEL_CAP.
-    levelRange: { min: 1, max: GEM_LEVEL_CAP },
+    // Level selector: `levels` drives the dropdown, `level` is the initial selection, and
+    // `levelData` holds every level's rendered cost/requirements/sections for the template to
+    // emit as toggleable variants. When there's no selector, fall back to the fixed range line.
+    levelSelect,
+    levels: levelSelect ? selectorLevels : null,
+    level: defaultLevel,
+    levelCap: GEM_LEVEL_CAP,
+    levelData,
+    // Fixed display range (not derived per-gem) — shown only when there's no selector.
+    levelRange: levelSelect ? null : { min: 1, max: GEM_LEVEL_CAP },
     reservation,
-    cost,
+    cost: levelSelect ? active.cost : cost,
     // Weapon-type requirement, e.g. "Crossbows" — carries glossary "[Id|Display]"
     // markup so each weapon term renders as a hoverable keyword.
     weaponReq: gem.weapon_req ? renderGameText(gem.weapon_req, hasDefinition) : null,
     // Every gem shows a character-level requirement; attribute lines follow when present.
-    requirements: [
-      `Level (${CHAR_LEVEL_RANGE.min}—${CHAR_LEVEL_RANGE.max})`,
-      ...attributeRequirements(gem.requirement_weights),
-    ].map((r) => linkifyRequirement(r, hasDefinition)),
+    // With a selector active these are the true per-level requirements; otherwise a range.
+    requirements: levelSelect ? active.requirements : rangeRequirements,
     skillIconUrl: ddsUrl(gem.icon_dds_file),
     gemIconUrl: ddsUrl(gem.gem_icon_dds),
     hoverImageUrl: ddsUrl(gem.ui_image),
     description: sp?.description
       ? renderGameText(sp.description, hasDefinition)
       : null,
-    sections,
+    sections: levelSelect ? active.sections : sections,
     // Per-level scaling table (level → stat/cost/damage values), merged across ALL
     // the gem's granted skills so every skill's scaling shows. Null when nothing
     // scales by level.
