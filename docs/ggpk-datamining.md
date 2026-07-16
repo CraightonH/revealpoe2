@@ -11,15 +11,36 @@ wiki still reads only `build/graph.json`. Deciding what to promote into the grap
 comes after we understand what the tables contain.
 
 **Exception — promoting GGPK data into the graph.** When a table holds data the wiki
-genuinely needs and RePoE lacks (so far: per-gem-level **required character level**),
+genuinely needs and RePoE lacks (so far: per-gem-level **required character level**,
+the **Gemling Legionnaire alternate quality** effects, and skill **weapon requirements**),
 it is promoted through a **reproducible, canaried extraction step** — never hand-copied.
 The step reads the mirror, asserts known-good anchor values (so a dat-schema column
 drift fails **loudly** instead of baking in garbage — column order is load-bearing,
 see *Gotchas*), and writes a **committed** JSON under `data/manual/` that the normal
 build consumes. The build itself never reads the mirror, so CI needs no GGPK data.
-First instance: `scripts/ggpk/extract-gem-levels.js` (`npm run build:gem-levels`) →
-`data/manual/gem-levels.generated.json`, applied by the `gem-levels` overlay handler
-in `scripts/graph/manual.js`. Regenerate after a game patch alongside `fetch:dat`.
+Regenerate after a game patch alongside `fetch:dat`. Instances:
+
+- `scripts/ggpk/extract-gem-levels.js` (`npm run build:gem-levels`) →
+  `data/manual/gem-levels.generated.json`, applied by the `gem-levels` overlay handler
+  in `scripts/graph/manual.js`.
+- `scripts/ggpk/extract-gem-quality.js` (`npm run build:gem-quality`) →
+  `data/manual/gem-quality.generated.json`. Source: `GrantedEffectQualityStats`
+  (`Alt*` columns — the second quality effect only the Gemling Legionnaire ascendancy
+  unlocks; RePoE ships only the standard `Stats` columns). Unlike gem-levels, the raw
+  `{statId, permille}` pairs are **rendered to display text at build time** by
+  `scripts/graph/gemQuality.js` (reusing the standard-quality stat-translation +
+  `resolveQuality` path) and attached per effect-section in `scripts/graph/gems.js`;
+  the `gem-quality` handler in `manual.js` is the referential-integrity/retirement
+  guard only. Shown on every gem page in the in-game `#b4b4ff` colour.
+- `scripts/ggpk/extract-weapon-reqs.js` (`npm run build:weapon-reqs`) →
+  `data/manual/weapon-reqs.generated.json`. Source: `ActiveSkills.WeaponRequirements`
+  → `ActiveSkillWeaponRequirement` → `WieldableClasses` → `ItemClasses` (RePoE's
+  `weapon_restrictions` is empty for every skill). Keyed by `ActiveSkills.Id`
+  (== skills.json `active_skill.id`). The `{reqId, classIds}` fact is rendered to a
+  display label ("Crossbows", "Maces", "Martial Weapons") by
+  `scripts/graph/weaponReqs.js` and attached to the gem node in `gems.js`; shown as a
+  second "Requires:" line on the gem card. The `weapon-reqs` handler in `manual.js` is
+  a guard only.
 
 ## Start here (fresh session)
 

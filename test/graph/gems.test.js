@@ -31,7 +31,17 @@ test('gemNodes carry resolved effect sections matching buildSections', () => {
   const node = nodes.find((n) => n.id === withSkill.id);
   const expected = buildSections(skills[withSkill.raw.grants_skills[0]], 20)
     .map((s) => ({ label: s.label, lines: s.lines, quality: s.quality }));
-  assert.deepEqual(node.props.effectSections, expected);
+  // Compare the buildSections-derived fields; sections may additionally carry an
+  // `altQuality` array (Gemling Legionnaire alt quality), sourced separately.
+  const actual = node.props.effectSections.map((s) => ({ label: s.label, lines: s.lines, quality: s.quality }));
+  assert.deepEqual(actual, expected);
+  // Any altQuality present must be a non-empty array of strings.
+  for (const s of node.props.effectSections) {
+    if (s.altQuality !== undefined) {
+      assert.ok(Array.isArray(s.altQuality) && s.altQuality.length, 'altQuality is a non-empty array when present');
+      assert.ok(s.altQuality.every((l) => typeof l === 'string' && l), 'altQuality lines are non-empty strings');
+    }
+  }
   assert.ok(node.search.includes(node.name.toLowerCase()), 'search includes the name');
 });
 

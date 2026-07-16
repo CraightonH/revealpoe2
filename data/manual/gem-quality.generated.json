@@ -1,0 +1,2979 @@
+{
+ "kind": "gem-quality",
+ "_generated": "DO NOT HAND-EDIT. Produced by scripts/ggpk/extract-gem-quality.js from the GGPK mirror (GrantedEffectQualityStats × GrantedEffects × Stats). Regenerate: npm run build:gem-quality.",
+ "description": "Gemling Legionnaire alternate (\"second\") quality effects per skill. RePoE ships only the standard quality; the alt effect lives in GrantedEffectQualityStats.Alt* columns. altQualityBySkill[skillKey] = [{ set: <stat_set index>, stats: [{id, permille}] }]. Rendered to display text at build time (scripts/graph/gemQuality.js) via the standard stat-translation path.",
+ "source": "ggpk-poe2: GrantedEffectQualityStats, GrantedEffects, Stats",
+ "skillCount": 267,
+ "altQualityBySkill": {
+  "FrostboltPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_projectile_speed_+%_final",
+      "permille": 2000
+     }
+    ]
+   }
+  ],
+  "SparkPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_number_of_projectiles",
+      "permille": 200
+     }
+    ]
+   }
+  ],
+  "TempestBellPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "bell_hit_limit",
+      "permille": 500
+     }
+    ]
+   }
+  ],
+  "FallingThunderPlayer": [
+   {
+    "set": 1,
+    "stats": [
+     {
+      "id": "charge_skip_consume_chance_%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "KillingPalmPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "recover_%_maximum_life_on_cull",
+      "permille": 500
+     }
+    ]
+   }
+  ],
+  "TempestFlurryPlayer": [
+   {
+    "set": 2,
+    "stats": [
+     {
+      "id": "final_strike_number_of_spirit_strikes",
+      "permille": 100
+     }
+    ]
+   }
+  ],
+  "StaggeringPalmProjectilePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_number_of_projectiles",
+      "permille": 100
+     }
+    ]
+   }
+  ],
+  "GaleStrikePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "armour_break_physical_damage_%_dealt_as_armour_break",
+      "permille": 2000
+     }
+    ]
+   }
+  ],
+  "IceStrikePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_critical_strike_chance_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "WaveOfFrostPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "frozen_monsters_take_increased_damage",
+      "permille": 2000
+     }
+    ]
+   }
+  ],
+  "ChargedStaffPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "charge_skip_consume_chance_%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "WhirlingAssaultPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_physical_damage_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "FlickerStrikePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "charge_skip_consume_chance_%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "IceNovaPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "chance_to_not_consume_infusion_%",
+      "permille": 2000
+     }
+    ]
+   }
+  ],
+  "FlameWallPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_fire_damage_+%_final",
+      "permille": 2000
+     }
+    ]
+   }
+  ],
+  "OrbOfStormsPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "orb_of_storms_maximum_number_of_hits",
+      "permille": 300
+     }
+    ]
+   }
+  ],
+  "ArcPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_projectile_damage_+%_final_for_each_remaining_chain",
+      "permille": 150
+     }
+    ]
+   }
+  ],
+  "SnapPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_cooldown_speed_+%",
+      "permille": 5000
+     }
+    ]
+   }
+  ],
+  "RollingMagmaPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "number_of_chains",
+      "permille": 200
+     }
+    ]
+   }
+  ],
+  "LightningWarpPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_cast_speed_+%_final",
+      "permille": 2000
+     }
+    ]
+   }
+  ],
+  "FrostBombPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_maximum_number_of_frost_bombs",
+      "permille": 150
+     }
+    ]
+   }
+  ],
+  "FlameblastPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "gem_quality_flameblast_damaging_ailment_effect_per_stage_+%_final",
+      "permille": 2000
+     }
+    ]
+   }
+  ],
+  "FlammabilityPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "curse_delay_+%",
+      "permille": -2500
+     }
+    ]
+   }
+  ],
+  "HypothermiaPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "curse_delay_+%",
+      "permille": -2500
+     }
+    ]
+   }
+  ],
+  "ConductivityPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "curse_delay_+%",
+      "permille": -2500
+     }
+    ]
+   }
+  ],
+  "ElementalWeaknessPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "curse_delay_+%",
+      "permille": -2500
+     }
+    ]
+   }
+  ],
+  "TemporalChainsPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "curse_delay_+%",
+      "permille": -2500
+     }
+    ]
+   }
+  ],
+  "ManaTempestPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "mana_tempest_mana_cost_%_to_add_to_cost_per_second",
+      "permille": -400
+     }
+    ]
+   }
+  ],
+  "FrostWallPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "ice_crystal_maximum_life_+%",
+      "permille": 20000
+     }
+    ]
+   }
+  ],
+  "FireballPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "spell_skill_%_chance_to_fire_8_additional_projectiles_in_nova",
+      "permille": 500
+     }
+    ]
+   }
+  ],
+  "LightningConduitPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "lightning_conduit_x_additional_strikes_if_consumed_a_shock",
+      "permille": 200
+     }
+    ]
+   }
+  ],
+  "CometPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "damage_+%_vs_frozen_enemies",
+      "permille": 2000
+     }
+    ]
+   }
+  ],
+  "FirestormPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "chance_to_not_consume_infusion_%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "BallLightningPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_projectile_speed_+%_final",
+      "permille": -1500
+     }
+    ]
+   }
+  ],
+  "ContagionPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_area_of_effect_+%_final",
+      "permille": 2500
+     }
+    ]
+   }
+  ],
+  "GasShotSkeletonSniperMinion": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_fire_damage_+%_final",
+      "permille": 2500
+     }
+    ]
+   }
+  ],
+  "UnearthPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_minion_attack_speed_+%_final",
+      "permille": 2500
+     }
+    ]
+   }
+  ],
+  "EnfeeblePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_mana_cost_-%",
+      "permille": 2500
+     }
+    ]
+   }
+  ],
+  "EssenceDrainPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "number_of_chains",
+      "permille": 200
+     }
+    ]
+   },
+   {
+    "set": 1,
+    "stats": [
+     {
+      "id": "number_of_chains",
+      "permille": 200
+     }
+    ]
+   }
+  ],
+  "SummonSkeletalArsonistsPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_number_of_projectiles",
+      "permille": 100
+     }
+    ]
+   }
+  ],
+  "BoneCagePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_bleeding_effect_+%_final",
+      "permille": 2000
+     }
+    ]
+   }
+  ],
+  "RaiseZombiePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_number_of_zombies_allowed",
+      "permille": 200
+     }
+    ]
+   }
+  ],
+  "PainOfferingPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "pain_offering_attack_and_cast_speed_+%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "BonestormPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "charge_skip_consume_chance_%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "DetonateDeadPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_base_physical_damage_%_to_convert_to_fire",
+      "permille": 3000
+     }
+    ]
+   }
+  ],
+  "VulnerabilityPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_mana_cost_-%",
+      "permille": 2500
+     }
+    ]
+   }
+  ],
+  "SummonSpectrePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_reservation_efficiency_+%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "ProfaneRitualPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_quality_duration_+%_final",
+      "permille": 5000
+     }
+    ]
+   }
+  ],
+  "DespairPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_mana_cost_-%",
+      "permille": 2500
+     }
+    ]
+   }
+  ],
+  "SummonSkeletalReaversPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "armour_break_physical_damage_%_dealt_as_armour_break",
+      "permille": 1500
+     }
+    ]
+   }
+  ],
+  "DarkEffigyPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_number_of_totems_allowed",
+      "permille": 50
+     }
+    ]
+   }
+  ],
+  "BoneOfferingPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_quality_duration_+%_final",
+      "permille": 1500
+     }
+    ]
+   }
+  ],
+  "SummonSkeletalStormMagesPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "minion_cast_speed_+%",
+      "permille": 1500
+     }
+    ]
+   }
+  ],
+  "HexblastPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_critical_strike_chance_+%_final",
+      "permille": 2000
+     }
+    ]
+   }
+  ],
+  "SummonSkeletalBrutesPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_minion_life_+%_final",
+      "permille": 1500
+     }
+    ]
+   }
+  ],
+  "SummonSkeletalClericsPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "minion_damage_taken_+%",
+      "permille": -2000
+     }
+    ]
+   }
+  ],
+  "SoulOfferingPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "power_offering_buff_spell_damage_+%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "LightningArrowPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "chance_for_extra_damage_roll_with_lightning_damage_%",
+      "permille": 1500
+     }
+    ]
+   }
+  ],
+  "EscapeShotPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "damage_+%_vs_frozen_enemies",
+      "permille": 2000
+     }
+    ]
+   }
+  ],
+  "PoisonBurstArrowPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "armour_break_for_%_of_poison_damage_over_poison_duration",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "LightningRodPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_attack_speed_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "StormcallerArrowPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_number_of_projectiles",
+      "permille": 100
+     }
+    ]
+   }
+  ],
+  "SnipePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_attack_speed_+%_final",
+      "permille": 1000
+     },
+     {
+      "id": "perfect_timing_window_ms_+%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "VineArrowPlayer": [
+   {
+    "set": 1,
+    "stats": [
+     {
+      "id": "active_skill_quality_duration_+%_final",
+      "permille": 2000
+     }
+    ]
+   }
+  ],
+  "BarragePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "charge_skip_consume_chance_%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "ToxicGrowthPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_poison_duration_+%",
+      "permille": 2000
+     }
+    ]
+   }
+  ],
+  "ElectrocutingArrowPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "electrocuting_arrow_damage_taken_+%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "SnipersMarkPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "gem_quality_marked_enemy_damage_dealt_+%_final",
+      "permille": -500
+     }
+    ]
+   }
+  ],
+  "GasArrowPlayer": [
+   {
+    "set": 2,
+    "stats": [
+     {
+      "id": "active_skill_fire_damage_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "RainOfArrowsPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_damage_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "DetonatingArrowPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_ignite_effect_+%_final",
+      "permille": 2000
+     }
+    ]
+   }
+  ],
+  "ShockchainArrowPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_attack_speed_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "EarthquakePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "gem_quality_earthquake_damaging_ailment_effect_+%_final",
+      "permille": 2000
+     }
+    ]
+   }
+  ],
+  "BoneshatterPlayer": [
+   {
+    "set": 1,
+    "stats": [
+     {
+      "id": "active_skill_base_area_of_effect_radius",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "RollingSlamPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "armour_break_physical_damage_%_dealt_as_armour_break",
+      "permille": 2000
+     }
+    ]
+   }
+  ],
+  "ArmourBreakerPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_physical_damage_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "ShockwaveTotemPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_number_of_totems_allowed",
+      "permille": 50
+     }
+    ]
+   }
+  ],
+  "InfernalCryPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_base_area_of_effect_radius",
+      "permille": 1500
+     }
+    ]
+   }
+  ],
+  "PerfectStrikePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_attack_speed_+%_final",
+      "permille": 2000
+     }
+    ]
+   }
+  ],
+  "MoltenBlastPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_number_of_projectiles",
+      "permille": 100
+     }
+    ]
+   }
+  ],
+  "FortifyingCryPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "fortifying_cry_guard_gained_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "FortifyingCryShockwavePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_secondary_skill_effect_duration",
+      "permille": 2000
+     }
+    ]
+   }
+  ],
+  "LeapSlamPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_area_of_effect_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "EarthshatterPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "slam_aftershock_chance_%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "ResonatingShieldPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "stun_threshold_+%_while_channelling",
+      "permille": 5000
+     }
+    ]
+   }
+  ],
+  "SunderPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_attack_speed_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "VolcanicFissurePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_fire_damage_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "ShieldWallPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_base_physical_damage_%_to_gain_as_fire",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "SeismicCryPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_base_physical_damage_%_to_gain_as_fire",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "SuperchargedSlamPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_hit_damage_stun_multiplier_+%_final",
+      "permille": 15000
+     }
+    ]
+   }
+  ],
+  "StampedePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_area_of_effect_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "AncestralWarriorTotemPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "totem_life_+%",
+      "permille": 2500
+     }
+    ]
+   }
+  ],
+  "HammerOfTheGodsPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "chance_to_not_consume_glory_%",
+      "permille": 2500
+     }
+    ]
+   }
+  ],
+  "ExplosiveGrenadePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_number_of_projectiles",
+      "permille": 100
+     }
+    ]
+   }
+  ],
+  "FragmentationRoundsAmmoPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_reload_speed_+%_final",
+      "permille": 5000
+     }
+    ]
+   }
+  ],
+  "ArmourPiercingBoltsPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_attack_speed_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "PermafrostBoltsAmmoPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_reload_speed_+%_final",
+      "permille": 5000
+     }
+    ]
+   }
+  ],
+  "FlashGrenadePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_base_all_damage_%_to_gain_as_lightning",
+      "permille": 500
+     },
+     {
+      "id": "active_skill_base_all_damage_%_to_gain_as_cold",
+      "permille": 500
+     }
+    ]
+   }
+  ],
+  "ArtilleryBallistaPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_number_of_totems_allowed",
+      "permille": 50
+     }
+    ]
+   }
+  ],
+  "HighVelocityRoundsPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_physical_damage_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "IncendiaryShotPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_number_of_projectiles",
+      "permille": 200
+     }
+    ]
+   }
+  ],
+  "RapidShotPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "maximum_number_of_crossbow_heat_stacks",
+      "permille": 1500
+     }
+    ]
+   }
+  ],
+  "IceShardsPlayer": [
+   {
+    "set": 1,
+    "stats": [
+     {
+      "id": "active_skill_hit_damage_freeze_multiplier_+%_final",
+      "permille": 10000
+     }
+    ]
+   }
+  ],
+  "GlacialBoltPlayer": [
+   {
+    "set": 1,
+    "stats": [
+     {
+      "id": "active_skill_base_area_of_effect_radius",
+      "permille": 500
+     }
+    ]
+   }
+  ],
+  "ExplosiveShotAmmoPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_number_of_crossbow_bolts",
+      "permille": 100
+     }
+    ]
+   }
+  ],
+  "SiegeBallistaPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_number_of_totems_allowed",
+      "permille": 50
+     }
+    ]
+   }
+  ],
+  "OilGrenadePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "skill_base_oil_exposure_-_to_total_elemental_resistance",
+      "permille": 500
+     }
+    ]
+   }
+  ],
+  "HailstormRoundsPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_reduce_enemy_cold_resistance_%",
+      "permille": 3000
+     }
+    ]
+   }
+  ],
+  "PlasmaBlastPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_number_of_projectiles",
+      "permille": 100
+     }
+    ]
+   }
+  ],
+  "SiegeCascadePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_number_of_crossbow_bolts",
+      "permille": 5
+     }
+    ]
+   }
+  ],
+  "SiegeCascadeAmmoPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_number_of_crossbow_bolts",
+      "permille": 150
+     }
+    ]
+   }
+  ],
+  "SiphoningStrikePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "chance_to_gain_1_more_charge_%",
+      "permille": 2500
+     }
+    ]
+   }
+  ],
+  "GlacialCascadePlayer": [
+   {
+    "set": 1,
+    "stats": [
+     {
+      "id": "active_skill_attack_speed_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "ShatteringPalmPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_area_of_effect_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "ShatteringPalmExplosionPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_area_of_effect_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "StormWavePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_base_area_of_effect_radius",
+      "permille": 2000
+     }
+    ]
+   }
+  ],
+  "VaultingImpactPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_damage_+%_final_against_heavy_stunned_enemies",
+      "permille": 2500
+     }
+    ]
+   }
+  ],
+  "SupportHandOfChayulaPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_mana_cost_-%",
+      "permille": 2500
+     }
+    ]
+   }
+  ],
+  "MantraOfDestructionPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_secondary_skill_effect_duration",
+      "permille": 2500
+     }
+    ]
+   }
+  ],
+  "FreezingMarkPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_mana_cost_-%",
+      "permille": 2500
+     }
+    ]
+   }
+  ],
+  "SummonSkeletalFrostMagesPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_spirit_reservation_efficiency_+%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "EmberFusilladePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "skill_effect_duration_+%",
+      "permille": -2000
+     },
+     {
+      "id": "active_skill_cast_speed_+%_final",
+      "permille": -1000
+     }
+    ]
+   }
+  ],
+  "EyeOfWinterPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "projectile_return_%_chance",
+      "permille": 2500
+     }
+    ]
+   }
+  ],
+  "IncineratePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "incinerate_maximum_fuel",
+      "permille": 100000
+     }
+    ]
+   }
+  ],
+  "IceShotPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "movement_speed_penalty_+%_while_performing_action",
+      "permille": -2000
+     }
+    ]
+   }
+  ],
+  "SpiralVolleyPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "chance_%_to_double_effect_of_removing_charges",
+      "permille": 1500
+     }
+    ]
+   }
+  ],
+  "TornadoShotPlayer": [
+   {
+    "set": 1,
+    "stats": [
+     {
+      "id": "base_number_of_tornado_shots_allowed",
+      "permille": 100
+     }
+    ]
+   }
+  ],
+  "LivingBombPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_fire_damage_+%_final",
+      "permille": 2500
+     },
+     {
+      "id": "living_bomb_damage_threshold_%_of_ailment_threshold",
+      "permille": 10000
+     }
+    ]
+   }
+  ],
+  "HeraldOfThunderPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "herald_of_thunder_lightning_damage_+%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "PlagueBearerPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "poison_effect_+%_vs_non_poisoned_enemies",
+      "permille": 2500
+     }
+    ]
+   }
+  ],
+  "TriggeredWindDancerPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "wind_dancer_damage_+%_final_per_stage",
+      "permille": 2500
+     }
+    ]
+   }
+  ],
+  "HeraldOfIcePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "herald_of_ice_cold_damage_+%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "LingeringIllusionPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_spirit_reservation_efficiency_+%",
+      "permille": 2000
+     }
+    ]
+   }
+  ],
+  "ManaRemnantsPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "mana_remnants_global_mana_regeneration_rate_granted_+%",
+      "permille": 2000
+     }
+    ]
+   }
+  ],
+  "ArcticArmourPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "arctic_armour_armour_granted_+%_per_stage",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "RagingSpiritsPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_minion_damage_+%_final",
+      "permille": 2500
+     }
+    ]
+   }
+  ],
+  "BlinkPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "blink_travel_distance",
+      "permille": 1250
+     }
+    ]
+   }
+  ],
+  "MetaBarrierInvocationPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "triggered_skill_damage_+%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "SupportBlasphemyPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "curse_effect_+%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "GrimFeastPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "remnant_pickup_range_+%",
+      "permille": 2000
+     }
+    ]
+   }
+  ],
+  "MetaCastOnMinionDeathPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "triggered_skill_damage_+%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "HeraldOfAshPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "herald_of_ash_fire_damage_+%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "MagmaBarrierPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "magma_barrier_maximum_block_chance_granted_%",
+      "permille": 250
+     }
+    ]
+   }
+  ],
+  "ScavengedPlatingPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "scavenged_plating_armour_+%_final_per_stack",
+      "permille": 50
+     }
+    ]
+   }
+  ],
+  "MetaCastOnElementalAilmentPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_reservation_efficiency_+%",
+      "permille": 2000
+     }
+    ]
+   }
+  ],
+  "ElementalConfluxPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_skill_effect_duration",
+      "permille": 200000
+     }
+    ]
+   }
+  ],
+  "WarBannerReservationPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_area_of_effect_+%_final",
+      "permille": 1500
+     }
+    ]
+   }
+  ],
+  "DreadBannerReservationPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_area_of_effect_+%_final",
+      "permille": 1500
+     }
+    ]
+   }
+  ],
+  "DefianceBannerReservationPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_area_of_effect_+%_final",
+      "permille": 1500
+     }
+    ]
+   }
+  ],
+  "MetaElementalInvocationPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "triggered_skill_damage_+%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "MetaCastOnCritPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "cast_on_crit_global_critical_hit_chance_granted_+%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "MetaCastOnDodgePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "cast_on_dodge_dodge_roll_distance_granted_+",
+      "permille": 500
+     }
+    ]
+   }
+  ],
+  "GalvanicShardsAmmoPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_number_of_crossbow_bolts",
+      "permille": 100
+     }
+    ]
+   }
+  ],
+  "SummonMercenaryCompanionPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "companion_maximum_life_+%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "ToxicGrenadePlayer": [
+   {
+    "set": 2,
+    "stats": [
+     {
+      "id": "active_skill_fire_damage_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "ShockGrenadePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_lightning_damage_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "ShockburstRoundsPlayer": [
+   {
+    "set": 1,
+    "stats": [
+     {
+      "id": "active_skill_area_of_effect_+%_final",
+      "permille": 1500
+     }
+    ]
+   }
+  ],
+  "EmergencyReloadPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "emergency_reload_damage_+%_final",
+      "permille": 500
+     }
+    ]
+   }
+  ],
+  "GhostDancePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "ghost_dance_max_stacks",
+      "permille": 50
+     }
+    ]
+   }
+  ],
+  "FrozenLocusPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_number_of_frozen_locus_allowed",
+      "permille": 50
+     }
+    ]
+   }
+  ],
+  "TimeOfNeedPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "time_of_need_global_life_regeneration_rate_granted_+%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "ChargeRegulationPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "charge_regulation_damage_per_charge_granted_+%",
+      "permille": 100
+     }
+    ]
+   }
+  ],
+  "MetaReapersInvocationPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "triggered_skill_damage_+%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "FreezingSalvoPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_maximum_seals_for_skill",
+      "permille": 200
+     }
+    ]
+   }
+  ],
+  "ShardScavengerPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_quality_duration_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "BerserkPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "berserk_maximum_rage_granted_+",
+      "permille": 400
+     }
+    ]
+   }
+  ],
+  "AlchemistsBoonPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "alchemists_boon_attack_speed_granted_+%_during_life_flask",
+      "permille": 1000
+     },
+     {
+      "id": "alchemists_boon_cast_speed_granted_+%_during_mana_flask",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "CombatFrenzyPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "skill_combat_frenzy_x_ms_cooldown",
+      "permille": -50000
+     }
+    ]
+   }
+  ],
+  "WitheringPresencePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "skill_withering_presence_frequency_ms",
+      "permille": -25000
+     }
+    ]
+   }
+  ],
+  "SacrificePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "sacrifice_minion_life_granted_+%",
+      "permille": 2000
+     }
+    ]
+   }
+  ],
+  "HeraldOfPlaguePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_area_of_effect_+%_final",
+      "permille": 1500
+     }
+    ]
+   }
+  ],
+  "AttritionPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "presence_area_+%",
+      "permille": 2000
+     }
+    ]
+   }
+  ],
+  "ArchmagePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "archmage_all_damage_%_to_gain_as_lightning_to_grant_to_non_channelling_spells_per_100_max_mana",
+      "permille": 50
+     },
+     {
+      "id": "archmage_max_mana_permyriad_to_add_to_non_channelled_spell_mana_cost",
+      "permille": 10000
+     }
+    ]
+   }
+  ],
+  "StormblastBoltsAmmoPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_number_of_crossbow_bolts",
+      "permille": 100
+     }
+    ]
+   }
+  ],
+  "MagneticSalvoPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_lightning_damage_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "ShieldChargePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "shield_charge_extra_distance",
+      "permille": 1500
+     }
+    ]
+   }
+  ],
+  "VoltaicMarkPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_mana_cost_-%",
+      "permille": 2500
+     }
+    ]
+   }
+  ],
+  "GatheringStormPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "chance_for_extra_damage_roll_with_lightning_damage_%",
+      "permille": 1500
+     }
+    ]
+   }
+  ],
+  "ClusterGrenadePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "skill_detonation_time_+%",
+      "permille": -2000
+     }
+    ]
+   }
+  ],
+  "WhirlingSlashPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_attack_speed_+%_final",
+      "permille": 500
+     }
+    ]
+   }
+  ],
+  "WhirlwindLancePlayer": [
+   {
+    "set": 1,
+    "stats": [
+     {
+      "id": "windstorm_gain_all_damage_%_as_corresponding_element_if_empowered",
+      "permille": 2500
+     }
+    ]
+   }
+  ],
+  "BloodHuntPlayer": [
+   {
+    "set": 1,
+    "stats": [
+     {
+      "id": "blood_hunt_explosion_%_blood_loss_to_deal_as_life_loss",
+      "permille": 200
+     }
+    ]
+   }
+  ],
+  "LightningSpearPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "chance_%_to_double_effect_of_removing_charges",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "TrinityPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "trinity_%_physical_damage_to_convert_to_random_element_granted",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "SpearOfSolarisPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_fire_damage_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "GlacialLancePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "charge_skip_consume_chance_%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "HeraldOfBloodPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "herald_of_blood_global_physical_damage_granted_+%",
+      "permille": 750
+     }
+    ]
+   }
+  ],
+  "RhoaMountPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_reservation_efficiency_+%",
+      "permille": 1500
+     }
+    ]
+   }
+  ],
+  "RakePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_aggravate_bleeding_on_attack_hit_chance_%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "DisengagePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "melee_range_+",
+      "permille": 500
+     }
+    ]
+   }
+  ],
+  "SpearfieldPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_attack_speed_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "ExplosiveSpearPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "charge_skip_consume_chance_%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "TwisterPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_projectile_speed_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "RapidAssaultPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_bleeding_effect_+%_final",
+      "permille": 2000
+     }
+    ]
+   }
+  ],
+  "BindSpectrePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_reservation_efficiency_+%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "SummonBeastPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_minion_attack_speed_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "TameBeastPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_mana_cost_-%",
+      "permille": 2500
+     }
+    ]
+   }
+  ],
+  "PrimalStrikesPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_critical_strike_chance_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "ConvalescenceActivePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_cooldown_speed_+%",
+      "permille": 1500
+     }
+    ]
+   }
+  ],
+  "TriggeredTrailOfCaltropsPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_physical_damage_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "BloodhoundsMarkExplosionPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_physical_damage_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "WindSerpentsFuryPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_base_all_damage_%_to_gain_as_chaos",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "ThunderousLeapPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "slam_aftershock_chance_%",
+      "permille": 2000
+     }
+    ]
+   }
+  ],
+  "StormLancePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_number_of_projectiles",
+      "permille": 100
+     }
+    ]
+   }
+  ],
+  "ElementalSunderingPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_critical_strike_chance_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "FangsOfFrostPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "melee_range_+",
+      "permille": 500
+     }
+    ]
+   }
+  ],
+  "CullTheWeakPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "chance_to_gain_1_more_random_charge_%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "RavenousSwarmPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_cooldown_modifiable_repeat_interval_ms",
+      "permille": -100000
+     }
+    ]
+   }
+  ],
+  "MirageArcherSpawnPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_reservation_efficiency_+%",
+      "permille": 2000
+     }
+    ]
+   }
+  ],
+  "MetaMirageArcherPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_reservation_efficiency_+%",
+      "permille": 2000
+     }
+    ]
+   }
+  ],
+  "IronWardNovaPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_physical_damage_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "ToxicDomainPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "toxic_domain_buff_linger_duration_ms",
+      "permille": 100000
+     }
+    ]
+   }
+  ],
+  "MetaMortarCannonPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_number_of_totems_allowed",
+      "permille": 50
+     }
+    ]
+   }
+  ],
+  "AncestralCryPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "gem_quality_ancestral_cry_global_fire_damage_granted_+%_final",
+      "permille": 500
+     }
+    ]
+   }
+  ],
+  "ForgeHammerPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_base_all_damage_%_to_gain_as_fire",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "FrostDartsPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "number_of_additional_forks_base",
+      "permille": 100
+     }
+    ]
+   }
+  ],
+  "IceTippedArrowsPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "shearing_bolts_number_of_empowered_attacks",
+      "permille": 100
+     }
+    ]
+   }
+  ],
+  "SiphonElementsPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "remnant_pickup_range_+%",
+      "permille": 1500
+     }
+    ]
+   }
+  ],
+  "EternalRagePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_spirit_reservation_efficiency_+%",
+      "permille": 750
+     }
+    ]
+   }
+  ],
+  "VolcanoPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_quality_duration_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "EntanglePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_number_of_entangle_roots_allowed",
+      "permille": 200
+     }
+    ]
+   }
+  ],
+  "FuriousSlamPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_area_of_effect_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "LunarAssaultPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_reduce_enemy_cold_resistance_%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "WolfPounceSummonWolfPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "number_of_wolves_allowed",
+      "permille": 200
+     }
+    ]
+   }
+  ],
+  "WingBlastPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_physical_damage_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "WyvernDevourPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "chance_to_gain_1_more_charge_%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "ThunderstormPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_area_of_effect_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "BearFuryOfTheMountainPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_attack_speed_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "WolfArcticHowlPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "chance_for_exerted_attacks_to_not_reduce_count_%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "WolfCrossSlashPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_base_physical_damage_%_to_convert_to_cold",
+      "permille": 2000
+     }
+    ]
+   }
+  ],
+  "OilBarragePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "charge_skip_consume_chance_%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "SupportMetaTotemSpellTotemPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "totems_spells_cast_speed_+%_per_active_totem",
+      "permille": 500
+     }
+    ]
+   }
+  ],
+  "SupportFerociousRoarPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_cooldown_speed_+%",
+      "permille": 2000
+     }
+    ]
+   }
+  ],
+  "BearRampagePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_area_of_effect_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "TornadoPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "number_of_tornados_allowed",
+      "permille": 100
+     }
+    ]
+   }
+  ],
+  "ThrashingVinesPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "impale_on_hit_%_chance",
+      "permille": 1500
+     }
+    ]
+   }
+  ],
+  "WolfLunarBlessingPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_cooldown_speed_+%",
+      "permille": 2000
+     }
+    ]
+   }
+  ],
+  "WyvernFlameBreathPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_area_of_effect_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "WalkingCalamityPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "chance_to_not_consume_glory_%",
+      "permille": 2500
+     }
+    ]
+   }
+  ],
+  "WolfPackPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_minion_attack_speed_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "BriarpatchPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_base_area_of_effect_radius",
+      "permille": 300
+     }
+    ]
+   }
+  ],
+  "SavageFuryActivePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "wild_beast_energy_per_hit",
+      "permille": 50
+     }
+    ]
+   }
+  ],
+  "BarkskinPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_quality_duration_+%_final",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "MetaFeralInvocationPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_reservation_efficiency_+%",
+      "permille": 2000
+     }
+    ]
+   }
+  ],
+  "HollowShellPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_skill_effect_duration",
+      "permille": 100000
+     }
+    ]
+   }
+  ],
+  "PoweredByVerisiumPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "additional_infusion_gain_chance_%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "DetonateLivingPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_base_area_of_effect_radius",
+      "permille": 200
+     }
+    ]
+   }
+  ],
+  "SkyfallPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "damage_+%_vs_frozen_enemies",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "TriskelionCascadePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "triskelion_cascade_next_skill_area_of_effect_+%_final",
+      "permille": 250
+     }
+    ]
+   }
+  ],
+  "FrostflameNovaPlayer": [
+   {
+    "set": 1,
+    "stats": [
+     {
+      "id": "damage_+%_vs_frozen_enemies",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "CurseOfRepulsionShockwavePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_damage_+%_final_vs_immobilised_enemies",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "BitterDeadPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_chance_to_not_consume_corpse_%",
+      "permille": 500
+     }
+    ]
+   }
+  ],
+  "EternalMarchPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_cooldown_speed_+%",
+      "permille": 2000
+     }
+    ]
+   }
+  ],
+  "ConductiveRunesPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_base_area_of_effect_radius",
+      "permille": 300
+     }
+    ]
+   }
+  ],
+  "RefutationPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_skill_effect_duration",
+      "permille": 50000
+     }
+    ]
+   }
+  ],
+  "MetaAnimusSplintersPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "skill_effect_duration_+%",
+      "permille": 1000
+     }
+    ]
+   }
+  ],
+  "LeylinesPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_base_area_of_effect_radius",
+      "permille": 500
+     }
+    ]
+   }
+  ],
+  "RunicReprievePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "rune_ward_block_%_damage_taken",
+      "permille": -100
+     }
+    ]
+   }
+  ],
+  "FragmentsOfThePastPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_skill_effect_duration",
+      "permille": 50000
+     }
+    ]
+   }
+  ],
+  "TriggeredManifestRunePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_number_of_verisium_runes_allowed",
+      "permille": 100
+     }
+    ]
+   }
+  ],
+  "AnimusExchangePlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "animus_exchange_gain_%_maximum_life_spent_as_ward",
+      "permille": 250
+     }
+    ]
+   }
+  ],
+  "MetaRemnantsOfKalguurPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "ward_remnants_spawn_remnant_on_stun_cooldown_ms",
+      "permille": -2500
+     }
+    ]
+   }
+  ],
+  "GrimPillarsPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "active_skill_base_secondary_area_of_effect_radius",
+      "permille": 200
+     }
+    ]
+   }
+  ],
+  "WardboundMinionsPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_skill_effect_duration",
+      "permille": 250000
+     }
+    ]
+   }
+  ],
+  "TriggeredExplosiveTransmutationExplosionPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "base_ward_cost_efficiency_+%",
+      "permille": 1500
+     }
+    ]
+   }
+  ],
+  "RainOfBladesTriggeredPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "hit_damage_immobilisation_multiplier_+%",
+      "permille": 1500
+     }
+    ]
+   }
+  ],
+  "VoltaicBarrierTriggeredChainLightningPlayer": [
+   {
+    "set": 0,
+    "stats": [
+     {
+      "id": "number_of_chains",
+      "permille": 100
+     }
+    ]
+   }
+  ]
+ }
+}

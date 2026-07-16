@@ -5,6 +5,8 @@ import { slugify } from '../../src/data/slug.js';
 import { grantedSkillNames } from './uniques.js';
 import { makeNode, makeEdge, KINDS, EDGE_TYPES } from './schema.js';
 import { buildSections, buildLevelTable } from '../../src/data/statText.js';
+import { altQualityLines } from './gemQuality.js';
+import { weaponReqLabel } from './weaponReqs.js';
 
 // Mirrors src/data/gems.js — placeholder/unreleased gem-table entries to drop.
 const GARBAGE_RE = /Coming Soon|Removed Skill|Playtest|\{0\}/;
@@ -68,6 +70,30 @@ export function selectGemRecords() {
 
 const GEM_LEVEL_CAP = 20; // matches src/data/gems.js display cap
 
+// A skill's activation cost across gem levels 1..cap, as [{kind, min, max}] (one
+// entry per cost kind — usually just Mana). min/max are the cost at the lowest and
+// highest levels present in range, matching the "Level: (1—cap)" display. Constant
+// cost → min === max. Returns [] when the skill has no per-level cost (e.g. a pure
+// reservation skill). Kind → display label is applied by the app.
+function skillCosts(skill, cap = GEM_LEVEL_CAP) {
+  const perLevel = skill?.per_level ?? {};
+  const levels = Object.keys(perLevel)
+    .map(Number)
+    .filter((n) => Number.isFinite(n) && n >= 1 && n <= cap)
+    .sort((a, b) => a - b);
+  const kinds = new Set();
+  for (const l of levels) for (const k of Object.keys(perLevel[String(l)]?.costs ?? {})) kinds.add(k);
+  const out = [];
+  for (const kind of kinds) {
+    const withKind = levels.filter((l) => perLevel[String(l)]?.costs?.[kind] != null);
+    if (!withKind.length) continue;
+    const min = perLevel[String(withKind[0])].costs[kind];
+    const max = perLevel[String(withKind[withKind.length - 1])].costs[kind];
+    out.push({ kind, min, max });
+  }
+  return out;
+}
+
 // Effect sections for a gem: the union of ALL its granted skills' sections. A gem
 // can grant several skills whose effects/quality live on different ones — e.g.
 // Artillery Ballista's deploy skill carries the "Ballista" section while its
@@ -97,8 +123,15 @@ function effectSections(skillKeys, skills, gemName) {
       multi && skillName && skillName.toLowerCase() !== gemNameLc ? skillName : null;
     for (const s of buildSections(skill, GEM_LEVEL_CAP)) {
       const label = s.label || nameFallback || '';
+      // Gemling Legionnaire alternate quality for this exact (skill, stat set),
+      // rendered through the same stat-translation path as the standard quality.
+      const tf = skill.stat_sets?.[s.setIndex]?.translation_file ?? null;
+      const altQuality = altQualityLines(key, s.setIndex, tf);
       const sec = { label, lines: s.lines, quality: s.quality };
-      const sig = JSON.stringify([sec.label, sec.lines, sec.quality]);
+      if (altQuality.length) sec.altQuality = altQuality;
+      // altQuality participates in the signature so two sets with identical standard
+      // content but different alt effects aren't collapsed into one section.
+      const sig = JSON.stringify([sec.label, sec.lines, sec.quality, sec.altQuality ?? []]);
       if (seen.has(sig)) continue;
       seen.add(sig);
       out.push(sec);
@@ -117,6 +150,14 @@ export function gemNodes() {
     // The faceted inventory-gem icon (distinct from icon_dds_file, the skill icon),
     // looked up in base_items via the gem's item id.
     const baseItem = baseItems[r.raw.base_item?.id];
+    // Weapon-type requirement (GGPK-derived) — the first granted skill that carries
+    // one. Keyed by each skill's active_skill.id (== ActiveSkills.Id upstream).
+    let weaponReq = null;
+    for (const key of r.raw.grants_skills ?? []) {
+      const aid = skills[key]?.active_skill?.id;
+      const label = aid ? weaponReqLabel(aid) : null;
+      if (label) { weaponReq = label; break; }
+    }
     const props = {
       color: r.raw.color,
       gemType: r.raw.gem_type,
@@ -130,6 +171,7 @@ export function gemNodes() {
       hoverDds: r.raw.ui_image ?? null,
       grantsSkills: r.raw.grants_skills ?? [],
       effectSections: sections,
+      weaponReq,
     };
     const search = [r.raw.base_item.display_name, r.raw.gem_type, ...sections.flatMap((s) => s.lines)]
       .join(' ').toLowerCase();
@@ -173,6 +215,8 @@ export function skillNodes(records) {
           types: skill.active_skill?.types ?? [],
           description: skill.active_skill?.description ?? null,
           reservation,
+          // Activation cost per gem level (1..20), summarised as [{kind,min,max}].
+          costs: skillCosts(skill),
           // Per-level scaling table (null when nothing varies). Heavy-ish but
           // small (~0.7MB across all skills); inlined as a prop, no side-artifact.
           levelTable: buildLevelTable(skill),

@@ -16,6 +16,15 @@ import { getPassiveNode } from './passiveTree.js';
 const TYPE_LABEL = { active: 'Skill', support: 'Support', spirit: 'Spirit' };
 
 const RESERVATION_LABEL = { spirit: 'Spirit', mana: 'Mana', life: 'Life' };
+// Cost kind (skills[key].per_level[L].costs) → display label for the gem-card cost line.
+const COST_LABEL = {
+  Mana: 'Mana',
+  ManaPerMinute: 'Mana / min',
+  Ward: 'Ward',
+  WardPerMinute: 'Ward / min',
+  Life: 'Life',
+  LifePerMinute: 'Life / min',
+};
 const GEM_LEVEL_CAP = 20; // fixed display cap (plan data fact: "Display level cap: 20")
 const SKILL_PANEL_FOOTER = 'Skills can be managed in the Skills Panel.';
 
@@ -84,6 +93,7 @@ function toGem(node) {
     ui_image: p.hoverDds ?? null,
     grants_skills: p.grantsSkills ?? [],
     effect_sections: p.effectSections ?? [],
+    weapon_req: p.weaponReq ?? null,
     tagTokens: p.tagTokens ?? [],
     // Required character level per gem level (1..20), from the GGPK-derived
     // gem-levels overlay. Null for gems with no leveling curve (item-granted skills).
@@ -565,12 +575,24 @@ export function buildGemViewModel(slug) {
     reservation = `${amount} ${RESERVATION_LABEL[kind] ?? kind}`;
   }
 
+  // Activation cost, e.g. [{kind:'Mana',min:10,max:104}] -> "(10—104) Mana".
+  // Constant cost renders the single value; multiple kinds join with ", ".
+  const cost = (sp?.costs ?? [])
+    .map(({ kind, min, max }) => {
+      const amount = min === max ? `${min}` : `(${min}—${max})`;
+      return `${amount} ${COST_LABEL[kind] ?? kind}`;
+    })
+    .join(', ') || null;
+
   // Sections (resolved plain strings from the graph), each line/quality string
   // rendered to safe token HTML here.
   const sections = gem.effect_sections.map((s) => ({
     label: s.label,
     lines: s.lines.map((t) => renderGameText(t, hasDefinition)),
     quality: s.quality.map((t) => renderGameText(t, hasDefinition)),
+    // Gemling Legionnaire "second" quality — rendered like standard quality but shown
+    // in the in-game #b4b4ff colour (see gem-card.njk). Absent on most sections.
+    altQuality: (s.altQuality ?? []).map((t) => renderGameText(t, hasDefinition)),
   }));
 
   return {
@@ -590,6 +612,10 @@ export function buildGemViewModel(slug) {
     // Fixed display range (not derived per-gem) — see GEM_LEVEL_CAP.
     levelRange: { min: 1, max: GEM_LEVEL_CAP },
     reservation,
+    cost,
+    // Weapon-type requirement, e.g. "Crossbows" — carries glossary "[Id|Display]"
+    // markup so each weapon term renders as a hoverable keyword.
+    weaponReq: gem.weapon_req ? renderGameText(gem.weapon_req, hasDefinition) : null,
     // Every gem shows a character-level requirement; attribute lines follow when present.
     requirements: [
       `Level (${CHAR_LEVEL_RANGE.min}—${CHAR_LEVEL_RANGE.max})`,

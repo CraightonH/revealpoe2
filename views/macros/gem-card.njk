@@ -75,11 +75,17 @@
         {% if vm.levelRange %}
         <div class="property">Level: <span class="colourDefault">({{ vm.levelRange.min }}—{{ vm.levelRange.max }})</span></div>
         {% endif %}
+        {% if vm.cost %}
+        <div class="property">Cost: <span class="colourDefault">{{ vm.cost }}</span></div>
+        {% endif %}
         {% if vm.reservation %}
         <div class="property">Reservation: <span class="colourDefault">{{ vm.reservation }}</span></div>
         {% endif %}
         {% if vm.requirements.length %}
         <div class="requirements">Requires: {% for r in vm.requirements %}<span class="colourDefault">{{ r | safe }}</span>{% if not loop.last %}, {% endif %}{% endfor %}</div>
+        {% endif %}
+        {% if vm.weaponReq %}
+        <div class="requirements">Requires: {{ vm.weaponReq | safe }}</div>
         {% endif %}
 
         {% if vm.description %}
@@ -98,10 +104,14 @@
         {% for line in section.lines %}
         <div class="explicitMod">{{ line | safe }}</div>
         {% endfor %}
-        {% if section.quality.length %}
+        {% if section.quality.length or section.altQuality.length %}
         <div class="quality-text"><br><span class="white">Additional Effects From Quality:</span></div>
         {% for q in section.quality %}
         <div class="qualityMod">{{ q | safe }}</div>
+        {% endfor %}
+        {# Gemling Legionnaire alternate quality — same layout, in-game #b4b4ff colour, no extra label. #}
+        {% for q in section.altQuality %}
+        <div class="qualityMod altQualityMod">{{ q | safe }}</div>
         {% endfor %}
         {% endif %}
       </div>

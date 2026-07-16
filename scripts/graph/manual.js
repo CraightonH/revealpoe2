@@ -239,12 +239,51 @@ function expandGemLevels(data, ctx, via) {
   return { nodes: [], edges: [], errors: [], warnings, patches };
 }
 
+// "Gemling Legionnaire alternate quality." Overlay shape (GENERATED, not hand-authored —
+// see scripts/ggpk/extract-gem-quality.js):
+//   { "kind": "gem-quality", "altQualityBySkill": { "<skillKey>": [ { set, stats:[{id,permille}] } ] } }
+// The RENDERING + attachment onto gem effect sections is owned by scripts/graph/gems.js
+// (it needs the per-section stat_set context, lost by the time overlays run). This handler
+// exists so the generated file is a first-class overlay — it participates in manualHash
+// (staleness) and enforces the referential-integrity/retirement guard: every alt-quality
+// skill key must still resolve to a live skill node. A stale key (RePoE renamed/removed the
+// skill) is warned, not errored — this is bulk generated data, like gem-levels.
+function expandGemQuality(data, ctx, via) {
+  let stale = 0;
+  for (const key of Object.keys(data.altQualityBySkill ?? {})) {
+    const node = ctx.node(key);
+    if (!node || node.kind !== 'skill') stale += 1;
+  }
+  const warnings = stale
+    ? [`${via}: ${stale} alt-quality skill keys no longer resolve to a skill node (renamed/removed upstream) — regenerate: npm run build:gem-quality`]
+    : [];
+  return { nodes: [], edges: [], errors: [], warnings, patches: [] };
+}
+
+// "Skill weapon requirements." Overlay shape (GENERATED — see
+// scripts/ggpk/extract-weapon-reqs.js):
+//   { "kind": "weapon-reqs", "weaponReqByActiveSkill": { "<activeSkillId>": { reqId, classIds } } }
+// Rendering (raw fact → "Requires: Crossbows" label) and attachment onto gem nodes is
+// owned by scripts/graph/weaponReqs.js + gems.js — they hold the gem→skill→active_skill.id
+// mapping that the overlay pass lacks. This handler exists so the generated file is a
+// first-class overlay (participates in manualHash) and guards against a botched
+// extraction: an empty payload means the GGPK join produced nothing.
+function expandWeaponReqs(data, ctx, via) {
+  const count = Object.keys(data.weaponReqByActiveSkill ?? {}).length;
+  const warnings = count === 0
+    ? [`${via}: no weapon requirements in the overlay — extraction may have failed; regenerate: npm run build:weapon-reqs`]
+    : [];
+  return { nodes: [], edges: [], errors: [], warnings, patches: [] };
+}
+
 const HANDLERS = {
   'weapon-default-skills': expandWeaponDefaultSkills,
   'gear-slots': expandGearSlots,
   'unique-origins': expandUniqueOrigins,
   'cultivated-uniques': expandCultivatedUniques,
   'gem-levels': expandGemLevels,
+  'gem-quality': expandGemQuality,
+  'weapon-reqs': expandWeaponReqs,
 };
 
 // Read overlay files from disk as [{ name, data }] (sorted, deterministic). A

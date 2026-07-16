@@ -55,6 +55,23 @@ test('buildGemViewModel produces card fields', () => {
   assert.ok(vm.recommendedSupports[0].supports[0].slug);
 });
 
+test('buildGemViewModel exposes the activation cost as a range with unit', () => {
+  // Fireball's Mana cost scales 10 (lvl 1) → 104 (lvl 20).
+  const vm = buildGemViewModel('fireball');
+  assert.equal(vm.cost, '(10—104) Mana');
+  // A pure-reservation gem (Herald of Ash) reserves Spirit and has no activation cost.
+  const herald = buildGemViewModel('herald-of-ash');
+  assert.equal(herald.cost, null);
+  assert.equal(herald.reservation, '30 Spirit');
+});
+
+test('buildGemViewModel renders the weapon requirement as a hoverable keyword', () => {
+  const apr = buildGemViewModel('armour-piercing-rounds').weaponReq;
+  assert.match(apr, /<span class="kw" data-keyword="Crossbow">Crossbows<\/span>/);
+  assert.match(buildGemViewModel('rain-of-arrows').weaponReq, /data-keyword="Bow">Bows</);
+  assert.equal(buildGemViewModel('fireball').weaponReq, null); // spell — no weapon needed
+});
+
 test('buildGemViewModel exposes a rendered per-level scaling table', () => {
   const vm = buildGemViewModel('fireball');
   const t = vm.levelTable;

@@ -1,0 +1,3162 @@
+{
+ "kind": "weapon-reqs",
+ "_generated": "DO NOT HAND-EDIT. Produced by scripts/ggpk/extract-weapon-reqs.js from the GGPK mirror (ActiveSkills × ActiveSkillWeaponRequirement × WieldableClasses × ItemClasses). Regenerate: npm run build:weapon-reqs.",
+ "description": "Weapon-type requirement per active skill (skills.json active_skill.id). RePoE lacks it. weaponReqByActiveSkill[activeSkillId] = { reqId, classIds }. Rendered to a display label (\"Requires: Crossbows\") at build time by scripts/graph/weaponReqs.js.",
+ "source": "ggpk-poe2: ActiveSkills, ActiveSkillWeaponRequirement, WieldableClasses, ItemClasses",
+ "skillCount": 381,
+ "weaponReqByActiveSkill": {
+  "ground_slam": {
+   "reqId": "Any Mace",
+   "classIds": [
+    "One Hand Mace",
+    "Two Hand Mace"
+   ]
+  },
+  "distance_scaled_ground_slam": {
+   "reqId": "Any Mace",
+   "classIds": [
+    "One Hand Mace",
+    "Two Hand Mace"
+   ]
+  },
+  "vaal_ground_slam_spiked": {
+   "reqId": "Any Mace",
+   "classIds": [
+    "One Hand Mace",
+    "Two Hand Mace"
+   ]
+  },
+  "cleave": {
+   "reqId": "Any SwordAxe",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe"
+   ]
+  },
+  "table_charge": {
+   "reqId": "Any Melee One Hand and Unarmed",
+   "classIds": [
+    "One Hand Sword",
+    "One Hand Axe",
+    "One Hand Mace",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Flail",
+    "Unarmed"
+   ]
+  },
+  "shield_charge": {
+   "reqId": "Any Melee One Hand and Unarmed",
+   "classIds": [
+    "One Hand Sword",
+    "One Hand Axe",
+    "One Hand Mace",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Flail",
+    "Unarmed"
+   ]
+  },
+  "channel_shield_charge": {
+   "reqId": "Shield",
+   "classIds": [
+    "Shield"
+   ]
+  },
+  "leap_slam": {
+   "reqId": "Any Mace",
+   "classIds": [
+    "One Hand Mace",
+    "Two Hand Mace"
+   ]
+  },
+  "leap_slam_cooldown": {
+   "reqId": "Any MaceSwordAxeStaff",
+   "classIds": [
+    "One Hand Mace",
+    "Two Hand Mace",
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "Staff",
+    "Warstaff"
+   ]
+  },
+  "leap_slam_behind": {
+   "reqId": "Any MaceSwordAxeStaff",
+   "classIds": [
+    "One Hand Mace",
+    "Two Hand Mace",
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "Staff",
+    "Warstaff"
+   ]
+  },
+  "molten_crash": {
+   "reqId": "Talisman",
+   "classIds": [
+    "Talisman"
+   ]
+  },
+  "double_strike": {
+   "reqId": "Any Melee Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Flail",
+    "Talisman"
+   ]
+  },
+  "vaal_double_strike_two": {
+   "reqId": "Any Melee Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Flail",
+    "Talisman"
+   ]
+  },
+  "dual_strike": {
+   "reqId": "Any Dual Wieldable Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Claw",
+    "Dagger"
+   ]
+  },
+  "blade_flurry": {
+   "reqId": "One Hand Sharp",
+   "classIds": [
+    "Dagger",
+    "Claw",
+    "One Hand Sword"
+   ]
+  },
+  "blade_flurry_cooldown": {
+   "reqId": "One Hand Sharp",
+   "classIds": [
+    "Dagger",
+    "Claw",
+    "One Hand Sword"
+   ]
+  },
+  "caustic_arrow": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "vaal_caustic_arrow": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "backstab": {
+   "reqId": "Dagger",
+   "classIds": [
+    "Dagger"
+   ]
+  },
+  "flicker_strike": {
+   "reqId": "Quarterstaff",
+   "classIds": [
+    "Warstaff"
+   ]
+  },
+  "vaal_flicker_strike": {
+   "reqId": "Any Melee Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Flail",
+    "Talisman"
+   ]
+  },
+  "split_arrow": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "vaal_split_arrow": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "cobra_lash": {
+   "reqId": "DaggerClaw",
+   "classIds": [
+    "Dagger",
+    "Claw"
+   ]
+  },
+  "infernal_blow_new": {
+   "reqId": "Any Melee Weapon and Unarmed",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Unarmed",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Flail",
+    "Talisman"
+   ]
+  },
+  "glacial_hammer": {
+   "reqId": "Any Blunt Weapon",
+   "classIds": [
+    "One Hand Mace",
+    "Sceptre",
+    "Two Hand Mace",
+    "Staff",
+    "Warstaff"
+   ]
+  },
+  "viper_strike": {
+   "reqId": "Dagger",
+   "classIds": [
+    "Dagger"
+   ]
+  },
+  "explosive_arrow": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "armour_breaker": {
+   "reqId": "Any Mace",
+   "classIds": [
+    "One Hand Mace",
+    "Two Hand Mace"
+   ]
+  },
+  "dominating_blow": {
+   "reqId": "Any Melee Weapon and Unarmed",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Unarmed",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Flail",
+    "Talisman"
+   ]
+  },
+  "rain_of_arrows": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "expanding_rain_of_arrows": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "triggered_expanding_rain_of_arrows": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "vaal_expanding_rain_of_arrows": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "lightning_strike": {
+   "reqId": "Quarterstaff",
+   "classIds": [
+    "Warstaff"
+   ]
+  },
+  "vaal_new_lightning_strike": {
+   "reqId": "Any Melee Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Flail",
+    "Talisman"
+   ]
+  },
+  "puncture": {
+   "reqId": "Old Puncture",
+   "classIds": [
+    "Bow",
+    "Claw",
+    "Dagger",
+    "One Hand Sword",
+    "Two Hand Sword"
+   ]
+  },
+  "lightning_arrow": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "vaal_lightning_arrow": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "burning_arrow": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "vaal_burning_arrow": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "ice_shot": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "vaal_ice_shot": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "piety_ice_shot": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "vaal_cyclone": {
+   "reqId": "Any Melee Weapon and Unarmed",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Unarmed",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Flail",
+    "Talisman"
+   ]
+  },
+  "cyclone_channelled": {
+   "reqId": "Any Axe",
+   "classIds": [
+    "One Hand Axe",
+    "Two Hand Axe"
+   ]
+  },
+  "reave": {
+   "reqId": "One Hand Sharp",
+   "classIds": [
+    "Dagger",
+    "Claw",
+    "One Hand Sword"
+   ]
+  },
+  "vaal_reave": {
+   "reqId": "One Hand Sharp",
+   "classIds": [
+    "Dagger",
+    "Claw",
+    "One Hand Sword"
+   ]
+  },
+  "spectral_throw": {
+   "reqId": "Any Melee Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Flail",
+    "Talisman"
+   ]
+  },
+  "vaal_thrown_weapon": {
+   "reqId": "Any Melee Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Flail",
+    "Talisman"
+   ]
+  },
+  "barrage": {
+   "reqId": "WandBow",
+   "classIds": [
+    "Wand",
+    "Bow"
+   ]
+  },
+  "empower_barrage": {
+   "reqId": "SpearBow",
+   "classIds": [
+    "Spear",
+    "Bow"
+   ]
+  },
+  "molten_strike": {
+   "reqId": "Any Mace",
+   "classIds": [
+    "One Hand Mace",
+    "Two Hand Mace"
+   ]
+  },
+  "vaal_molten_strike": {
+   "reqId": "Any Melee Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Flail",
+    "Talisman"
+   ]
+  },
+  "tornado_shot": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "herald_of_ash": {
+   "reqId": "Any Martial Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Bow",
+    "Flail",
+    "Crossbow",
+    "Talisman"
+   ]
+  },
+  "herald_of_ice": {
+   "reqId": "Any Martial Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Bow",
+    "Flail",
+    "Crossbow",
+    "Talisman"
+   ]
+  },
+  "herald_of_thunder": {
+   "reqId": "Any Martial Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Bow",
+    "Flail",
+    "Crossbow",
+    "Talisman"
+   ]
+  },
+  "herald_of_light": {
+   "reqId": "Any Martial Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Bow",
+    "Flail",
+    "Crossbow",
+    "Talisman"
+   ]
+  },
+  "kinetic_blast": {
+   "reqId": "Wand",
+   "classIds": [
+    "Wand"
+   ]
+  },
+  "ice_crash": {
+   "reqId": "Flail",
+   "classIds": [
+    "Flail"
+   ]
+  },
+  "vigilant_strike": {
+   "reqId": "Any Melee Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Flail",
+    "Talisman"
+   ]
+  },
+  "frost_blades": {
+   "reqId": "Any Melee Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Flail",
+    "Talisman"
+   ]
+  },
+  "vulture_leap_slam": {
+   "reqId": "Any MaceSwordAxeStaff",
+   "classIds": [
+    "One Hand Mace",
+    "Two Hand Mace",
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "Staff",
+    "Warstaff"
+   ]
+  },
+  "rolling_magma": {
+   "reqId": "Talisman",
+   "classIds": [
+    "Talisman"
+   ]
+  },
+  "wild_strike": {
+   "reqId": "Any Melee Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Flail",
+    "Talisman"
+   ]
+  },
+  "earthquake": {
+   "reqId": "Any Mace",
+   "classIds": [
+    "One Hand Mace",
+    "Two Hand Mace"
+   ]
+  },
+  "vaal_earthquake": {
+   "reqId": "Any Mace",
+   "classIds": [
+    "One Hand Mace",
+    "Two Hand Mace"
+   ]
+  },
+  "vaal_earthquake_footstep": {
+   "reqId": "Any Mace",
+   "classIds": [
+    "One Hand Mace",
+    "Two Hand Mace"
+   ]
+  },
+  "sunder": {
+   "reqId": "Old Sunder",
+   "classIds": [
+    "One Hand Mace",
+    "Sceptre",
+    "Staff",
+    "Two Hand Mace",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "Unarmed",
+    "Warstaff"
+   ]
+  },
+  "new_sunder": {
+   "reqId": "Any Mace",
+   "classIds": [
+    "One Hand Mace",
+    "Two Hand Mace"
+   ]
+  },
+  "charged_attack_channel": {
+   "reqId": "One Hand Sharp",
+   "classIds": [
+    "Dagger",
+    "Claw",
+    "One Hand Sword"
+   ]
+  },
+  "vaal_charged_attack": {
+   "reqId": "One Hand Sharp",
+   "classIds": [
+    "Dagger",
+    "Claw",
+    "One Hand Sword"
+   ]
+  },
+  "double_slash": {
+   "reqId": "Any SwordAxe",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe"
+   ]
+  },
+  "walking_double_slash": {
+   "reqId": "Any SwordAxe",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe"
+   ]
+  },
+  "maligaro_blade_flurry": {
+   "reqId": "One Hand Sharp",
+   "classIds": [
+    "Dagger",
+    "Claw",
+    "One Hand Sword"
+   ]
+  },
+  "purge_hound_whirling_blades": {
+   "reqId": "One Hand Sharp",
+   "classIds": [
+    "Dagger",
+    "Claw",
+    "One Hand Sword"
+   ]
+  },
+  "charged_dash_aim": {
+   "reqId": "Any Sword",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword"
+   ]
+  },
+  "endurance_charge_slam": {
+   "reqId": "Old Endurance Charge Slam",
+   "classIds": [
+    "One Hand Mace",
+    "Sceptre",
+    "Staff",
+    "Two Hand Mace",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Sword",
+    "Two Hand Sword",
+    "Unarmed",
+    "Warstaff"
+   ]
+  },
+  "holy_path": {
+   "reqId": "Any Melee Weapon and Unarmed",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Unarmed",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Flail",
+    "Talisman"
+   ]
+  },
+  "smite": {
+   "reqId": "Any Melee Weapon and Unarmed",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Unarmed",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Flail",
+    "Talisman"
+   ]
+  },
+  "vaal_smite": {
+   "reqId": "Any Melee Weapon and Unarmed",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Unarmed",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Flail",
+    "Talisman"
+   ]
+  },
+  "virulent_arrow": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "rain_of_spores": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "triggered_rain_of_spores": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "bladestorm": {
+   "reqId": "Any SwordAxe",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe"
+   ]
+  },
+  "blood_spears": {
+   "reqId": "Any SwordAxe",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe"
+   ]
+  },
+  "chain_strike": {
+   "reqId": "One Hand MaceSwordAxe",
+   "classIds": [
+    "One Hand Mace",
+    "One Hand Sword",
+    "One Hand Axe"
+   ]
+  },
+  "support_blunt_shockwave": {
+   "reqId": "Any Blunt Weapon",
+   "classIds": [
+    "One Hand Mace",
+    "Sceptre",
+    "Two Hand Mace",
+    "Staff",
+    "Warstaff"
+   ]
+  },
+  "gore_shockwave": {
+   "reqId": "Two Hand Axe",
+   "classIds": [
+    "Two Hand Axe"
+   ]
+  },
+  "slice_and_dice": {
+   "reqId": "Any Melee Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Flail",
+    "Talisman"
+   ]
+  },
+  "serpent_strike": {
+   "reqId": "One Hand Sharp",
+   "classIds": [
+    "Dagger",
+    "Claw",
+    "One Hand Sword"
+   ]
+  },
+  "coiling_assault": {
+   "reqId": "One Hand Sharp",
+   "classIds": [
+    "Dagger",
+    "Claw",
+    "One Hand Sword"
+   ]
+  },
+  "snapping_adder": {
+   "reqId": "DaggerClaw",
+   "classIds": [
+    "Dagger",
+    "Claw"
+   ]
+  },
+  "vaal_snapping_adder": {
+   "reqId": "DaggerClaw",
+   "classIds": [
+    "Dagger",
+    "Claw"
+   ]
+  },
+  "ensnaring_arrow": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "siege_ballista": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "artillery_ballista_projectile": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "snipe": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "ancestral_cry": {
+   "reqId": "Any Melee Weapon and Unarmed",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Unarmed",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Flail",
+    "Talisman"
+   ]
+  },
+  "earthshatter": {
+   "reqId": "Any Mace",
+   "classIds": [
+    "One Hand Mace",
+    "Two Hand Mace"
+   ]
+  },
+  "ancestral_warrior_totem": {
+   "reqId": "Any Mace",
+   "classIds": [
+    "One Hand Mace",
+    "Two Hand Mace"
+   ]
+  },
+  "summon_meta_totem_ballista": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "mortar_cannon": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "rage_vortex": {
+   "reqId": "Any SwordAxe",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe"
+   ]
+  },
+  "blade_trap": {
+   "reqId": "One Hand Sharp",
+   "classIds": [
+    "Dagger",
+    "Claw",
+    "One Hand Sword"
+   ]
+  },
+  "storm_rain": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "shield_crush": {
+   "reqId": "Shield",
+   "classIds": [
+    "Shield"
+   ]
+  },
+  "spectral_helix": {
+   "reqId": "Any Melee Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Flail",
+    "Talisman"
+   ]
+  },
+  "boneshatter": {
+   "reqId": "Any Mace",
+   "classIds": [
+    "One Hand Mace",
+    "Two Hand Mace"
+   ]
+  },
+  "energy_blade": {
+   "reqId": "Old Energy Blade",
+   "classIds": [
+    "Claw",
+    "Dagger",
+    "FishingRod",
+    "One Hand Axe",
+    "One Hand Mace",
+    "One Hand Sword",
+    "Sceptre",
+    "Staff",
+    "Two Hand Axe",
+    "Two Hand Mace",
+    "Two Hand Sword",
+    "Wand",
+    "Warstaff"
+   ]
+  },
+  "vaal_cleave": {
+   "reqId": "Any SwordAxe",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe"
+   ]
+  },
+  "rapid_assault": {
+   "reqId": "Spear",
+   "classIds": [
+    "Spear"
+   ]
+  },
+  "retreating_strike": {
+   "reqId": "Spear",
+   "classIds": [
+    "Spear"
+   ]
+  },
+  "blood_hunt": {
+   "reqId": "Spear",
+   "classIds": [
+    "Spear"
+   ]
+  },
+  "disengage": {
+   "reqId": "Spear",
+   "classIds": [
+    "Spear"
+   ]
+  },
+  "drive_by_charge": {
+   "reqId": "Any Melee One Hand and Unarmed",
+   "classIds": [
+    "One Hand Sword",
+    "One Hand Axe",
+    "One Hand Mace",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Flail",
+    "Unarmed"
+   ]
+  },
+  "whirling_slash": {
+   "reqId": "Spear",
+   "classIds": [
+    "Spear"
+   ]
+  },
+  "whirlwind_spear": {
+   "reqId": "Spear",
+   "classIds": [
+    "Spear"
+   ]
+  },
+  "spearfield": {
+   "reqId": "Spear",
+   "classIds": [
+    "Spear"
+   ]
+  },
+  "lightning_spear": {
+   "reqId": "Spear",
+   "classIds": [
+    "Spear"
+   ]
+  },
+  "fire_wake_spear": {
+   "reqId": "Spear",
+   "classIds": [
+    "Spear"
+   ]
+  },
+  "power_shot": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "explosive_shot": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "explosive_shot_ammo": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "high_velocity_rounds": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "high_velocity_rounds_ammo": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "glacial_bolt": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "glacial_bolt_ammo": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "plasma_blast": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "plasma_blast_ammo": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "siege_cascade": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "siege_cascade_ammo": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "hailstorm_rounds": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "hailstorm_rounds_ammo": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "stormblast_bolts": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "stormblast_bolts_ammo": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "axe_chop": {
+   "reqId": "Any Axe",
+   "classIds": [
+    "One Hand Axe",
+    "Two Hand Axe"
+   ]
+  },
+  "axe_slash": {
+   "reqId": "Any Axe",
+   "classIds": [
+    "One Hand Axe",
+    "Two Hand Axe"
+   ]
+  },
+  "whirling_assault": {
+   "reqId": "Quarterstaff",
+   "classIds": [
+    "Warstaff"
+   ]
+  },
+  "rolling_slam": {
+   "reqId": "Any Mace",
+   "classIds": [
+    "One Hand Mace",
+    "Two Hand Mace"
+   ]
+  },
+  "escape_shot": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "supercharged_slam": {
+   "reqId": "Two Hand Mace",
+   "classIds": [
+    "Two Hand Mace"
+   ]
+  },
+  "wind_blast": {
+   "reqId": "Quarterstaff",
+   "classIds": [
+    "Warstaff"
+   ]
+  },
+  "evasive_strike": {
+   "reqId": "Claw",
+   "classIds": [
+    "Claw"
+   ]
+  },
+  "blade_dance": {
+   "reqId": "Any Sword",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword"
+   ]
+  },
+  "claw_rake": {
+   "reqId": "Claw",
+   "classIds": [
+    "Claw"
+   ]
+  },
+  "spinning_flail": {
+   "reqId": "Flail",
+   "classIds": [
+    "Flail"
+   ]
+  },
+  "volcanic_fissure": {
+   "reqId": "Any Mace",
+   "classIds": [
+    "One Hand Mace",
+    "Two Hand Mace"
+   ]
+  },
+  "frozen_legion": {
+   "reqId": "Flail",
+   "classIds": [
+    "Flail"
+   ]
+  },
+  "frozen_sweep": {
+   "reqId": "Flail",
+   "classIds": [
+    "Flail"
+   ]
+  },
+  "axe_execute": {
+   "reqId": "Any Axe",
+   "classIds": [
+    "One Hand Axe",
+    "Two Hand Axe"
+   ]
+  },
+  "vaal_volcanic_fissure": {
+   "reqId": "Old Sunder",
+   "classIds": [
+    "One Hand Mace",
+    "Sceptre",
+    "Staff",
+    "Two Hand Mace",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "Unarmed",
+    "Warstaff"
+   ]
+  },
+  "axe_leaping_chop": {
+   "reqId": "Any Axe",
+   "classIds": [
+    "One Hand Axe",
+    "Two Hand Axe"
+   ]
+  },
+  "axe_whirling_slash": {
+   "reqId": "Any Axe",
+   "classIds": [
+    "One Hand Axe",
+    "Two Hand Axe"
+   ]
+  },
+  "axe_raised_chop": {
+   "reqId": "Any Axe",
+   "classIds": [
+    "One Hand Axe",
+    "Two Hand Axe"
+   ]
+  },
+  "axe_heavy_cleave": {
+   "reqId": "Any Axe",
+   "classIds": [
+    "One Hand Axe",
+    "Two Hand Axe"
+   ]
+  },
+  "palm_strike_placeholder": {
+   "reqId": "Quarterstaff",
+   "classIds": [
+    "Warstaff"
+   ]
+  },
+  "glacial_cascade_attack": {
+   "reqId": "Quarterstaff",
+   "classIds": [
+    "Warstaff"
+   ]
+  },
+  "storm_blade": {
+   "reqId": "Two Hand Sword",
+   "classIds": [
+    "Two Hand Sword"
+   ]
+  },
+  "wave_of_frost": {
+   "reqId": "Quarterstaff",
+   "classIds": [
+    "Warstaff"
+   ]
+  },
+  "sword_lunge": {
+   "reqId": "Any Sword",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword"
+   ]
+  },
+  "rapid_shot_default": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "rapid_shot": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "rapid_shot_ammo": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "armour_piercing_rounds": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "armour_piercing_rounds_ammo": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "ice_shards": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "ice_shards_ammo": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "shockburst_rounds": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "shockburst_rounds_ammo": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "burst_shot_default": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "incendiary_shot": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "incendiary_shot_ammo": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "fragmentation_rounds": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "fragmentation_rounds_ammo": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "permafrost_bolts": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "permafrost_bolts_ammo": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "galvanic_shards": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "galvanic_shards_ammo": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "quarterstaff_storm_strike": {
+   "reqId": "Quarterstaff",
+   "classIds": [
+    "Warstaff"
+   ]
+  },
+  "ice_strike": {
+   "reqId": "Quarterstaff",
+   "classIds": [
+    "Warstaff"
+   ]
+  },
+  "flame_slice": {
+   "reqId": "Any Sword",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword"
+   ]
+  },
+  "ring_of_blades": {
+   "reqId": "Dagger",
+   "classIds": [
+    "Dagger"
+   ]
+  },
+  "new_lightning_strike": {
+   "reqId": "Quarterstaff",
+   "classIds": [
+    "Warstaff"
+   ]
+  },
+  "triple_slash": {
+   "reqId": "Any Sword",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword"
+   ]
+  },
+  "hyper_slash": {
+   "reqId": "Claw",
+   "classIds": [
+    "Claw"
+   ]
+  },
+  "shadow_dash": {
+   "reqId": "Dagger",
+   "classIds": [
+    "Dagger"
+   ]
+  },
+  "shadow_ambush": {
+   "reqId": "Dagger",
+   "classIds": [
+    "Dagger"
+   ]
+  },
+  "artillery_ballista": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "shield_bash": {
+   "reqId": "One Hand Sword",
+   "classIds": [
+    "One Hand Sword"
+   ]
+  },
+  "killing_palm": {
+   "reqId": "Quarterstaff",
+   "classIds": [
+    "Warstaff"
+   ]
+  },
+  "falling_thunder": {
+   "reqId": "Quarterstaff",
+   "classIds": [
+    "Warstaff"
+   ]
+  },
+  "spinning_throw": {
+   "reqId": "Any Axe",
+   "classIds": [
+    "One Hand Axe",
+    "Two Hand Axe"
+   ]
+  },
+  "shattering_palm": {
+   "reqId": "Quarterstaff",
+   "classIds": [
+    "Warstaff"
+   ]
+  },
+  "spiral_volley": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "pestilent_slash": {
+   "reqId": "Dagger",
+   "classIds": [
+    "Dagger"
+   ]
+  },
+  "bear_maul": {
+   "reqId": "Talisman",
+   "classIds": [
+    "Talisman"
+   ]
+  },
+  "ice_path": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "shadow_thief_slash": {
+   "reqId": "Dagger",
+   "classIds": [
+    "Dagger"
+   ]
+  },
+  "leaping_axe_catch": {
+   "reqId": "Any Thrown Axe",
+   "classIds": [
+    "Thrown One Hand Axe",
+    "Thrown Two Hand Axe"
+   ]
+  },
+  "plunging_blade": {
+   "reqId": "Any Sword",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword"
+   ]
+  },
+  "wolf_howl": {
+   "reqId": "Talisman",
+   "classIds": [
+    "Talisman"
+   ]
+  },
+  "spiral_throw": {
+   "reqId": "Any Axe",
+   "classIds": [
+    "One Hand Axe",
+    "Two Hand Axe"
+   ]
+  },
+  "heat_seeking_arrow": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "wolf_pounce": {
+   "reqId": "Talisman",
+   "classIds": [
+    "Talisman"
+   ]
+  },
+  "player_melee": {
+   "reqId": "Any Melee Weapon and Unarmed",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Unarmed",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Flail",
+    "Talisman"
+   ]
+  },
+  "electric_fence_arrow": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "bear_rampage": {
+   "reqId": "Talisman",
+   "classIds": [
+    "Talisman"
+   ]
+  },
+  "player_ranged_spear": {
+   "reqId": "Spear",
+   "classIds": [
+    "Spear"
+   ]
+  },
+  "furious_slam": {
+   "reqId": "Talisman",
+   "classIds": [
+    "Talisman"
+   ]
+  },
+  "ferocious_roar": {
+   "reqId": "Talisman",
+   "classIds": [
+    "Talisman"
+   ]
+  },
+  "void_illusion": {
+   "reqId": "Any Martial Weapon and Unarmed",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Bow",
+    "Flail",
+    "Crossbow",
+    "Unarmed",
+    "Talisman"
+   ]
+  },
+  "shield_phalanx": {
+   "reqId": "FlailShield",
+   "classIds": [
+    "Flail",
+    "Shield"
+   ]
+  },
+  "shield_phalanx_bash": {
+   "reqId": "Flail",
+   "classIds": [
+    "Flail"
+   ]
+  },
+  "unload_ammo": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "explosive_grenade": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "explosive_grenade_triggered": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "flash_grenade": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "toxic_grenade": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "oil_grenade": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "oil_grenade_triggered": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "shock_grenade": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "tempest_flurry": {
+   "reqId": "Quarterstaff",
+   "classIds": [
+    "Warstaff"
+   ]
+  },
+  "staggering_palm": {
+   "reqId": "Quarterstaff",
+   "classIds": [
+    "Warstaff"
+   ]
+  },
+  "wind_palm_projectile": {
+   "reqId": "Quarterstaff",
+   "classIds": [
+    "Warstaff"
+   ]
+  },
+  "charged_staff": {
+   "reqId": "Quarterstaff",
+   "classIds": [
+    "Warstaff"
+   ]
+  },
+  "charged_staff_shockwave": {
+   "reqId": "Quarterstaff",
+   "classIds": [
+    "Warstaff"
+   ]
+  },
+  "siphoning_strike": {
+   "reqId": "Quarterstaff",
+   "classIds": [
+    "Warstaff"
+   ]
+  },
+  "tempest_bell": {
+   "reqId": "Quarterstaff",
+   "classIds": [
+    "Warstaff"
+   ]
+  },
+  "frozen_locus": {
+   "reqId": "Quarterstaff",
+   "classIds": [
+    "Warstaff"
+   ]
+  },
+  "detonating_arrow": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "poison_burst_arrow": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "toxic_growth": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "stormcaller_arrow": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "phantasmal_arrow": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "ripwire_arrow": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "lightning_rod": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "gas_arrow": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "rain_of_arrows_new": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "electrocuting_arrow": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "perfect_strike": {
+   "reqId": "Any Mace",
+   "classIds": [
+    "One Hand Mace",
+    "Two Hand Mace"
+   ]
+  },
+  "shield_block": {
+   "reqId": "Shield",
+   "classIds": [
+    "Shield"
+   ]
+  },
+  "hazardous_holdout": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "resonating_shield": {
+   "reqId": "Shield",
+   "classIds": [
+    "Shield"
+   ]
+  },
+  "magma_barrier": {
+   "reqId": "Any Shield",
+   "classIds": [
+    "Shield",
+    "Buckler"
+   ]
+  },
+  "magma_barrier_explosion": {
+   "reqId": "Any Shield",
+   "classIds": [
+    "Shield",
+    "Buckler"
+   ]
+  },
+  "player_melee_quarterstaff": {
+   "reqId": "Quarterstaff",
+   "classIds": [
+    "Warstaff"
+   ]
+  },
+  "player_melee_flail": {
+   "reqId": "Flail",
+   "classIds": [
+    "Flail"
+   ]
+  },
+  "player_melee_1hsword": {
+   "reqId": "One Hand Sword",
+   "classIds": [
+    "One Hand Sword"
+   ]
+  },
+  "player_melee_sword_sword": {
+   "reqId": "Any Sword",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword"
+   ]
+  },
+  "player_melee_2hsword": {
+   "reqId": "Two Hand Sword",
+   "classIds": [
+    "Two Hand Sword"
+   ]
+  },
+  "player_melee_1haxe": {
+   "reqId": "One Hand Axe",
+   "classIds": [
+    "One Hand Axe"
+   ]
+  },
+  "player_melee_axe_axe": {
+   "reqId": "Any Axe",
+   "classIds": [
+    "One Hand Axe",
+    "Two Hand Axe"
+   ]
+  },
+  "player_melee_2haxe": {
+   "reqId": "Two Hand Axe",
+   "classIds": [
+    "Two Hand Axe"
+   ]
+  },
+  "player_melee_1hmace": {
+   "reqId": "One Hand Mace",
+   "classIds": [
+    "One Hand Mace"
+   ]
+  },
+  "player_melee_mace_mace": {
+   "reqId": "Any Mace",
+   "classIds": [
+    "One Hand Mace",
+    "Two Hand Mace"
+   ]
+  },
+  "player_melee_2hmace": {
+   "reqId": "Two Hand Mace",
+   "classIds": [
+    "Two Hand Mace"
+   ]
+  },
+  "player_melee_claw": {
+   "reqId": "Claw",
+   "classIds": [
+    "Claw"
+   ]
+  },
+  "player_melee_claw_claw": {
+   "reqId": "Claw",
+   "classIds": [
+    "Claw"
+   ]
+  },
+  "player_melee_dagger": {
+   "reqId": "Dagger",
+   "classIds": [
+    "Dagger"
+   ]
+  },
+  "player_melee_dagger_dagger": {
+   "reqId": "Dagger",
+   "classIds": [
+    "Dagger"
+   ]
+  },
+  "player_melee_spear": {
+   "reqId": "Spear",
+   "classIds": [
+    "Spear"
+   ]
+  },
+  "player_melee_spear_no_offhand": {
+   "reqId": "Spear",
+   "classIds": [
+    "Spear"
+   ]
+  },
+  "player_melee_bow": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "player_melee_crossbow": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "player_melee_grenade_launcher": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "playtest_attack": {
+   "reqId": "Any Melee Weapon and Unarmed",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Unarmed",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Flail",
+    "Talisman"
+   ]
+  },
+  "playtest_slam": {
+   "reqId": "Any MaceSwordAxe",
+   "classIds": [
+    "One Hand Mace",
+    "Two Hand Mace",
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe"
+   ]
+  },
+  "shockwave_totem": {
+   "reqId": "Any Martial Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Bow",
+    "Flail",
+    "Crossbow",
+    "Talisman"
+   ]
+  },
+  "totem_shockwave_quake": {
+   "reqId": "Any Martial Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Bow",
+    "Flail",
+    "Crossbow",
+    "Talisman"
+   ]
+  },
+  "vine_arrow": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "twister": {
+   "reqId": "Spear",
+   "classIds": [
+    "Spear"
+   ]
+  },
+  "explosive_spear": {
+   "reqId": "Spear",
+   "classIds": [
+    "Spear"
+   ]
+  },
+  "spear_wind_vortex": {
+   "reqId": "Spear",
+   "classIds": [
+    "Spear"
+   ]
+  },
+  "elemental_siphon": {
+   "reqId": "Spear",
+   "classIds": [
+    "Spear"
+   ]
+  },
+  "thunderous_leap": {
+   "reqId": "Spear",
+   "classIds": [
+    "Spear"
+   ]
+  },
+  "wind_dancer": {
+   "reqId": "Any Martial Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Bow",
+    "Flail",
+    "Crossbow",
+    "Talisman"
+   ]
+  },
+  "triggered_wind_dancer": {
+   "reqId": "Any Martial Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Bow",
+    "Flail",
+    "Crossbow",
+    "Talisman"
+   ]
+  },
+  "spinning_inferno": {
+   "reqId": "Any Mace",
+   "classIds": [
+    "One Hand Mace",
+    "Two Hand Mace"
+   ]
+  },
+  "molten_blast": {
+   "reqId": "Any Mace",
+   "classIds": [
+    "One Hand Mace",
+    "Two Hand Mace"
+   ]
+  },
+  "hammer_of_the_gods": {
+   "reqId": "Any Mace",
+   "classIds": [
+    "One Hand Mace",
+    "Two Hand Mace"
+   ]
+  },
+  "hammer_of_ngamahu": {
+   "reqId": "Any Mace",
+   "classIds": [
+    "One Hand Mace",
+    "Two Hand Mace"
+   ]
+  },
+  "stampede": {
+   "reqId": "Any Mace",
+   "classIds": [
+    "One Hand Mace",
+    "Two Hand Mace"
+   ]
+  },
+  "shield_wall": {
+   "reqId": "Shield",
+   "classIds": [
+    "Shield"
+   ]
+  },
+  "fortifying_cry": {
+   "reqId": "Shield",
+   "classIds": [
+    "Shield"
+   ]
+  },
+  "fortifying_cry_shockwave": {
+   "reqId": "Shield",
+   "classIds": [
+    "Shield"
+   ]
+  },
+  "shockchain_arrow": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "vaulting_impact": {
+   "reqId": "Quarterstaff",
+   "classIds": [
+    "Warstaff"
+   ]
+  },
+  "storm_wave": {
+   "reqId": "Quarterstaff",
+   "classIds": [
+    "Warstaff"
+   ]
+  },
+  "mantra_of_destruction": {
+   "reqId": "Quarterstaff",
+   "classIds": [
+    "Warstaff"
+   ]
+  },
+  "explosive_concoction": {
+   "reqId": "Unarmed",
+   "classIds": [
+    "Unarmed"
+   ]
+  },
+  "fulminating_concoction": {
+   "reqId": "Unarmed",
+   "classIds": [
+    "Unarmed"
+   ]
+  },
+  "shattering_concoction": {
+   "reqId": "Unarmed",
+   "classIds": [
+    "Unarmed"
+   ]
+  },
+  "acidic_concoction": {
+   "reqId": "Unarmed",
+   "classIds": [
+    "Unarmed"
+   ]
+  },
+  "bleeding_concoction": {
+   "reqId": "Unarmed",
+   "classIds": [
+    "Unarmed"
+   ]
+  },
+  "hand_of_chayula": {
+   "reqId": "Quarterstaff",
+   "classIds": [
+    "Warstaff"
+   ]
+  },
+  "freezing_word": {
+   "reqId": "Quarterstaff",
+   "classIds": [
+    "Warstaff"
+   ]
+  },
+  "triggered_freezing_word_explosion": {
+   "reqId": "Quarterstaff",
+   "classIds": [
+    "Warstaff"
+   ]
+  },
+  "emergency_reload": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "cluster_grenade": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "cluster_grenade_mini": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "shard_scavenger": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "magnetic_salvo": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "freezing_salvo": {
+   "reqId": "Bow",
+   "classIds": [
+    "Bow"
+   ]
+  },
+  "herald_of_plague": {
+   "reqId": "Any Martial Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Bow",
+    "Flail",
+    "Crossbow",
+    "Talisman"
+   ]
+  },
+  "herald_of_blood": {
+   "reqId": "Any Martial Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Bow",
+    "Flail",
+    "Crossbow",
+    "Talisman"
+   ]
+  },
+  "mirage_deadeye": {
+   "reqId": "SpearBowCrossbow",
+   "classIds": [
+    "Spear",
+    "Bow",
+    "Crossbow"
+   ]
+  },
+  "mirage_archer": {
+   "reqId": "SpearBowCrossbow",
+   "classIds": [
+    "Spear",
+    "Bow",
+    "Crossbow"
+   ]
+  },
+  "create_mirage": {
+   "reqId": "SpearBowCrossbow",
+   "classIds": [
+    "Spear",
+    "Bow",
+    "Crossbow"
+   ]
+  },
+  "create_mirage_deadeye": {
+   "reqId": "SpearBowCrossbow",
+   "classIds": [
+    "Spear",
+    "Bow",
+    "Crossbow"
+   ]
+  },
+  "gathering_storm": {
+   "reqId": "Quarterstaff",
+   "classIds": [
+    "Warstaff"
+   ]
+  },
+  "shattering_spite": {
+   "reqId": "Spear",
+   "classIds": [
+    "Spear"
+   ]
+  },
+  "vivid_stampede": {
+   "reqId": "Any Martial Weapon and Unarmed",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Bow",
+    "Flail",
+    "Crossbow",
+    "Unarmed",
+    "Talisman"
+   ]
+  },
+  "hollow_form": {
+   "reqId": "Any Melee Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Flail",
+    "Talisman"
+   ]
+  },
+  "hollow_focus": {
+   "reqId": "Any Melee Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Flail",
+    "Talisman"
+   ]
+  },
+  "hollow_resonance": {
+   "reqId": "Non-Talisman Melee Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Flail"
+   ]
+  },
+  "meta_ranged_attack_on_ignite": {
+   "reqId": "Any Martial Weapon and Unarmed",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Bow",
+    "Flail",
+    "Crossbow",
+    "Unarmed",
+    "Talisman"
+   ]
+  },
+  "meta_ranged_attack_on_shock": {
+   "reqId": "Any Martial Weapon and Unarmed",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Bow",
+    "Flail",
+    "Crossbow",
+    "Unarmed",
+    "Talisman"
+   ]
+  },
+  "meta_ranged_attack_on_freeze": {
+   "reqId": "Any Martial Weapon and Unarmed",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Bow",
+    "Flail",
+    "Crossbow",
+    "Unarmed",
+    "Talisman"
+   ]
+  },
+  "meta_arcane_archery": {
+   "reqId": "Any Martial Weapon and Unarmed",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Bow",
+    "Flail",
+    "Crossbow",
+    "Unarmed",
+    "Talisman"
+   ]
+  },
+  "whirlwind_lance": {
+   "reqId": "Spear",
+   "classIds": [
+    "Spear"
+   ]
+  },
+  "wind_serpents_fury": {
+   "reqId": "Spear",
+   "classIds": [
+    "Spear"
+   ]
+  },
+  "rake": {
+   "reqId": "Spear",
+   "classIds": [
+    "Spear"
+   ]
+  },
+  "spear_of_solaris": {
+   "reqId": "Spear",
+   "classIds": [
+    "Spear"
+   ]
+  },
+  "storm_lance": {
+   "reqId": "Spear",
+   "classIds": [
+    "Spear"
+   ]
+  },
+  "parry": {
+   "reqId": "Buckler",
+   "classIds": [
+    "Buckler"
+   ]
+  },
+  "fangs_of_frost": {
+   "reqId": "Spear",
+   "classIds": [
+    "Spear"
+   ]
+  },
+  "elemental_sundering": {
+   "reqId": "Spear",
+   "classIds": [
+    "Spear"
+   ]
+  },
+  "glacial_lance": {
+   "reqId": "Spear",
+   "classIds": [
+    "Spear"
+   ]
+  },
+  "primal_strikes": {
+   "reqId": "Spear",
+   "classIds": [
+    "Spear"
+   ]
+  },
+  "cull_the_weak": {
+   "reqId": "Spear",
+   "classIds": [
+    "Spear"
+   ]
+  },
+  "manifest_weapon": {
+   "reqId": "Any Melee Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Flail",
+    "Talisman"
+   ]
+  },
+  "temper_weapon": {
+   "reqId": "Non-Talisman Melee Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Flail"
+   ]
+  },
+  "temper_weapon_combustion": {
+   "reqId": "Non-Talisman Melee Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Flail"
+   ]
+  },
+  "tree_whip": {
+   "reqId": "Talisman",
+   "classIds": [
+    "Talisman"
+   ]
+  },
+  "rend": {
+   "reqId": "Talisman",
+   "classIds": [
+    "Talisman"
+   ]
+  },
+  "wing_blast": {
+   "reqId": "Talisman",
+   "classIds": [
+    "Talisman"
+   ]
+  },
+  "oil_barrage": {
+   "reqId": "Talisman",
+   "classIds": [
+    "Talisman"
+   ]
+  },
+  "wyvern_flame_breath": {
+   "reqId": "Talisman",
+   "classIds": [
+    "Talisman"
+   ]
+  },
+  "shred": {
+   "reqId": "Talisman",
+   "classIds": [
+    "Talisman"
+   ]
+  },
+  "bear_fury_of_the_mountain": {
+   "reqId": "Talisman",
+   "classIds": [
+    "Talisman"
+   ]
+  },
+  "wolf_cross_slash": {
+   "reqId": "Talisman",
+   "classIds": [
+    "Talisman"
+   ]
+  },
+  "requiem": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "requiem_ammo": {
+   "reqId": "Crossbow",
+   "classIds": [
+    "Crossbow"
+   ]
+  },
+  "lunar_assault": {
+   "reqId": "Talisman",
+   "classIds": [
+    "Talisman"
+   ]
+  },
+  "wyvern_devour": {
+   "reqId": "Talisman",
+   "classIds": [
+    "Talisman"
+   ]
+  },
+  "wolf_lunar_blessing": {
+   "reqId": "Talisman",
+   "classIds": [
+    "Talisman"
+   ]
+  },
+  "arctic_howl": {
+   "reqId": "Talisman",
+   "classIds": [
+    "Talisman"
+   ]
+  },
+  "forge_hammer": {
+   "reqId": "Any Mace",
+   "classIds": [
+    "One Hand Mace",
+    "Two Hand Mace"
+   ]
+  },
+  "toggle_mount_minion": {
+   "reqId": "SpearBow",
+   "classIds": [
+    "Spear",
+    "Bow"
+   ]
+  },
+  "toxic_domain": {
+   "reqId": "SpearBowCrossbow",
+   "classIds": [
+    "Spear",
+    "Bow",
+    "Crossbow"
+   ]
+  },
+  "ice_tipped_arrows": {
+   "reqId": "SpearBow",
+   "classIds": [
+    "Spear",
+    "Bow"
+   ]
+  },
+  "crackling_palm": {
+   "reqId": "Unarmed",
+   "classIds": [
+    "Unarmed"
+   ]
+  },
+  "gelid_palm": {
+   "reqId": "Unarmed",
+   "classIds": [
+    "Unarmed"
+   ]
+  },
+  "the_flawed_edict": {
+   "reqId": "Any Melee Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Flail",
+    "Talisman"
+   ]
+  },
+  "summon_undead_companion": {
+   "reqId": "Unborn Lich",
+   "classIds": [
+    "Staff"
+   ]
+  },
+  "bear_landslide": {
+   "reqId": "Talisman",
+   "classIds": [
+    "Talisman"
+   ]
+  },
+  "primal_avatar_quadrilla_slam": {
+   "reqId": "Talisman",
+   "classIds": [
+    "Talisman"
+   ]
+  },
+  "savage_fury_active": {
+   "reqId": "Talisman",
+   "classIds": [
+    "Talisman"
+   ]
+  },
+  "walking_calamity": {
+   "reqId": "Talisman",
+   "classIds": [
+    "Talisman"
+   ]
+  },
+  "walking_calamity_meteor": {
+   "reqId": "Talisman",
+   "classIds": [
+    "Talisman"
+   ]
+  },
+  "the_stars_answer": {
+   "reqId": "Wand",
+   "classIds": [
+    "Wand"
+   ]
+  },
+  "the_stars_answer_comet": {
+   "reqId": "Wand",
+   "classIds": [
+    "Wand"
+   ]
+  },
+  "feral_invocation": {
+   "reqId": "Talisman",
+   "classIds": [
+    "Talisman"
+   ]
+  },
+  "totemic_aegis": {
+   "reqId": "Shield",
+   "classIds": [
+    "Shield"
+   ]
+  },
+  "wolf_lunar_blessing_beam_attack": {
+   "reqId": "Talisman",
+   "classIds": [
+    "Talisman"
+   ]
+  },
+  "archon_of_chayula": {
+   "reqId": "Any Martial Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Bow",
+    "Flail",
+    "Crossbow",
+    "Talisman"
+   ]
+  },
+  "starborn_onslaught": {
+   "reqId": "Two Hand Mace",
+   "classIds": [
+    "Two Hand Mace"
+   ]
+  },
+  "nightfall_soaring_midnight": {
+   "reqId": "Any Shield or ThrownShield",
+   "classIds": [
+    "Shield",
+    "Thrown Shield"
+   ]
+  },
+  "nightfall_embrace_the_fall": {
+   "reqId": "Any Shield or ThrownShield",
+   "classIds": [
+    "Shield",
+    "Thrown Shield"
+   ]
+  },
+  "archon_of_chayula_tornado": {
+   "reqId": "Any Martial Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Bow",
+    "Flail",
+    "Crossbow",
+    "Talisman"
+   ]
+  },
+  "crushing_fear": {
+   "reqId": "Quarterstaff",
+   "classIds": [
+    "Warstaff"
+   ]
+  },
+  "concussive_runes": {
+   "reqId": "Any Martial Weapon and Unarmed",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Bow",
+    "Flail",
+    "Crossbow",
+    "Unarmed",
+    "Talisman"
+   ]
+  },
+  "triggered_fist_of_kalguur": {
+   "reqId": "Any Melee Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Flail",
+    "Talisman"
+   ]
+  },
+  "fragments_of_the_past": {
+   "reqId": "Any Martial Weapon and Unarmed",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Bow",
+    "Flail",
+    "Crossbow",
+    "Unarmed",
+    "Talisman"
+   ]
+  },
+  "voltaic_barrier": {
+   "reqId": "Non-Talisman Martial Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Bow",
+    "Flail",
+    "Crossbow"
+   ]
+  },
+  "voltaic_barrier_triggered_chain_lightning": {
+   "reqId": "Non-Talisman Martial Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Bow",
+    "Flail",
+    "Crossbow"
+   ]
+  },
+  "rain_of_blades": {
+   "reqId": "Any Martial Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Bow",
+    "Flail",
+    "Crossbow",
+    "Talisman"
+   ]
+  },
+  "rain_of_blades_triggered_blade": {
+   "reqId": "Any Martial Weapon",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Bow",
+    "Flail",
+    "Crossbow",
+    "Talisman"
+   ]
+  },
+  "smash_to_smithereens": {
+   "reqId": "Any Martial Weapon and Unarmed",
+   "classIds": [
+    "One Hand Sword",
+    "Two Hand Sword",
+    "One Hand Axe",
+    "Two Hand Axe",
+    "One Hand Mace",
+    "Two Hand Mace",
+    "Warstaff",
+    "Claw",
+    "Dagger",
+    "Spear",
+    "Bow",
+    "Flail",
+    "Crossbow",
+    "Unarmed",
+    "Talisman"
+   ]
+  }
+ }
+}

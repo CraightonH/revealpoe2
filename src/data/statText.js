@@ -204,7 +204,8 @@ export function buildLevelTable(skill) {
 export function buildSections(skill, maxLevel = 20) {
   const sets = skill?.stat_sets ?? [];
   const sections = [];
-  for (const set of sets) {
+  for (let setIndex = 0; setIndex < sets.length; setIndex += 1) {
+    const set = sets[setIndex];
     // label = [id, displayName, …]; prefer the display name (e.g. the id
     // "BoltsNoDescription" displays as "Bolts").
     const label = set.label?.[1] ?? set.label?.[0] ?? '';
@@ -240,7 +241,10 @@ export function buildSections(skill, maxLevel = 20) {
       if (r) quality.push(r);
     }
 
-    if (lines.length || quality.length) sections.push({ label, lines, quality });
+    // setIndex is the source stat_set position (NOT the emitted section position —
+    // sets with no lines/quality are skipped). Kept so the builder can attach the
+    // Gemling alt quality, which targets a specific stat set. See scripts/graph/gems.js.
+    if (lines.length || quality.length) sections.push({ label, lines, quality, setIndex });
   }
   return sections;
 }

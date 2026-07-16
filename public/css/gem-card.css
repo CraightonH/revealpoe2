@@ -279,6 +279,14 @@ html[data-card-size="xl"] .augment-section { zoom: 1.5; }
 }
 .secondaryQualityMod a { color: var(--crafted-color); border-bottom: 1px dotted var(--crafted-color); }
 
+/* Gemling Legionnaire alternate quality — the in-game #b4b4ff periwinkle. No text
+   label distinguishes it; the colour alone is the recognisable cue (numbers stay
+   white via .mod-value, matching every other stat line). */
+.altQualityMod {
+  color: #b4b4ff;
+}
+.altQualityMod a { color: #b4b4ff; border-bottom: 1px dotted #b4b4ff; }
+
 .quality-text { padding: 4px 14px 1px; text-align: center; }
 .quality-text .white { color: var(--normal-color); font-size: 12px; }
 
