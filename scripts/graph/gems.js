@@ -74,14 +74,30 @@ const GEM_LEVEL_CAP = 20; // matches src/data/gems.js display cap
 // "Bolts" projectile sub-skill carries the Pins quality — and poe2db shows every
 // section. We concatenate in grants order and de-duplicate identical sections so a
 // gem that grants the same section twice doesn't render it twice.
-function effectSections(skillKeys, skills) {
+//
+// When a gem grants MULTIPLE skills, the secondary skills are distinct effects the
+// user needs to tell apart (Ancestral Cry → Warcry / Volcanic Steps / Volcanic
+// Eruption). Their stat_sets often carry no label, which would render as a headless
+// block indistinguishable from the primary. So for multi-skill gems we fall back to
+// the granted skill's own display name as the section label. We skip the fallback
+// when the skill's name matches the gem's (case-insensitively) — that's the
+// reservation-pattern (Blink, War Banner: a Reservation variant + the active skill,
+// both sharing the gem name), where a name header would just duplicate the card title.
+function effectSections(skillKeys, skills, gemName) {
+  const keys = skillKeys ?? [];
+  const multi = keys.length > 1;
+  const gemNameLc = (gemName ?? '').toLowerCase();
   const seen = new Set();
   const out = [];
-  for (const key of skillKeys ?? []) {
+  for (const key of keys) {
     const skill = skills[key];
     if (!skill) continue;
+    const skillName = skill.active_skill?.display_name ?? '';
+    const nameFallback =
+      multi && skillName && skillName.toLowerCase() !== gemNameLc ? skillName : null;
     for (const s of buildSections(skill, GEM_LEVEL_CAP)) {
-      const sec = { label: s.label, lines: s.lines, quality: s.quality };
+      const label = s.label || nameFallback || '';
+      const sec = { label, lines: s.lines, quality: s.quality };
       const sig = JSON.stringify([sec.label, sec.lines, sec.quality]);
       if (seen.has(sig)) continue;
       seen.add(sig);
@@ -97,7 +113,7 @@ export function gemNodes() {
   const baseItems = loadJson(`${REPOE}/base_items.json`);
   const gemTags = loadJson(`${REPOE}/gem_tags.json`);
   const nodes = records.map((r) => {
-    const sections = effectSections(r.raw.grants_skills, skills);
+    const sections = effectSections(r.raw.grants_skills, skills, r.raw.base_item?.display_name);
     // The faceted inventory-gem icon (distinct from icon_dds_file, the skill icon),
     // looked up in base_items via the gem's item id.
     const baseItem = baseItems[r.raw.base_item?.id];

@@ -217,11 +217,34 @@ function resolveVid(ctx, entry, via, errors, warnings) {
   return node;
 }
 
+// "Required character level per gem level." Overlay shape (GENERATED, not hand-authored —
+// see scripts/ggpk/extract-gem-levels.js):
+//   { "kind": "gem-levels", "reqLevelByGem": { "<gem base-item metadata id>": [reqLvl@1..20] } }
+// This data lives only in the GGPK game tables (RePoE has no per-gem-level requirement),
+// so it's extracted through a canaried build step and patched onto the gem node as a
+// `reqLevels` prop; the gem page derives the Requires-Level + attribute columns from it.
+// Bulk generated data: gem ids absent from the graph (excluded/unreleased) are skipped,
+// NOT errors — unlike the hand-authored overlays whose every reference must resolve.
+function expandGemLevels(data, ctx, via) {
+  const patches = [];
+  let skipped = 0;
+  for (const [gemId, reqLevels] of Object.entries(data.reqLevelByGem ?? {})) {
+    const node = ctx.node(gemId);
+    if (!node || node.kind !== 'gem') { skipped += 1; continue; }
+    patches.push({ id: gemId, props: { reqLevels } });
+  }
+  const warnings = skipped
+    ? [`${via}: ${skipped} generated gem-level entries had no matching gem node (excluded/unreleased) — skipped`]
+    : [];
+  return { nodes: [], edges: [], errors: [], warnings, patches };
+}
+
 const HANDLERS = {
   'weapon-default-skills': expandWeaponDefaultSkills,
   'gear-slots': expandGearSlots,
   'unique-origins': expandUniqueOrigins,
   'cultivated-uniques': expandCultivatedUniques,
+  'gem-levels': expandGemLevels,
 };
 
 // Read overlay files from disk as [{ name, data }] (sorted, deterministic). A

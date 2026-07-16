@@ -19,6 +19,7 @@
     "fetch:tree": "env -u SSL_CERT_FILE -u NODE_EXTRA_CA_CERTS node scripts/fetch-ggg-tree.js",
     "fetch:dat": "env -u SSL_CERT_FILE -u NODE_EXTRA_CA_CERTS node scripts/fetch-ggpk-dat.js",
     "dat": "node scripts/ggpk/cli.js",
+    "build:gem-levels": "node scripts/ggpk/extract-gem-levels.js",
     "bootstrap:cultivated": "env -u SSL_CERT_FILE -u NODE_EXTRA_CA_CERTS node scripts/bootstrap-cultivated.js",
     "build:static": "npm run fetch:tree && npm run build:graph && npm run build:index && npm run build:passives && npm run build:images && npm run build:og && node scripts/prerender.js",
     "build:static:cached": "npm run build:graph && npm run build:index && npm run build:passives && npm run build:images && npm run build:og && node scripts/prerender.js",

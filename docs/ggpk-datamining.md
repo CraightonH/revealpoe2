@@ -10,6 +10,17 @@ gives you tools to explore them. It is **not** wired into the graph builder — 
 wiki still reads only `build/graph.json`. Deciding what to promote into the graph
 comes after we understand what the tables contain.
 
+**Exception — promoting GGPK data into the graph.** When a table holds data the wiki
+genuinely needs and RePoE lacks (so far: per-gem-level **required character level**),
+it is promoted through a **reproducible, canaried extraction step** — never hand-copied.
+The step reads the mirror, asserts known-good anchor values (so a dat-schema column
+drift fails **loudly** instead of baking in garbage — column order is load-bearing,
+see *Gotchas*), and writes a **committed** JSON under `data/manual/` that the normal
+build consumes. The build itself never reads the mirror, so CI needs no GGPK data.
+First instance: `scripts/ggpk/extract-gem-levels.js` (`npm run build:gem-levels`) →
+`data/manual/gem-levels.generated.json`, applied by the `gem-levels` overlay handler
+in `scripts/graph/manual.js`. Regenerate after a game patch alongside `fetch:dat`.
+
 ## Start here (fresh session)
 
 ```
@@ -200,6 +211,7 @@ in mind only as a cross-check if ggpk.exposed is ever unavailable or suspect.
 | `scripts/fetch-ggpk-dat.js` (`npm run fetch:dat`) | Mirror all balance tables + pin dat-schema. Idempotent (size-gated), prunes orphans. |
 | `scripts/ggpk/dat.js` | Pure `.datc64` → JSON decoder. The one place decoding lives. |
 | `scripts/ggpk/cli.js` (`npm run dat`) | `ls` / `schema` / `grep` / `dump` / `catalog`. |
+| `scripts/ggpk/extract-gem-levels.js` (`npm run build:gem-levels`) | Promote per-gem-level required character level (ItemExperiencePerLevel × SkillGems) into committed `data/manual/gem-levels.generated.json`. Canaried: schema drift fails loudly. |
 | `scripts/ggpk/catalog.js` | Generates `CATALOG.md`. |
 | `scripts/ggpk/dat.test.js` + `__fixtures__/` | Offline decode test (committed fixture + mini schema). |
 

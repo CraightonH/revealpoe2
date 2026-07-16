@@ -13,7 +13,7 @@
         <tr>
           <th class="gem-levels-lvl" scope="col">Level</th>
           {% for col in vm.levelTable.columns %}
-          <th class="gem-levels-col gem-levels-col--{{ col.kind }}" scope="col">{{ col.headerHtml | safe }}</th>
+          <th class="gem-levels-col gem-levels-col--{{ col.kind }}" scope="col">{% if col.skill %}<span class="gem-levels-col-skill">{{ col.skill }}</span>{% endif %}{{ col.headerHtml | safe }}</th>
           {% endfor %}
         </tr>
       </thead>

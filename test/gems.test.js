@@ -84,10 +84,80 @@ test('buildGemViewModel aggregates effect + quality across all granted skills', 
     'Bolts quality (from the 2nd granted skill) should be shown');
 });
 
-test('gems with no per-level variance expose no level table', () => {
-  // A gem whose granted skill has nothing scaling by level → null (not shown).
-  const vm = buildGemViewModel('blink');
+test('buildGemViewModel merges every granted skill into one level table, captioned by skill', () => {
+  // Ancestral Cry grants 3 skills: the Warcry (Mana scales) + Volcanic Steps and
+  // Volcanic Eruption (each scales its Base Damage). The merged table must show all
+  // three, with the two Base Damage columns captioned by their skill so they read apart.
+  const vm = buildGemViewModel('ancestral-cry');
+  const t = vm.levelTable;
+  assert.ok(t, 'ancestral cry should have a merged level table');
+
+  const mana = t.columns.find((c) => c.kind === 'cost' && c.headerHtml === 'Mana');
+  assert.ok(mana, 'expected a Mana column');
+
+  const dmgCols = t.columns.filter((c) => c.kind === 'damage');
+  assert.equal(dmgCols.length, 2, 'two Base Damage columns (Volcanic Steps + Eruption)');
+  assert.ok(dmgCols.every((c) => c.headerHtml === 'Base Damage'));
+  const captions = dmgCols.map((c) => c.skill).sort();
+  assert.deepEqual(captions, ['Volcanic Eruption', 'Volcanic Steps']);
+
+  // Level-20 row carries all three values (cells align to columns by index).
+  const cap = t.rows.find((r) => r.level === 20);
+  const idxOf = (pred) => t.columns.findIndex(pred);
+  const vsIdx = idxOf((c) => c.kind === 'damage' && c.skill === 'Volcanic Steps');
+  const veIdx = idxOf((c) => c.kind === 'damage' && c.skill === 'Volcanic Eruption');
+  const manaIdx = idxOf((c) => c === mana);
+  assert.match(cap.cells[vsIdx], /245/);
+  assert.match(cap.cells[veIdx], /211/);
+  assert.match(cap.cells[manaIdx], /44/);
+});
+
+test('gems with no per-level variance and no level curve expose no level table', () => {
+  // A support gem: no granted-skill scaling AND no Requires-Level curve (the GGPK
+  // extraction covers active skill gems, not supports) → null (not shown).
+  const vm = buildGemViewModel('abiding-hex');
   assert.equal(vm.levelTable, null);
+});
+
+test('level table includes Requires Level + attribute-requirement columns from the gem curve', () => {
+  // Ancestral Cry is pure Strength (100%). The merged table must lead with the gem-wide
+  // Requires Level and Str columns (from the GGPK reqLevels curve + verified formula),
+  // matching poe2db exactly: L20 → Requires Level 90, Str 157; L1 → 0 / 4.
+  const vm = buildGemViewModel('ancestral-cry');
+  const t = vm.levelTable;
+  const req = t.columns.find((c) => c.kind === 'req');
+  const str = t.columns.find((c) => c.kind === 'attr' && c.headerHtml === 'Str');
+  assert.ok(req && req.headerHtml === 'Requires Level', 'has a Requires Level column');
+  assert.ok(str, 'has a Str column');
+  assert.ok(!t.columns.some((c) => c.kind === 'attr' && /Dex|Int/.test(c.headerHtml)), 'no Dex/Int for a pure-Str gem');
+  // Gem-wide columns come before the per-skill columns.
+  assert.ok(t.columns.indexOf(req) < t.columns.findIndex((c) => c.kind === 'cost'), 'Requires Level precedes skill cost columns');
+
+  const idx = (pred) => t.columns.findIndex(pred);
+  const cap = t.rows.find((r) => r.level === 20);
+  const l1 = t.rows.find((r) => r.level === 1);
+  assert.match(cap.cells[idx((c) => c === req)], /90/);
+  assert.match(cap.cells[idx((c) => c === str)], /157/);
+  assert.match(l1.cells[idx((c) => c === req)], /\b0\b/);
+  assert.match(l1.cells[idx((c) => c === str)], /\b4\b/);
+
+  // Over-leveled rows (21..40, from skill scaling) HOLD the level-20 requirement —
+  // a corrupted/over-leveled gem needs no more than its level-20 gate.
+  const l40 = t.rows.find((r) => r.level === 40);
+  assert.ok(l40, 'level 40 row exists (skills scale past 20)');
+  assert.match(l40.cells[idx((c) => c === req)], /90/);
+  assert.match(l40.cells[idx((c) => c === str)], /157/);
+});
+
+test('hybrid-attribute gems compute each attribute from its own percent (verified vs poe2db)', () => {
+  // Time of Need is Str 75 / Int 25. At gem level 20 (Requires Level 90) poe2db shows
+  // Str 122, Int 48 — the factor depends on each attribute's own percent, not the combo.
+  const vm = buildGemViewModel('time-of-need');
+  const t = vm.levelTable;
+  const idx = (h) => t.columns.findIndex((c) => c.kind === 'attr' && c.headerHtml === h);
+  const cap = t.rows.find((r) => r.level === 20);
+  assert.match(cap.cells[idx('Str')], /122/);
+  assert.match(cap.cells[idx('Int')], /48/);
 });
 
 test('getRecommendedSupports groups into ascending tiers by crafting_level', () => {

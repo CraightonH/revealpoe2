@@ -133,6 +133,26 @@ export function buildLevelTable(skill) {
     cells.set(key, perLevel);
   }
 
+  // Damage-multiplier columns — the skill's base-damage scaling (e.g. a triggered
+  // slam that "Deals X% of Base Damage"). Lives as a bare per-level number, NOT in
+  // stat_text, so it has no rendered sentence; we label it "Base Damage" and show
+  // each level's value as a percentage. Many attack/triggered skills (Volcanic
+  // Steps, Volcanic Eruption, …) scale ONLY here, so without this their table is
+  // empty. One column per stat_set that carries a varying multiplier.
+  sets.forEach((set, idx) => {
+    const pl = set.per_level ?? {};
+    const perLevel = new Map();
+    for (const l of levels) {
+      const m = pl[String(l)]?.damage_multiplier;
+      if (m != null) perLevel.set(l, `${m}%`);
+    }
+    if (perLevel.size === 0) return;
+    if (new Set(perLevel.values()).size <= 1) return; // constant → skip
+    const key = `damage:${idx}`;
+    columns.push({ key, header: 'Base Damage', kind: 'damage' });
+    cells.set(key, perLevel);
+  });
+
   // Stat columns, merged across sets in tooltip order (then any extra keys).
   const seen = new Set();
   for (const set of sets) {

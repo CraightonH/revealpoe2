@@ -1064,7 +1064,24 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
   color: var(--color-gem);
   font-family: var(--font-smallcaps);
   font-weight: normal;
+  vertical-align: bottom;
   border-bottom: 1px solid color-mix(in srgb, var(--color-gem) 35%, transparent);
+}
+/* Skill caption above a column header — which granted skill this column belongs to.
+   Only present on gems whose scaling spans >1 granted skill (e.g. Ancestral Cry's
+   Volcanic Steps / Volcanic Eruption Base Damage columns). */
+.gem-levels-col-skill {
+  display: block;
+  font-size: 10px;
+  line-height: 1.2;
+  color: color-mix(in srgb, var(--color-gem) 65%, var(--text-muted));
+  opacity: 0.85;
+}
+/* Requirement columns (Requires Level, Str/Dex/Int) are gem-wide gates, distinct
+   from the per-skill scaling columns — tint their headers to read as a group. */
+.gem-levels-col--req,
+.gem-levels-col--attr {
+  color: color-mix(in srgb, var(--color-gem) 55%, var(--text-muted));
 }
 .gem-levels-lvl {
   text-align: right;

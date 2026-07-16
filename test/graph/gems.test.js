@@ -35,6 +35,29 @@ test('gemNodes carry resolved effect sections matching buildSections', () => {
   assert.ok(node.search.includes(node.name.toLowerCase()), 'search includes the name');
 });
 
+test('multi-skill gem sections are labeled by granted-skill name when the stat_set has none', () => {
+  // Ancestral Cry grants three distinct skills whose stat_sets have no label except
+  // the primary ("Warcry"). The secondary skills must be labeled by their display
+  // name so the three sections render distinctly. Regression for headless sections.
+  const { nodes } = gemNodes();
+  const ac = nodes.find((n) => n.kind === 'gem' && n.name === 'Ancestral Cry');
+  assert.ok(ac, 'Ancestral Cry gem node exists');
+  const labels = ac.props.effectSections.map((s) => s.label);
+  assert.deepEqual(labels, ['Warcry', 'Volcanic Steps', 'Volcanic Eruption']);
+});
+
+test('reservation-pattern gems do not gain a header duplicating the gem name', () => {
+  // Blink grants a Reservation variant + the active skill, both named "Blink".
+  // Neither section should be labeled with the gem's own name.
+  const { nodes } = gemNodes();
+  const blink = nodes.find((n) => n.kind === 'gem' && n.name === 'Blink');
+  assert.ok(blink, 'Blink gem node exists');
+  assert.ok(
+    !blink.props.effectSections.some((s) => (s.label || '').toLowerCase() === 'blink'),
+    'no section labeled with the gem name',
+  );
+});
+
 test('skillNodes are deduped and keyed by skill source key', () => {
   const { records } = gemNodes();
   const sNodes = skillNodes(records);

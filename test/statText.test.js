@@ -143,3 +143,25 @@ test('buildLevelTable merges varying stats from a non-first stat_set (Herald of 
   // the varying line lives in the second (Explosion) stat_set
   assert.ok(t.columns.some((c) => c.kind === 'stat' && /Overkill/.test(c.header)));
 });
+
+test('buildLevelTable captures per-level damage_multiplier as a "Base Damage" % column', () => {
+  // Volcanic Steps (Ancestral Cry's shockwave) scales ONLY via damage_multiplier
+  // (60 → 245); it carries no per-level stat_text, so without this the table is null.
+  const skills = loadJson('repoe-poe2/skills.json');
+  const t = buildLevelTable(skills['AncestralCryShockwavePlayer']);
+  assert.ok(t, 'expected a table for a damage_multiplier-only skill');
+  const dmg = t.columns.find((c) => c.kind === 'damage');
+  assert.ok(dmg, 'expected a damage column');
+  assert.equal(dmg.header, 'Base Damage');
+  // values rendered as percentages of base damage
+  assert.equal(t.rows.find((r) => r.level === 1).cells[dmg.key], '60%');
+  assert.equal(t.rows.find((r) => r.level === 20).cells[dmg.key], '245%');
+});
+
+test('buildLevelTable omits a constant damage_multiplier', () => {
+  const t = buildLevelTable({
+    per_level: {},
+    stat_sets: [{ per_level: { 1: { damage_multiplier: 100 }, 2: { damage_multiplier: 100 } } }],
+  });
+  assert.equal(t, null);
+});

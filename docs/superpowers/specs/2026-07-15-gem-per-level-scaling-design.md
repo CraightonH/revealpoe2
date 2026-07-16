@@ -1,7 +1,34 @@
 # Gem Per-Level Scaling Table — Design
 
-**Status:** design (awaiting approval)
+**Status:** shipped; extended 2026-07-15 (see *Update* below)
 **Date:** 2026-07-15
+
+> **Update (2026-07-15) — two gaps closed after ship:**
+> 1. **`damage_multiplier` is now a column.** The original design read only `stat_text`
+>    and `costs`. Many attack/triggered skills (Volcanic Steps, Volcanic Eruption, …)
+>    scale ONLY via the bare per-level `damage_multiplier` number and so produced an
+>    empty/null table. `buildLevelTable` now emits a `kind:"damage"` column per
+>    stat_set whose multiplier varies, headed **"Base Damage"**, cells shown as `X%`.
+> 2. **The gem table now merges ALL granted skills, not just `grants_skills[0]`.**
+>    Scaling still lives per-skill on skill nodes; `src/data/gems.js` `mergeLevelTables()`
+>    unions every granted skill's table into one (columns namespaced by skill; each
+>    column carries a `skill` caption, shown only when >1 skill contributes, so e.g.
+>    Ancestral Cry's two "Base Damage" columns read apart as Volcanic Steps / Volcanic
+>    Eruption). Mirrors the effect-sections aggregation done in `scripts/graph/gems.js`.
+> 3. **Requires Level + Str/Dex/Int requirement columns added (reverses the two Non-goals).**
+>    - *Required level per gem level* is **not** in RePoE — it lives in the GGPK
+>      `ItemExperiencePerLevel` table (keyed by `SkillGems.ItemExperienceType`). Promoted
+>      via the canaried extraction step `scripts/ggpk/extract-gem-levels.js` →
+>      committed `data/manual/gem-levels.generated.json` → `gem-levels` overlay handler →
+>      `reqLevels` prop on the gem node. (Supersedes the "required-level column deferred to
+>      GGPK backlog" non-goal.)
+>    - *Attribute requirements* are stored nowhere; computed like poe2db:
+>      `reqAttr = round(4 + 1.7 × requiredLevel × FACTOR[percent])`, where FACTOR is an
+>      empirically-fixed per-percent value (NOT percent/100 — every participating attribute
+>      takes the full +4 base). Reverse-engineered and verified exactly against poe2db at
+>      every gem level for all percents that occur on leveled gems (25/50/75/100). Unseen
+>      percents throw. Both columns are gem-wide and lead the table (Requires Level, then
+>      Str/Dex/Int), before the per-skill scaling columns.
 **Roadmap:** realizes Phase 1 of `2026-07-14-complete-graph-roadmap.md` (gem/skill
 per-level scaling). NOTE: the roadmap frames Phase 1 as establishing a
 "load-on-demand side-artifact rail" — that framing is a **holdover from scrapped

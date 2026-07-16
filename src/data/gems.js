@@ -85,6 +85,9 @@ function toGem(node) {
     grants_skills: p.grantsSkills ?? [],
     effect_sections: p.effectSections ?? [],
     tagTokens: p.tagTokens ?? [],
+    // Required character level per gem level (1..20), from the GGPK-derived
+    // gem-levels overlay. Null for gems with no leveling curve (item-granted skills).
+    reqLevels: p.reqLevels ?? null,
   };
 }
 
@@ -386,15 +389,138 @@ export function getDefaultSkillGemsForClass(classSlug) {
   return out;
 }
 
-// Render the skill node's per-level scaling table (props.levelTable, built by
-// scripts/graph/gems.js) to view HTML: headers and any token-bearing cells go
-// through renderGameText (same path as effect lines), and cells are flattened to
-// a per-column array so the template needn't key by the raw stat-id (which can
-// contain newlines). Returns null when the skill has no scaling table.
+// Per-gem-level attribute requirement — computed, since it is stored nowhere (not in
+// RePoE, not in the GGPK tables). poe2db derives it the same way. The formula, reverse-
+// engineered and verified exactly against poe2db across every gem level for the five
+// attribute-percent values that occur in-game (see test/gems.test.js):
+//
+//   reqAttr = round(ATTR_REQ_BASE + ATTR_REQ_SLOPE × requiredLevel × FACTOR[percent])
+//
+// where `requiredLevel` is that gem level's Requires Level (from the GGPK reqLevels
+// curve) and `percent` is the gem's weight for that attribute. Every participating
+// attribute gets the full +4 base (a 50/50 gem shows 4/4 at level 1, not 2/2) — so the
+// factor is emphatically NOT percent/100; it is an empirically-fixed value per percent.
+// Only 25/50/75/100 occur on gems that carry a Requires-Level curve; an unseen percent
+// throws (loud canary) rather than fabricating a number.
+const ATTR_REQ_BASE = 4;
+const ATTR_REQ_SLOPE = 1.7;
+const ATTR_REQ_FACTOR = { 25: 0.2868, 50: 0.5354, 75: 0.7715, 100: 1.0 };
+
+function attrRequirementAt(reqLevel, percent) {
+  if (!percent) return null;
+  const f = ATTR_REQ_FACTOR[percent];
+  if (f == null) {
+    throw new Error(
+      `gem attribute requirement: no verified factor for attribute percent ${percent}. `
+      + 'Derive it from poe2db across all gem levels and add it to ATTR_REQ_FACTOR before shipping.',
+    );
+  }
+  return Math.round(ATTR_REQ_BASE + ATTR_REQ_SLOPE * reqLevel * f);
+}
+
+// Merge into one per-level table (one row per level, one column per varying field):
+//   1. Gem-wide columns — Requires Level and Str/Dex/Int requirements — from the gem's
+//      reqLevels curve (levels 1..20). Attribute columns appear only for attributes the
+//      gem actually requires (requirement_weights > 0). A gem past level 20 (corruption /
+//      +level modifiers) needs no MORE than its level-20 requirement, so the level-20
+//      value is HELD across the over-leveled rows (21..40) the skill scaling already
+//      produced — never inventing rows a gem doesn't otherwise have.
+//   2. Per-skill columns — the scaling of EVERY granted skill, not just the first. A gem
+//      like Ancestral Cry grants three skills (Warcry Mana, Volcanic Steps / Volcanic
+//      Eruption Base Damage on separate skill nodes); keys are namespaced by skill so two
+//      "Base Damage" columns don't collide, and each carries a `skill` caption (its
+//      granting skill's display name) when more than one skill contributes.
+// Rows span the union of levels present in either source. Returns null when nothing —
+// no reqLevels curve and no granted skill scales by level.
+function mergeLevelTables(gem) {
+  const columns = [];
+  const levels = new Set();
+  const cells = new Map(); // column key → Map(level → value)
+
+  // 1. Per-skill scaling columns first, so we know which over-leveled rows (>20) exist —
+  //    those are the rows the gem-wide requirement columns hold their level-20 value across.
+  const contributors = (gem.grants_skills ?? [])
+    .map((key) => getNode(key))
+    .filter((node) => node?.props?.levelTable)
+    .map((node) => ({ name: node.name, table: node.props.levelTable }));
+  const captioned = contributors.length > 1;
+  const skillColumns = [];
+  contributors.forEach(({ name, table }, i) => {
+    for (const col of table.columns) {
+      const key = `${i}:${col.key}`;
+      const perLevel = new Map();
+      for (const row of table.rows) {
+        const v = row.cells[col.key];
+        if (v != null) { perLevel.set(row.level, v); levels.add(row.level); }
+      }
+      skillColumns.push({ key, header: col.header, kind: col.kind, skill: captioned ? name : null, perLevel });
+    }
+  });
+  const overLevels = [...levels].filter((l) => l > GEM_LEVEL_CAP);
+
+  // 2. Gem-wide Requires Level + attribute-requirement columns (prepended). Levels 1..20
+  //    take their own value; over-leveled rows hold the level-20 value.
+  const reqLevels = gem.reqLevels;
+  if (Array.isArray(reqLevels)) {
+    const fill = (valueAt) => {
+      const m = new Map();
+      for (let lvl = 1; lvl <= GEM_LEVEL_CAP; lvl += 1) {
+        const v = valueAt(lvl);
+        if (v != null) { m.set(lvl, v); levels.add(lvl); }
+      }
+      const hold = valueAt(GEM_LEVEL_CAP); // level-20 value, held across over-leveled rows
+      if (hold != null) for (const lvl of overLevels) m.set(lvl, hold);
+      return m;
+    };
+    columns.push({ key: 'req:level', header: 'Requires Level', kind: 'req', skill: null });
+    cells.set('req:level', fill((lvl) => {
+      const rl = reqLevels[lvl - 1];
+      return rl == null ? null : String(rl);
+    }));
+    const weights = gem.requirement_weights ?? {};
+    for (const attr of ATTR_ORDER) {
+      const pct = weights[attr];
+      if (!pct) continue;
+      const key = `attr:${attr}`;
+      columns.push({ key, header: ATTR_ABBR[attr], kind: 'attr', skill: null });
+      cells.set(key, fill((lvl) => {
+        const rl = reqLevels[lvl - 1];
+        return rl == null ? null : String(attrRequirementAt(rl, pct));
+      }));
+    }
+  }
+
+  // 3. Append the per-skill columns after the gem-wide ones.
+  for (const { perLevel, ...col } of skillColumns) {
+    columns.push(col);
+    cells.set(col.key, perLevel);
+  }
+
+  if (columns.length === 0) return null;
+
+  const rows = [...levels]
+    .sort((a, b) => b - a)
+    .map((level) => {
+      const rowCells = {};
+      for (const col of columns) {
+        const v = cells.get(col.key)?.get(level);
+        if (v != null) rowCells[col.key] = v;
+      }
+      return { level, cap: level === GEM_LEVEL_CAP, cells: rowCells };
+    });
+  return { columns, rows };
+}
+
+// Render a merged level table (see mergeLevelTables) to view HTML: headers and any
+// token-bearing cells go through renderGameText (same path as effect lines), and
+// cells are flattened to a per-column array so the template needn't key by the raw
+// stat-id (which can contain newlines). The per-column `skill` caption is passed
+// through as plain text. Returns null when there is no table.
 function renderLevelTable(table) {
   if (!table) return null;
   const columns = table.columns.map((c) => ({
     kind: c.kind,
+    skill: c.skill ?? null,
     headerHtml: renderGameText(c.header, hasDefinition),
   }));
   const rows = table.rows.map((r) => ({
@@ -476,9 +602,10 @@ export function buildGemViewModel(slug) {
       ? renderGameText(sp.description, hasDefinition)
       : null,
     sections,
-    // Per-level scaling table (level → stat/cost values), rendered from the
-    // granted skill's levelTable prop. Null when nothing scales by level.
-    levelTable: renderLevelTable(sp?.levelTable),
+    // Per-level scaling table (level → stat/cost/damage values), merged across ALL
+    // the gem's granted skills so every skill's scaling shows. Null when nothing
+    // scales by level.
+    levelTable: renderLevelTable(mergeLevelTables(gem)),
     footer: sp?.isActiveSkill ? SKILL_PANEL_FOOTER : null,
     // Sources that grant this gem's skill (reverse of the grants edge). Usually
     // empty; uniques and passive-tree nodes are rendered as separate groups.
