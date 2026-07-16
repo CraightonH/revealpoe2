@@ -66,7 +66,11 @@ const stripHtml = (s) => String(s ?? '').replace(/<[^>]*>/g, ' ');
 // Flatten RePoE keyword markup to its display words for the search blob:
 // "[ElementalDamage|Elemental] Damage with [Attack|Attacks]" -> "Elemental Damage with Attacks".
 const stripKw = (s) => String(s ?? '').replace(/\[[^\]|]*\|([^\]]*)\]/g, '$1').replace(/\[([^\]|]*)\]/g, '$1');
-const norm = (parts) => stripHtml(parts.filter(Boolean).join(' ')).toLowerCase();
+// Collapse whitespace runs to single spaces: stripHtml turns each tag into a
+// space, so keyword-marked text ("[Charges|Power Charge]") renders with double
+// spaces around the keyword. Substring queries use single spaces, so without this
+// a multi-word effect search ("power charge consumed") wouldn't match the blob.
+const norm = (parts) => stripHtml(parts.filter(Boolean).join(' ')).replace(/\s+/g, ' ').trim().toLowerCase();
 
 function gemCategory(gemType) {
   if (gemType === 'support') return 'support';
@@ -92,8 +96,15 @@ function gemDocs() {
     try {
       const vm = buildGemViewModel(g.slug);
       subtitle = vm.typeLine || '';
+      // Effect text spans each section's base lines PLUS its quality effects: the
+      // standard quality bonus and the Gemling Legionnaire alternate ("second")
+      // quality (altQuality). Without these, a query for a quality-only effect
+      // (e.g. Falling Thunder's Gemling "chance to not consume a charge") matches
+      // nothing. Both indices (server search + client search-index.json) read this
+      // blob, so indexing here covers both.
       textParts = [vm.name, vm.typeLine, ...(vm.tags || []), vm.description,
-        ...vm.sections.flatMap((s) => s.lines), ...grants];
+        ...vm.sections.flatMap((s) => [...s.lines, ...(s.quality || []), ...(s.altQuality || [])]),
+        ...grants];
     } catch {
       textParts = [g.name, ...grants];
     }

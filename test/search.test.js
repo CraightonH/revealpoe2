@@ -128,3 +128,24 @@ test('search returns category Affix for mods', () => {
   const hits = search('maximum life');
   assert.ok(hits.some((h) => h.category === 'Affix'));
 });
+
+test('search finds gems by quality-effect text, including keyword-marked phrases', () => {
+  // Quality bonus lines are effect text, not just names — and the phrase spans a
+  // glossary keyword ("Power Charge"), which renders with surrounding spaces. A
+  // single-spaced substring query must still match (norm() collapses whitespace).
+  const hits = search('more damage per power charge consumed', 40);
+  assert.ok(
+    hits.some((h) => h.name === 'Falling Thunder' && h.url === '/gem/falling-thunder'),
+    'Falling Thunder should surface via its quality-effect text'
+  );
+});
+
+test('search finds gems by Gemling alternate-quality (altQuality) effect', () => {
+  // The Gemling Legionnaire "second" quality is a separate effect from the
+  // standard quality; it must be indexed too or building around it is unsearchable.
+  const hits = search('chance to not remove charges on use', 40);
+  assert.ok(
+    hits.some((h) => h.name === 'Falling Thunder'),
+    "Falling Thunder should surface via its Gemling alt-quality effect"
+  );
+});
