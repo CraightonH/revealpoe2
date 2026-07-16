@@ -116,6 +116,17 @@
         {% elif vm.levelRange %}
         <div class="property">Level: <span class="colourDefault">({{ vm.levelRange.min }}—{{ vm.levelRange.max }})</span></div>
         {% endif %}
+        {% if interactive and vm.hasQuality %}
+        {# Quality input: default 0% shows each quality line's (0—N) range; typing a value
+           recomputes those lines to the value at that quality (gem-quality-input.js reads
+           the embedded series below). #}
+        <div class="property gem-quality-line">Quality:
+          <input type="text" inputmode="numeric" class="gem-quality-input colourDefault" value="0" aria-label="Gem quality" size="3">%
+        </div>
+        {% if vm.qualitySeries %}
+        <script type="application/json" class="gem-quality-data">{{ vm.qualitySeries | dump | safe }}</script>
+        {% endif %}
+        {% endif %}
         {% if vm.cost %}
         <div class="property">Cost: {% if interactive %}{% for lvl in vm.levels %}<span class="gem-lv colourDefault" data-level="{{ lvl }}"{% if lvl != vm.level %} hidden{% endif %}>{{ vm.levelData[lvl].cost }}</span>{% endfor %}{% else %}<span class="colourDefault">{{ vm.cost }}</span>{% endif %}</div>
         {% endif %}

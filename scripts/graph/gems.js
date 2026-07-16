@@ -4,7 +4,7 @@ import { REPOE } from './source.js';
 import { slugify } from '../../src/data/slug.js';
 import { grantedSkillNames } from './uniques.js';
 import { makeNode, makeEdge, KINDS, EDGE_TYPES } from './schema.js';
-import { buildSections, buildLevelTable, buildGemQualityTable, buildScalingSections, costByLevel } from '../../src/data/statText.js';
+import { buildSections, buildLevelTable, buildGemQualityTable, buildScalingSections, costByLevel, qualitySkeleton, qualityTokenCount } from '../../src/data/statText.js';
 import { altQualityLines, altQualityStats } from './gemQuality.js';
 import { weaponReqLabel } from './weaponReqs.js';
 
@@ -202,6 +202,43 @@ function levelScaling(skillKeys, skills, gemName) {
   return { levels, cap: GEM_LEVEL_CAP, maxLevel: Math.max(...levels), varies, cost, sections };
 }
 
+// Tag each quality / altQuality line in `sections` with a per-token descriptor
+// [{ col, idx }] resolving it to the merged quality table's column + position, so the
+// gem card can wrap each range number in a span the quality input recomputes. Matched by
+// blanked skeleton within the line's kind (standard vs Gemling alt). A line with no
+// scaling token → []; a token with no matching column (a non-varying line the table
+// filtered out) → { col: null }. Mutates the sections in place.
+function annotateQualityTokens(sections, table) {
+  const byKind = { quality: [], 'alt-quality': [] };
+  if (table) for (const c of table.columns) (byKind[c.kind] ??= []).push(c);
+  const tokensFor = (line, kind) => {
+    const n = qualityTokenCount(line);
+    if (!n) return [];
+    const skel = qualitySkeleton(line);
+    const col = (byKind[kind] ?? []).find((c) => c.header === skel) ?? null;
+    return Array.from({ length: n }, (_, idx) => ({ col: col ? col.key : null, idx }));
+  };
+  for (const s of sections ?? []) {
+    if (s.quality?.length) s.qualityTokens = s.quality.map((l) => tokensFor(l, 'quality'));
+    if (s.altQuality?.length) s.altQualityTokens = s.altQuality.map((l) => tokensFor(l, 'alt-quality'));
+  }
+}
+
+// Gemling second-quality + standard quality contributors for a gem's granted skills,
+// shared by the merged quality table and its per-column series (same column derivation,
+// so their keys align).
+function qualityContributors(skillKeys, skills) {
+  return (skillKeys ?? [])
+    .map((key) => {
+      const skill = skills[key];
+      if (!skill) return null;
+      const altStats = (skill.stat_sets ?? [])
+        .flatMap((set, i) => altQualityStats(key, i, set.translation_file));
+      return { skill, name: skill.active_skill?.display_name || key, altStats };
+    })
+    .filter(Boolean);
+}
+
 export function gemNodes() {
   const records = selectGemRecords();
   const skills = loadJson(`${REPOE}/skills.json`);
@@ -220,6 +257,18 @@ export function gemNodes() {
       const label = aid ? weaponReqLabel(aid) : null;
       if (label) { weaponReq = label; break; }
     }
+    // Merged per-quality scaling table (null when no quality effect varies) — the Quality
+    // mode of the gem detail page's "Scaling" table. Merged across granted skills here at
+    // build time so band rows resolve for every column (see buildGemQualityTable), and each
+    // skill's Gemling second-quality effects are folded in as alt-quality columns. Carries a
+    // complete per-column step function (`series`) the quality input reads; support gems
+    // have no quality → stays null.
+    const qTable = buildGemQualityTable(qualityContributors(r.raw.grants_skills, skills));
+    // Per-level card data for the level selector (null when the gem has no scaling). Its
+    // quality lines are the ones the interactive card renders, so tag them with the token→
+    // column mapping the input needs.
+    const scaling = levelScaling(r.raw.grants_skills, skills, r.raw.base_item?.display_name);
+    if (scaling) annotateQualityTokens(scaling.sections, qTable);
     const props = {
       color: r.raw.color,
       gemType: r.raw.gem_type,
@@ -233,24 +282,11 @@ export function gemNodes() {
       hoverDds: r.raw.ui_image ?? null,
       grantsSkills: r.raw.grants_skills ?? [],
       effectSections: sections,
-      // Per-level card data for the level selector (null when the gem has no scaling).
-      levelScaling: levelScaling(r.raw.grants_skills, skills, r.raw.base_item?.display_name),
-      // Merged per-quality scaling table (null when no quality effect varies) — the
-      // Quality mode of the gem detail page's "Scaling" table. Merged across granted
-      // skills here at build time so band rows resolve for every column (see
-      // buildGemQualityTable), and each skill's Gemling second-quality effects are
-      // folded in as alt-quality columns. Support gems have no quality → stays null.
-      qualityTable: buildGemQualityTable(
-        (r.raw.grants_skills ?? [])
-          .map((key) => {
-            const skill = skills[key];
-            if (!skill) return null;
-            const altStats = (skill.stat_sets ?? [])
-              .flatMap((set, i) => altQualityStats(key, i, set.translation_file));
-            return { skill, name: skill.active_skill?.display_name || key, altStats };
-          })
-          .filter(Boolean),
-      ),
+      levelScaling: scaling,
+      qualityTable: qTable ? { columns: qTable.columns, rows: qTable.rows } : null,
+      // Per-column complete breakpoints [[quality, value], …] for the card's quality input
+      // (single-source: the same formula that built qualityTable). Null when no table.
+      qualitySeries: qTable ? qTable.series : null,
       weaponReq,
     };
     const search = [r.raw.base_item.display_name, r.raw.gem_type, ...sections.flatMap((s) => s.lines)]

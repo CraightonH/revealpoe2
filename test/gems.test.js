@@ -378,3 +378,29 @@ test('typeLine never leaks known internal mechanic tokens across active gems', (
     .filter((tl) => banned.has(tl));
   assert.deepEqual(leaks, [], `internal tokens leaked as type lines: ${[...new Set(leaks)].join(', ')}`);
 });
+
+test('interactive gem exposes quality input data and wraps range numbers in .qual-tok spans', () => {
+  const vm = buildGemViewModel('arc');
+  assert.equal(vm.hasQuality, true);
+  assert.ok(vm.levelSelect, 'Arc has a level selector (interactive)');
+  assert.ok(vm.qualitySeries?.q0?.length, 'series present for the quality column');
+
+  const sec = vm.sections.find((s) => s.quality?.length || s.altQuality?.length);
+  // Standard quality line → a span pointing at column q0, carrying its default range.
+  const q = sec.quality.join('');
+  assert.match(q, /<span class="qual-tok" data-col="q0" data-idx="0" data-range="\(0—2\)">\(0—2\)<\/span>/);
+  // Gemling alt-quality line → mapped to the alt column q1.
+  const alt = sec.altQuality.join('');
+  assert.match(alt, /class="qual-tok" data-col="q1" data-idx="0" data-range="\(0—3\)"/);
+});
+
+test('a gem with no quality effects gates the input off (no series, no spans)', () => {
+  const noQual = listGems()
+    .map((g) => buildGemViewModel(g.slug))
+    .find((vm) => vm && vm.hasQuality === false);
+  assert.ok(noQual, 'expected at least one gem without quality effects');
+  assert.equal(noQual.qualitySeries, null);
+  const spans = noQual.sections.some((s) =>
+    [...(s.quality || []), ...(s.altQuality || [])].join('').includes('qual-tok'));
+  assert.ok(!spans, 'no .qual-tok spans when the gem has no quality');
+});

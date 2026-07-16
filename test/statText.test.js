@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { rangeMerge, resolveQuality, buildSections, buildLevelTable, buildScalingSections, buildQualityTable, buildGemQualityTable } from '../src/data/statText.js';
+import { rangeMerge, resolveQuality, buildSections, buildLevelTable, buildScalingSections, buildQualityTable, buildGemQualityTable, qualitySkeleton, qualityTokenCount } from '../src/data/statText.js';
 import { loadJson } from '../scripts/graph/loader.js';
 
 test('rangeMerge combines differing numbers into a range', () => {
@@ -203,6 +203,45 @@ test('buildQualityTable shows only true breakpoints for a floored count (Arc)', 
   assert.equal(at(10).cells[col.key], '1');
   assert.equal(at(20).cells[col.key], '2');
   assert.equal(at(100).cells[col.key], '10');
+});
+
+test('buildQualityTable emits a complete per-column step series (Arc chains = floor(Q/10))', () => {
+  const skills = loadJson('repoe-poe2/skills.json');
+  const t = buildQualityTable(skills['ArcPlayer']);
+  const col = t.columns[0].key;
+  // Change-points only, ascending, first entry = first Q above the 0% baseline.
+  assert.deepEqual(t.series[col], [
+    [10, '1'], [20, '2'], [30, '3'], [40, '4'], [50, '5'],
+    [60, '6'], [70, '7'], [80, '8'], [90, '9'], [100, '10'],
+  ]);
+  // The series agrees with the display rows at every breakpoint (single source of truth).
+  for (const r of t.rows) {
+    const pt = t.series[col].filter(([q]) => q <= r.quality).pop();
+    assert.equal(pt[1], r.cells[col], `series and row disagree at ${r.quality}%`);
+  }
+});
+
+test('buildGemQualityTable series aligns with the merged rows at every breakpoint', () => {
+  const skills = loadJson('repoe-poe2/skills.json');
+  const t = buildGemQualityTable([{ skill: skills['ArcPlayer'], name: 'Arc', altStats: [] }]);
+  assert.ok(t.series && Object.keys(t.series).length === t.columns.length);
+  for (const col of t.columns.map((c) => c.key)) {
+    for (const r of t.rows) {
+      const pt = (t.series[col] ?? []).filter(([q]) => q <= r.quality).pop();
+      if (r.cells[col] != null) assert.equal(pt?.[1], r.cells[col]);
+    }
+  }
+});
+
+test('qualitySkeleton / qualityTokenCount map a resolved line to its table column', () => {
+  const line = '[Chain|Chains] (0—2) times';
+  assert.equal(qualitySkeleton(line), '[Chain|Chains] _ times');
+  assert.equal(qualityTokenCount(line), 1);
+  // negative (negate handler) and multi-token lines
+  assert.equal(qualitySkeleton('Bells appear within (0—-0.4) metre radius of you'),
+    'Bells appear within _ metre radius of you');
+  assert.equal(qualityTokenCount('Deals (0—3) to (0—5) Fire'), 2);
+  assert.equal(qualityTokenCount('Gain an additional random Charge'), 0);
 });
 
 test('buildQualityTable uses the coarse 5% grid with expandable bands for a smooth gem (Archmage)', () => {

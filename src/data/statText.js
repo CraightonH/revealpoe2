@@ -420,7 +420,43 @@ function assembleQualityTable(defs) {
   }
   if (!rows.length) return null;
   rows.reverse(); // highest quality first, matching the level table
-  return { columns, rows };
+
+  // Per-column COMPLETE step function over Q=1..100 (change-points only): the client's
+  // quality input reads this to show a card line's value at any typed quality. Sampled
+  // from the same valueAt the table is built from (single source of truth for the
+  // formula), but complete — the display `rows` under-sample a dense column on a steppy
+  // gem (it's only sampled where a discrete column ticks), so the input can't use them.
+  // Ascending by quality; the first entry is the first Q whose floored value leaves the
+  // 0% baseline. Column keys match `columns`, so a card line's mapped key indexes both.
+  const series = {};
+  for (const col of columns) {
+    const fn = valueFns.get(col.key);
+    const pts = [];
+    let prev = fn(0);
+    for (let Q = 1; Q <= QUALITY_MAX; Q += 1) {
+      const v = fn(Q);
+      if (v !== prev) { pts.push([Q, v]); prev = v; }
+    }
+    series[col.key] = pts;
+  }
+  return { columns, rows, series };
+}
+
+// Match a resolved quality range token, e.g. "(0—2)", "(0—0.4)", "(0—-0.4)" (negate).
+// Global; recreate per use since it carries lastIndex.
+const QUALITY_RANGE = new RegExp(`\\(0${EM}-?\\d+(?:\\.\\d+)?\\)`, 'g');
+
+// A resolved quality line with every range token blanked to "_", so it equals the
+// matching quality-table column header (parseQualityStat blanks the same way). The join
+// key that maps a card quality line to its table column / series entry.
+export function qualitySkeleton(line) {
+  return line.replace(QUALITY_RANGE, '_');
+}
+
+// How many range tokens a resolved quality line carries (one per scaling stat). A
+// multi-token line's table cell joins the values with " / " at the same order.
+export function qualityTokenCount(line) {
+  return (line.match(QUALITY_RANGE) || []).length;
 }
 
 // Quality scaling table for a single granted skill (null when nothing varies).

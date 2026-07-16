@@ -103,6 +103,8 @@ function toGem(node) {
     levelScaling: p.levelScaling ?? null,
     // Merged per-quality scaling table (Quality mode of the "Scaling" table), or null.
     qualityTable: p.qualityTable ?? null,
+    // Per-column complete quality breakpoints the card's quality input reads, or null.
+    qualitySeries: p.qualitySeries ?? null,
   };
 }
 
@@ -624,15 +626,35 @@ function requirementsAt(gem, L) {
   return out;
 }
 
+// Match a resolved quality range token in rendered HTML, e.g. "(0—2)", "(0—-0.4)". The
+// numbers never sit inside keyword markup, so wrapping them post-render is safe.
+const QUAL_RANGE = /\(0—-?\d+(?:\.\d+)?\)/g;
+
+// Render a quality effect line to HTML, wrapping each range number in a `.qual-tok` span
+// the quality input recomputes. `tokens` is the build-time [{ col, idx }] per range token
+// (see annotateQualityTokens); a token with no column is left as the plain range. The
+// span keeps the range as its default text AND in data-range, so an empty/0 input restores
+// it. When there are no tokens the line renders exactly as before (static card / tooltip).
+function renderQualityLine(text, tokens, hasDef) {
+  const html = renderGameText(text, hasDef);
+  if (!tokens || !tokens.length) return html;
+  let i = 0;
+  return html.replace(QUAL_RANGE, (m) => {
+    const t = tokens[i]; i += 1;
+    if (!t || t.col == null) return m;
+    return `<span class="qual-tok" data-col="${t.col}" data-idx="${t.idx}" data-range="${m}">${m}</span>`;
+  });
+}
+
 // Render a level's effect sections (scaling data → view HTML), same shape the template's
 // section loop consumes. Quality/altQuality are level-independent but re-rendered per level
-// for a uniform structure.
+// for a uniform structure; their range numbers become `.qual-tok` spans for the input.
 function renderScalingSectionsAt(scaling, L) {
   return (scaling?.sections ?? []).map((s) => ({
     label: s.label,
     lines: s.lines.map((line) => renderGameText(lineTextAt(line, L), hasDefinition)),
-    quality: (s.quality ?? []).map((t) => renderGameText(t, hasDefinition)),
-    altQuality: (s.altQuality ?? []).map((t) => renderGameText(t, hasDefinition)),
+    quality: (s.quality ?? []).map((t, i) => renderQualityLine(t, s.qualityTokens?.[i], hasDefinition)),
+    altQuality: (s.altQuality ?? []).map((t, i) => renderQualityLine(t, s.altQualityTokens?.[i], hasDefinition)),
   }));
 }
 
@@ -769,6 +791,11 @@ export function buildGemViewModel(slug) {
     // scales by level.
     levelTable: renderLevelTable(mergeLevelTables(gem)),
     qualityTable: renderQualityTable(gem.qualityTable),
+    // Interactive quality input: `hasQuality` gates the box (any section has a quality or
+    // Gemling alt-quality line); `qualitySeries` is the per-column breakpoint data the
+    // client reads to recompute those lines' `.qual-tok` spans at a typed quality.
+    hasQuality: gem.effect_sections.some((s) => (s.quality?.length || s.altQuality?.length)),
+    qualitySeries: gem.qualitySeries,
     footer: sp?.isActiveSkill ? SKILL_PANEL_FOOTER : null,
     // Sources that grant this gem's skill (reverse of the grants edge). Usually
     // empty; uniques and passive-tree nodes are rendered as separate groups.

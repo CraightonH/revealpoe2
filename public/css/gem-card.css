@@ -180,6 +180,25 @@ html[data-card-size="xl"] .augment-section { zoom: 1.5; }
 .gem-level-select:hover { border-color: var(--color-gem); }
 .gem-level-select:focus-visible { outline: 1px solid var(--color-gem); outline-offset: 1px; }
 
+/* Gem quality input — matches the level selector; the trailing "%" is a text node. */
+.gem-quality-line {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.gem-quality-input {
+  font: inherit;
+  font-size: 12.5px;
+  width: 3.5em;
+  color: var(--normal-color);
+  background: color-mix(in srgb, var(--color-gem) 12%, var(--bg-base));
+  border: 1px solid color-mix(in srgb, var(--color-gem) 40%, transparent);
+  border-radius: 3px;
+  padding: 1px 4px;
+}
+.gem-quality-input:hover { border-color: var(--color-gem); }
+.gem-quality-input:focus-visible { outline: 1px solid var(--color-gem); outline-offset: 1px; }
+
 .requirements {
   color: var(--prop-color);
   line-height: 1.3;

@@ -90,7 +90,7 @@
 
   {% if qual %}
   <div class="scaling-panel" data-scaling-panel="quality"{% if both %} hidden{% endif %}>
-    <p class="rec-group-hint">Effect values by quality (values round down, so a row marks each breakpoint where an effect ticks up). 20% is the normal maximum; higher quality (Gemling Legionnaire, catalysts) is shown up to 100%. Rows with a <span class="gem-qual-caret-inline">▸</span> expand to show finer steps.</p>
+    <p class="rec-group-hint">Effect values by quality (values round down, so a row marks each breakpoint where an effect ticks up). 20% is the normal maximum; higher quality is shown up to 100%. Rows with a <span class="gem-qual-caret-inline">▸</span> expand to show finer steps.</p>
     {{ _qualityTable(qual) }}
   </div>
   {% endif %}
