@@ -13,6 +13,7 @@
 //   /gems              -> dist/gems.html
 //   /gem/spark         -> dist/gem/spark.html
 //   /gem/spark/card    -> dist/gem/spark/card.html   (data-card-url fragment)
+//   /gem/spark/pane    -> dist/gem/spark/pane.html   (data-pane-url fragment)
 
 import { createApp } from '../src/server.js';
 import { allDocs } from '../src/data/theorycraft.js';
@@ -80,7 +81,7 @@ export function passiveDocSeeds() {
 }
 
 // Attributes whose "/..." values are internal links worth following.
-const LINK_ATTRS = ['href', 'hx-get', 'data-card-url'];
+const LINK_ATTRS = ['href', 'hx-get', 'data-card-url', 'data-pane-url'];
 const ATTR_RE = new RegExp(`(?:${LINK_ATTRS.join('|')})="(/[^"]*)"`, 'g');
 
 // Keyword tooltips are fetched lazily by keywords.js from /api/keyword/:key,
@@ -118,7 +119,7 @@ function normalize(rawHref) {
   return noQuery;
 }
 
-function extractLinks(html) {
+export function extractLinks(html) {
   const out = new Set();
   for (const m of html.matchAll(ATTR_RE)) {
     const n = normalize(m[1]);

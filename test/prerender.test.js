@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { affixCardSeeds } from '../scripts/prerender.js';
+import { affixCardSeeds, extractLinks } from '../scripts/prerender.js';
 import { search } from '../src/data/search.js';
 
 // Regression: affix flyout fragments (/mod/:typeSlug/card) are linked ONLY from
@@ -15,4 +15,10 @@ test('prerender seeds every affix flyout card url the search can open', () => {
   const affixes = search('maximum life').filter((h) => h.category === 'Affix' && h.cardUrl);
   assert.ok(affixes.length, 'expected affix hits carrying a flyout cardUrl');
   for (const a of affixes) assert.ok(seeds.has(a.cardUrl), `missing prerender seed for ${a.cardUrl}`);
+});
+
+test('prerender discovers master-detail pane fragment urls', () => {
+  const links = extractLinks('<a href="/gem/arc" data-pane-url="/gem/arc/pane">Arc</a>');
+  assert.ok(links.has('/gem/arc'));
+  assert.ok(links.has('/gem/arc/pane'));
 });

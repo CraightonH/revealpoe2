@@ -118,13 +118,25 @@ for (const gone of ['/keystones', '/ascendancies', '/ascendancy/Ranger1']) {
   });
 }
 
-test('GET /gems returns 200 with gem sections', async () => {
+test('GET /gems returns the complete gem index and initial detail pane', async () => {
   const app = createApp();
   const res = await request(app).get('/gems');
   assert.equal(res.status, 200);
   assert.ok(res.text.includes('Herald of Ash'));
-  assert.ok(res.text.includes('Active Skills'));
-  assert.ok(res.text.includes('Support Gems'));
+  assert.ok(res.text.includes('Gem Index'));
+  assert.ok(res.text.includes('gem-index-pane'));
+  assert.ok(res.text.includes('data-filter-count'));
+  const rowCount = (res.text.match(/data-pane-url="\/gem\/[^"/]+\/pane"/g) ?? []).length;
+  assert.equal(rowCount, app.locals.gemCount());
+});
+
+test('GET /gem/:slug/pane returns the complete shared detail fragment', async () => {
+  const res = await request(createApp()).get('/gem/fireball/pane');
+  assert.equal(res.status, 200);
+  assert.match(res.text, /^\s*<div class="gem-detail" data-gem-slug="fireball">/);
+  assert.match(res.text, /newItemPopup/);
+  assert.match(res.text, />Scaling /);
+  assert.doesNotMatch(res.text, /<!DOCTYPE html>/);
 });
 
 test('GET /notable/ailments38 returns 200 with Fast Acting Toxins', async () => {
