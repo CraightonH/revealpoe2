@@ -30,13 +30,12 @@ function cardRoute(app, path, builder, fragment) {
 export function registerPages(app) {
   app.get('/gems', (_req, res) => {
     const gems = listGemCards().sort((a, b) => a.name.localeCompare(b.name));
-    const active = gems.filter((g) => g.gemType === 'active');
-    const support = gems.filter((g) => g.gemType === 'support');
-    const spirit = gems.filter((g) => g.gemType === 'spirit');
-    res.render('gems.njk', { active, support, spirit });
+    const initialGem = buildGemViewModel(gems[0]?.slug);
+    res.render('gems.njk', { gems, initialGem });
   });
 
   detailRoute(app, '/gem/:slug', buildGemViewModel, 'gem.njk', 'vm');
+  cardRoute(app, '/gem/:slug/pane', buildGemViewModel, 'partials/gem-detail.njk');
   cardRoute(app, '/gem/:slug/card', buildGemViewModel, 'partials/gem-card-fragment.njk');
 
   app.get('/uniques', (_req, res) => {

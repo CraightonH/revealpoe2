@@ -1,48 +1,71 @@
 {% extends "base.njk" %}
 {% from "macros/filter-bar.njk" import filterBar %}
-{% from "macros/gem-card.njk" import gemSection %}
-{% from "macros/nav.njk" import pageHeader %}
+{% from "macros/gem-card.njk" import gemIndexRow %}
 {% block title %}Skill Gems — Reveal · PoE2 Wiki{% endblock %}
 {% block content %}
-<div class="page page--column">
-  {{ pageHeader('Skill Gems', (active.length + support.length + spirit.length) ~ ' gems', '--color-gem') }}
+<div class="gem-index">
+  <header class="gem-index-header">
+    <div>
+      <p class="gem-index-eyebrow">Path of Exile 2 reference</p>
+      <h1>Gem Index</h1>
+      <p>Scan every skill, spirit, and support gem. Select a row to inspect its complete details.</p>
+    </div>
+    <div class="gem-index-total"><strong>{{ gems.length }}</strong><span>gems</span></div>
+  </header>
 
-  {{ filterBar(
-    groups=[{
-      key: "type",
-      label: "Type",
-      match: "any",
-      options: [
-        { value: "active", label: "Active" },
-        { value: "spirit", label: "Spirit" },
-        { value: "support", label: "Support" }
-      ]
-    }, {
-      key: "origin",
-      label: "Origin",
-      match: "any",
-      options: [
-        { value: "gem", label: "Gem", default: true },
-        { value: "item", label: "Item" },
-        { value: "lineage", label: "Lineage" },
-        { value: "other", label: "Other" }
-      ]
-    }, {
-      key: "req",
-      label: "Requires",
-      options: [
-        { value: "str", label: "Str", color: "r" },
-        { value: "dex", label: "Dex", color: "g" },
-        { value: "int", label: "Int", color: "b" }
-      ]
-    }],
-    target=".gem-browse-card",
-    section=".gem-list-section",
-    count=".gem-list-section"
-  ) }}
+  <div class="gem-index-filters">
+    {{ filterBar(
+      groups=[{
+        key: "type",
+        label: "Type",
+        match: "any",
+        options: [
+          { value: "active", label: "Active" },
+          { value: "spirit", label: "Spirit" },
+          { value: "support", label: "Support" }
+        ]
+      }, {
+        key: "origin",
+        label: "Origin",
+        match: "any",
+        options: [
+          { value: "gem", label: "Gem", default: true },
+          { value: "item", label: "Item" },
+          { value: "lineage", label: "Lineage" },
+          { value: "other", label: "Other" }
+        ]
+      }, {
+        key: "req",
+        label: "Requires",
+        options: [
+          { value: "str", label: "Str", color: "r" },
+          { value: "dex", label: "Dex", color: "g" },
+          { value: "int", label: "Int", color: "b" }
+        ]
+      }],
+      target=".gem-index-row",
+      count=".gem-index-list"
+    ) }}
+  </div>
 
-  {{ gemSection('Active Skills', active, 'active') }}
-  {{ gemSection('Spirit Skills', spirit, 'spirit') }}
-  {{ gemSection('Support Gems', support, 'support') }}
+  <div class="gem-index-workspace">
+    <section class="gem-index-list" aria-label="All gems">
+      <div class="gem-index-list__header">
+        <span><strong data-filter-count>{{ gems.length }}</strong> shown</span>
+        <span class="gem-index-list__hint">Select a gem to inspect</span>
+      </div>
+      <div class="gem-index-rows">
+        {% for g in gems %}{{ gemIndexRow(g, g.slug == initialGem.slug) }}{% endfor %}
+      </div>
+    </section>
+
+    <aside class="gem-index-pane" aria-label="Selected gem details" aria-live="polite" aria-busy="false">
+      <div class="gem-index-pane__status" hidden>Loading gem details…</div>
+      <div class="gem-index-pane__content">
+        {% set vm = initialGem %}
+        {% include "partials/gem-detail.njk" %}
+      </div>
+    </aside>
+  </div>
 </div>
 {% endblock %}

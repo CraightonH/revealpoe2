@@ -1,0 +1,267 @@
+/* Modern exploration chrome for the gem master-detail index. Fidelity styling
+   remains owned by gem-card.css inside each .newItemPopup. */
+.gem-index {
+  --browse-surface: color-mix(in srgb, var(--bg-surface) 88%, transparent);
+  width: 100%;
+  min-height: calc(100vh - 98px);
+  padding: 24px clamp(16px, 2.5vw, 40px) 36px;
+  background:
+    radial-gradient(circle at 78% 18%, color-mix(in srgb, var(--color-gem) 8%, transparent), transparent 34rem),
+    radial-gradient(circle at 12% 66%, color-mix(in srgb, var(--color-magic) 5%, transparent), transparent 30rem),
+    var(--bg-base);
+}
+
+.gem-index-header {
+  width: min(1680px, 100%);
+  margin: 0 auto 18px;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+}
+.gem-index-header h1 {
+  margin: 2px 0 5px;
+  color: var(--color-normal);
+  font-family: var(--font-display);
+  font-size: clamp(25px, 3vw, 38px);
+  font-weight: 500;
+  letter-spacing: 0.015em;
+}
+.gem-index-header p { margin: 0; color: var(--color-default); font-size: 13px; }
+.gem-index-header .gem-index-eyebrow {
+  color: var(--color-gem);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.gem-index-total {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  color: var(--color-default);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.gem-index-total strong { color: var(--color-normal); font-size: 24px; font-weight: 500; }
+
+.gem-index-filters {
+  width: min(1680px, 100%);
+  margin: 0 auto 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--browse-surface);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14);
+}
+.gem-index-filters .filter-bar { max-width: none; margin: 0; gap: 16px; }
+.gem-index-filters .filter-group + .filter-group {
+  padding-left: 16px;
+  border-left: 1px solid var(--border);
+}
+.gem-index-filters .filter-btn { border-radius: 999px; padding: 4px 11px; }
+
+.gem-index-workspace {
+  width: min(1680px, 100%);
+  height: max(560px, calc(100vh - 258px));
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(390px, 0.9fr) minmax(470px, 1.1fr);
+  gap: 12px;
+  min-width: 0;
+}
+.gem-index-list,
+.gem-index-pane {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--browse-surface);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.22);
+}
+.gem-index-list { display: flex; flex-direction: column; }
+.gem-index-list__header {
+  min-height: 39px;
+  padding: 10px 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--color-default);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+.gem-index-list__header strong { color: var(--color-normal); font-weight: 600; }
+.gem-index-list__hint { opacity: 0.75; }
+.gem-index-rows {
+  flex: 1;
+  min-height: 0;
+  padding: 5px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: var(--border) transparent;
+}
+
+.gem-index-row {
+  --row-accent: var(--color-gem);
+  position: relative;
+  min-width: 0;
+  min-height: 58px;
+  padding: 7px 10px 7px 12px;
+  display: grid;
+  grid-template-columns: 38px minmax(130px, 0.82fr) max-content minmax(145px, 1.18fr);
+  align-items: center;
+  gap: 10px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--color-normal);
+  text-decoration: none;
+  transition: transform 120ms ease, background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+}
+.gem-index-row + .gem-index-row { margin-top: 2px; }
+.gem-index-row::before {
+  content: '';
+  position: absolute;
+  inset: 7px auto 7px 0;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--row-accent);
+  opacity: 0.55;
+  transition: inset 120ms ease, opacity 120ms ease, box-shadow 120ms ease;
+}
+.gem-index-row--rg::before { background: linear-gradient(var(--color-gem-r), var(--color-gem-g)); }
+.gem-index-row--rb::before { background: linear-gradient(var(--color-gem-r), var(--color-gem-b)); }
+.gem-index-row--gb::before { background: linear-gradient(var(--color-gem-g), var(--color-gem-b)); }
+.gem-index-row:hover,
+.gem-index-row.is-selected {
+  z-index: 1;
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--row-accent) 42%, var(--border));
+  background: color-mix(in srgb, var(--row-accent) 7%, var(--bg-surface));
+  box-shadow: 0 7px 18px rgba(0, 0, 0, 0.18);
+}
+.gem-index-row:hover::before,
+.gem-index-row.is-selected::before {
+  inset-block: 4px;
+  opacity: 1;
+  box-shadow: 0 0 10px var(--row-accent);
+}
+.gem-index-row:focus-visible { outline: 1px solid var(--row-accent); outline-offset: -2px; }
+.gem-index-row__icon-wrap {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--row-accent) 8%, var(--bg-base));
+}
+.gem-index-row__icon { width: 32px; height: 32px; object-fit: contain; }
+.gem-index-row__identity { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.gem-index-row__name {
+  overflow: hidden;
+  color: var(--color-normal);
+  font-size: 13px;
+  font-weight: 630;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gem-index-row__tags {
+  overflow: hidden;
+  color: var(--color-default);
+  font-size: 10.5px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gem-index-row__requirements { display: flex; flex-wrap: wrap; justify-content: end; gap: 3px; }
+.gem-index-req {
+  min-width: 28px;
+  padding: 2px 5px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: center;
+  text-transform: uppercase;
+}
+.gem-index-req--str { color: var(--color-gem-r); border-color: color-mix(in srgb, var(--color-gem-r) 48%, transparent); background: color-mix(in srgb, var(--color-gem-r) 11%, transparent); }
+.gem-index-req--dex { color: var(--color-gem-g); border-color: color-mix(in srgb, var(--color-gem-g) 48%, transparent); background: color-mix(in srgb, var(--color-gem-g) 11%, transparent); }
+.gem-index-req--int { color: var(--color-gem-b); border-color: color-mix(in srgb, var(--color-gem-b) 65%, transparent); background: color-mix(in srgb, var(--color-gem-b) 14%, transparent); }
+.gem-index-req--none { color: var(--color-default); }
+.gem-index-row__effect {
+  min-width: 0;
+  overflow: hidden;
+  color: color-mix(in srgb, var(--color-normal) 76%, var(--color-default));
+  font-family: var(--font-smallcaps);
+  font-size: 10.5px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gem-index-pane {
+  position: relative;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: var(--border) transparent;
+}
+.gem-index-pane__content { min-height: 100%; padding: 20px clamp(14px, 2vw, 28px) 32px; }
+.gem-index-pane__status {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: 7px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-gem) 35%, var(--border));
+  background: color-mix(in srgb, var(--bg-surface) 94%, transparent);
+  color: var(--color-gem);
+  font-size: 11px;
+  text-align: center;
+}
+.gem-index-pane .gem-detail { max-width: none; }
+html[data-card-size="s"] .gem-index-pane .gem-detail,
+html[data-card-size="l"] .gem-index-pane .gem-detail,
+html[data-card-size="xl"] .gem-index-pane .gem-detail { zoom: 1; }
+.gem-index-pane .rec-tier { grid-template-columns: 1.8rem minmax(0, 1fr); gap: 7px; }
+.gem-index-pane .rec-tier .gem-browse-grid { grid-template-columns: repeat(auto-fit, minmax(210px, 250px)); }
+.gem-index-pane .bases-list-grid,
+.gem-index-pane .bases-class-grid,
+.gem-index-pane .keystone-index-grid { max-width: 100%; }
+
+@media (max-width: 1180px) {
+  .gem-index-row { grid-template-columns: 38px minmax(135px, 1fr) max-content; }
+  .gem-index-row__effect { grid-column: 2 / 4; }
+}
+
+@media (max-width: 899px) {
+  .gem-index { min-height: 0; padding: 18px 12px 28px; }
+  .gem-index-header { align-items: start; }
+  .gem-index-header > div:first-child { min-width: 0; }
+  .gem-index-header p:not(.gem-index-eyebrow) { max-width: 34rem; }
+  .gem-index-filters .filter-group + .filter-group { padding-left: 0; border-left: 0; }
+  .gem-index-workspace { display: block; height: auto; }
+  .gem-index-list { overflow: visible; }
+  .gem-index-rows { overflow: visible; padding: 4px; }
+  .gem-index-pane { display: none; }
+  .gem-index-row { grid-template-columns: 38px minmax(0, 1fr) max-content; }
+  .gem-index-row__effect { grid-column: 2 / 4; }
+  .gem-index-list__hint { display: none; }
+}
+
+@media (max-width: 520px) {
+  .gem-index-header p:not(.gem-index-eyebrow) { display: none; }
+  .gem-index-total strong { font-size: 18px; }
+  .gem-index-filters { padding: 9px; }
+  .gem-index-filters .filter-bar { gap: 10px; }
+  .gem-index-row { gap: 7px; padding-right: 7px; }
+  .gem-index-row__effect { font-size: 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gem-index-row { transition: none; }
+  .gem-index-row:hover,
+  .gem-index-row.is-selected { transform: none; }
+}

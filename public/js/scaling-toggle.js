@@ -7,24 +7,31 @@
 // static build behaves identically to the dev server.
 (function () {
   // ── Mode toggle ────────────────────────────────────────────────────────────
-  document.querySelectorAll('.scaling-modes').forEach(function (modes) {
-    var group = modes.closest('.gem-levels') || document;
-    var badge = group.querySelector('[data-scaling-count]');
-    modes.querySelectorAll('.scaling-mode').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var mode = btn.dataset.scalingMode;
-        modes.querySelectorAll('.scaling-mode').forEach(function (b) {
-          var on = b === btn;
-          b.classList.toggle('is-active', on);
-          b.setAttribute('aria-selected', on ? 'true' : 'false');
+  function init(root) {
+    (root || document).querySelectorAll('.scaling-modes').forEach(function (modes) {
+      if (modes.dataset.scalingToggleBound === 'true') return;
+      modes.dataset.scalingToggleBound = 'true';
+      var group = modes.closest('.gem-levels') || document;
+      var badge = group.querySelector('[data-scaling-count]');
+      modes.querySelectorAll('.scaling-mode').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var mode = btn.dataset.scalingMode;
+          modes.querySelectorAll('.scaling-mode').forEach(function (b) {
+            var on = b === btn;
+            b.classList.toggle('is-active', on);
+            b.setAttribute('aria-selected', on ? 'true' : 'false');
+          });
+          group.querySelectorAll('[data-scaling-panel]').forEach(function (panel) {
+            panel.hidden = panel.dataset.scalingPanel !== mode;
+          });
+          if (badge && btn.dataset.scalingLabel) badge.textContent = btn.dataset.scalingLabel;
         });
-        group.querySelectorAll('[data-scaling-panel]').forEach(function (panel) {
-          panel.hidden = panel.dataset.scalingPanel !== mode;
-        });
-        if (badge && btn.dataset.scalingLabel) badge.textContent = btn.dataset.scalingLabel;
       });
     });
-  });
+  }
+
+  window.initScalingToggle = init;
+  init(document);
 
   // ── Quality band expansion ───────────────────────────────────────────────────
   function bandRows(row) {

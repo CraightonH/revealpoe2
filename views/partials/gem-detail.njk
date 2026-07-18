@@ -1,0 +1,14 @@
+{% from "macros/gem-card.njk" import gemCard %}
+{% from "macros/granted-by.njk" import grantedBy %}
+{% from "macros/granted-by-equipping.njk" import grantedByEquipping %}
+{% from "macros/recommended-supports.njk" import recommendedSupports %}
+{% from "macros/recommended-by.njk" import recommendedBy %}
+{% from "macros/gem-level-table.njk" import gemLevelTable %}
+<div class="gem-detail" data-gem-slug="{{ vm.slug }}">
+  {{ gemCard(vm) }}
+  {{ gemLevelTable(vm) }}
+  {{ recommendedSupports(vm) }}
+  {{ recommendedBy(vm) }}
+  {{ grantedBy(vm) }}
+  {{ grantedByEquipping(vm) }}
+</div>

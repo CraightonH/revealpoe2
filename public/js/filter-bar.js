@@ -86,6 +86,10 @@
             .filter(function (el) { return el.style.display !== 'none'; }).length;
         });
       }
+
+      // Browse views may need to reconcile a selected item after filtering.
+      // The filter engine remains generic; consumers opt in by listening.
+      bar.dispatchEvent(new CustomEvent('filter-bar:applied', { bubbles: true }));
     }
   });
 })();
