@@ -295,9 +295,6 @@ html[data-card-size="xl"] .gem-index { --gem-index-content-scale: 1.5; }
   text-align: center;
 }
 .gem-index-pane .gem-detail { max-width: none; }
-html[data-card-size="s"] .gem-index-pane .gem-detail,
-html[data-card-size="l"] .gem-index-pane .gem-detail,
-html[data-card-size="xl"] .gem-index-pane .gem-detail { zoom: 1; }
 .gem-index-pane .rec-tier { grid-template-columns: 1.8rem minmax(0, 1fr); gap: 7px; }
 .gem-index-pane .rec-tier .gem-browse-grid { grid-template-columns: repeat(auto-fit, minmax(210px, 250px)); }
 .gem-index-pane .bases-list-grid,
