@@ -167,7 +167,10 @@ export function initItemIndex(config) {
 
   function resetVisibility() {
     root.querySelectorAll('.item-index-filters .filter-btn.is-active').forEach((button) => button.classList.remove('is-active'));
-    root.querySelectorAll('.item-index-filters .filter-select').forEach((select) => { select.value = ''; });
+    root.querySelectorAll('.item-index-filters .filter-select').forEach((select) => {
+      select.value = '';
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
     const input = root.querySelector('[data-item-index-search]');
     if (input) input.value = '';
     rows().forEach((row) => { row.style.display = ''; });

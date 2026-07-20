@@ -71,7 +71,8 @@ html[data-card-size="xl"] .gem-index { --gem-index-content-scale: 1.5; }
   border-radius: 999px;
   font-size: calc(12px * var(--gem-index-content-scale));
 }
-.gem-index-filters .filter-select {
+.gem-index-filters .filter-select,
+.gem-index-filters .filter-select-trigger {
   min-width: min(220px, 42vw);
   padding: calc(5px * var(--gem-index-content-scale)) calc(28px * var(--gem-index-content-scale)) calc(5px * var(--gem-index-content-scale)) calc(9px * var(--gem-index-content-scale));
   border: 1px solid var(--border);
@@ -79,6 +80,108 @@ html[data-card-size="xl"] .gem-index { --gem-index-content-scale: 1.5; }
   background: var(--bg-base);
   color: var(--color-normal);
   font: calc(11px * var(--gem-index-content-scale))/1.25 var(--font-regular);
+}
+.filter-select-custom {
+  position: relative;
+  display: inline-flex;
+  max-width: 100%;
+}
+.filter-select--native {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  clip-path: inset(50%) !important;
+  border: 0 !important;
+  white-space: nowrap !important;
+}
+.filter-select-trigger {
+  position: relative;
+  min-width: min(220px, 60vw);
+  max-width: 100%;
+  padding: calc(5px * var(--gem-index-content-scale, 1)) calc(28px * var(--gem-index-content-scale, 1)) calc(5px * var(--gem-index-content-scale, 1)) calc(9px * var(--gem-index-content-scale, 1));
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg-base);
+  color: var(--color-normal);
+  font: calc(11px * var(--gem-index-content-scale, 1))/1.25 var(--font-regular);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 120ms ease, background-color 120ms ease, box-shadow 120ms ease;
+}
+.filter-select-trigger:hover,
+.filter-select-trigger[aria-expanded="true"] {
+  border-color: color-mix(in srgb, var(--color-gem) 58%, var(--border));
+  background: color-mix(in srgb, var(--color-gem) 5%, var(--bg-base));
+}
+.filter-select-trigger:focus-visible,
+.filter-select-listbox:focus-visible {
+  border-color: color-mix(in srgb, var(--color-gem) 58%, var(--border));
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-gem) 10%, transparent);
+}
+.filter-select-trigger__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.filter-select-trigger__chevron {
+  position: absolute;
+  right: calc(9px * var(--gem-index-content-scale, 1));
+  color: var(--color-default);
+  font-size: calc(13px * var(--gem-index-content-scale, 1));
+  line-height: 1;
+  transition: transform 120ms ease;
+}
+.filter-select-trigger[aria-expanded="true"] .filter-select-trigger__chevron { transform: rotate(180deg); }
+.filter-select-listbox {
+  position: fixed;
+  z-index: 120;
+  box-sizing: border-box;
+  padding: 5px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.38);
+  color: var(--color-normal);
+  font: calc(11px * var(--filter-select-scale, 1))/1.3 var(--font-regular);
+  scrollbar-color: var(--border) transparent;
+}
+.filter-select-listbox[hidden] { display: none; }
+.filter-select-option {
+  min-height: calc(28px * var(--filter-select-scale, 1));
+  padding: calc(5px * var(--filter-select-scale, 1)) calc(8px * var(--filter-select-scale, 1));
+  display: grid;
+  grid-template-columns: calc(14px * var(--filter-select-scale, 1)) minmax(0, 1fr);
+  align-items: center;
+  gap: calc(6px * var(--filter-select-scale, 1));
+  border: 1px solid transparent;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.filter-select-option.is-active {
+  border-color: color-mix(in srgb, var(--color-gem) 30%, transparent);
+  background: color-mix(in srgb, var(--color-gem) 9%, var(--bg-surface));
+}
+.filter-select-option__marker { color: var(--color-gem); opacity: 0; }
+.filter-select-option.is-selected .filter-select-option__marker { opacity: 1; }
+.filter-select-option.is-selected .filter-select-option__label { color: var(--color-normal); }
+.filter-select-option__label {
+  min-width: 0;
+  overflow: hidden;
+  color: color-mix(in srgb, var(--color-normal) 84%, var(--color-default));
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .item-index-class-nav {
   margin-top: 8px;
