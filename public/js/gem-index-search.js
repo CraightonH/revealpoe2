@@ -106,6 +106,19 @@ if (root && input) {
     renderMatches(activeMatchedSlugs, activeHasQuery);
   });
 
+  // gem-index.js may need to reveal a hash- or pane-linked row that the local
+  // query hid. Keep this module's private state aligned with its synchronous
+  // visibility reset so a later filter interaction cannot restore stale search.
+  root.addEventListener('gem-index:visibility-reset', () => {
+    clearTimeout(timer);
+    queryVersion++;
+    input.value = '';
+    activeMatchedSlugs = new Set();
+    activeHasQuery = false;
+    captureFilterVisibility();
+    renderMatches(activeMatchedSlugs, activeHasQuery);
+  });
+
   input.addEventListener('focus', () => { loadIndex().catch(() => {}); }, { once: true });
   input.addEventListener('input', () => {
     clearTimeout(timer);
