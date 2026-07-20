@@ -4,13 +4,13 @@
 <div class="gem-detail item-detail" data-item-slug="{{ vm.slug }}">
   {% if vm.classHasPage %}
   {{ breadcrumb([
-    { label: 'Base Items', href: '/bases' },
+    { label: 'Modifiers', href: '/bases' },
     { label: vm.className, href: '/bases/' + vm.classSlug },
     { label: vm.name }
   ]) }}
   {% else %}
   {{ breadcrumb([
-    { label: 'Base Items', href: '/bases' },
+    { label: 'Modifiers', href: '/bases' },
     { label: vm.name }
   ]) }}
   {% endif %}

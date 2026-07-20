@@ -44,7 +44,7 @@ test('GET /bases returns the 34 item-class rows with an initial class detail', a
   const res = await request(app).get('/bases');
   assert.equal(res.status, 200);
   assert.ok(res.text.includes('Weapons'));
-  assert.ok(res.text.includes('Base Item Index'));
+  assert.ok(res.text.includes('Modifier Index'));
   assert.ok(res.text.includes('base-index-search'));
   assert.ok(res.text.includes('/static/js/base-index.js'));
   assert.ok(res.text.includes('item-index-pane'));
