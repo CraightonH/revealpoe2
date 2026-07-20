@@ -32,6 +32,7 @@
      sections are identical, so we drop the redundant tier section and open the
      canonical full list instead. #}
   {% set hasTierCuration = cls.topBases.length and cls.topBases.length < cls.bases.length %}
+  {{ affixSection(cls.affixes, 'a ' + cls.name) }}
   <details class="bases-group"{% if not hasTierCuration %} open{% endif %}>
     <summary class="bases-group-title">All Base Items <span class="bases-group-count">{{ cls.bases.length }}</span></summary>
     <div class="bases-list-grid">
@@ -51,6 +52,5 @@
     </div>
   </details>
   {% endif %}
-  {{ affixSection(cls.affixes, 'a ' + cls.name) }}
   {{ socketablesSection(cls.augments) }}
 </div>
