@@ -1027,6 +1027,7 @@ details[open] > .bases-group-title::before {
 
 .affix-section {
   margin-top: 28px;
+  margin-bottom: 28px;
 }
 .affix-section-title {
   font-family: var(--font-smallcaps);
