@@ -62,7 +62,9 @@ export function registerPages(app) {
     // Reverse of the gem page's "Granted by Equipping": the default-attack gem(s)
     // this weapon class grants. Empty for classes with no default-skill mapping.
     cls.defaultSkillGems = getDefaultSkillGemsForClass(req.params.classSlug);
-    res.render('bases-class.njk', { cls, activeAttr: req.query.attr || null });
+    // Composition-filtered classes (armours) are noise unfiltered — default to
+    // the first subtype; ?attr= still overrides.
+    res.render('bases-class.njk', { cls, activeAttr: req.query.attr || cls.attrSubtypes[0]?.value || null });
   });
   detailRoute(app, '/base/:slug', buildBaseItemViewModel, 'base-item.njk', 'vm');
   cardRoute(app, '/base/:slug/card', buildBaseItemViewModel, 'partials/base-card-fragment.njk');
