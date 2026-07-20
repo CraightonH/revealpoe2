@@ -1,6 +1,10 @@
 # UI Redesign — Direction Record (2026-07-17)
 
-Status: **direction chosen, paused before implementation.** No site code has changed.
+Status: **/gems shipped to production 2026-07-20** (Gem Index master–detail:
+shared detail partial + pane fragments, local full-text search, content-scoped
+card-size scaling, in-pane deep-link navigation). Remaining scope: propagate
+the pattern to uniques/bases/passive pages + site chrome; CSS token
+consolidation debt still open.
 
 ## Goal
 
