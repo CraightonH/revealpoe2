@@ -269,7 +269,8 @@ html[data-card-size="xl"] .gem-index { --gem-index-content-scale: 1.5; }
   overflow: hidden;
   color: color-mix(in srgb, var(--color-normal) 76%, var(--color-default));
   font-family: var(--font-smallcaps);
-  font-size: calc(10.5px * var(--gem-index-content-scale));
+  /* 12.5px = .explicitMod in the in-game render; description text reads at one size */
+  font-size: calc(12.5px * var(--gem-index-content-scale));
   line-height: 1.25;
   white-space: nowrap;
   -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 24px), transparent 100%);
