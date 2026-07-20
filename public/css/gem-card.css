@@ -1178,6 +1178,10 @@ details[open] > .affix-origin-title::before { transform: rotate(90deg); }
    .mod-value numbers stand out against it. pre-line honors the \n between hybrid
    stat lines (e.g. Ev/ES + Ev + max ES) so each rolls onto its own line. */
 .affix-text { color: var(--magic-color); white-space: pre-line; }
+/* Tag row sits on its own line under the mod text — inline reads cramped,
+   especially on mobile. */
+.affix-tag-list { display: block; margin-top: 4px; }
+.affix-tag-list .affix-tag:first-child { margin-left: 0; }
 .affix-tag {
   --tag: var(--magic-color); /* fallback for any uncolored tag */
   display: inline-block;
@@ -1208,10 +1212,22 @@ details[open] > .affix-origin-title::before { transform: rotate(90deg); }
    text. background-clip:text clips the gradient to the glyphs, so this trades
    the pill fill for multicolor letters. */
 .affix-tag--elemental, .affix-tag--elemental_resistance {
+  position: relative;
+  isolation: isolate;
   background: linear-gradient(90deg, #e0563c, #e8c83c 28%, #84c84a 48%, #5aa6e0 68%, #8f86e8 84%, #d050b0);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+/* background-clip:text consumes the pill fill, leaving the chip floating on the
+   page background — restore the fill on a layer behind the rainbow glyphs. */
+.affix-tag--elemental::before, .affix-tag--elemental_resistance::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 8px;
+  background: rgba(148, 148, 168, 0.16);
 }
 /* Physical + offense */
 .affix-tag--physical { --tag: #c8b89a; }
