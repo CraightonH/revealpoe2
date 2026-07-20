@@ -39,7 +39,7 @@ test('GET /unique/not-a-real-unique returns 404', async () => {
   assert.equal(res.status, 404);
 });
 
-test('GET /bases returns 200 with weapon classes', async () => {
+test('GET /bases returns the 34 item-class rows with an initial class detail', async () => {
   const app = createApp();
   const res = await request(app).get('/bases');
   assert.equal(res.status, 200);
@@ -49,9 +49,14 @@ test('GET /bases returns 200 with weapon classes', async () => {
   assert.ok(res.text.includes('/static/js/base-index.js'));
   assert.ok(res.text.includes('item-index-pane'));
   assert.ok(res.text.includes('item-index-sheet'));
-  assert.ok(res.text.includes('Browse dedicated class pages'));
-  const rowCount = (res.text.match(/class="gem-index-row [^"]*item-index-row[^"]*"\s+href="\/base\/[^"/]+"/g) ?? []).length;
+  assert.ok(res.text.includes('data-search-slugs="'));
+  assert.ok(res.text.includes('base-class-detail item-detail'));
+  assert.ok(res.text.includes('Mods, augments, and base types'));
+  assert.ok(!res.text.includes('label="Class"'), 'class dropdown is removed');
+  const rowCount = (res.text.match(/class="gem-index-row [^"]*item-index-row[^"]*"\s+href="\/bases\/[^"/]+"/g) ?? []).length;
+  assert.equal(rowCount, 34);
   assert.equal(rowCount, app.locals.baseCount());
+  assert.equal((res.text.match(/href="\/base\/[^"/]+"/g) ?? []).length > 0, true, 'initial class base list keeps dedicated base links');
 });
 
 test('GET /bases/amulet returns 200 with base items', async () => {
@@ -59,6 +64,15 @@ test('GET /bases/amulet returns 200 with base items', async () => {
   const res = await request(app).get('/bases/amulet');
   assert.equal(res.status, 200);
   assert.ok(res.text.includes('Stellar Amulet'));
+  assert.ok(res.text.includes('class="page page--column base-class-detail item-detail"'));
+  assert.ok(res.text.includes('data-item-slug="amulet"'));
+});
+
+test('GET /bases/jewel now returns the shared class detail', async () => {
+  const res = await request(createApp()).get('/bases/jewel');
+  assert.equal(res.status, 200);
+  assert.ok(res.text.includes('data-item-slug="jewel"'));
+  assert.ok(res.text.includes('Item Affixes'));
 });
 
 test('GET /base/stellar-amulet returns 200', async () => {

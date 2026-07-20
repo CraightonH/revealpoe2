@@ -1,6 +1,6 @@
 import { buildGemViewModel, listGems, listGemCards, getDefaultSkillGemsForClass } from '../data/gems.js';
 import { buildUniqueViewModel, listUniqueCards, listUniqueClassFilters } from '../data/uniques.js';
-import { listBaseIndex, listItemClasses, getItemClass, buildBaseItemViewModel, affixBaseTargets, PER_BASE_NAV_CLASSES } from '../data/baseItems.js';
+import { listBaseIndex, getItemClass, buildBaseItemViewModel, affixBaseTargets } from '../data/baseItems.js';
 import { getAugmentVM } from '../data/augments.js';
 import { getKeystone, getNotable, getPassiveNode } from '../data/passiveTree.js';
 import { getEmotion } from '../data/emotions.js';
@@ -48,20 +48,15 @@ export function registerPages(app) {
   cardRoute(app, '/unique/:slug/card', buildUniqueViewModel, 'partials/unique-card-fragment.njk');
 
   app.get('/bases', (_req, res) => {
-    const bases = listBaseIndex().sort((a, b) => a.name.localeCompare(b.name));
-    const initialBase = buildBaseItemViewModel(bases[0]?.slug);
-    const classFilters = listItemClasses().flatMap((group) => group.classes.map((c) => ({
-      value: c.classSlug,
-      label: c.name,
-      href: PER_BASE_NAV_CLASSES.has(c.classId) ? null : `/bases/${c.classSlug}`,
-    })));
-    res.render('bases.njk', { bases, initialBase, classFilters });
+    const classes = listBaseIndex().sort((a, b) => a.name.localeCompare(b.name));
+    const initialClass = getItemClass(classes[0]?.classSlug);
+    initialClass.defaultSkillGems = getDefaultSkillGemsForClass(initialClass.classSlug);
+    res.render('bases.njk', { classes, initialClass });
   });
 
   app.get('/bases/:classSlug', (req, res) => {
     const cls = getItemClass(req.params.classSlug);
-    // Per-base-nav classes (jewels) have no class page — browse them via /bases.
-    if (!cls || PER_BASE_NAV_CLASSES.has(cls.classId)) {
+    if (!cls) {
       return res.status(404).render('home.njk', { notFound: req.params.classSlug });
     }
     // Reverse of the gem page's "Granted by Equipping": the default-attack gem(s)

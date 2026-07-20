@@ -15,6 +15,8 @@ export function initItemIndex(config) {
   const detailSelector = config.detailContentSelector || '.item-detail';
   const pathPrefix = config.detailPathPrefix;
   const categories = new Set(config.searchIndexCategories || []);
+  const resultSlugKey = config.searchResultSlugDataKey || null;
+  const rowTextKey = config.searchRowTextDataKey || null;
   const noun = config.noun || 'item';
   const plural = config.plural || `${noun}s`;
   const searchEvent = config.visibilityResetEvent || 'item-index:visibility-reset';
@@ -320,6 +322,14 @@ export function initItemIndex(config) {
     let queryVersion = 0;
     let activeMatchedSlugs = new Set();
     let activeHasQuery = false;
+    const rowSlugForDoc = new Map();
+    rows().forEach((row) => {
+      rowSlugForDoc.set(slugOf(row), slugOf(row));
+      if (!resultSlugKey) return;
+      for (const docSlug of (row.dataset[resultSlugKey] || '').split(' ').filter(Boolean)) {
+        rowSlugForDoc.set(docSlug, slugOf(row));
+      }
+    });
 
     function loadIndex() {
       if (docs) return Promise.resolve(docs);
@@ -332,6 +342,14 @@ export function initItemIndex(config) {
           })
           .then((raw) => {
             docs = raw.filter((doc) => categories.has(doc.category));
+            if (rowTextKey) {
+              docs.push(...rows().map((row) => ({
+                slug: slugOf(row),
+                category: [...categories][0] || 'item',
+                text: (row.dataset[rowTextKey] || nameOf(row)).toLowerCase(),
+                tags: [], req: [], grants: [],
+              })));
+            }
             return docs;
           })
           .finally(() => input.removeAttribute('aria-busy'));
@@ -358,7 +376,17 @@ export function initItemIndex(config) {
     }
     function applyQuery(query, indexDocs) {
       const terms = parseQuery(query).terms;
-      commitMatches(new Set(terms.length ? indexDocs.filter((doc) => docMatches(doc, terms)).map((doc) => doc.slug) : []), terms.length > 0);
+      const matchedSlugs = new Set(terms.length
+        ? indexDocs.filter((doc) => docMatches(doc, terms)).map((doc) => rowSlugForDoc.get(doc.slug)).filter(Boolean)
+        : []);
+      commitMatches(matchedSlugs, terms.length > 0);
+      if (terms.length && config.selectFirstSearchMatch && desktop.matches) {
+        const selected = root.querySelector(`${rowSelector}.is-selected`);
+        if (!selected || selected.style.display === 'none') {
+          const firstMatch = rows().find((row) => row.style.display !== 'none');
+          if (firstMatch) select(firstMatch, { replaceHash: true });
+        }
+      }
     }
     function clearSearch() {
       clearTimeout(timer);

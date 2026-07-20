@@ -23,11 +23,11 @@ test('prerender discovers gem detail pages from row hrefs only', () => {
   assert.equal(links.size, 1);
 });
 
-test('prerender discovers all item-index dedicated and legacy class links', () => {
+test('prerender discovers item-index detail pages and bases class rows', () => {
   const links = extractLinks([
     '<a href="/unique/astramentis">Astramentis</a>',
-    '<a href="/base/stellar-amulet">Stellar Amulet</a>',
-    '<a href="/bases/amulet">Amulets</a>',
+    '<a class="item-index-row" href="/bases/bow">Bows</a>',
+    '<a class="bases-list-card" href="/base/stellar-amulet">Stellar Amulet</a>',
   ].join(''));
-  assert.deepEqual([...links], ['/unique/astramentis', '/base/stellar-amulet', '/bases/amulet']);
+  assert.deepEqual([...links], ['/unique/astramentis', '/bases/bow', '/base/stellar-amulet']);
 });

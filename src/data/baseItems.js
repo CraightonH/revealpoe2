@@ -118,22 +118,18 @@ export function listItemClasses() {
   }));
 }
 
-// Unified /bases index model. Keep the class taxonomy on each row so the
-// landing page can offer a small group-chip row plus a precise class dropdown
-// without rebuilding graph relationships in the route or template.
+// Unified /bases index model: one row per item class. Base slugs stay attached
+// to their owning row so the browser can project full-text base-document hits
+// from search-index.json back onto the 34 class rows.
 export function listBaseIndex() {
   buildIndex();
-  const groupByClass = new Map(
-    GROUPS.flatMap((group) => group.classes.map((classId) => [classId, group.label])),
-  );
-  return [..._index.values()].map((base) => ({
-    ...base,
-    group: groupByClass.get(base.itemClass) ?? 'Other',
-    groupSlug: (groupByClass.get(base.itemClass) ?? 'Other').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-    statHint: base.properties[0]
-      ? `${base.properties[0].labelHtml}: ${base.properties[0].value}`
-      : (base.implicits[0]?.html ?? `Drop level ${base.dropLevel ?? 1}`),
-  }));
+  return listItemClasses().flatMap((group) => group.classes.map((cls) => ({
+    ...cls,
+    slug: cls.classSlug,
+    group: group.label,
+    groupSlug: group.label.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+    baseSlugs: (_byClass.get(cls.classId) ?? []).map((base) => base.slug),
+  })));
 }
 
 // Group a class's bases by defence subtype, in display order, keeping each
@@ -337,12 +333,9 @@ const EXTRA_NAV_GROUPS = [
 ];
 const EXTRA_NAV_CLASSES = new Set(EXTRA_NAV_GROUPS.flatMap((g) => g.classes));
 
-// Classes navigated per-base on the /bases landing rather than via a class page —
-// each base rolls a distinct affix set, so listing one base page per type is more
-// useful than a union class page. These have NO /bases/:class page (the route
-// 404s); breadcrumbs render the class as plain text and affix flyouts target the
-// individual bases that roll a mod.
-export const PER_BASE_NAV_CLASSES = new Set(['Jewel']);
+// Kept as an exported compatibility hook for callers that distinguish classes
+// with dedicated pages. Every browsable class now has one.
+export const PER_BASE_NAV_CLASSES = new Set();
 
 // Landing-page navigation model. Buckets are tag-driven, not GROUPS-driven, so
 // data quirks self-correct: Weapons split into One-/Two-Handed by onehand/twohand
@@ -465,8 +458,8 @@ export function buildBaseItemViewModel(slug) {
   // Per-base affix tables for consumable/jewel bases; equipment keeps the
   // "see the class page" pointer (its mods don't vary base to base).
   const affixes = CONSUMABLE_CLASSES.has(b.itemClass) ? baseAffixes(b.metadataKey) : null;
-  // Jewels have no class page (PER_BASE_NAV_CLASSES) — the breadcrumb shows the
-  // class as plain text rather than a dead link to /bases/:class.
+  // All browsable classes now have class pages; keep the compatibility branch
+  // so a future explicit exception would still avoid rendering a dead link.
   const classHasPage = !PER_BASE_NAV_CLASSES.has(b.itemClass);
 
   return { ...b, uniquesOnBase, affixes, classHasPage, runeVariants: _runeByParent.get(b.slug) ?? [] };

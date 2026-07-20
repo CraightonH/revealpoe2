@@ -10,5 +10,4 @@ initItemIndex({
   searchIndexCategories: ['unique'],
   noun: 'unique item',
   plural: 'unique items',
-  crossIndexRoutes: [{ detailPathPrefix: '/base/', indexPath: '/bases' }],
 });

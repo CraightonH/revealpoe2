@@ -24,7 +24,10 @@
 //     is updated to the number of currently-visible targets inside it, so count
 //     badges track the active filter instead of showing a static total.
 (function () {
-  document.querySelectorAll('.filter-bar').forEach(function (bar) {
+  function initFilterBars(scope) {
+    (scope || document).querySelectorAll('.filter-bar').forEach(function (bar) {
+    if (bar.dataset.filterInitialized === 'true') return;
+    bar.dataset.filterInitialized = 'true';
     var targetSel  = bar.dataset.target;
     var sectionSel = bar.dataset.section || null;
     var countSel   = bar.dataset.count || null;
@@ -98,5 +101,9 @@
       // The filter engine remains generic; consumers opt in by listening.
       bar.dispatchEvent(new CustomEvent('filter-bar:applied', { bubbles: true }));
     }
-  });
+    });
+  }
+
+  window.initFilterBars = initFilterBars;
+  initFilterBars(document);
 })();

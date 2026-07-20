@@ -2,13 +2,16 @@
    content; selection, sizing, accents, and interaction hooks stay identical. #}
 {% macro itemIndexRow(item, kind, selected=false) %}
 {% set isGem = kind == 'gem' %}
+{% set isBaseClass = kind == 'base-class' %}
 {% set accent = 'var(--color-gem-' ~ item.cardColor[0] ~ ')' if isGem else ('var(--color-unique)' if kind == 'unique' else 'var(--color-normal)') %}
+{% set href = '/gem/' + item.slug if isGem else ('/bases/' + item.slug if isBaseClass else '/' + kind + '/' + item.slug) %}
 <a class="gem-index-row {% if isGem %}gem-index-row--{{ item.cardColor }} {% endif %}item-index-row item-index-row--{{ item.cardColor if isGem else kind }}{% if selected %} is-selected{% endif %}"
-   href="/{{ 'gem' if isGem else kind }}/{{ item.slug }}"
+   href="{{ href }}"
    data-item-slug="{{ item.slug }}" data-item-name="{{ item.name }}"
    {% if isGem %}data-gem-slug="{{ item.slug }}" data-gem-name="{{ item.name }}" data-type="{{ item.gemType }}" data-origin="{{ item.origin }}" data-req="{{ item.req | join(' ') }}"{% endif %}
    {% if kind == 'unique' %}data-itemclass="{{ item.itemClassSlug }}" data-group="{{ item.groupSlug }}" data-origin="{{ item.origin | lower }}"{% endif %}
    {% if kind == 'base' %}data-itemclass="{{ item.classSlug }}" data-group="{{ item.groupSlug }}"{% endif %}
+   {% if isBaseClass %}data-group="{{ item.groupSlug }}" data-search-slugs="{{ item.baseSlugs | join(' ') }}" data-search-text="{{ item.name }} {{ item.group }}"{% endif %}
    style="--row-accent:{{ accent }};"
    {% if selected %}aria-current="true"{% endif %}>
   <span class="gem-index-row__icon-wrap item-index-row__icon-wrap">
@@ -22,6 +25,7 @@
     <span class="gem-index-row__tags item-index-row__tags">
       {% if isGem %}{{ item.typeLineHtml | safe }}{% for tag in item.tags.slice(0, 3) %}{% if loop.first %} · {% else %}, {% endif %}{{ tag | safe }}{% endfor %}
       {% elif kind == 'unique' %}{{ item.base }} · {{ item.itemClass }}
+      {% elif isBaseClass %}{{ item.group }}
       {% else %}{{ item.className }}{% endif %}
     </span>
   </span>
@@ -30,11 +34,13 @@
       {% if item.req.length %}{% for req in item.req %}<span class="gem-index-req gem-index-req--{{ req }}">{{ req | capitalize }}</span>{% endfor %}
       {% else %}<span class="gem-index-req gem-index-req--none">Any</span>{% endif %}
     {% elif kind == 'unique' %}{{ item.levelHint | safe }}
+    {% elif isBaseClass %}{{ item.count }} {{ 'base' if item.count == 1 else 'bases' }}
     {% else %}Lvl {{ item.dropLevel or 1 }}{% endif %}
   </span>
   <span class="gem-index-row__effect item-index-row__hint">
     {% if isGem %}{% if item.effect.length %}{{ item.effect[0] | safe }}{% else %}No effect description available.{% endif %}
     {% elif kind == 'unique' %}{% if item.explicits.length %}{{ item.explicits[0].html | safe }}{% elif item.properties.length %}{{ item.properties[0].labelHtml | safe }}: {{ item.properties[0].value }}{% else %}{{ item.base }}{% endif %}
+    {% elif isBaseClass %}Mods, augments, and base types
     {% else %}{{ item.statHint | safe }}{% endif %}
   </span>
 </a>
