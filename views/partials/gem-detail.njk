@@ -4,7 +4,7 @@
 {% from "macros/recommended-supports.njk" import recommendedSupports %}
 {% from "macros/recommended-by.njk" import recommendedBy %}
 {% from "macros/gem-level-table.njk" import gemLevelTable %}
-<div class="gem-detail" data-gem-slug="{{ vm.slug }}">
+<div class="gem-detail item-detail" data-gem-slug="{{ vm.slug }}" data-item-slug="{{ vm.slug }}">
   {{ gemCard(vm) }}
   {{ gemLevelTable(vm) }}
   {{ recommendedSupports(vm) }}

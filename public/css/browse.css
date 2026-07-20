@@ -1,5 +1,7 @@
-/* Modern exploration chrome for the gem master-detail index. Fidelity styling
-   remains owned by gem-card.css inside each .newItemPopup. */
+/* Shared exploration chrome for the gem/unique/base master-detail indexes.
+   The gem-index names remain as compatibility aliases for the shipped /gems
+   DOM; every index also carries the semantic item-index aliases. Fidelity
+   styling remains owned by gem-card.css inside each .newItemPopup. */
 .gem-index {
   --browse-surface: color-mix(in srgb, var(--bg-surface) 88%, transparent);
   --gem-index-content-scale: 1;
@@ -69,6 +71,26 @@ html[data-card-size="xl"] .gem-index { --gem-index-content-scale: 1.5; }
   border-radius: 999px;
   font-size: calc(12px * var(--gem-index-content-scale));
 }
+.gem-index-filters .filter-select {
+  min-width: min(220px, 42vw);
+  padding: calc(5px * var(--gem-index-content-scale)) calc(28px * var(--gem-index-content-scale)) calc(5px * var(--gem-index-content-scale)) calc(9px * var(--gem-index-content-scale));
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg-base);
+  color: var(--color-normal);
+  font: calc(11px * var(--gem-index-content-scale))/1.25 var(--font-regular);
+}
+.item-index-class-nav {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  color: var(--color-default);
+  font-size: 10px;
+}
+.item-index-class-nav summary { cursor: pointer; }
+.item-index-class-nav__links { padding-top: 7px; display: flex; flex-wrap: wrap; gap: 5px 12px; }
+.item-index-class-nav__links a { color: var(--color-default); text-decoration: none; }
+.item-index-class-nav__links a:hover { color: var(--color-normal); text-decoration: underline; }
 
 .gem-index-workspace {
   width: min(1680px, 100%);
@@ -256,6 +278,14 @@ html[data-card-size="xl"] .gem-index { --gem-index-content-scale: 1.5; }
   line-height: 1.15;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.item-index-row__name--unique { color: var(--color-unique); }
+.item-index-row__meta {
+  max-width: calc(112px * var(--gem-index-content-scale));
+  color: var(--color-default);
+  font-size: calc(9.5px * var(--gem-index-content-scale));
+  line-height: 1.2;
+  text-align: right;
 }
 .gem-index-row__tags {
   overflow: hidden;

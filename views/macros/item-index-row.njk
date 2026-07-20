@@ -1,0 +1,41 @@
+{# One row primitive for every item index. Kind-specific branches only choose
+   content; selection, sizing, accents, and interaction hooks stay identical. #}
+{% macro itemIndexRow(item, kind, selected=false) %}
+{% set isGem = kind == 'gem' %}
+{% set accent = 'var(--color-gem-' ~ item.cardColor[0] ~ ')' if isGem else ('var(--color-unique)' if kind == 'unique' else 'var(--color-normal)') %}
+<a class="gem-index-row {% if isGem %}gem-index-row--{{ item.cardColor }} {% endif %}item-index-row item-index-row--{{ item.cardColor if isGem else kind }}{% if selected %} is-selected{% endif %}"
+   href="/{{ 'gem' if isGem else kind }}/{{ item.slug }}"
+   data-item-slug="{{ item.slug }}" data-item-name="{{ item.name }}"
+   {% if isGem %}data-gem-slug="{{ item.slug }}" data-gem-name="{{ item.name }}" data-type="{{ item.gemType }}" data-origin="{{ item.origin }}" data-req="{{ item.req | join(' ') }}"{% endif %}
+   {% if kind == 'unique' %}data-itemclass="{{ item.itemClassSlug }}" data-group="{{ item.groupSlug }}" data-origin="{{ item.origin | lower }}"{% endif %}
+   {% if kind == 'base' %}data-itemclass="{{ item.classSlug }}" data-group="{{ item.groupSlug }}"{% endif %}
+   style="--row-accent:{{ accent }};"
+   {% if selected %}aria-current="true"{% endif %}>
+  <span class="gem-index-row__icon-wrap item-index-row__icon-wrap">
+    {% if item.iconUrl %}
+    <img class="gem-index-row__icon item-index-row__icon" src="{{ item.iconUrl }}" alt="" loading="lazy"
+         onerror="this.style.visibility='hidden'">
+    {% endif %}
+  </span>
+  <span class="gem-index-row__identity item-index-row__identity">
+    <span class="gem-index-row__name item-index-row__name{% if kind == 'unique' %} item-index-row__name--unique{% endif %}">{{ item.name }}</span>
+    <span class="gem-index-row__tags item-index-row__tags">
+      {% if isGem %}{{ item.typeLineHtml | safe }}{% for tag in item.tags.slice(0, 3) %}{% if loop.first %} · {% else %}, {% endif %}{{ tag | safe }}{% endfor %}
+      {% elif kind == 'unique' %}{{ item.base }} · {{ item.itemClass }}
+      {% else %}{{ item.className }}{% endif %}
+    </span>
+  </span>
+  <span class="gem-index-row__requirements{% if not isGem %} item-index-row__meta{% endif %}"{% if isGem %} aria-label="Attribute requirements"{% endif %}>
+    {% if isGem %}
+      {% if item.req.length %}{% for req in item.req %}<span class="gem-index-req gem-index-req--{{ req }}">{{ req | capitalize }}</span>{% endfor %}
+      {% else %}<span class="gem-index-req gem-index-req--none">Any</span>{% endif %}
+    {% elif kind == 'unique' %}{{ item.levelHint | safe }}
+    {% else %}Lvl {{ item.dropLevel or 1 }}{% endif %}
+  </span>
+  <span class="gem-index-row__effect item-index-row__hint">
+    {% if isGem %}{% if item.effect.length %}{{ item.effect[0] | safe }}{% else %}No effect description available.{% endif %}
+    {% elif kind == 'unique' %}{% if item.explicits.length %}{{ item.explicits[0].html | safe }}{% elif item.properties.length %}{{ item.properties[0].labelHtml | safe }}: {{ item.properties[0].value }}{% else %}{{ item.base }}{% endif %}
+    {% else %}{{ item.statHint | safe }}{% endif %}
+  </span>
+</a>
+{% endmacro %}

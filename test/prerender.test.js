@@ -22,3 +22,12 @@ test('prerender discovers gem detail pages from row hrefs only', () => {
   assert.ok(links.has('/gem/arc'));
   assert.equal(links.size, 1);
 });
+
+test('prerender discovers all item-index dedicated and legacy class links', () => {
+  const links = extractLinks([
+    '<a href="/unique/astramentis">Astramentis</a>',
+    '<a href="/base/stellar-amulet">Stellar Amulet</a>',
+    '<a href="/bases/amulet">Amulets</a>',
+  ].join(''));
+  assert.deepEqual([...links], ['/unique/astramentis', '/base/stellar-amulet', '/bases/amulet']);
+});

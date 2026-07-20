@@ -1,0 +1,26 @@
+{% from "macros/base-card.njk" import baseCard %}
+{% from "macros/nav.njk" import breadcrumb %}
+{% from "macros/affix-tables.njk" import affixSection %}
+<div class="gem-detail item-detail" data-item-slug="{{ vm.slug }}">
+  {% if vm.classHasPage %}
+  {{ breadcrumb([
+    { label: 'Base Items', href: '/bases' },
+    { label: vm.className, href: '/bases/' + vm.classSlug },
+    { label: vm.name }
+  ]) }}
+  {% else %}
+  {{ breadcrumb([
+    { label: 'Base Items', href: '/bases' },
+    { label: vm.name }
+  ]) }}
+  {% endif %}
+  {{ baseCard(vm, full=true) }}
+  {% if vm.affixes %}
+  {{ affixSection(vm.affixes, 'a ' + vm.name) }}
+  {% else %}
+  <p class="base-affix-pointer">
+    Modifiers roll per item class — see all rollable affixes on the
+    <a href="/bases/{{ vm.classSlug }}">{{ vm.className }}</a> page.
+  </p>
+  {% endif %}
+</div>

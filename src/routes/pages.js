@@ -1,6 +1,6 @@
 import { buildGemViewModel, listGems, listGemCards, getDefaultSkillGemsForClass } from '../data/gems.js';
 import { buildUniqueViewModel, listUniqueCards, listUniqueClassFilters } from '../data/uniques.js';
-import { listBaseNav, getItemClass, buildBaseItemViewModel, affixBaseTargets, PER_BASE_NAV_CLASSES } from '../data/baseItems.js';
+import { listBaseIndex, listItemClasses, getItemClass, buildBaseItemViewModel, affixBaseTargets, PER_BASE_NAV_CLASSES } from '../data/baseItems.js';
 import { getAugmentVM } from '../data/augments.js';
 import { getKeystone, getNotable, getPassiveNode } from '../data/passiveTree.js';
 import { getEmotion } from '../data/emotions.js';
@@ -40,14 +40,22 @@ export function registerPages(app) {
   app.get('/uniques', (_req, res) => {
     const uniques = listUniqueCards().sort((a, b) => a.name.localeCompare(b.name));
     const classFilters = listUniqueClassFilters();
-    res.render('uniques.njk', { uniques, classFilters });
+    const initialUnique = buildUniqueViewModel(uniques[0]?.slug);
+    res.render('uniques.njk', { uniques, classFilters, initialUnique });
   });
 
   detailRoute(app, '/unique/:slug', buildUniqueViewModel, 'unique.njk', 'vm');
   cardRoute(app, '/unique/:slug/card', buildUniqueViewModel, 'partials/unique-card-fragment.njk');
 
   app.get('/bases', (_req, res) => {
-    res.render('bases.njk', { groups: listBaseNav() });
+    const bases = listBaseIndex().sort((a, b) => a.name.localeCompare(b.name));
+    const initialBase = buildBaseItemViewModel(bases[0]?.slug);
+    const classFilters = listItemClasses().flatMap((group) => group.classes.map((c) => ({
+      value: c.classSlug,
+      label: c.name,
+      href: PER_BASE_NAV_CLASSES.has(c.classId) ? null : `/bases/${c.classSlug}`,
+    })));
+    res.render('bases.njk', { bases, initialBase, classFilters });
   });
 
   app.get('/bases/:classSlug', (req, res) => {
@@ -101,4 +109,6 @@ export function registerPages(app) {
 
   // expose for warmup/debug
   app.locals.gemCount = () => listGems().length;
+  app.locals.uniqueCount = () => listUniqueCards().length;
+  app.locals.baseCount = () => listBaseIndex().length;
 }

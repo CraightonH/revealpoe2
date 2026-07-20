@@ -118,6 +118,24 @@ export function listItemClasses() {
   }));
 }
 
+// Unified /bases index model. Keep the class taxonomy on each row so the
+// landing page can offer a small group-chip row plus a precise class dropdown
+// without rebuilding graph relationships in the route or template.
+export function listBaseIndex() {
+  buildIndex();
+  const groupByClass = new Map(
+    GROUPS.flatMap((group) => group.classes.map((classId) => [classId, group.label])),
+  );
+  return [..._index.values()].map((base) => ({
+    ...base,
+    group: groupByClass.get(base.itemClass) ?? 'Other',
+    groupSlug: (groupByClass.get(base.itemClass) ?? 'Other').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+    statHint: base.properties[0]
+      ? `${base.properties[0].labelHtml}: ${base.properties[0].value}`
+      : (base.implicits[0]?.html ?? `Drop level ${base.dropLevel ?? 1}`),
+  }));
+}
+
 // Group a class's bases by defence subtype, in display order, keeping each
 // group's bases (already drop-level sorted, so [0] is the representative).
 function subtypesOf(bases) {

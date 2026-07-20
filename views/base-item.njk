@@ -1,7 +1,4 @@
 {% extends "base.njk" %}
-{% from "macros/base-card.njk" import baseCard %}
-{% from "macros/nav.njk" import breadcrumb %}
-{% from "macros/affix-tables.njk" import affixSection %}
 {% block title %}{{ vm.name }} — Reveal · PoE2 Wiki{% endblock %}
 {% block og_type %}article{% endblock %}
 {% block og_title %}{{ vm.name }} — Reveal · PoE2 Wiki{% endblock %}
@@ -9,30 +6,6 @@
 {% block og_image %}/static/og/base/{{ vm.slug }}.png{% endblock %}
 {% block content %}
 <div class="page">
-  <div class="gem-detail">
-    {# Jewels have no class page, so the class is omitted from the trail entirely
-       (browse them via /bases) — equipment keeps the linked class crumb. #}
-    {% if vm.classHasPage %}
-    {{ breadcrumb([
-      { label: 'Base Items', href: '/bases' },
-      { label: vm.className, href: '/bases/' + vm.classSlug },
-      { label: vm.name }
-    ]) }}
-    {% else %}
-    {{ breadcrumb([
-      { label: 'Base Items', href: '/bases' },
-      { label: vm.name }
-    ]) }}
-    {% endif %}
-    {{ baseCard(vm, full=true) }}
-    {% if vm.affixes %}
-    {{ affixSection(vm.affixes, 'a ' + vm.name) }}
-    {% else %}
-    <p class="base-affix-pointer">
-      Modifiers roll per item class — see all rollable affixes on the
-      <a href="/bases/{{ vm.classSlug }}">{{ vm.className }}</a> page.
-    </p>
-    {% endif %}
-  </div>
+  {% include "partials/base-detail.njk" %}
 </div>
 {% endblock %}

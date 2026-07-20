@@ -17,6 +17,8 @@
                        applied on page load)
              active  – optional group-level value; the option whose value matches
                        starts selected (e.g. pre-select from a URL param)
+             select  – optional; render the options as a compact dropdown while
+                       keeping the same data-key matching/count mechanism
   target  – CSS selector for the items to show/hide (e.g. ".gem-browse-card")
   section – CSS selector for parent containers to hide when all children are filtered (optional)
   align   – "center" centers the bar and its buttons on the page (default: left)
@@ -31,6 +33,12 @@
   {% for group in groups %}
   <div class="filter-group" data-key="{{ group.key }}"{% if group.match %} data-match="{{ group.match }}"{% endif %}{% if group.single %} data-single{% endif %}>
     {% if group.label %}<span class="filter-label">{{ group.label }}</span>{% endif %}
+    {% if group.select %}
+    <select class="filter-select" aria-label="{{ group.label or 'Filter' }}">
+      <option value="">All {{ group.label | lower if group.label else 'items' }}</option>
+      {% for opt in group.options %}<option value="{{ opt.value }}"{% if opt.value == group.active %} selected{% endif %}>{{ opt.label }}</option>{% endfor %}
+    </select>
+    {% else %}
     {% for opt in group.options %}
     {% if opt.icon %}
     <button type="button"
@@ -46,6 +54,7 @@
             data-value="{{ opt.value }}">{{ opt.label }}</button>
     {% endif %}
     {% endfor %}
+    {% endif %}
   </div>
   {% endfor %}
 </div>

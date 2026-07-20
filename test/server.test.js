@@ -15,6 +15,13 @@ test('GET /uniques returns 200 with unique names', async () => {
   const res = await request(app).get('/uniques');
   assert.equal(res.status, 200);
   assert.ok(res.text.includes('Astramentis'));
+  assert.ok(res.text.includes('Unique Item Index'));
+  assert.ok(res.text.includes('unique-index-search'));
+  assert.ok(res.text.includes('/static/js/unique-index.js'));
+  assert.ok(res.text.includes('item-index-pane'));
+  assert.ok(res.text.includes('item-index-sheet'));
+  const rowCount = (res.text.match(/class="gem-index-row [^"]*item-index-row[^"]*"\s+href="\/unique\/[^"/]+"/g) ?? []).length;
+  assert.equal(rowCount, app.locals.uniqueCount());
 });
 
 test('GET /unique/astramentis returns 200', async () => {
@@ -22,6 +29,8 @@ test('GET /unique/astramentis returns 200', async () => {
   const res = await request(app).get('/unique/astramentis');
   assert.equal(res.status, 200);
   assert.ok(res.text.includes('Astramentis'));
+  assert.ok(res.text.includes('class="gem-detail item-detail"'));
+  assert.ok(res.text.includes('data-item-slug="astramentis"'));
 });
 
 test('GET /unique/not-a-real-unique returns 404', async () => {
@@ -35,6 +44,14 @@ test('GET /bases returns 200 with weapon classes', async () => {
   const res = await request(app).get('/bases');
   assert.equal(res.status, 200);
   assert.ok(res.text.includes('Weapons'));
+  assert.ok(res.text.includes('Base Item Index'));
+  assert.ok(res.text.includes('base-index-search'));
+  assert.ok(res.text.includes('/static/js/base-index.js'));
+  assert.ok(res.text.includes('item-index-pane'));
+  assert.ok(res.text.includes('item-index-sheet'));
+  assert.ok(res.text.includes('Browse dedicated class pages'));
+  const rowCount = (res.text.match(/class="gem-index-row [^"]*item-index-row[^"]*"\s+href="\/base\/[^"/]+"/g) ?? []).length;
+  assert.equal(rowCount, app.locals.baseCount());
 });
 
 test('GET /bases/amulet returns 200 with base items', async () => {
@@ -49,6 +66,8 @@ test('GET /base/stellar-amulet returns 200', async () => {
   const res = await request(app).get('/base/stellar-amulet');
   assert.equal(res.status, 200);
   assert.ok(res.text.includes('Stellar Amulet'));
+  assert.ok(res.text.includes('class="gem-detail item-detail"'));
+  assert.ok(res.text.includes('data-item-slug="stellar-amulet"'));
 });
 
 test('GET /base/not-a-real-base returns 404', async () => {
@@ -130,6 +149,8 @@ test('GET /gems returns the complete gem index and initial detail pane', async (
   assert.ok(res.text.includes('aria-controls="gem-index-rows"'));
   assert.ok(res.text.includes('data-gem-index-empty'));
   assert.ok(res.text.includes('/static/js/gem-index-search.js'));
+  assert.ok(res.text.includes('item-index-row'));
+  assert.ok(res.text.includes('data-item-index-search'));
   assert.ok(res.text.includes('gem-index-sheet'));
   const rowCount = (res.text.match(/class="gem-index-row[^\"]*"\s+href="\/gem\/[^"/]+"/g) ?? []).length;
   assert.equal(rowCount, app.locals.gemCount());

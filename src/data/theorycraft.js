@@ -234,10 +234,16 @@ function baseDocs() {
         iconUrl: b.iconUrl || null,
         subtitle: c?.className || '',
         color: '',
-        tags: [],
+        tags: b.tags || [],
         req: [],
         grants: [],
-        text: norm([b.name, c?.className]),
+        text: norm([
+          b.name, c?.className, ...(b.tags || []),
+          ...(b.properties || []).flatMap((property) => [property.label, property.value]),
+          ...(b.requirements || []),
+          ...(b.implicits || []).map((implicit) => implicit.html),
+          ...(b.grantedSkills || []).map((skill) => skill.name),
+        ]),
       }));
     })
   );

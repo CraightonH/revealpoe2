@@ -1,26 +1,77 @@
 {% extends "base.njk" %}
-{% from "macros/nav.njk" import pageHeader %}
 {% from "macros/filter-bar.njk" import filterBar %}
-{% from "macros/unique-card.njk" import uniqueListCard %}
+{% from "macros/item-index-row.njk" import itemIndexRow %}
 {% block title %}Unique Items — Reveal · PoE2 Wiki{% endblock %}
 {% block content %}
-<div class="page page--column">
-  {{ pageHeader('Unique Items', uniques.length ~ ' unique items', '--color-unique') }}
+<div class="gem-index item-index unique-index">
+  <header class="gem-index-header item-index-header">
+    <div>
+      <p class="gem-index-eyebrow item-index-eyebrow">Path of Exile 2 reference</p>
+      <h1>Unique Item Index</h1>
+      <p>Scan every unique item. Select a row to inspect its complete stats and relationships.</p>
+    </div>
+    <div class="gem-index-total item-index-total"><strong>{{ uniques.length }}</strong><span>uniques</span></div>
+  </header>
 
-  {{ filterBar(
-    groups=[{
-      key: "itemclass",
-      match: "any",
-      options: classFilters
-    }],
-    target=".bases-list-card--unique",
-    align="center"
-  ) }}
-
-  <div class="bases-list-grid">
-    {% for u in uniques %}
-    {{ uniqueListCard(u) }}
-    {% endfor %}
+  <div class="gem-index-filters item-index-filters">
+    {{ filterBar(
+      groups=[{
+        key: "group", label: "Slot", match: "any", options: [
+          { value: "weapons", label: "Weapons" }, { value: "armour", label: "Armour" },
+          { value: "accessories", label: "Accessories" }, { value: "flasks-charms", label: "Flasks & Charms" },
+          { value: "jewels", label: "Jewels" }, { value: "other", label: "Other" }
+        ]
+      }, {
+        key: "itemclass", label: "Class", match: "any", single: true, select: true, options: classFilters
+      }, {
+        key: "origin", label: "Origin", match: "any", options: [
+          { value: "kalguuran", label: "Kalguuran" }, { value: "ezomyte", label: "Ezomyte" }, { value: "vaal", label: "Vaal" }
+        ]
+      }],
+      target=".item-index-row",
+      count=".item-index-list"
+    ) }}
   </div>
+
+  <div class="gem-index-workspace item-index-workspace">
+    <section class="gem-index-list item-index-list" aria-label="All unique items">
+      <div class="gem-index-search item-index-search">
+        <label class="gem-index-search__label item-index-search__label" for="unique-index-search">Search unique items</label>
+        <div class="gem-index-search__control item-index-search__control">
+          <input id="unique-index-search" class="gem-index-search__input item-index-search__input" type="search"
+                 placeholder="Name, base, modifier, flavour…" autocomplete="off"
+                 aria-controls="unique-index-rows" data-item-index-search>
+          <kbd class="gem-index-search__shortcut item-index-search__shortcut" aria-hidden="true">/</kbd>
+        </div>
+      </div>
+      <div class="gem-index-list__header item-index-list__header">
+        <span><strong data-filter-count>{{ uniques.length }}</strong> shown</span>
+        <span class="gem-index-list__hint item-index-list__hint">Select a unique to inspect</span>
+      </div>
+      <div class="gem-index-rows item-index-rows" id="unique-index-rows">
+        {% for u in uniques %}{{ itemIndexRow(u, 'unique', u.slug == initialUnique.slug) }}{% endfor %}
+      </div>
+      <div class="gem-index-empty item-index-empty" data-item-index-empty hidden>
+        No unique items match — <button type="button" data-item-search-clear>clear search</button>
+      </div>
+    </section>
+    <aside class="gem-index-pane item-index-pane" aria-label="Selected unique item details" aria-live="polite" aria-busy="false">
+      <div class="gem-index-pane__status item-index-pane__status" hidden>Loading unique item details…</div>
+      <div class="gem-index-pane__content item-index-pane__content">
+        {% set vm = initialUnique %}{% include "partials/unique-detail.njk" %}
+      </div>
+    </aside>
+  </div>
+
+  <div class="gem-index-sheet-scrim item-index-sheet-scrim" data-item-sheet-dismiss aria-hidden="true"></div>
+  <section class="gem-index-sheet item-index-sheet" role="dialog" aria-modal="true" aria-labelledby="unique-index-sheet-title" aria-hidden="true">
+    <header class="gem-index-sheet__header item-index-sheet__header">
+      <h2 id="unique-index-sheet-title" class="gem-index-sheet__title item-index-sheet__title">Unique item details</h2>
+      <button class="gem-index-sheet__close item-index-sheet__close" type="button" data-item-sheet-dismiss aria-label="Close unique item details">×</button>
+    </header>
+    <div class="gem-index-sheet__status item-index-sheet__status" hidden>Loading unique item details…</div>
+    <div class="gem-index-sheet__content item-index-sheet__content"></div>
+  </section>
 </div>
+<script type="module" src="/static/js/unique-index.js"></script>
 {% endblock %}

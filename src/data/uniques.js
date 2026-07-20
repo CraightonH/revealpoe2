@@ -111,6 +111,16 @@ function canonClassBySlug() {
   return _canonClassBySlug;
 }
 
+let _groupByClassSlug = null;
+function groupByClassSlug() {
+  if (_groupByClassSlug) return _groupByClassSlug;
+  _groupByClassSlug = new Map();
+  for (const group of listItemClasses()) {
+    for (const c of group.classes) _groupByClassSlug.set(c.classSlug, group.label);
+  }
+  return _groupByClassSlug;
+}
+
 // Distinct item-class filter options present among the uniques, ordered by the
 // canonical /bases group order (Weapons -> Armour -> Accessories), with any
 // non-browsable extras (Charm, Flask, Jewel, …) appended alphabetically. The
@@ -154,16 +164,20 @@ function uniqueCardVM(node, variantIndex) {
   const properties = baseRecord
     ? computeProperties(baseRecord.rawProperties, mods).map((p) => ({ ...p, labelHtml: renderAffix(p.label) }))
     : [];
+  const group = groupByClassSlug().get(node.props.classSlug) ?? 'Other';
   return {
     slug: u.slug,
     name: u.name,
     base: u.base,
     itemClass: node.props.className,
     itemClassSlug: node.props.classSlug,
+    group,
+    groupSlug: group.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
     iconUrl: u.iconUrl,
     inventorySize: baseRecord?.inventorySize ?? null,
     properties,
     requirements: baseRecord?.requirements ?? [],
+    levelHint: baseRecord?.requirements?.[0] ?? 'No level requirement',
     implicits: parsed.slice(0, u.implicitCount),
     explicits: parsed.slice(u.implicitCount),
     origin: u.origin,

@@ -47,6 +47,11 @@
       applyFilters();
     });
 
+    bar.addEventListener('change', function (e) {
+      if (!e.target.matches('.filter-select')) return;
+      applyFilters();
+    });
+
     // Apply any default (server-rendered is-active) selections on load.
     applyFilters();
 
@@ -56,7 +61,9 @@
           key: g.dataset.key,
           match: g.dataset.match === 'any' ? 'any' : 'all',
           values: Array.from(g.querySelectorAll('.filter-btn.is-active'))
-                       .map(function (b) { return b.dataset.value; }),
+                       .map(function (b) { return b.dataset.value; })
+                       .concat(Array.from(g.querySelectorAll('.filter-select'))
+                         .map(function (s) { return s.value; }).filter(Boolean)),
         };
       });
 

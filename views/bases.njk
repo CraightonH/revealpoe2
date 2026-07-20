@@ -1,24 +1,80 @@
 {% extends "base.njk" %}
-{% from "macros/nav.njk" import pageHeader %}
+{% from "macros/filter-bar.njk" import filterBar %}
+{% from "macros/item-index-row.njk" import itemIndexRow %}
 {% from "macros/base-card.njk" import basesClassCard %}
 {% block title %}Base Items — Reveal · PoE2 Wiki{% endblock %}
 {% block content %}
-<div class="page page--column">
-  {{ pageHeader('Base Items', 'Browse item bases by class') }}
-  {% for group in groups %}
-  <details class="bases-group" open>
-    <summary class="bases-group-title">{{ group.label }}</summary>
-    {% for section in group.sections %}
-    {% if section.cards.length %}
-    {% if section.title %}<h3 class="bases-subgroup-title">{{ section.title }}</h3>{% endif %}
-    <div class="bases-class-grid">
-      {% for c in section.cards %}
-      {{ basesClassCard(c) }}
-      {% endfor %}
+<div class="gem-index item-index base-index">
+  <header class="gem-index-header item-index-header">
+    <div>
+      <p class="gem-index-eyebrow item-index-eyebrow">Path of Exile 2 reference</p>
+      <h1>Base Item Index</h1>
+      <p>Scan every base item across all classes. Select a row to inspect stats, affixes, and related uniques.</p>
     </div>
-    {% endif %}
-    {% endfor %}
-  </details>
-  {% endfor %}
+    <div class="gem-index-total item-index-total"><strong>{{ bases.length }}</strong><span>bases</span></div>
+  </header>
+
+  <div class="gem-index-filters item-index-filters">
+    {{ filterBar(
+      groups=[{
+        key: "group", label: "Slot", match: "any", options: [
+          { value: "weapons", label: "Weapons" }, { value: "armour", label: "Armour" },
+          { value: "accessories", label: "Accessories" }, { value: "flasks-charms", label: "Flasks & Charms" },
+          { value: "jewels", label: "Jewels" }
+        ]
+      }, {
+        key: "itemclass", label: "Class", match: "any", single: true, select: true, options: classFilters
+      }],
+      target=".item-index-row",
+      count=".item-index-list"
+    ) }}
+    <details class="item-index-class-nav">
+      <summary>Browse dedicated class pages</summary>
+      <div class="item-index-class-nav__links">
+        {% for c in classFilters %}{% if c.href %}<a href="{{ c.href }}">{{ c.label }}</a>{% endif %}{% endfor %}
+      </div>
+    </details>
+  </div>
+
+  <div class="gem-index-workspace item-index-workspace">
+    <section class="gem-index-list item-index-list" aria-label="All base items">
+      <div class="gem-index-search item-index-search">
+        <label class="gem-index-search__label item-index-search__label" for="base-index-search">Search base items</label>
+        <div class="gem-index-search__control item-index-search__control">
+          <input id="base-index-search" class="gem-index-search__input item-index-search__input" type="search"
+                 placeholder="Name or item class…" autocomplete="off"
+                 aria-controls="base-index-rows" data-item-index-search>
+          <kbd class="gem-index-search__shortcut item-index-search__shortcut" aria-hidden="true">/</kbd>
+        </div>
+      </div>
+      <div class="gem-index-list__header item-index-list__header">
+        <span><strong data-filter-count>{{ bases.length }}</strong> shown</span>
+        <span class="gem-index-list__hint item-index-list__hint">Select a base to inspect</span>
+      </div>
+      <div class="gem-index-rows item-index-rows" id="base-index-rows">
+        {% for b in bases %}{{ itemIndexRow(b, 'base', b.slug == initialBase.slug) }}{% endfor %}
+      </div>
+      <div class="gem-index-empty item-index-empty" data-item-index-empty hidden>
+        No base items match — <button type="button" data-item-search-clear>clear search</button>
+      </div>
+    </section>
+    <aside class="gem-index-pane item-index-pane" aria-label="Selected base item details" aria-live="polite" aria-busy="false">
+      <div class="gem-index-pane__status item-index-pane__status" hidden>Loading base item details…</div>
+      <div class="gem-index-pane__content item-index-pane__content">
+        {% set vm = initialBase %}{% include "partials/base-detail.njk" %}
+      </div>
+    </aside>
+  </div>
+
+  <div class="gem-index-sheet-scrim item-index-sheet-scrim" data-item-sheet-dismiss aria-hidden="true"></div>
+  <section class="gem-index-sheet item-index-sheet" role="dialog" aria-modal="true" aria-labelledby="base-index-sheet-title" aria-hidden="true">
+    <header class="gem-index-sheet__header item-index-sheet__header">
+      <h2 id="base-index-sheet-title" class="gem-index-sheet__title item-index-sheet__title">Base item details</h2>
+      <button class="gem-index-sheet__close item-index-sheet__close" type="button" data-item-sheet-dismiss aria-label="Close base item details">×</button>
+    </header>
+    <div class="gem-index-sheet__status item-index-sheet__status" hidden>Loading base item details…</div>
+    <div class="gem-index-sheet__content item-index-sheet__content"></div>
+  </section>
 </div>
+<script type="module" src="/static/js/base-index.js"></script>
 {% endblock %}

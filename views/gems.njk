@@ -3,17 +3,17 @@
 {% from "macros/gem-card.njk" import gemIndexRow %}
 {% block title %}Skill Gems — Reveal · PoE2 Wiki{% endblock %}
 {% block content %}
-<div class="gem-index">
-  <header class="gem-index-header">
+<div class="gem-index item-index">
+  <header class="gem-index-header item-index-header">
     <div>
-      <p class="gem-index-eyebrow">Path of Exile 2 reference</p>
+      <p class="gem-index-eyebrow item-index-eyebrow">Path of Exile 2 reference</p>
       <h1>Gem Index</h1>
       <p>Scan every skill, spirit, and support gem. Select a row to inspect its complete details.</p>
     </div>
-    <div class="gem-index-total"><strong>{{ gems.length }}</strong><span>gems</span></div>
+    <div class="gem-index-total item-index-total"><strong>{{ gems.length }}</strong><span>gems</span></div>
   </header>
 
-  <div class="gem-index-filters">
+  <div class="gem-index-filters item-index-filters">
     {{ filterBar(
       groups=[{
         key: "type",
@@ -48,48 +48,48 @@
     ) }}
   </div>
 
-  <div class="gem-index-workspace">
-    <section class="gem-index-list" aria-label="All gems">
-      <div class="gem-index-search">
-        <label class="gem-index-search__label" for="gem-index-search">Search gems</label>
-        <div class="gem-index-search__control">
-          <input id="gem-index-search" class="gem-index-search__input" type="search"
+  <div class="gem-index-workspace item-index-workspace">
+    <section class="gem-index-list item-index-list" aria-label="All gems">
+      <div class="gem-index-search item-index-search">
+        <label class="gem-index-search__label item-index-search__label" for="gem-index-search">Search gems</label>
+        <div class="gem-index-search__control item-index-search__control">
+          <input id="gem-index-search" class="gem-index-search__input item-index-search__input" type="search"
                  placeholder="Name, effect, stat, tag…" autocomplete="off"
-                 aria-controls="gem-index-rows" data-gem-index-search>
-          <kbd class="gem-index-search__shortcut" aria-hidden="true">/</kbd>
+                 aria-controls="gem-index-rows" data-gem-index-search data-item-index-search>
+          <kbd class="gem-index-search__shortcut item-index-search__shortcut" aria-hidden="true">/</kbd>
         </div>
       </div>
-      <div class="gem-index-list__header">
+      <div class="gem-index-list__header item-index-list__header">
         <span><strong data-filter-count>{{ gems.length }}</strong> shown</span>
-        <span class="gem-index-list__hint">Select a gem to inspect</span>
+        <span class="gem-index-list__hint item-index-list__hint">Select a gem to inspect</span>
       </div>
-      <div class="gem-index-rows" id="gem-index-rows">
+      <div class="gem-index-rows item-index-rows" id="gem-index-rows">
         {% for g in gems %}{{ gemIndexRow(g, g.slug == initialGem.slug) }}{% endfor %}
       </div>
-      <div class="gem-index-empty" data-gem-index-empty hidden>
-        No gems match — <button type="button" data-gem-search-clear>clear search</button>
+      <div class="gem-index-empty item-index-empty" data-gem-index-empty data-item-index-empty hidden>
+        No gems match — <button type="button" data-gem-search-clear data-item-search-clear>clear search</button>
       </div>
     </section>
 
-    <aside class="gem-index-pane" aria-label="Selected gem details" aria-live="polite" aria-busy="false">
-      <div class="gem-index-pane__status" hidden>Loading gem details…</div>
-      <div class="gem-index-pane__content">
+    <aside class="gem-index-pane item-index-pane" aria-label="Selected gem details" aria-live="polite" aria-busy="false">
+      <div class="gem-index-pane__status item-index-pane__status" hidden>Loading gem details…</div>
+      <div class="gem-index-pane__content item-index-pane__content">
         {% set vm = initialGem %}
         {% include "partials/gem-detail.njk" %}
       </div>
     </aside>
   </div>
 
-  <div class="gem-index-sheet-scrim" data-gem-sheet-dismiss aria-hidden="true"></div>
-  <section class="gem-index-sheet" role="dialog" aria-modal="true"
+  <div class="gem-index-sheet-scrim item-index-sheet-scrim" data-gem-sheet-dismiss data-item-sheet-dismiss aria-hidden="true"></div>
+  <section class="gem-index-sheet item-index-sheet" role="dialog" aria-modal="true"
            aria-labelledby="gem-index-sheet-title" aria-hidden="true">
-    <header class="gem-index-sheet__header">
-      <h2 id="gem-index-sheet-title" class="gem-index-sheet__title">Gem details</h2>
-      <button class="gem-index-sheet__close" type="button" data-gem-sheet-dismiss
+    <header class="gem-index-sheet__header item-index-sheet__header">
+      <h2 id="gem-index-sheet-title" class="gem-index-sheet__title item-index-sheet__title">Gem details</h2>
+      <button class="gem-index-sheet__close item-index-sheet__close" type="button" data-gem-sheet-dismiss data-item-sheet-dismiss
               aria-label="Close gem details">×</button>
     </header>
-    <div class="gem-index-sheet__status" hidden>Loading gem details…</div>
-    <div class="gem-index-sheet__content"></div>
+    <div class="gem-index-sheet__status item-index-sheet__status" hidden>Loading gem details…</div>
+    <div class="gem-index-sheet__content item-index-sheet__content"></div>
   </section>
 </div>
 <script type="module" src="/static/js/gem-index-search.js"></script>
