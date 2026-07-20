@@ -50,12 +50,24 @@
 
   <div class="gem-index-workspace">
     <section class="gem-index-list" aria-label="All gems">
+      <div class="gem-index-search">
+        <label class="gem-index-search__label" for="gem-index-search">Search gems</label>
+        <div class="gem-index-search__control">
+          <input id="gem-index-search" class="gem-index-search__input" type="search"
+                 placeholder="Name, effect, stat, tag…" autocomplete="off"
+                 aria-controls="gem-index-rows" data-gem-index-search>
+          <kbd class="gem-index-search__shortcut" aria-hidden="true">/</kbd>
+        </div>
+      </div>
       <div class="gem-index-list__header">
         <span><strong data-filter-count>{{ gems.length }}</strong> shown</span>
         <span class="gem-index-list__hint">Select a gem to inspect</span>
       </div>
-      <div class="gem-index-rows">
+      <div class="gem-index-rows" id="gem-index-rows">
         {% for g in gems %}{{ gemIndexRow(g, g.slug == initialGem.slug) }}{% endfor %}
+      </div>
+      <div class="gem-index-empty" data-gem-index-empty hidden>
+        No gems match — <button type="button" data-gem-search-clear>clear search</button>
       </div>
     </section>
 
@@ -68,4 +80,5 @@
     </aside>
   </div>
 </div>
+<script type="module" src="/static/js/gem-index-search.js"></script>
 {% endblock %}

@@ -1,6 +1,6 @@
-// Card size control (S/M/L). Scales the .gem-detail unit via a data-card-size
-// attribute on <html> (zoom rules live in gem-card.css). The choice is saved to
-// localStorage; an inline script in base.njk applies it before first paint.
+// Card size control (S/M/L/XL). Sets a data-card-size attribute on <html> for
+// card and page-specific content sizing. The choice is saved to localStorage;
+// an inline script in base.njk applies it before first paint.
 (function () {
   var KEY = 'cardSize';
   var root = document.documentElement;

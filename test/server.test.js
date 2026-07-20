@@ -126,6 +126,10 @@ test('GET /gems returns the complete gem index and initial detail pane', async (
   assert.ok(res.text.includes('Gem Index'));
   assert.ok(res.text.includes('gem-index-pane'));
   assert.ok(res.text.includes('data-filter-count'));
+  assert.ok(res.text.includes('data-gem-index-search'));
+  assert.ok(res.text.includes('aria-controls="gem-index-rows"'));
+  assert.ok(res.text.includes('data-gem-index-empty'));
+  assert.ok(res.text.includes('/static/js/gem-index-search.js'));
   const rowCount = (res.text.match(/data-pane-url="\/gem\/[^"/]+\/pane"/g) ?? []).length;
   assert.equal(rowCount, app.locals.gemCount());
 });
