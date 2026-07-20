@@ -1,14 +1,10 @@
-{% from "macros/nav.njk" import breadcrumb, pageHeader %}
+{% from "macros/nav.njk" import pageHeader %}
 {% from "macros/filter-bar.njk" import filterBar %}
 {% from "macros/affix-tables.njk" import affixSection %}
 {% from "macros/base-card.njk" import baseListCard %}
 {% from "macros/gem-card.njk" import gemBrowseCard %}
 {% from "macros/augment-cards.njk" import socketablesSection %}
 <div class="page page--column base-class-detail item-detail" data-item-slug="{{ cls.classSlug }}">
-  {{ breadcrumb([
-    { label: 'Base Items', href: '/bases' },
-    { label: cls.name }
-  ]) }}
   {{ pageHeader(cls.name) }}
 
   {% if cls.defaultSkillGems.length %}
