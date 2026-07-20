@@ -17,8 +17,8 @@ test('prerender seeds every affix flyout card url the search can open', () => {
   for (const a of affixes) assert.ok(seeds.has(a.cardUrl), `missing prerender seed for ${a.cardUrl}`);
 });
 
-test('prerender discovers master-detail pane fragment urls', () => {
-  const links = extractLinks('<a href="/gem/arc" data-pane-url="/gem/arc/pane">Arc</a>');
+test('prerender discovers gem detail pages from row hrefs only', () => {
+  const links = extractLinks('<a href="/gem/arc">Arc</a>');
   assert.ok(links.has('/gem/arc'));
-  assert.ok(links.has('/gem/arc/pane'));
+  assert.equal(links.size, 1);
 });

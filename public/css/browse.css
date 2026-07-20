@@ -324,6 +324,9 @@ html[data-card-size="xl"] .gem-index { --gem-index-content-scale: 1.5; }
 .gem-index-pane .bases-class-grid,
 .gem-index-pane .keystone-index-grid { max-width: 100%; }
 
+.gem-index-sheet,
+.gem-index-sheet-scrim { display: none; }
+
 @media (max-width: 1180px) {
   .gem-index-row { grid-template-columns: calc(38px * var(--gem-index-content-scale)) minmax(calc(135px * var(--gem-index-content-scale)), 1fr) max-content; }
   .gem-index-row__effect { grid-column: 2 / 4; }
@@ -342,6 +345,111 @@ html[data-card-size="xl"] .gem-index { --gem-index-content-scale: 1.5; }
   .gem-index-row { grid-template-columns: calc(38px * var(--gem-index-content-scale)) minmax(0, 1fr) max-content; }
   .gem-index-row__effect { grid-column: 2 / 4; }
   .gem-index-list__hint { display: none; }
+
+  html.gem-index-sheet-open,
+  body.gem-index-sheet-open { overflow: hidden; }
+  .gem-index-sheet-scrim {
+    position: fixed;
+    z-index: 90;
+    inset: 0;
+    display: block;
+    background: color-mix(in srgb, var(--bg-base) 72%, transparent);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 250ms ease;
+  }
+  .gem-index-sheet-scrim.is-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .gem-index-sheet {
+    position: fixed;
+    z-index: 91;
+    inset: 9vh 0 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--color-gem) 28%, var(--border));
+    border-bottom: 0;
+    border-radius: 16px 16px 0 0;
+    background: var(--bg-surface);
+    box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.5);
+    transform: translateY(101%);
+    visibility: hidden;
+    transition: transform 250ms ease, visibility 0s linear 250ms;
+  }
+  .gem-index-sheet.is-open {
+    transform: translateY(0);
+    visibility: visible;
+    transition-delay: 0s;
+  }
+  .gem-index-sheet__header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    min-height: 52px;
+    padding: 9px 10px 9px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex: 0 0 auto;
+    border-bottom: 1px solid var(--border);
+    background: color-mix(in srgb, var(--bg-surface) 96%, var(--bg-base));
+  }
+  .gem-index-sheet__title {
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+    color: var(--color-normal);
+    font: 500 calc(17px * var(--gem-index-content-scale))/1.2 var(--font-display);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .gem-index-sheet__close {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    flex: 0 0 auto;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--bg-base) 72%, transparent);
+    color: var(--color-normal);
+    font: 24px/1 var(--font-regular);
+    cursor: pointer;
+  }
+  .gem-index-sheet__close:hover,
+  .gem-index-sheet__close:focus-visible {
+    border-color: color-mix(in srgb, var(--color-gem) 62%, var(--border));
+    color: var(--color-gem);
+    outline: none;
+  }
+  .gem-index-sheet__content {
+    min-height: 0;
+    padding: 16px 12px 36px;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-color: var(--border) transparent;
+  }
+  .gem-index-sheet__content.is-arriving { animation: gem-index-pane-arrival 180ms ease-out; }
+  .gem-index-sheet__status {
+    z-index: 3;
+    padding: 7px 12px;
+    flex: 0 0 auto;
+    border-bottom: 1px solid color-mix(in srgb, var(--color-gem) 35%, var(--border));
+    background: color-mix(in srgb, var(--bg-surface) 96%, transparent);
+    color: var(--color-gem);
+    font-size: calc(11px * var(--gem-index-content-scale));
+    text-align: center;
+  }
+  .gem-index-sheet .gem-detail { max-width: none; }
+  .gem-index-sheet .rec-tier { grid-template-columns: 1.8rem minmax(0, 1fr); gap: 7px; }
+  .gem-index-sheet .rec-tier .gem-browse-grid { grid-template-columns: repeat(auto-fit, minmax(210px, 250px)); }
+  .gem-index-sheet .bases-list-grid,
+  .gem-index-sheet .bases-class-grid,
+  .gem-index-sheet .keystone-index-grid { max-width: 100%; }
 }
 
 @media (max-width: 520px) {
@@ -357,7 +465,10 @@ html[data-card-size="xl"] .gem-index { --gem-index-content-scale: 1.5; }
 @media (prefers-reduced-motion: reduce) {
   .gem-index-row { transition: none; }
   .gem-index-row.is-arriving,
-  .gem-index-pane__content.is-arriving { animation: none; }
+  .gem-index-pane__content.is-arriving,
+  .gem-index-sheet__content.is-arriving { animation: none; }
+  .gem-index-sheet,
+  .gem-index-sheet-scrim { transition: none; }
   .gem-index-row:hover,
   .gem-index-row.is-selected { transform: none; }
 }

@@ -130,17 +130,10 @@ test('GET /gems returns the complete gem index and initial detail pane', async (
   assert.ok(res.text.includes('aria-controls="gem-index-rows"'));
   assert.ok(res.text.includes('data-gem-index-empty'));
   assert.ok(res.text.includes('/static/js/gem-index-search.js'));
-  const rowCount = (res.text.match(/data-pane-url="\/gem\/[^"/]+\/pane"/g) ?? []).length;
+  assert.ok(res.text.includes('gem-index-sheet'));
+  const rowCount = (res.text.match(/class="gem-index-row[^\"]*"\s+href="\/gem\/[^"/]+"/g) ?? []).length;
   assert.equal(rowCount, app.locals.gemCount());
-});
-
-test('GET /gem/:slug/pane returns the complete shared detail fragment', async () => {
-  const res = await request(createApp()).get('/gem/fireball/pane');
-  assert.equal(res.status, 200);
-  assert.match(res.text, /^\s*<div class="gem-detail" data-gem-slug="fireball">/);
-  assert.match(res.text, /newItemPopup/);
-  assert.match(res.text, />Scaling /);
-  assert.doesNotMatch(res.text, /<!DOCTYPE html>/);
+  assert.doesNotMatch(res.text, /data-pane-url/);
 });
 
 test('GET /notable/ailments38 returns 200 with Fast Acting Toxins', async () => {

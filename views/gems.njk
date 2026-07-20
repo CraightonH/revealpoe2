@@ -79,6 +79,18 @@
       </div>
     </aside>
   </div>
+
+  <div class="gem-index-sheet-scrim" data-gem-sheet-dismiss aria-hidden="true"></div>
+  <section class="gem-index-sheet" role="dialog" aria-modal="true"
+           aria-labelledby="gem-index-sheet-title" aria-hidden="true">
+    <header class="gem-index-sheet__header">
+      <h2 id="gem-index-sheet-title" class="gem-index-sheet__title">Gem details</h2>
+      <button class="gem-index-sheet__close" type="button" data-gem-sheet-dismiss
+              aria-label="Close gem details">×</button>
+    </header>
+    <div class="gem-index-sheet__status" hidden>Loading gem details…</div>
+    <div class="gem-index-sheet__content"></div>
+  </section>
 </div>
 <script type="module" src="/static/js/gem-index-search.js"></script>
 {% endblock %}

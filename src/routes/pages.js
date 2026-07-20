@@ -35,7 +35,6 @@ export function registerPages(app) {
   });
 
   detailRoute(app, '/gem/:slug', buildGemViewModel, 'gem.njk', 'vm');
-  cardRoute(app, '/gem/:slug/pane', buildGemViewModel, 'partials/gem-detail.njk');
   cardRoute(app, '/gem/:slug/card', buildGemViewModel, 'partials/gem-card-fragment.njk');
 
   app.get('/uniques', (_req, res) => {

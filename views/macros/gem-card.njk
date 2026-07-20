@@ -44,12 +44,11 @@
 {% endmacro %}
 
 {# Compact master-list row for /gems. It remains a real detail-page link for
-   crawlers, no-JS users, and narrow screens; gem-index.js progressively turns
-   data-pane-url into an in-place detail selection on wide screens. #}
+   crawlers and no-JS users; gem-index.js progressively turns ordinary clicks
+   into an in-place detail selection. #}
 {% macro gemIndexRow(g, selected=false) %}
 <a class="gem-index-row gem-index-row--{{ g.cardColor }}{% if selected %} is-selected{% endif %}"
    href="/gem/{{ g.slug }}"
-   data-pane-url="/gem/{{ g.slug }}/pane"
    data-gem-slug="{{ g.slug }}"
    data-gem-name="{{ g.name }}"
    data-type="{{ g.gemType }}"

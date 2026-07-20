@@ -1,23 +1,28 @@
-// Progressive master-detail behavior for /gems. Wide screens fetch complete
-// gem-detail fragments into the persistent pane; narrow screens retain ordinary
-// link navigation. Fragment HTML is cached for the life of the page.
+// Progressive master-detail behavior for /gems. Gem details come from the
+// canonical dedicated page and are cached after extracting its .gem-detail.
 (function () {
   var root = document.querySelector('.gem-index');
   if (!root) return;
 
   var desktop = window.matchMedia('(min-width: 900px)');
+  var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   var pane = root.querySelector('.gem-index-pane');
-  var content = root.querySelector('.gem-index-pane__content');
-  var status = root.querySelector('.gem-index-pane__status');
+  var paneContent = root.querySelector('.gem-index-pane__content');
+  var paneStatus = root.querySelector('.gem-index-pane__status');
+  var sheet = root.querySelector('.gem-index-sheet');
+  var sheetContent = root.querySelector('.gem-index-sheet__content');
+  var sheetStatus = root.querySelector('.gem-index-sheet__status');
+  var sheetTitle = root.querySelector('.gem-index-sheet__title');
+  var sheetClose = root.querySelector('.gem-index-sheet__close');
   var cache = new Map();
   var requestId = 0;
   var arrivalTimer = 0;
   var arrivingRow = null;
   var lastHandledHash = null;
-  var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var lastSheetTrigger = null;
 
   function rows() {
-    return Array.from(root.querySelectorAll('.gem-index-row[data-pane-url]'));
+    return Array.from(root.querySelectorAll('.gem-index-row[data-gem-slug]'));
   }
 
   function rowForHash() {
@@ -53,32 +58,80 @@
     if (typeof window.initScalingToggle === 'function') window.initScalingToggle(scope);
   }
 
-  function showStatus(message) {
+  function showStatus(status, message) {
     status.textContent = message;
     status.hidden = false;
   }
 
-  function hideStatus() {
+  function hideStatus(status) {
     status.hidden = true;
   }
 
-  function updateHash(row, replace) {
+  function updateHash(row, replace, sheetEntry) {
     var next = '#' + encodeURIComponent(row.dataset.gemSlug);
     lastHandledHash = next;
     if (window.location.hash === next) return;
-    if (replace) history.replaceState(null, '', next);
-    else history.pushState(null, '', next);
+    var keepSheetEntry = replace && history.state && history.state.gemIndexSheet;
+    var state = sheetEntry || keepSheetEntry ? { gemIndexSheet: true } : null;
+    if (replace) history.replaceState(state, '', next);
+    else history.pushState(state, '', next);
   }
 
-  function render(html) {
+  function render(content, scrollOwner, html) {
     content.innerHTML = html;
-    pane.scrollTop = 0;
+    scrollOwner.scrollTop = 0;
     initWidgets(content);
     if (!reducedMotion.matches) {
       content.classList.remove('is-arriving');
       void content.offsetWidth;
       content.classList.add('is-arriving');
     }
+  }
+
+  function sheetIsOpen() {
+    return sheet.classList.contains('is-open');
+  }
+
+  function openSheet(row) {
+    var wasOpen = sheetIsOpen();
+    sheetTitle.textContent = row.dataset.gemName;
+    sheet.classList.add('is-open');
+    root.querySelector('.gem-index-sheet-scrim').classList.add('is-open');
+    sheet.setAttribute('aria-hidden', 'false');
+    document.documentElement.classList.add('gem-index-sheet-open');
+    document.body.classList.add('gem-index-sheet-open');
+    if (!wasOpen) {
+      lastSheetTrigger = row;
+      sheetClose.focus({ preventScroll: true });
+    }
+  }
+
+  function closeSheet(restoreFocus) {
+    if (!sheetIsOpen()) return;
+    requestId++;
+    sheet.classList.remove('is-open');
+    root.querySelector('.gem-index-sheet-scrim').classList.remove('is-open');
+    sheet.setAttribute('aria-hidden', 'true');
+    sheet.removeAttribute('aria-busy');
+    document.documentElement.classList.remove('gem-index-sheet-open');
+    document.body.classList.remove('gem-index-sheet-open');
+    hideStatus(sheetStatus);
+    if (restoreFocus !== false && lastSheetTrigger) lastSheetTrigger.focus({ preventScroll: true });
+  }
+
+  function dismissSheet() {
+    if (!sheetIsOpen()) return;
+    // A sheet opened by a row owns exactly one marked history entry. Links
+    // inside it replace that entry, so Back closes the whole sheet in one step.
+    if (history.state && history.state.gemIndexSheet) {
+      history.back();
+      return;
+    }
+    // A directly loaded #slug has no index-owned entry to go back to. Remove
+    // only its hash in place so dismissing cannot unexpectedly leave /gems.
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+    lastHandledHash = '';
+    closeSheet();
   }
 
   function resetVisibility() {
@@ -120,69 +173,110 @@
     }, 1000);
   }
 
-  function select(row, options) {
-    if (!row) return;
-    options = options || {};
-    setSelected(row);
-    if (options.updateHash !== false) updateHash(row, !!options.replaceHash);
-    if (options.reveal) revealRow(row);
-    if (!desktop.matches) return;
+  function extractDetail(html) {
+    var documentPage = new DOMParser().parseFromString(html, 'text/html');
+    var detail = documentPage.querySelector('.gem-detail');
+    if (!detail) throw new Error('Missing .gem-detail');
+    return detail.outerHTML;
+  }
 
-    var url = row.dataset.paneUrl;
+  function loadDetails(row, target) {
+    var url = row.getAttribute('href');
+    var targetPane = target === 'pane';
+    var targetElement = targetPane ? pane : sheet;
+    var targetContent = targetPane ? paneContent : sheetContent;
+    var targetStatus = targetPane ? paneStatus : sheetStatus;
     var currentRequest = ++requestId;
 
     if (cache.has(url)) {
-      render(cache.get(url));
-      pane.setAttribute('aria-busy', 'false');
-      hideStatus();
+      render(targetContent, targetElement, cache.get(url));
+      targetElement.setAttribute('aria-busy', 'false');
+      hideStatus(targetStatus);
       return;
     }
 
-    pane.setAttribute('aria-busy', 'true');
-    showStatus('Loading ' + row.dataset.gemName + '…');
+    targetElement.setAttribute('aria-busy', 'true');
+    showStatus(targetStatus, 'Loading ' + row.dataset.gemName + '…');
     fetch(url)
       .then(function (response) {
         if (!response.ok) throw new Error('HTTP ' + response.status);
         return response.text();
       })
+      .then(extractDetail)
       .then(function (html) {
         cache.set(url, html);
         if (currentRequest !== requestId) return;
-        render(html);
-        pane.setAttribute('aria-busy', 'false');
-        hideStatus();
+        render(targetContent, targetElement, html);
+        targetElement.setAttribute('aria-busy', 'false');
+        hideStatus(targetStatus);
       })
       .catch(function () {
         if (currentRequest !== requestId) return;
-        pane.setAttribute('aria-busy', 'false');
-        showStatus('Details could not be loaded. Open the gem page to try again.');
+        targetElement.setAttribute('aria-busy', 'false');
+        showStatus(targetStatus, 'Details could not be loaded. Open the gem page to try again.');
       });
   }
 
-  root.addEventListener('click', function (event) {
-    var paneLink = event.target.closest('.gem-index-pane__content a[href]');
-    if (paneLink && content.contains(paneLink) && desktop.matches) {
-      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-      var linkedRow = rowForGemLink(paneLink);
-      if (!linkedRow) return;
-      event.preventDefault();
-      select(linkedRow, { reveal: true });
+  function select(row, options) {
+    if (!row) return;
+    options = options || {};
+    setSelected(row);
+    if (options.updateHash !== false) {
+      updateHash(row, !!options.replaceHash, !desktop.matches && !options.replaceHash);
+    }
+    if (options.reveal) revealRow(row);
+
+    if (desktop.matches) {
+      loadDetails(row, 'pane');
       return;
     }
 
-    var row = event.target.closest('.gem-index-row[data-pane-url]');
-    if (!row || !desktop.matches) return;
+    openSheet(row);
+    loadDetails(row, 'sheet');
+  }
+
+  root.addEventListener('click', function (event) {
+    var detailLink = event.target.closest('.gem-index-pane__content a[href], .gem-index-sheet__content a[href]');
+    if (detailLink) {
+      var detailContent = detailLink.closest('.gem-index-pane__content, .gem-index-sheet__content');
+      if (!detailContent || !root.contains(detailContent)) return;
+      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      var linkedRow = rowForGemLink(detailLink);
+      if (!linkedRow) return;
+      event.preventDefault();
+      select(linkedRow, { reveal: true, replaceHash: !desktop.matches });
+      return;
+    }
+
+    var row = event.target.closest('.gem-index-row[data-gem-slug]');
+    if (!row) return;
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
-    select(row);
+    select(row, { replaceHash: !desktop.matches && sheetIsOpen() });
   });
+
+  root.querySelectorAll('[data-gem-sheet-dismiss]').forEach(function (dismiss) {
+    dismiss.addEventListener('click', dismissSheet);
+  });
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key !== 'Escape' || !sheetIsOpen()) return;
+    event.preventDefault();
+    event.stopPropagation();
+    dismissSheet();
+  }, true);
 
   function selectFromLocation() {
     if (window.location.hash === lastHandledHash) return;
     lastHandledHash = window.location.hash;
     var row = rowForHash();
-    if (row) select(row, { updateHash: false, reveal: true });
-    else if (!window.location.hash && initialRow) select(initialRow, { updateHash: false, reveal: true });
+    if (row) {
+      select(row, { updateHash: false, reveal: true });
+    } else if (!desktop.matches) {
+      closeSheet();
+    } else if (!window.location.hash && initialRow) {
+      select(initialRow, { updateHash: false, reveal: true });
+    }
   }
 
   window.addEventListener('hashchange', selectFromLocation);
@@ -196,12 +290,20 @@
     if (firstVisible) select(firstVisible, { replaceHash: true });
   });
 
+  desktop.addEventListener('change', function () {
+    var selected = rowForHash() || root.querySelector('.gem-index-row.is-selected');
+    if (desktop.matches) closeSheet(false);
+    if (selected && window.location.hash) select(selected, { updateHash: false });
+  });
+
   var initialRow = root.querySelector('.gem-index-row.is-selected');
-  if (initialRow) cache.set(initialRow.dataset.paneUrl, content.innerHTML);
+  var initialDetail = paneContent.querySelector('.gem-detail');
+  if (initialRow && initialDetail) cache.set(initialRow.getAttribute('href'), initialDetail.outerHTML);
   var restored = rowForHash();
   if (restored) {
     lastHandledHash = window.location.hash;
     select(restored, { updateHash: false, reveal: true });
+  } else {
+    initWidgets(paneContent);
   }
-  else initWidgets(content);
 })();
