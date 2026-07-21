@@ -124,9 +124,82 @@ async function settle(page) {
   // mobile sheet contract.
   const theory = await browser.newPage();
   theory.on('pageerror', (error) => errors.push(`theorycraft desktop: ${error}`));
+  theory.on('console', (message) => {
+    if (message.type() === 'error') errors.push(`theorycraft desktop console: ${message.text()}`);
+  });
   await theory.setViewport({ width: 1600, height: 1000 });
   await theory.goto(`${BASE}/theorycraft?q=onslaught`, { waitUntil: 'networkidle2', timeout: 90000 });
+  await theory.evaluate(() => localStorage.removeItem('tcPins'));
+  await theory.reload({ waitUntil: 'networkidle2', timeout: 90000 });
   await theory.waitForSelector('.tc-index-row[data-item-kind="gem"]');
+
+  const pinned = await theory.evaluate(() => {
+    const row = document.querySelector('.tc-index-row[data-item-kind="gem"]');
+    return { category: row.dataset.itemKind, slug: row.dataset.itemSlug, name: row.dataset.itemName };
+  });
+  await theory.hover(`.tc-index-row[data-item-kind="${pinned.category}"][data-item-slug="${pinned.slug}"]`);
+  await theory.click(`.tc-index-row[data-item-kind="${pinned.category}"][data-item-slug="${pinned.slug}"] [data-tc-pin-toggle]`);
+  await theory.waitForSelector('.tc-pin-tray:not([hidden]) .tc-pin-chip');
+  const theoryPinned = await theory.evaluate(() => ({
+    count: document.querySelector('[data-tc-pin-count]')?.textContent,
+    chip: document.querySelector('.tc-pin-chip')?.dataset.itemSlug,
+    selected: document.querySelector('.tc-index-row.is-selected')?.dataset.itemSlug || null,
+  }));
+  check('theorycraft: row pin shows tray without selecting', theoryPinned.count === '1' && theoryPinned.chip === pinned.slug && theoryPinned.selected === null, JSON.stringify(theoryPinned));
+
+  await theory.evaluate(() => {
+    const input = document.querySelector('.tc-input');
+    input.value = 'type:unique astramentis';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await settle(theory);
+  await theory.waitForSelector('.tc-index-row[data-item-kind="unique"]');
+  const acrossQuery = await theory.evaluate((pin) => ({
+    query: new URLSearchParams(location.search).get('q'),
+    resultHasPin: !!document.querySelector(`#tc-results .tc-index-row[data-item-kind="${pin.category}"][data-item-slug="${pin.slug}"]`),
+    chip: document.querySelector('.tc-pin-chip')?.dataset.itemSlug,
+  }), pinned);
+  check('theorycraft: tray persists across a different query', acrossQuery.query === 'type:unique astramentis' && !acrossQuery.resultHasPin && acrossQuery.chip === pinned.slug, JSON.stringify(acrossQuery));
+
+  await theory.click('.tc-pin-chip');
+  await settle(theory);
+  const chipSelection = await theory.evaluate((pin) => ({
+    hash: location.hash.slice(1),
+    selected: document.querySelector('.tc-pin-proxy.is-selected')?.dataset.itemSlug,
+    detail: document.querySelector('.item-index-pane .item-detail')?.dataset.itemSlug,
+    expected: `${pin.category}:${pin.slug}`,
+  }), pinned);
+  check('theorycraft: off-query chip uses the shared selection path', chipSelection.hash === chipSelection.expected && chipSelection.selected === pinned.slug && chipSelection.detail === pinned.slug, JSON.stringify(chipSelection));
+
+  await theory.reload({ waitUntil: 'networkidle2', timeout: 90000 });
+  await theory.waitForSelector('.tc-pin-tray:not([hidden]) .tc-pin-chip');
+  await settle(theory);
+  const persistedPin = await theory.evaluate((pin) => {
+    const stored = JSON.parse(localStorage.getItem('tcPins'));
+    return {
+      version: stored?.v,
+      refsOnly: stored?.pins?.length === 1 && Object.keys(stored.pins[0]).every((key) => ['category', 'slug', 'classSlug'].includes(key)),
+      chip: document.querySelector('.tc-pin-chip')?.dataset.itemSlug,
+      hash: location.hash.slice(1),
+      expected: `${pin.category}:${pin.slug}`,
+    };
+  }, pinned);
+  check('theorycraft: pins survive reload as versioned refs', persistedPin.version === 1 && persistedPin.refsOnly && persistedPin.chip === pinned.slug && persistedPin.hash === persistedPin.expected, JSON.stringify(persistedPin));
+
+  await theory.click('.tc-pin-chip__remove');
+  await theory.waitForFunction(() => document.querySelector('[data-tc-pin-tray]')?.hidden === true);
+  const unpinned = await theory.evaluate(() => ({
+    hidden: document.querySelector('[data-tc-pin-tray]')?.hidden,
+    pins: JSON.parse(localStorage.getItem('tcPins'))?.pins?.length,
+  }));
+  check('theorycraft: unpin hides the empty tray', unpinned.hidden && unpinned.pins === 0, JSON.stringify(unpinned));
+
+  await theory.evaluate(() => {
+    const input = document.querySelector('.tc-input');
+    input.value = 'onslaught';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await settle(theory);
   await theory.click('.tc-index-row[data-item-kind="gem"]');
   await settle(theory);
   const theoryGem = await theory.evaluate(() => ({

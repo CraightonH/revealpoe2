@@ -64,6 +64,8 @@
     <span class="gem-index-row__name item-index-row__name{% if kind == 'unique' %} item-index-row__name--unique{% endif %}">{{ item.name }}</span>
     <span class="gem-index-row__tags item-index-row__tags">{{ hint | striptags }}</span>
   </span>
-  <span class="tc-index-row__action" aria-hidden="true"></span>
+  <span class="tc-index-row__action">
+    <button class="tc-pin-toggle tc-row-pin" type="button" data-tc-pin-toggle aria-pressed="false" aria-label="Pin {{ item.name }}"></button>
+  </span>
 </a>
 {% endmacro %}

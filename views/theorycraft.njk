@@ -11,6 +11,15 @@
     <div class="gem-index-total item-index-total"><strong data-filter-count>{{ result.total }}</strong><span>results</span></div>
   </header>
 
+  <div class="tc-pin-notice" data-tc-pin-notice role="status" hidden></div>
+  <section class="tc-pin-tray" data-tc-pin-tray aria-label="Pinned theorycraft items" hidden>
+    <div class="tc-pin-tray__label"><strong data-tc-pin-count>0</strong><span>pinned</span></div>
+    <div class="tc-pin-tray__viewport" data-tc-pin-viewport>
+      <div class="tc-pin-tray__items" data-tc-pin-items></div>
+    </div>
+    <button class="tc-pin-tray__clear" type="button" data-tc-pin-clear>Clear all</button>
+  </section>
+
   <div class="gem-index-workspace item-index-workspace">
     <section class="gem-index-list item-index-list" aria-label="Theory Crafting search results">
       <div class="gem-index-search item-index-search tc-search">
@@ -112,6 +121,10 @@
     </section>
 
     <aside class="gem-index-pane item-index-pane" aria-label="Selected result details" aria-live="polite" aria-busy="false">
+      <header class="tc-detail-header">
+        <span data-tc-detail-title>Result details</span>
+        <button class="tc-detail-pin tc-pin-toggle" type="button" data-tc-detail-pin aria-pressed="false" aria-label="Pin selected result" hidden></button>
+      </header>
       <div class="gem-index-pane__status item-index-pane__status" hidden>Loading details…</div>
       <div class="gem-index-pane__content item-index-pane__content">
         <div class="tc-detail-placeholder">
@@ -126,7 +139,10 @@
   <section class="gem-index-sheet item-index-sheet" role="dialog" aria-modal="true" aria-labelledby="theorycraft-sheet-title" aria-hidden="true">
     <header class="gem-index-sheet__header item-index-sheet__header">
       <h2 id="theorycraft-sheet-title" class="gem-index-sheet__title item-index-sheet__title">Result details</h2>
-      <button class="gem-index-sheet__close item-index-sheet__close" type="button" data-item-sheet-dismiss aria-label="Close result details">×</button>
+      <div class="tc-sheet-actions">
+        <button class="tc-sheet-pin tc-pin-toggle" type="button" data-tc-detail-pin aria-pressed="false" aria-label="Pin selected result" hidden></button>
+        <button class="gem-index-sheet__close item-index-sheet__close" type="button" data-item-sheet-dismiss aria-label="Close result details">×</button>
+      </div>
     </header>
     <div class="gem-index-sheet__status item-index-sheet__status" hidden>Loading details…</div>
     <div class="gem-index-sheet__content item-index-sheet__content"></div>

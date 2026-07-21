@@ -504,6 +504,136 @@ html[data-card-size="xl"] .gem-index { --gem-index-content-scale: 1.5; }
 .theorycraft-index .item-index-workspace {
   grid-template-columns: minmax(440px, 0.92fr) minmax(470px, 1.08fr);
 }
+.tc-pin-notice {
+  width: min(1680px, 100%);
+  margin: calc(-8px * var(--gem-index-content-scale)) auto calc(10px * var(--gem-index-content-scale));
+  padding: calc(6px * var(--gem-index-content-scale)) calc(10px * var(--gem-index-content-scale));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(8px * var(--gem-index-content-scale));
+  border: 1px solid color-mix(in srgb, var(--color-default) 38%, var(--border));
+  border-radius: calc(6px * var(--gem-index-content-scale));
+  background: var(--browse-surface);
+  color: var(--color-default);
+  font-size: calc(10px * var(--gem-index-content-scale));
+}
+.tc-pin-notice[hidden] { display: none; }
+.tc-pin-notice button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-default);
+  font: calc(16px * var(--gem-index-content-scale))/1 var(--font-regular);
+  cursor: pointer;
+}
+.tc-pin-tray {
+  width: min(1680px, 100%);
+  min-width: 0;
+  margin: calc(-8px * var(--gem-index-content-scale)) auto calc(12px * var(--gem-index-content-scale));
+  padding: calc(6px * var(--gem-index-content-scale)) calc(8px * var(--gem-index-content-scale));
+  display: flex;
+  align-items: center;
+  gap: calc(8px * var(--gem-index-content-scale));
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  border-radius: calc(8px * var(--gem-index-content-scale));
+  background: var(--browse-surface);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.16);
+}
+.tc-pin-tray[hidden] { display: none; }
+.tc-pin-tray__label {
+  padding-inline: calc(3px * var(--gem-index-content-scale));
+  display: flex;
+  align-items: baseline;
+  gap: calc(4px * var(--gem-index-content-scale));
+  flex: 0 0 auto;
+  color: var(--color-default);
+  font-size: calc(9px * var(--gem-index-content-scale));
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.tc-pin-tray__label strong { color: var(--color-normal); font-size: calc(12px * var(--gem-index-content-scale)); }
+.tc-pin-tray__viewport {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.tc-pin-tray__viewport.is-overflowing:not(.is-at-start):not(.is-at-end) {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 calc(18px * var(--gem-index-content-scale)), #000 calc(100% - 18px * var(--gem-index-content-scale)), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 calc(18px * var(--gem-index-content-scale)), #000 calc(100% - 18px * var(--gem-index-content-scale)), transparent);
+}
+.tc-pin-tray__viewport.is-overflowing.is-at-start:not(.is-at-end) {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 18px * var(--gem-index-content-scale)), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 18px * var(--gem-index-content-scale)), transparent);
+}
+.tc-pin-tray__viewport.is-overflowing.is-at-end:not(.is-at-start) {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 calc(18px * var(--gem-index-content-scale)));
+  mask-image: linear-gradient(to right, transparent, #000 calc(18px * var(--gem-index-content-scale)));
+}
+.tc-pin-tray__items { display: flex; gap: calc(6px * var(--gem-index-content-scale)); width: max-content; }
+.tc-pin-chip {
+  position: relative;
+  min-width: 0;
+  max-width: calc(230px * var(--gem-index-content-scale));
+  padding: calc(4px * var(--gem-index-content-scale)) calc(5px * var(--gem-index-content-scale));
+  display: grid;
+  grid-template-columns: calc(25px * var(--gem-index-content-scale)) minmax(0, 1fr) calc(20px * var(--gem-index-content-scale));
+  align-items: center;
+  gap: calc(5px * var(--gem-index-content-scale));
+  border: 1px solid color-mix(in srgb, var(--row-accent) 34%, var(--border));
+  border-radius: calc(6px * var(--gem-index-content-scale));
+  background: color-mix(in srgb, var(--row-accent) 6%, var(--bg-surface));
+  color: var(--color-normal);
+  cursor: pointer;
+}
+.tc-pin-chip::before {
+  content: '';
+  position: absolute;
+  inset: calc(5px * var(--gem-index-content-scale)) auto calc(5px * var(--gem-index-content-scale)) 0;
+  width: calc(2px * var(--gem-index-content-scale));
+  border-radius: calc(2px * var(--gem-index-content-scale));
+  background: var(--row-accent);
+}
+.tc-pin-chip:hover,
+.tc-pin-chip:focus-visible { border-color: color-mix(in srgb, var(--row-accent) 62%, var(--border)); outline: none; }
+.tc-pin-chip__icon {
+  width: calc(25px * var(--gem-index-content-scale));
+  height: calc(25px * var(--gem-index-content-scale));
+  display: grid;
+  place-items: center;
+  border-radius: calc(4px * var(--gem-index-content-scale));
+  background: color-mix(in srgb, var(--row-accent) 9%, var(--bg-base));
+}
+.tc-pin-chip__icon img { width: calc(22px * var(--gem-index-content-scale)); height: calc(22px * var(--gem-index-content-scale)); object-fit: contain; }
+.tc-pin-chip__name { overflow: hidden; font-size: calc(11px * var(--gem-index-content-scale)); font-weight: 620; text-overflow: ellipsis; white-space: nowrap; }
+.tc-pin-chip__remove {
+  width: calc(20px * var(--gem-index-content-scale));
+  height: calc(20px * var(--gem-index-content-scale));
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-default);
+  font: calc(16px * var(--gem-index-content-scale))/1 var(--font-regular);
+  cursor: pointer;
+}
+.tc-pin-chip__remove:hover,
+.tc-pin-chip__remove:focus-visible { background: color-mix(in srgb, var(--color-normal) 9%, transparent); color: var(--color-normal); outline: none; }
+.tc-pin-tray__clear {
+  padding: calc(4px * var(--gem-index-content-scale)) calc(6px * var(--gem-index-content-scale));
+  flex: 0 0 auto;
+  border: 0;
+  background: none;
+  color: var(--color-default);
+  font: calc(9px * var(--gem-index-content-scale))/1.2 var(--font-regular);
+  cursor: pointer;
+}
+.tc-pin-tray__clear:hover,
+.tc-pin-tray__clear:focus-visible,
+.tc-pin-tray__clear.is-confirming { color: var(--color-normal); outline: none; text-decoration: underline; }
 .theorycraft-index .tc-search { margin: 0; }
 .theorycraft-index .tc-input {
   width: 100%;
@@ -563,7 +693,56 @@ html[data-card-size="xl"] .gem-index { --gem-index-content-scale: 1.5; }
 .tc-index-row .item-index-row__tags {
   color: color-mix(in srgb, var(--color-normal) 70%, var(--color-default));
 }
-.tc-index-row__action { width: 0; }
+.tc-index-row__action { width: 0; display: grid; place-items: center; }
+.tc-pin-toggle { display: none; }
+.tc-pins-ready .tc-index-row { grid-template-columns: calc(34px * var(--gem-index-content-scale)) minmax(calc(70px * var(--gem-index-content-scale)), max-content) minmax(0, 1fr) calc(27px * var(--gem-index-content-scale)); }
+.tc-pins-ready .tc-index-row__action { width: calc(27px * var(--gem-index-content-scale)); }
+.tc-pins-ready .tc-pin-toggle {
+  width: calc(27px * var(--gem-index-content-scale));
+  height: calc(27px * var(--gem-index-content-scale));
+  padding: calc(4px * var(--gem-index-content-scale));
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+  color: color-mix(in srgb, var(--color-default) 72%, transparent);
+  cursor: pointer;
+}
+.tc-pin-toggle svg { width: 100%; height: 100%; }
+.tc-row-pin { opacity: 0; transition: opacity 120ms ease, color 120ms ease, background-color 120ms ease; }
+.tc-index-row:hover .tc-row-pin,
+.tc-index-row:focus-within .tc-row-pin,
+.tc-row-pin[aria-pressed="true"] { opacity: 1; }
+.tc-pin-toggle:hover,
+.tc-pin-toggle:focus-visible,
+.tc-pin-toggle[aria-pressed="true"] { background: color-mix(in srgb, var(--color-normal) 8%, transparent); color: var(--color-normal); outline: none; }
+.tc-pin-toggle[aria-pressed="true"] svg { transform: rotate(-18deg); }
+.tc-detail-header {
+  position: sticky;
+  z-index: 11;
+  top: 0;
+  min-height: calc(43px * var(--gem-index-content-scale));
+  padding: calc(7px * var(--gem-index-content-scale)) calc(12px * var(--gem-index-content-scale));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(10px * var(--gem-index-content-scale));
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg-surface) 96%, var(--bg-base));
+  color: var(--color-normal);
+  font: 500 calc(13px * var(--gem-index-content-scale))/1.2 var(--font-display);
+}
+.tc-detail-header > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.theorycraft-index .tc-detail-header + .gem-index-pane__status { top: calc(43px * var(--gem-index-content-scale)); }
+.tc-detail-pin {
+  flex: 0 0 auto;
+  background: color-mix(in srgb, var(--bg-surface) 90%, transparent) !important;
+  border-color: var(--border) !important;
+}
+.tc-detail-pin[hidden],
+.tc-sheet-pin[hidden] { display: none; }
+.tc-sheet-actions { display: flex; align-items: center; gap: calc(7px * var(--gem-index-content-scale)); }
 .tc-kind-chip.search-result-cat--base { background: rgba(200, 200, 200, 0.1); color: var(--color-normal); }
 .tc-kind-chip.search-result-cat--augment { background: color-mix(in srgb, var(--color-prop) 16%, transparent); color: var(--color-prop); }
 .tc-detail-placeholder {
@@ -609,6 +788,7 @@ html[data-card-size="xl"] .gem-index { --gem-index-content-scale: 1.5; }
   .gem-index-list__hint { display: none; }
   .theorycraft-index .item-index-workspace { height: auto; }
   .theorycraft-index .tc-help[open] { max-height: none; }
+  .tc-pin-tray { margin-top: calc(-6px * var(--gem-index-content-scale)); }
 
   html.gem-index-sheet-open,
   body.gem-index-sheet-open { overflow: hidden; }
@@ -725,6 +905,7 @@ html[data-card-size="xl"] .gem-index { --gem-index-content-scale: 1.5; }
   .gem-index-row { gap: calc(7px * var(--gem-index-content-scale)); padding-right: calc(7px * var(--gem-index-content-scale)); }
   .gem-index-row__effect { font-size: calc(10px * var(--gem-index-content-scale)); }
   .tc-index-row { grid-template-columns: 32px minmax(62px, max-content) minmax(0, 1fr) 0; gap: 6px; }
+  .tc-pins-ready .tc-index-row { grid-template-columns: calc(32px * var(--gem-index-content-scale)) minmax(calc(62px * var(--gem-index-content-scale)), max-content) minmax(0, 1fr) calc(27px * var(--gem-index-content-scale)); gap: calc(6px * var(--gem-index-content-scale)); }
   .tc-kind-chip { max-width: 74px; font-size: 8px; }
 }
 

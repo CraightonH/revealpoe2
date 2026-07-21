@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseQuery } from '../src/data/theorycraft.js';
+import { createPinStore } from '../public/js/pin-store.js';
 import { getGem } from '../src/data/gems.js';
 import { getNode } from '../src/data/graph.js';
 
@@ -55,6 +56,59 @@ const FIXTURE = [
     iconUrl: null, subtitle: 'Amber Amulet', color: '', tags: ['amulet'], req: [],
     grants: [], text: 'test amulet chaos resistance onslaught' },
 ];
+
+test('pin store persists ordered versioned refs and resolves fresh docs', () => {
+  const values = new Map();
+  const storage = {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, value),
+  };
+  const previousWindow = globalThis.window;
+  globalThis.window = { addEventListener() {} };
+  try {
+    const store = createPinStore({ storage });
+    store.add({ category: 'gem', slug: 'cold-snap', name: 'content must not persist' });
+    store.add({ category: 'base', slug: 'crude-bow', classSlug: 'bow', hint: 'also content' });
+    assert.deepEqual(JSON.parse(values.get('tcPins')), {
+      v: 1,
+      pins: [
+        { category: 'gem', slug: 'cold-snap' },
+        { category: 'base', slug: 'crude-bow', classSlug: 'bow' },
+      ],
+    });
+    const freshGem = { category: 'gem', slug: 'cold-snap', name: 'Fresh Cold Snap' };
+    const freshBase = { category: 'base', slug: 'crude-bow', classSlug: 'bow', name: 'Fresh Crude Bow' };
+    const result = store.resolve([freshGem, freshBase]);
+    assert.deepEqual(result.resolved.map((item) => item.doc), [freshGem, freshBase]);
+    assert.equal(result.removed, 0);
+  } finally {
+    globalThis.window = previousWindow;
+  }
+});
+
+test('pin store drops unresolved refs and notifies subscribers', () => {
+  const values = new Map([['tcPins', JSON.stringify({
+    v: 1,
+    pins: [{ category: 'gem', slug: 'removed-gem' }, { category: 'unique', slug: 'astramentis' }],
+  })]]);
+  const storage = {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, value),
+  };
+  const previousWindow = globalThis.window;
+  globalThis.window = { addEventListener() {} };
+  try {
+    const store = createPinStore({ storage });
+    let notified = 0;
+    store.subscribe(() => { notified++; });
+    const result = store.resolve([{ category: 'unique', slug: 'astramentis', name: 'Astramentis' }]);
+    assert.equal(result.removed, 1);
+    assert.deepEqual(store.getRefs(), [{ category: 'unique', slug: 'astramentis' }]);
+    assert.equal(notified, 1);
+  } finally {
+    globalThis.window = previousWindow;
+  }
+});
 
 test('runQuery: free text matches across categories', () => {
   const r = runQuery('onslaught', { docs: FIXTURE });
@@ -167,6 +221,10 @@ test('GET /theorycraft renders the page with a query input', async () => {
   assert.match(res.text, /item-index-workspace/);
   assert.match(res.text, /item-index-pane/);
   assert.match(res.text, /item-index-sheet/);
+  assert.match(res.text, /data-tc-pin-tray/);
+  assert.match(res.text, /data-tc-pin-items/);
+  assert.match(res.text, /data-tc-detail-pin/);
+  assert.match(res.text, /\/static\/js\/theorycraft-client\.js/);
 });
 
 test('GET /theorycraft/results?q=herald returns grouped compact index rows', async () => {
@@ -178,6 +236,8 @@ test('GET /theorycraft/results?q=herald returns grouped compact index rows', asy
   assert.match(res.text, /tc-index-row/);
   assert.match(res.text, /data-item-kind="gem"/);
   assert.match(res.text, /tc-kind-chip/);
+  assert.match(res.text, /data-tc-pin-toggle/);
+  assert.match(res.text, /aria-pressed="false"/);
 });
 
 test('GET /theorycraft/results renders keystone matches as selectable rows', async () => {
