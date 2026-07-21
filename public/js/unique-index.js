@@ -7,6 +7,7 @@ initItemIndex({
   nameDataKey: 'itemName',
   detailContentSelector: '.item-detail',
   detailPathPrefix: '/unique/',
+  indexPath: '/uniques',
   searchIndexCategories: ['unique'],
   noun: 'unique item',
   plural: 'unique items',

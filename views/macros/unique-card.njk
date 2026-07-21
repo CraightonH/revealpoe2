@@ -4,7 +4,7 @@
 <div class="explicitMod">
   {%- if stat.gemSlug -%}
   {%- if stat.iconUrl %}<img loading="lazy" src="{{ stat.iconUrl }}" class="grantsSkill" alt="" onerror="this.style.display='none'">{% endif -%}
-  {{ stat.prefixHtml | safe }}<a href="/gem/{{ stat.gemSlug }}" data-card-url="/gem/{{ stat.gemSlug }}/card" class="skill-grant-link">{{ stat.skillName }}</a>
+  {{ stat.prefixHtml | safe }}<a href="/gems#{{ stat.gemSlug }}" data-card-url="/gem/{{ stat.gemSlug }}/card" class="skill-grant-link">{{ stat.skillName }}</a>
   {%- else -%}
   {{ stat.html | safe }}
   {%- endif -%}
@@ -32,7 +32,7 @@
    reusing the shared .bases-list-icon--WxH combo classes. #}
 {% macro uniqueListCard(u) %}
 {% set sizeClass = ('bases-list-icon--' ~ u.inventorySize.w ~ 'x' ~ u.inventorySize.h) if u.inventorySize else '' %}
-<a class="bases-list-card bases-list-card--unique" href="/unique/{{ u.slug }}" data-card-url="/unique/{{ u.slug }}/card" data-itemclass="{{ u.itemClassSlug }}">
+<a class="bases-list-card bases-list-card--unique" href="/uniques#{{ u.slug }}" data-card-url="/unique/{{ u.slug }}/card" data-itemclass="{{ u.itemClassSlug }}">
   {{ tradeButton(u.tradeUrl) }}
   <div class="bases-list-header"><span class="bases-list-name">{{ u.name }}</span></div>
   <div class="bases-list-main">
@@ -68,7 +68,7 @@
     {{ tradeLink(vm.tradeUrl) }}
     <div class="itemHeader doubleLine">
       <div class="itemName"><span class="lc unique-name">{{ vm.name }}</span></div>
-      <div class="itemName typeLine">{% if vm.baseSlug %}<a class="lc unique-type" href="/base/{{ vm.baseSlug }}" data-card-url="/base/{{ vm.baseSlug }}/card">{{ vm.base }}</a>{% else %}<span class="lc unique-type">{{ vm.base }}</span>{% endif %}</div>
+      <div class="itemName typeLine">{% if vm.baseSlug %}<a class="lc unique-type" href="/bases#{{ vm.classSlug }}" data-card-url="/base/{{ vm.baseSlug }}/card">{{ vm.base }}</a>{% else %}<span class="lc unique-type">{{ vm.base }}</span>{% endif %}</div>
     </div>
     <div class="content">
       <div class="Stats">

@@ -116,13 +116,6 @@ const CATEGORY_LABEL = {
   notable: 'Notable', base: 'Base', augment: 'Augment',
 };
 
-// Hover-card fragment URL. Most categories serve it at `${pageUrl}/card`;
-// notables are the exception (their card lives under /passive).
-function cardUrlFor(category, url) {
-  if (category === 'notable') return url.replace('/notable/', '/passive/') + '/card';
-  return `${url}/card`;
-}
-
 // Round-robin order across categories for the capped dropdown.
 const CAT_ORDER = ['gem', 'support', 'spirit', 'unique', 'keystone', 'affix', 'notable', 'base', 'augment'];
 
@@ -131,19 +124,17 @@ const CAT_ORDER = ['gem', 'support', 'spirit', 'unique', 'keystone', 'affix', 'n
 const alphaKey = (name) => (name || '').toLowerCase().replace(/^[^a-z0-9]+/, '');
 
 // Project allDocs() into the lighter doc shape the dropdown ranks over (name
-// label, name/text haystacks, resolved card URL). Affixes show their generic
-// mod text and carry a flyout cardUrl; everything else gets `${url}/card`.
+// label, name/text haystacks, and resolved card URL). User-facing URLs may be
+// index deep links, while hover fragments deliberately remain dedicated URLs.
 export function toSearchDocs(rawDocs) {
   return rawDocs.map((d) => {
     const isAffix = d.category === 'affix';
     const label = isAffix && d.genericText ? d.genericText : d.name;
     return {
       name: label,
-      slug: d.url ? d.url.split('/').pop() : (d.typeSlug ?? d.slug ?? null),
+      slug: d.typeSlug ?? d.slug ?? null,
       url: d.url ?? null,
-      // Prefer an explicit hover-card URL (affixes, augments — no standalone page);
-      // otherwise derive it from the page URL.
-      cardUrl: d.cardUrl ?? (d.url ? cardUrlFor(d.category, d.url) : null),
+      cardUrl: d.cardUrl ?? null,
       cat: d.category,
       category: CATEGORY_LABEL[d.category] ?? d.category,
       nameHaystack: label.toLowerCase(),

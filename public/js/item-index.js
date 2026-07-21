@@ -14,6 +14,7 @@ export function initItemIndex(config) {
   const nameKey = config.nameDataKey || 'itemName';
   const detailSelector = config.detailContentSelector || '.item-detail';
   const pathPrefix = config.detailPathPrefix;
+  const indexPath = config.indexPath || null;
   const categories = new Set(config.searchIndexCategories || []);
   const resultSlugKey = config.searchResultSlugDataKey || null;
   const rowTextKey = config.searchRowTextDataKey || null;
@@ -66,26 +67,21 @@ export function initItemIndex(config) {
     let url;
     try { url = new URL(anchor.href, window.location.href); } catch { return null; }
     if (url.origin !== window.location.origin) return null;
+    if (indexPath && url.pathname === indexPath && url.hash) {
+      let identity;
+      try {
+        identity = config.identityFromHash
+          ? config.identityFromHash(url.hash.slice(1))
+          : decodeURIComponent(url.hash.slice(1));
+      } catch { return null; }
+      return identity ? rowForIdentity(identity) : null;
+    }
     const escaped = pathPrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const match = url.pathname.match(new RegExp(`^${escaped}([^/]+)/?$`));
     if (!match) return null;
     let slug;
     try { slug = decodeURIComponent(match[1]); } catch { return null; }
     return rowForIdentity(slug);
-  }
-
-  function crossIndexUrl(anchor) {
-    let url;
-    try { url = new URL(anchor.href, window.location.href); } catch { return null; }
-    if (url.origin !== window.location.origin) return null;
-    for (const route of config.crossIndexRoutes || []) {
-      const escaped = route.detailPathPrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const match = url.pathname.match(new RegExp(`^${escaped}([^/]+)/?$`));
-      if (match) {
-        try { return `${route.indexPath}#${encodeURIComponent(decodeURIComponent(match[1]))}`; } catch { return null; }
-      }
-    }
-    return null;
   }
 
   function setSelected(row) {
@@ -285,13 +281,7 @@ export function initItemIndex(config) {
     if (detailLink) {
       if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       const linkedRow = rowForDetailLink(detailLink);
-      if (!linkedRow) {
-        const crossUrl = crossIndexUrl(detailLink);
-        if (!crossUrl) return;
-        event.preventDefault();
-        window.location.assign(crossUrl);
-        return;
-      }
+      if (!linkedRow) return;
       event.preventDefault();
       select(linkedRow, { reveal: true, replaceHash: !desktop.matches });
       return;

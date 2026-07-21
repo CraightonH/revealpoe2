@@ -56,14 +56,14 @@ if (root && input && target) {
     const slug = slugFor(doc);
     const resolver = DETAIL_RESOLVERS[category];
     if (!slug || !resolver) return '';
-    const href = resolver.url({ ...doc, slug });
+    const href = doc.url || resolver.url({ ...doc, slug });
     const hint = stripHtml(doc.hint || doc.subtitle || doc.genericText || doc.text);
     const icon = doc.iconUrl
       ? `<img class="gem-index-row__icon item-index-row__icon" src="${esc(doc.iconUrl)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`
       : '';
     const uniqueClass = category === 'unique' ? ' item-index-row__name--unique' : '';
     return `<a class="gem-index-row item-index-row tc-index-row item-index-row--${esc(category)}" ` +
-      `href="${esc(href)}" data-item-slug="${esc(slug)}" data-item-name="${esc(doc.name)}" ` +
+      `href="${esc(href)}" data-public-url="${esc(doc.url || href)}" data-item-slug="${esc(slug)}" data-item-name="${esc(doc.name)}" ` +
       `data-item-kind="${esc(category)}" style="--row-accent:var(--tc-kind-${esc(category)});">` +
       `<span class="gem-index-row__icon-wrap item-index-row__icon-wrap">${icon}</span>` +
       `<span class="tc-kind-chip search-result-cat search-result-cat--${esc(category)}">${esc(labelFor.get(category) || category)}</span>` +
@@ -119,19 +119,17 @@ if (root && input && target) {
       const resolver = DETAIL_RESOLVERS[row.dataset.itemKind];
       return resolver ? { url: resolver.url({ slug: row.dataset.itemSlug }), selector: resolver.selector } : null;
     },
-    // Cross-links stay in this workspace only when their target is already in
-    // the current result table; otherwise the browser follows the dedicated URL.
+    // Cross-links stay in this workspace only when their new public index URL
+    // matches a target already present in the current result table.
     identityForDetailLink(anchor) {
       let url;
       try { url = new URL(anchor.href, location.href); } catch { return null; }
       if (url.origin !== location.origin) return null;
-      const match = url.pathname.match(/^\/(gem|unique|base)\/([^/]+)\/?$/);
-      if (!match) return null;
-      let slug;
-      try { slug = decodeURIComponent(match[2]); } catch { return null; }
-      const allowed = match[1] === 'gem' ? new Set(['gem', 'support', 'spirit']) : new Set([match[1]]);
-      const row = Array.from(root.querySelectorAll('.tc-index-row')).find((candidate) =>
-        allowed.has(candidate.dataset.itemKind) && candidate.dataset.itemSlug === slug);
+      const target = `${url.pathname}${url.search}${url.hash}`;
+      const row = Array.from(root.querySelectorAll('.tc-index-row')).find((candidate) => {
+        const publicUrl = new URL(candidate.dataset.publicUrl, location.href);
+        return `${publicUrl.pathname}${publicUrl.search}${publicUrl.hash}` === target;
+      });
       return row ? identity(row) : null;
     },
     noun: 'result',

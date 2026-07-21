@@ -374,7 +374,7 @@ export function getDefaultSkillClasses(gem) {
       byClass.set(slug, {
         name: node.props.className,
         slug,
-        href: `/bases/${slug}`,
+        href: `/bases#${slug}`,
         // Representative class icon: the first base seen, mirroring /bases.
         iconUrl: ddsUrl(node.props.iconDds),
         count: 0,

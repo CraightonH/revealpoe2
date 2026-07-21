@@ -8,9 +8,9 @@ import {
 test('affixBaseTargets: class-wide mod lists plain class links', () => {
   const targets = affixBaseTargets('increasedlife');
   assert.ok(targets.length > 1, 'IncreasedLife rolls on many classes');
-  assert.ok(targets.every((t) => t.href.startsWith('/bases/')));
+  assert.ok(targets.every((t) => t.href.startsWith('/bases#') || t.href.startsWith('/bases?')));
   // Rolls on all defence subtypes → not split, so a plain (no ?attr=) class link.
-  assert.ok(targets.some((t) => t.href === '/bases/body-armour'));
+  assert.ok(targets.some((t) => t.href === '/bases#body-armour'));
 });
 
 test('affixBaseTargets: defence-specific mod splits into deep-linked variants', () => {
@@ -55,7 +55,7 @@ test('listBaseNav surfaces consumables/jewels as their own top-level groups', ()
   assert.ok(flasks && jewels, 'both new nav groups present');
   const flaskCards = flasks.sections.flatMap((s) => s.cards);
   assert.equal(flaskCards.length, 3, 'Life/Mana/Charms class cards');
-  assert.ok(flaskCards.every((c) => c.href.startsWith('/bases/') && c.count > 0));
+  assert.ok(flaskCards.every((c) => c.href.startsWith('/bases#') && c.count > 0));
   // They must NOT leak into Accessories.
   const accCards = nav.find((g) => g.label === 'Accessories').sections.flatMap((s) => s.cards);
   assert.ok(!accCards.some((c) => /Flask|Charm|Jewel/.test(c.name)));

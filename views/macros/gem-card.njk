@@ -6,7 +6,7 @@
    `modifier` feeds the filter-bar data-type; defaults to the gem's own type. #}
 {% macro gemBrowseCard(g, modifier='') %}
 {% set dataType = modifier if modifier else g.gemType %}
-<a class="gem-browse-card gem-browse-card--{{ g.cardColor }}" href="/gem/{{ g.slug }}"
+<a class="gem-browse-card gem-browse-card--{{ g.cardColor }}" href="/gems#{{ g.slug }}"
    data-card-url="/gem/{{ g.slug }}/card"
    data-type="{{ dataType }}"
    data-origin="{{ g.origin }}"

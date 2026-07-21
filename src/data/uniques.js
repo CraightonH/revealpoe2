@@ -226,6 +226,7 @@ export function buildUniqueViewModel(slug) {
     requirements,
     // Prefer the base's display name ("Spears") over the raw item class ("Spear").
     className: baseRecord?.className ?? u.itemClass,
+    classSlug: baseRecord?.classSlug ?? node.props.classSlug,
     borderColor: UNIQUE_BORDER,
     glowColor: UNIQUE_GLOW,
     // Canonical slug of the linked base, or null when the base isn't a browsable

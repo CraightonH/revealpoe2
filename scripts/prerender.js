@@ -42,6 +42,26 @@ export function affixCardSeeds() {
     .filter((u) => typeof u === 'string' && u.startsWith('/mod/'));
 }
 
+// The global dropdown is client-rendered from search-index.json, so none of its
+// data-card-url values appear in crawled HTML. Seed every non-affix document
+// fragment it can expose; affixes remain covered by affixCardSeeds above.
+export function searchCardSeeds() {
+  return [...new Set(allDocs()
+    .filter((d) => d.category !== 'affix')
+    .map((d) => d.cardUrl)
+    .filter((u) => typeof u === 'string'))];
+}
+
+// Base browse cards now link users to their owning class on /bases, so their
+// dedicated /base/:slug pane sources no longer have a user-facing href. Seed
+// those extraction/no-JS pages explicitly from the same document set consumed
+// by Theory Crafting. Their /card fragments remain crawlable via data-card-url.
+export function baseDetailSeeds() {
+  return allDocs()
+    .filter((d) => d.category === 'base' && d.slug)
+    .map((d) => `/base/${d.slug}`);
+}
+
 // Passive-tree node cards are pre-rendered into public/generated/passive-cards.json
 // and shown client-side on canvas hover — their HTML never appears in any crawled
 // page, so the keyword (/api/keyword/:key) and granted-skill (/gem/:slug/card)
@@ -163,6 +183,10 @@ async function run() {
   SEEDS.forEach(enqueue);
   // Affix flyout fragments aren't link-reachable (see affixCardSeeds); seed them.
   for (const u of affixCardSeeds()) { const n = normalize(u); if (n) enqueue(n); }
+  // The client-rendered global search dropdown can expose every document card.
+  for (const u of searchCardSeeds()) { const n = normalize(u); if (n) enqueue(n); }
+  // Base detail pages are internal pane sources now (see baseDetailSeeds).
+  for (const u of baseDetailSeeds()) { const n = normalize(u); if (n) enqueue(n); }
   // Passive-tree card links live only in the JSON artifact (see passiveCardSeeds).
   for (const u of passiveCardSeeds()) { const n = normalize(u); if (n) enqueue(n); }
   // Keystone/notable pages + cards, formerly reached via the deleted /keystones

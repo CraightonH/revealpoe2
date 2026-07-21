@@ -7,6 +7,7 @@ initItemIndex({
   nameDataKey: 'itemName',
   detailContentSelector: '.base-class-detail',
   detailPathPrefix: '/bases/',
+  indexPath: '/bases',
   searchIndexCategories: ['base'],
   searchResultSlugDataKey: 'searchSlugs',
   searchRowTextDataKey: 'searchText',
@@ -14,8 +15,10 @@ initItemIndex({
   noun: 'item class',
   plural: 'item classes',
   widgetInitializers: ['initFilterBars'],
-  crossIndexRoutes: [
-    { detailPathPrefix: '/unique/', indexPath: '/uniques' },
-    { detailPathPrefix: '/gem/', indexPath: '/gems' },
-  ],
+  detailResolver(row) {
+    const url = new URL(row.getAttribute('href'), location.origin);
+    const attr = new URLSearchParams(location.search).get('attr');
+    if (attr) url.searchParams.set('attr', attr);
+    return { url: `${url.pathname}${url.search}`, selector: '.base-class-detail' };
+  },
 });

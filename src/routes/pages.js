@@ -47,11 +47,11 @@ export function registerPages(app) {
   detailRoute(app, '/unique/:slug', buildUniqueViewModel, 'unique.njk', 'vm');
   cardRoute(app, '/unique/:slug/card', buildUniqueViewModel, 'partials/unique-card-fragment.njk');
 
-  app.get('/bases', (_req, res) => {
+  app.get('/bases', (req, res) => {
     const classes = listBaseIndex().sort((a, b) => a.name.localeCompare(b.name));
     const initialClass = getItemClass(classes[0]?.classSlug);
     initialClass.defaultSkillGems = getDefaultSkillGemsForClass(initialClass.classSlug);
-    res.render('bases.njk', { classes, initialClass });
+    res.render('bases.njk', { classes, initialClass, activeAttr: req.query.attr || initialClass.attrSubtypes[0]?.value || null });
   });
 
   app.get('/bases/:classSlug', (req, res) => {

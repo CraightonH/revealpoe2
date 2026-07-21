@@ -6,7 +6,7 @@ test('search finds gems by case-insensitive substring', () => {
   const hits = search('herald');
   const gem = hits.find((h) => h.name === 'Herald of Ash');
   assert.ok(gem);
-  assert.ok(gem.slug && gem.url.startsWith('/gem/'));
+  assert.ok(gem.slug && gem.url.startsWith('/gems#'));
   assert.ok(hits.every((h) => h.slug)); // every result is addressable (url may be null for affixes)
 });
 
@@ -23,17 +23,17 @@ test('search finds unique items by name', () => {
   assert.ok(results.length > 0);
   const hit = results.find((r) => r.name === 'Astramentis');
   assert.ok(hit, 'Astramentis should appear in search results');
-  assert.equal(hit.url, '/unique/astramentis');
+  assert.equal(hit.url, '/uniques#astramentis');
 });
 
 test('search finds both gems and uniques when distinct query terms match', () => {
   // gems returned for gem-only query
   const gemResults = search('herald');
-  assert.ok(gemResults.some((r) => r.url.startsWith('/gem/')));
+  assert.ok(gemResults.some((r) => r.url.startsWith('/gems#')));
 
   // unique returned for unique-only query
   const uniResults = search('astramentis');
-  assert.ok(uniResults.some((r) => r.url.startsWith('/unique/')));
+  assert.ok(uniResults.some((r) => r.url.startsWith('/uniques#')));
 });
 
 import request from 'supertest';
@@ -42,7 +42,7 @@ import { createApp } from '../src/server.js';
 test('GET /search returns an HTML fragment with links', async () => {
   const res = await request(createApp()).get('/search?q=herald');
   assert.equal(res.status, 200);
-  assert.match(res.text, /\/gem\/herald-of-ash/);
+  assert.match(res.text, /\/gems#herald-of-ash/);
   assert.doesNotMatch(res.text, /<html/); // fragment, not full page
 });
 
@@ -56,7 +56,7 @@ test('search finds gems by stat text, not just by name', () => {
   // The point of backing the dropdown with the full-text doc set: a gem whose
   // name says nothing about energy shield still surfaces via its stat lines.
   const hits = search('energy shield');
-  assert.ok(hits.some((h) => h.url.startsWith('/gem/')));
+  assert.ok(hits.some((h) => h.url.startsWith('/gems#')));
 });
 
 test('a broad stat query shows category variety, not 20 of one type', () => {
@@ -89,7 +89,7 @@ test('affixes never link to a standalone mod page', () => {
   const affixes = search('maximum life').filter((h) => h.category === 'Affix');
   assert.ok(affixes.length, 'expected affix hits for "maximum life"');
   for (const a of affixes) {
-    if (a.url) assert.ok(a.url.startsWith('/bases/'), `affix url should be a base page, got ${a.url}`);
+    if (a.url) assert.ok(a.url.startsWith('/bases#') || a.url.startsWith('/bases?'), `affix url should be the bases index, got ${a.url}`);
     if (a.cardUrl) assert.match(a.cardUrl, /^\/mod\/.+\/card$/);
   }
 });
@@ -135,7 +135,7 @@ test('search finds gems by quality-effect text, including keyword-marked phrases
   // single-spaced substring query must still match (norm() collapses whitespace).
   const hits = search('more damage per power charge consumed', 40);
   assert.ok(
-    hits.some((h) => h.name === 'Falling Thunder' && h.url === '/gem/falling-thunder'),
+    hits.some((h) => h.name === 'Falling Thunder' && h.url === '/gems#falling-thunder'),
     'Falling Thunder should surface via its quality-effect text'
   );
 });

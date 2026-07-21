@@ -41,7 +41,7 @@ test('GET /gem/herald-of-ash renders the card', async () => {
   // /gems (with the hover tooltip via data-card-url)
   const sectionHtml = res.text.slice(supIdx);
   assert.match(sectionHtml, /Recommended Supports/);
-  assert.match(sectionHtml, /<a class="gem-browse-card gem-browse-card--[rgbw]+" href="\/gem\//);
+  assert.match(sectionHtml, /<a class="gem-browse-card gem-browse-card--[rgbw]+" href="\/gems#/);
   assert.match(sectionHtml, /data-card-url="\/gem\/[^"]+\/card"/);
 });
 
@@ -134,7 +134,7 @@ test('a granted-skill node surfaces a Grants Skill link to the gem', async () =>
   const res = await request(createApp()).get('/passive/AscendancyMonk1Notable4');
   assert.equal(res.status, 200);
   assert.match(res.text, /Grants Skill:/);
-  assert.match(res.text, /href="\/gem\/hollow-resonance"/);
+  assert.match(res.text, /href="\/gems#hollow-resonance"/);
   assert.match(res.text, /Hollow Resonance<\/a>/);
 });
 

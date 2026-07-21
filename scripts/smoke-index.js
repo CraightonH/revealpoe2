@@ -15,9 +15,9 @@ function check(name, ok, detail) {
 }
 
 const surfaces = [
-  { name: 'gems', path: '/gems', slug: 'arc', crossPrefix: '/gem/', crossMode: 'index', dismiss: 'close' },
-  { name: 'uniques', path: '/uniques', slug: 'astramentis', crossPrefix: '/base/', crossMode: 'dedicated', dismiss: 'scrim' },
-  { name: 'bases', path: '/bases', slug: 'bow', crossPrefix: '/base/', crossMode: 'dedicated', dismiss: 'back' },
+  { name: 'gems', path: '/gems', slug: 'arc', linkPrefix: '/gems#', linkMode: 'local', dismiss: 'close' },
+  { name: 'uniques', path: '/uniques', slug: 'astramentis', linkPrefix: '/bases#', linkMode: 'cross', targetPath: '/bases', dismiss: 'scrim' },
+  { name: 'bases', path: '/bases', slug: 'bow', linkPrefix: '/bases#', linkMode: 'local', dismiss: 'back' },
 ];
 
 async function settle(page) {
@@ -52,8 +52,8 @@ async function settle(page) {
       check('bases: base-document search maps to class row', search.visible.length === 1 && search.visible[0] === 'crossbow' && search.selected === 'crossbow' && search.detail === 'crossbow', JSON.stringify(search));
     }
 
-    const link = await page.$(`.item-index-pane a[href^="${surface.crossPrefix}"]`);
-    check(`${surface.name}: pane cross-link exists`, !!link);
+    const link = await page.$(`.item-index-pane a[href^="${surface.linkPrefix}"]`);
+    check(`${surface.name}: pane index link exists`, !!link);
     if (link) {
       await link.evaluate((el) => { el.scrollIntoView({ block: 'center' }); el.click(); });
       await settle(page);
@@ -63,10 +63,10 @@ async function settle(page) {
         selected: document.querySelector('.item-index-row.is-selected')?.dataset.itemSlug,
         detail: document.querySelector('.item-index-pane .item-detail')?.dataset.itemSlug,
       }));
-      const ok = surface.crossMode === 'dedicated'
-        ? nav.pathname.startsWith(surface.crossPrefix)
+      const ok = surface.linkMode === 'cross'
+        ? nav.pathname === surface.targetPath && !!nav.hash
         : !!nav.hash && nav.hash === nav.selected && nav.selected === nav.detail;
-      check(`${surface.name}: in-pane navigation ${surface.crossMode === 'dedicated' ? 'uses dedicated page' : 'uses index selection'}`, ok, JSON.stringify(nav));
+      check(`${surface.name}: in-pane navigation ${surface.linkMode === 'cross' ? 'uses target index' : 'selects in place'}`, ok, JSON.stringify(nav));
     }
     await page.close();
 
@@ -77,9 +77,9 @@ async function settle(page) {
     await mobile.evaluate((slug) => document.querySelector(`.item-index-row[data-item-slug="${slug}"]`).click(), surface.slug);
     await settle(mobile);
     check(`${surface.name}: mobile sheet opens`, await mobile.evaluate(() => document.querySelector('.item-index-sheet')?.classList.contains('is-open')));
-    let sheetLink = await mobile.$(`.item-index-sheet__content a[href^="${surface.crossPrefix}"]`);
-    check(`${surface.name}: sheet cross-link exists`, !!sheetLink);
-    if (sheetLink && surface.crossMode === 'index') {
+    let sheetLink = await mobile.$(`.item-index-sheet__content a[href^="${surface.linkPrefix}"]`);
+    check(`${surface.name}: sheet index link exists`, !!sheetLink);
+    if (sheetLink && surface.linkMode === 'local') {
       await sheetLink.evaluate((el) => { el.scrollIntoView({ block: 'center' }); el.click(); });
       await settle(mobile);
       const sheetNav = await mobile.evaluate(() => ({
@@ -105,16 +105,16 @@ async function settle(page) {
     }
     await settle(mobile);
     check(`${surface.name}: mobile ${surface.dismiss} dismissal`, await mobile.evaluate(() => !document.querySelector('.item-index-sheet')?.classList.contains('is-open')));
-    if (surface.crossMode === 'dedicated') {
+    if (surface.linkMode === 'cross') {
       await mobile.evaluate((slug) => document.querySelector(`.item-index-row[data-item-slug="${slug}"]`).click(), surface.slug);
       await settle(mobile);
-      sheetLink = await mobile.$(`.item-index-sheet__content a[href^="${surface.crossPrefix}"]`);
+      sheetLink = await mobile.$(`.item-index-sheet__content a[href^="${surface.linkPrefix}"]`);
       if (sheetLink) {
         await sheetLink.evaluate((el) => { el.scrollIntoView({ block: 'center' }); el.click(); });
         await settle(mobile);
       }
-      const pathname = await mobile.evaluate(() => location.pathname);
-      check(`${surface.name}: in-sheet base link uses dedicated page`, !!sheetLink && pathname.startsWith(surface.crossPrefix), pathname);
+      const destination = await mobile.evaluate(() => ({ pathname: location.pathname, hash: location.hash }));
+      check(`${surface.name}: in-sheet link uses target index`, !!sheetLink && destination.pathname === surface.targetPath && !!destination.hash, JSON.stringify(destination));
     }
     await mobile.close();
   }

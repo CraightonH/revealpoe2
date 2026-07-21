@@ -56,7 +56,8 @@ test('GET /bases returns the 34 item-class rows with an initial class detail', a
   const rowCount = (res.text.match(/class="gem-index-row [^"]*item-index-row[^"]*"\s+href="\/bases\/[^"/]+"/g) ?? []).length;
   assert.equal(rowCount, 34);
   assert.equal(rowCount, app.locals.baseCount());
-  assert.equal((res.text.match(/href="\/base\/[^"/]+"/g) ?? []).length > 0, true, 'initial class base list keeps dedicated base links');
+  assert.doesNotMatch(res.text, /href="\/base\//, 'base cards do not expose dedicated detail routes');
+  assert.match(res.text, /href="\/bases#[^"]+" data-card-url="\/base\//, 'base cards link to their class while retaining hover fragments');
 });
 
 test('GET /bases/amulet returns 200 with base items', async () => {
@@ -100,7 +101,7 @@ test('GET /mod/:typeSlug/card returns the base-target flyout with /bases links',
   const app = createApp();
   const res = await request(app).get('/mod/increasedlife/card');
   assert.equal(res.status, 200);
-  assert.match(res.text, /href="\/bases\//);
+  assert.match(res.text, /href="\/bases(?:\?|#)/);
   assert.doesNotMatch(res.text, /<html/); // fragment, not full page
 });
 
@@ -125,7 +126,7 @@ test('GET /base/stellar-amulet points to the class affix page', async () => {
   const app = createApp();
   const res = await request(app).get('/base/stellar-amulet');
   assert.equal(res.status, 200);
-  assert.ok(res.text.includes('/bases/amulet'), 'links to the class page for affixes');
+  assert.ok(res.text.includes('/bases#amulet'), 'links to the class on the bases index');
   assert.ok(!res.text.includes('affix-table'), 'no per-base affix tables');
 });
 

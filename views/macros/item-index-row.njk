@@ -51,10 +51,10 @@
    without changing the row's identity/detail contract. #}
 {% macro theorycraftIndexRow(item, kind, kindLabel) %}
 {% set rowSlug = item.typeSlug if kind == 'affix' else item.slug %}
-{% set href = item.cardUrl if kind in ['affix', 'augment'] else ('/notable/' + rowSlug if kind == 'notable' else ('/keystone/' + rowSlug if kind == 'keystone' else '/' + ('gem' if kind in ['gem', 'support', 'spirit'] else kind) + '/' + rowSlug)) %}
+{% set href = item.cardUrl if kind in ['affix', 'augment'] else item.url %}
 {% set hint = item.hint or item.subtitle or item.genericText or item.text %}
 <a class="gem-index-row item-index-row tc-index-row item-index-row--{{ kind }}"
-   href="{{ href }}" data-item-slug="{{ rowSlug }}" data-item-name="{{ item.name }}"
+   href="{{ href }}" data-public-url="{{ item.url or href }}" data-item-slug="{{ rowSlug }}" data-item-name="{{ item.name }}"
    data-item-kind="{{ kind }}" style="--row-accent:var(--tc-kind-{{ kind }});">
   <span class="gem-index-row__icon-wrap item-index-row__icon-wrap">
     {% if item.iconUrl %}<img class="gem-index-row__icon item-index-row__icon" src="{{ item.iconUrl }}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">{% endif %}

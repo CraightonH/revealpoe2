@@ -45,13 +45,13 @@ test('parseQuery: empty/whitespace yields no terms', () => {
 import { docMatches, runQuery } from '../src/data/theorycraft.js';
 
 const FIXTURE = [
-  { name: 'Onslaught Support', url: '/gem/onslaught-support', category: 'support',
+  { name: 'Onslaught Support', slug: 'onslaught-support', url: '/gems#onslaught-support', category: 'support',
     iconUrl: null, subtitle: 'Support', color: 'g', tags: ['support'], req: ['dex'],
     grants: [], text: 'onslaught support grants onslaught movement and cast speed' },
-  { name: 'Cold Snap', url: '/gem/cold-snap', category: 'gem',
+  { name: 'Cold Snap', slug: 'cold-snap', url: '/gems#cold-snap', category: 'gem',
     iconUrl: null, subtitle: 'Spell', color: 'b', tags: ['cold', 'spell', 'area'],
     req: ['int'], grants: [], text: 'cold snap deals cold damage and chill' },
-  { name: 'Test Amulet', url: '/unique/test-amulet', category: 'unique',
+  { name: 'Test Amulet', slug: 'test-amulet', url: '/uniques#test-amulet', category: 'unique',
     iconUrl: null, subtitle: 'Amber Amulet', color: '', tags: ['amulet'], req: [],
     grants: [], text: 'test amulet chaos resistance onslaught' },
 ];
@@ -87,10 +87,10 @@ test('runQuery: color and tag fields', () => {
 
 test('runQuery: origin field constrains to uniques of that origin', () => {
   const docs = [
-    { name: 'Vaal Unq', url: '/unique/v', category: 'unique', iconUrl: null, subtitle: '', color: '', tags: [], req: [], grants: [], origin: 'vaal', text: 'vaal unq' },
-    { name: 'Ezo Unq', url: '/unique/e', category: 'unique', iconUrl: null, subtitle: '', color: '', tags: [], req: [], grants: [], origin: 'ezomyte', text: 'ezo unq' },
+    { name: 'Vaal Unq', slug: 'v', url: '/uniques#v', category: 'unique', iconUrl: null, subtitle: '', color: '', tags: [], req: [], grants: [], origin: 'vaal', text: 'vaal unq' },
+    { name: 'Ezo Unq', slug: 'e', url: '/uniques#e', category: 'unique', iconUrl: null, subtitle: '', color: '', tags: [], req: [], grants: [], origin: 'ezomyte', text: 'ezo unq' },
     // A gem that merely mentions "vaal" in its text must NOT match origin:vaal.
-    { name: 'Vaal Gem', url: '/gem/g', category: 'gem', iconUrl: null, subtitle: '', color: '', tags: [], req: [], grants: [], text: 'vaal themed gem' },
+    { name: 'Vaal Gem', slug: 'g', url: '/gems#g', category: 'gem', iconUrl: null, subtitle: '', color: '', tags: [], req: [], grants: [], text: 'vaal themed gem' },
   ];
   const r = runQuery('origin:vaal', { docs });
   assert.equal(r.total, 1);
@@ -106,7 +106,7 @@ test('runQuery: empty query is flagged empty', () => {
 
 test('runQuery: per-group cap reports shown vs total', () => {
   const many = Array.from({ length: 150 }, (_, i) => ({
-    name: `Gem ${i}`, url: `/gem/g${i}`, category: 'gem', iconUrl: null,
+    name: `Gem ${i}`, slug: `g${i}`, url: `/gems#g${i}`, category: 'gem', iconUrl: null,
     subtitle: '', color: '', tags: [], req: [], grants: [], text: 'onslaught',
   }));
   const r = runQuery('onslaught', { docs: many, capPerGroup: 100 });
@@ -134,11 +134,21 @@ test('allDocs: builds a multi-category index', () => {
 });
 
 test('allDocs: a known gem doc carries deep text and fields', () => {
-  const herald = allDocs().find((d) => d.url === '/gem/herald-of-ash');
+  const herald = allDocs().find((d) => d.url === '/gems#herald-of-ash');
   assert.ok(herald, 'Herald of Ash should be indexed');
   assert.equal(herald.category, 'gem');
   assert.match(herald.text, /herald/);
   assert.ok(Array.isArray(herald.tags));
+});
+
+test('allDocs: public urls target master-detail indexes while cards stay dedicated', () => {
+  const docs = allDocs();
+  const gem = docs.find((d) => d.slug === 'herald-of-ash' && d.category === 'gem');
+  const unique = docs.find((d) => d.slug === 'astramentis' && d.category === 'unique');
+  const base = docs.find((d) => d.slug === 'stellar-amulet' && d.category === 'base');
+  assert.deepEqual([gem.url, gem.cardUrl], ['/gems#herald-of-ash', '/gem/herald-of-ash/card']);
+  assert.deepEqual([unique.url, unique.cardUrl], ['/uniques#astramentis', '/unique/astramentis/card']);
+  assert.deepEqual([base.url, base.cardUrl], ['/bases#amulet', '/base/stellar-amulet/card']);
 });
 
 test('allDocs: is cached (same array on repeat calls)', () => {
@@ -174,7 +184,7 @@ test('GET /theorycraft/results renders keystone matches as selectable rows', asy
   const res = await request(createApp()).get('/theorycraft/results?q=zealot');
   assert.equal(res.status, 200);
   assert.match(res.text, /data-item-kind="keystone"/);
-  assert.match(res.text, /href="\/keystone\/passive_keystone_zealots_oath"/);
+  assert.match(res.text, /href="\/passives\?node=\d+"/);
   assert.doesNotMatch(res.text, /PassivePopup/);
 });
 
@@ -229,13 +239,13 @@ test('gem search docs include granted-skill display names from the graph', () =>
   // find a gem whose first granted skill resolves to a named skill node
   const docs = allDocs().filter((d) => d.category === 'gem' || d.category === 'support' || d.category === 'spirit');
   const sample = docs.find((d) => {
-    const gem = getGem(d.url.replace('/gem/', ''));
+    const gem = getGem(d.slug);
     const key = gem?.grants_skills?.[0];
     const node = key ? getNode(key) : null;
     return node && node.name && node.name !== key;
   });
   assert.ok(sample, 'expected at least one gem with a named granted skill');
-  const gem = getGem(sample.url.replace('/gem/', ''));
+  const gem = getGem(sample.slug);
   const skillName = getNode(gem.grants_skills[0]).name.toLowerCase();
   assert.ok(sample.text.includes(skillName), 'granted skill name should be in the doc text');
 });
@@ -245,7 +255,7 @@ test('gem search docs exclude key-fallback grant names (no raw skill keys in ind
   // its key; those must not appear in grants/search text.
   const docs = allDocs().filter((d) => ['gem', 'support', 'spirit'].includes(d.category));
   for (const d of docs) {
-    const gem = getGem(d.url.replace('/gem/', ''));
+    const gem = getGem(d.slug);
     for (const key of gem?.grants_skills ?? []) {
       const node = getNode(key);
       if (node && node.name === node.id) {

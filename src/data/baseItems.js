@@ -290,7 +290,7 @@ function buildAffixTargets() {
       for (const b of cls.bases) {
         const a = baseAffixes(b.metadataKey);
         for (const f of [...a.standard.prefix, ...a.standard.suffix]) {
-          add(f.typeSlug, { label: b.name, href: `/base/${b.slug}` });
+          add(f.typeSlug, { label: b.name, href: `/bases#${b.classSlug}` });
         }
       }
       continue;
@@ -304,10 +304,10 @@ function buildAffixTargets() {
       // each defence variant separately. Otherwise it rolls class-wide.
       if (subKeys.length > 1 && f.attrs && f.attrs.length && f.attrs.length < subKeys.length) {
         for (const sub of f.attrs) {
-          add(f.typeSlug, { label: `${subLabel.get(sub)} ${cls.name}`, href: `/bases/${cls.classSlug}?attr=${sub}` });
+          add(f.typeSlug, { label: `${subLabel.get(sub)} ${cls.name}`, href: `/bases?attr=${sub}#${cls.classSlug}` });
         }
       } else {
-        add(f.typeSlug, { label: cls.name, href: `/bases/${cls.classSlug}` });
+        add(f.typeSlug, { label: cls.name, href: `/bases#${cls.classSlug}` });
       }
     }
   }
@@ -348,7 +348,7 @@ export function listBaseNav() {
   buildIndex();
   const card = (name, count, iconUrl, href) => ({ name, count, iconUrl, href });
   const get = (classId) => ({ classId, info: _classInfo.get(classId), bases: _byClass.get(classId) ?? [] });
-  const classCard = (c) => card(c.info.name, c.bases.length, c.bases[0].iconUrl, `/bases/${c.info.classSlug}`);
+  const classCard = (c) => card(c.info.name, c.bases.length, c.bases[0].iconUrl, `/bases#${c.info.classSlug}`);
   const offhandSet = new Set(OFFHAND_CLASSES);
 
   // Bucket every browsable class by its tags (off-hand handled separately, in a
@@ -379,7 +379,7 @@ export function listBaseNav() {
         title: c.info.name,
         cards: subs.map((s) => card(
           ATTR_LABELS[s.key], s.bases.length, s.bases[0].iconUrl,
-          `/bases/${c.info.classSlug}?attr=${s.key}`,
+          `/bases?attr=${s.key}#${c.info.classSlug}`,
         )),
       };
     }
@@ -390,7 +390,7 @@ export function listBaseNav() {
   // landing lists them individually (Ruby, Emerald, …) rather than one "Jewel"
   // class card. Count is rollable-mod families ("mods"), not bases.
   const jewelBaseCard = (b) =>
-    ({ ...card(b.name, affixFamilyCount(baseAffixes(b.metadataKey)), b.iconUrl, `/base/${b.slug}`), unit: 'mods' });
+    ({ ...card(b.name, affixFamilyCount(baseAffixes(b.metadataKey)), b.iconUrl, `/bases#${b.classSlug}`), unit: 'mods' });
 
   // Consumable groups: one flat section each, skipping empties. Per-base-nav
   // classes (jewels) expand to a card per base; other groups (flasks/charms) list

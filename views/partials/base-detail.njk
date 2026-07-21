@@ -5,7 +5,7 @@
   {% if vm.classHasPage %}
   {{ breadcrumb([
     { label: 'Modifiers', href: '/bases' },
-    { label: vm.className, href: '/bases/' + vm.classSlug },
+    { label: vm.className, href: '/bases#' + vm.classSlug },
     { label: vm.name }
   ]) }}
   {% else %}
@@ -20,7 +20,7 @@
   {% else %}
   <p class="base-affix-pointer">
     Modifiers roll per item class — see all rollable affixes on the
-    <a href="/bases/{{ vm.classSlug }}">{{ vm.className }}</a> page.
+    <a href="/bases#{{ vm.classSlug }}">{{ vm.className }}</a> page.
   </p>
   {% endif %}
 </div>

@@ -67,7 +67,8 @@ function gemDocs() {
     return {
       name: g.name,
       slug: g.slug,
-      url: `/gem/${g.slug}`,
+      url: `/gems#${g.slug}`,
+      cardUrl: `/gem/${g.slug}/card`,
       category: gemCategory(g.gemType),
       iconUrl: g.iconUrl || null,
       subtitle,
@@ -85,7 +86,8 @@ function uniqueDocs() {
   return listUniques().map((u) => ({
     name: u.name,
     slug: u.slug,
-    url: `/unique/${u.slug}`,
+    url: `/uniques#${u.slug}`,
+    cardUrl: `/unique/${u.slug}/card`,
     category: 'unique',
     iconUrl: u.iconUrl || null,
     subtitle: u.base || '',
@@ -191,8 +193,10 @@ function baseDocs() {
       return (c?.bases ?? []).map((b) => ({
         name: b.name,
         slug: b.slug,
-        url: `/base/${b.slug}`,
+        url: `/bases#${b.classSlug}`,
+        cardUrl: `/base/${b.slug}/card`,
         category: 'base',
+        classSlug: b.classSlug,
         iconUrl: b.iconUrl || null,
         subtitle: c?.className || '',
         hint: b.implicits?.[0]?.html || b.properties?.[0]?.value || c?.className || '',

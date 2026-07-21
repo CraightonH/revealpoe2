@@ -17,7 +17,7 @@
 {# Condensed card for the /bases/:class grid: one key stat per line with the
    same keyword-linked labels unique cards use; full tooltip on hover. #}
 {% macro baseListCard(b) %}
-<a class="bases-list-card" href="/base/{{ b.slug }}" data-card-url="/base/{{ b.slug }}/card"{% if b.attr %} data-attr="{{ b.attr }}"{% endif %}>
+<a class="bases-list-card" href="/bases#{{ b.classSlug }}" data-card-url="/base/{{ b.slug }}/card"{% if b.attr %} data-attr="{{ b.attr }}"{% endif %}>
   {{ tradeButton(b.tradeUrl) }}
   <div class="bases-list-header"><span class="bases-list-name">{{ b.name }}</span></div>
   <div class="bases-list-main">
@@ -89,7 +89,7 @@
         {% for s in vm.grantedSkills %}
         <div class="explicitMod">
           {%- if s.iconUrl %}<img loading="lazy" src="{{ s.iconUrl }}" class="grantsSkill" alt="" onerror="this.style.display='none'">{% endif -%}
-          Grants Skill: <a href="/gem/{{ s.slug }}" data-card-url="/gem/{{ s.slug }}/card" class="skill-grant-link">{{ s.name }}</a>
+          Grants Skill: <a href="/gems#{{ s.slug }}" data-card-url="/gem/{{ s.slug }}/card" class="skill-grant-link">{{ s.name }}</a>
         </div>
         {% endfor %}
       </div>
@@ -118,7 +118,7 @@
         <div class="property" style="margin-bottom:4px;">Unique versions:</div>
         {% for u in vm.uniquesOnBase %}
         <div class="property" style="padding-left:8px;">
-          <a href="/unique/{{ u.slug }}" data-card-url="/unique/{{ u.slug }}/card" style="color:var(--unique-color);text-decoration:none;">
+          <a href="/uniques#{{ u.slug }}" data-card-url="/unique/{{ u.slug }}/card" style="color:var(--unique-color);text-decoration:none;">
             {% if u.iconUrl %}
             <img src="{{ u.iconUrl }}" alt="{{ u.name }}"
                  style="width:16px;height:16px;vertical-align:middle;margin-right:4px;object-fit:contain;"

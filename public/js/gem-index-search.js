@@ -7,6 +7,7 @@ initItemIndex({
   nameDataKey: 'gemName',
   detailContentSelector: '.gem-detail',
   detailPathPrefix: '/gem/',
+  indexPath: '/gems',
   searchIndexCategories: ['gem', 'support', 'spirit'],
   noun: 'gem',
   plural: 'gems',
