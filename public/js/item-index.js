@@ -315,13 +315,10 @@ export function initItemIndex(config) {
     lastHandledHash = null;
     selectFromLocation();
   });
-  root.addEventListener('filter-bar:applied', () => {
-    if (!desktop.matches) return;
-    const selected = root.querySelector(`${rowSelector}.is-selected`);
-    if (selected && selected.style.display !== 'none') return;
-    const firstVisible = rows().find((row) => row.style.display !== 'none');
-    if (firstVisible) select(firstVisible, { replaceHash: true });
-  });
+  // Filter changes never steal the selection: if the selected row gets hidden,
+  // the pane keeps showing it (same rule as local search). Auto-selecting the
+  // "first visible" here raced the search intersection and picked a row even
+  // when the final result set was empty.
   desktop.addEventListener('change', () => {
     const selected = rowForHash() || root.querySelector(`${rowSelector}.is-selected`);
     if (desktop.matches) closeSheet(false);
