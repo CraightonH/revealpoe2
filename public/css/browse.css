@@ -488,9 +488,8 @@ html[data-card-size="xl"] .gem-index { --gem-index-content-scale: 1.5; }
 .gem-index-sheet,
 .gem-index-sheet-scrim { display: none; }
 
-/* Theory Crafting: mixed-kind rows on the shared master-detail workspace. The
-   card-size preference scales only fetched detail content; table chrome stays
-   compact and stable so cross-kind scanning does not reflow. */
+/* Theory Crafting: mixed-kind rows on the shared master-detail workspace.
+   Card-size scales rows/chips/pane content like every other index. */
 .theorycraft-index {
   --tc-kind-gem: var(--color-gem);
   --tc-kind-support: var(--color-gem);
@@ -501,10 +500,8 @@ html[data-card-size="xl"] .gem-index { --gem-index-content-scale: 1.5; }
   --tc-kind-notable: #b8a454;
   --tc-kind-base: var(--color-normal);
   --tc-kind-augment: var(--color-prop);
-  --gem-index-content-scale: 1 !important;
 }
 .theorycraft-index .item-index-workspace {
-  height: max(560px, calc(100vh - 196px));
   grid-template-columns: minmax(440px, 0.92fr) minmax(470px, 1.08fr);
 }
 .theorycraft-index .tc-search { margin: 0; }
@@ -550,17 +547,18 @@ html[data-card-size="xl"] .gem-index { --gem-index-content-scale: 1.5; }
   text-transform: uppercase;
 }
 .tc-index-row {
-  min-height: 48px;
-  padding-block: 5px;
-  grid-template-columns: 34px minmax(70px, max-content) minmax(0, 1fr) 0;
-  gap: 8px;
+  min-height: calc(48px * var(--gem-index-content-scale));
+  padding-block: calc(5px * var(--gem-index-content-scale));
+  grid-template-columns: calc(34px * var(--gem-index-content-scale)) minmax(calc(70px * var(--gem-index-content-scale)), max-content) minmax(0, 1fr) 0;
+  gap: calc(8px * var(--gem-index-content-scale));
 }
-.tc-index-row .item-index-row__icon-wrap { width: 32px; height: 32px; }
-.tc-index-row .item-index-row__icon { width: 29px; height: 29px; }
+.tc-index-row .item-index-row__icon-wrap { width: calc(32px * var(--gem-index-content-scale)); height: calc(32px * var(--gem-index-content-scale)); }
+.tc-index-row .item-index-row__icon { width: calc(29px * var(--gem-index-content-scale)); height: calc(29px * var(--gem-index-content-scale)); }
 .tc-kind-chip {
-  max-width: 92px;
+  max-width: calc(92px * var(--gem-index-content-scale, 1));
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: calc(9px * var(--gem-index-content-scale, 1));
 }
 .tc-index-row .item-index-row__tags {
   color: color-mix(in srgb, var(--color-normal) 70%, var(--color-default));
