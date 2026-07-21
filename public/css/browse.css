@@ -739,20 +739,24 @@ html[data-card-size="xl"] .gem-index { --gem-index-content-scale: 1.5; }
   .gem-index-row.is-selected { transform: none; }
 }
 
-/* Jump from an extracted keystone/notable detail to its live tree position —
-   mirrors the global search behavior for passives. */
-.passive-tree-jump {
-  display: inline-block;
-  margin-top: 12px;
-  padding: calc(6px * var(--gem-index-content-scale, 1)) calc(14px * var(--gem-index-content-scale, 1));
-  border: 1px solid color-mix(in srgb, var(--color-gem) 45%, var(--border));
-  border-radius: 999px;
-  color: var(--color-gem);
-  font-size: calc(12px * var(--gem-index-content-scale, 1));
+/* The keystone/notable card IS the link to its live tree position (mirrors
+   global search). Hover lifts the popup with a gem-color ring so the card
+   reads as clickable without extra chrome. */
+.passive-detail-link {
+  display: block;
+  color: inherit;
   text-decoration: none;
-  transition: background-color 120ms ease, border-color 120ms ease;
+  cursor: pointer;
 }
-.passive-tree-jump:hover {
-  border-color: var(--color-gem);
-  background: color-mix(in srgb, var(--color-gem) 10%, transparent);
+.passive-detail-link .newItemPopup { transition: transform 120ms ease, box-shadow 120ms ease; }
+.passive-detail-link:hover .newItemPopup,
+.passive-detail-link:focus-visible .newItemPopup {
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-gem) 55%, transparent),
+              0 10px 26px rgba(0, 0, 0, 0.35);
+}
+.passive-detail-link:focus-visible { outline: none; }
+@media (prefers-reduced-motion: reduce) {
+  .passive-detail-link .newItemPopup { transition: none; }
+  .passive-detail-link:hover .newItemPopup { transform: none; }
 }

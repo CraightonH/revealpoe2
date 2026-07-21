@@ -127,6 +127,9 @@ if (root && input && target) {
       let url;
       try { url = new URL(anchor.href, location.href); } catch { return null; }
       if (url.origin !== location.origin) return null;
+      // Passive-tree links always navigate — the tree is its own surface, and a
+      // notable's public URL would otherwise match its own row and eat the click.
+      if (url.pathname === '/passives') return null;
       const target = `${url.pathname}${url.search}${url.hash}`;
       const row = Array.from(root.querySelectorAll('.tc-index-row')).find((candidate) => {
         const publicUrl = new URL(candidate.dataset.publicUrl, location.href);
