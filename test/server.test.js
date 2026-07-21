@@ -134,6 +134,8 @@ test("GET /keystone/passive_keystone_zealots_oath returns 200 with Zealot's Oath
   const res = await request(app).get('/keystone/passive_keystone_zealots_oath');
   assert.equal(res.status, 200);
   assert.ok(res.text.includes('Zealot'));
+  assert.match(res.text, /class="gem-detail item-detail"/);
+  assert.match(res.text, /data-item-slug="passive_keystone_zealots_oath"/);
 });
 
 test('GET /keystone/not-a-real-keystone returns 404', async () => {
@@ -176,6 +178,19 @@ test('GET /notable/ailments38 returns 200 with Fast Acting Toxins', async () => 
   const res = await request(app).get('/notable/ailments38');
   assert.equal(res.status, 200);
   assert.ok(res.text.includes('Fast Acting Toxins'));
+  assert.match(res.text, /class="gem-detail item-detail"/);
+  assert.match(res.text, /data-item-slug="ailments38"/);
+});
+
+test('GET /theorycraft?q=onslaught renders the no-JS master list and keeps htmx parity', async () => {
+  const res = await request(createApp()).get('/theorycraft?q=onslaught');
+  assert.equal(res.status, 200);
+  assert.match(res.text, /class="[^\"]*theorycraft-index/);
+  assert.match(res.text, /hx-get="\/theorycraft\/results"/);
+  assert.match(res.text, /data-item-kind="gem"/);
+  assert.match(res.text, /data-item-kind="unique"/);
+  assert.match(res.text, /data-item-kind="augment"/);
+  assert.match(res.text, /href="\/augment\/[^\"]+\/card"/);
 });
 
 test('GET /notable/not-a-real-notable returns 404', async () => {

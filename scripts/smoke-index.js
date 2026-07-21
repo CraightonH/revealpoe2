@@ -119,6 +119,60 @@ async function settle(page) {
     await mobile.close();
   }
 
+  // Theory Crafting is a client-rendered mixed-kind table. Exercise a full-page
+  // detail and a fragment-only kind from the same query, then its typed hash and
+  // mobile sheet contract.
+  const theory = await browser.newPage();
+  theory.on('pageerror', (error) => errors.push(`theorycraft desktop: ${error}`));
+  await theory.setViewport({ width: 1600, height: 1000 });
+  await theory.goto(`${BASE}/theorycraft?q=onslaught`, { waitUntil: 'networkidle2', timeout: 90000 });
+  await theory.waitForSelector('.tc-index-row[data-item-kind="gem"]');
+  await theory.click('.tc-index-row[data-item-kind="gem"]');
+  await settle(theory);
+  const theoryGem = await theory.evaluate(() => ({
+    query: new URLSearchParams(location.search).get('q'),
+    hash: location.hash.slice(1),
+    kind: document.querySelector('.tc-index-row.is-selected')?.dataset.itemKind,
+    detail: document.querySelector('.item-index-pane .item-detail')?.dataset.itemSlug,
+  }));
+  check('theorycraft: desktop gem detail', theoryGem.query === 'onslaught' && theoryGem.hash.startsWith('gem:') && theoryGem.kind === 'gem' && !!theoryGem.detail, JSON.stringify(theoryGem));
+
+  await theory.click('.tc-index-row[data-item-kind="augment"]');
+  await settle(theory);
+  const theoryFragment = await theory.evaluate(() => ({
+    hash: location.hash.slice(1),
+    kind: document.querySelector('.tc-index-row.is-selected')?.dataset.itemKind,
+    fragment: !!document.querySelector('.item-index-pane .tc-fragment-detail'),
+    note: !!document.querySelector('.item-index-pane .tc-fragment-detail__note'),
+  }));
+  check('theorycraft: desktop fragment detail', theoryFragment.hash.startsWith('augment:') && theoryFragment.kind === 'augment' && theoryFragment.fragment && theoryFragment.note, JSON.stringify(theoryFragment));
+
+  await theory.goto(`${BASE}/theorycraft?q=onslaught#gem:savage-fury`, { waitUntil: 'networkidle2', timeout: 90000 });
+  await settle(theory);
+  const theoryRestore = await theory.evaluate(() => ({
+    query: new URLSearchParams(location.search).get('q'),
+    hash: location.hash.slice(1),
+    selected: document.querySelector('.tc-index-row.is-selected')?.dataset.itemSlug,
+    detail: document.querySelector('.item-index-pane .item-detail')?.dataset.itemSlug,
+  }));
+  check('theorycraft: query + kind hash restore', theoryRestore.query === 'onslaught' && theoryRestore.hash === 'gem:savage-fury' && theoryRestore.selected === 'savage-fury' && theoryRestore.detail === 'savage-fury', JSON.stringify(theoryRestore));
+  await theory.close();
+
+  const theoryMobile = await browser.newPage();
+  theoryMobile.on('pageerror', (error) => errors.push(`theorycraft mobile: ${error}`));
+  await theoryMobile.setViewport({ width: 390, height: 844, hasTouch: true, isMobile: true });
+  await theoryMobile.goto(`${BASE}/theorycraft?q=onslaught`, { waitUntil: 'networkidle2', timeout: 90000 });
+  await theoryMobile.waitForSelector('.tc-index-row[data-item-kind="augment"]');
+  await theoryMobile.click('.tc-index-row[data-item-kind="augment"]');
+  await settle(theoryMobile);
+  const theorySheet = await theoryMobile.evaluate(() => ({
+    open: document.querySelector('.item-index-sheet')?.classList.contains('is-open'),
+    hash: location.hash.slice(1),
+    fragment: !!document.querySelector('.item-index-sheet .tc-fragment-detail'),
+  }));
+  check('theorycraft: mobile fragment sheet', theorySheet.open && theorySheet.hash.startsWith('augment:') && theorySheet.fragment, JSON.stringify(theorySheet));
+  await theoryMobile.close();
+
   check('no page errors', errors.length === 0, errors.join('; '));
   await browser.close();
   if (failures.length) {

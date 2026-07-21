@@ -182,11 +182,10 @@ Built by `scripts/build-index.js`:
 | `search-index.json` | `allDocs()` — the full-text doc set (name, slug, url, category, color, tags, req, grants, **text** haystack, icon/subtitle) | ~1.6 MB / ~0.25 MB |
 | `browse-cards.json` | The real macro-rendered browse-card HTML, keyed `category → slug/id` | ~4.7 MB / ~0.28 MB |
 
-`browse-cards.json` lets client Theory Crafting reuse the **exact** server card
-HTML (no card macros ported to JS). It compresses ~15:1 (repetitive markup), so
-Pages serves it brotli'd at ~0.28 MB. Card keys mirror the server's
-`cardMapFor()`: `gem`/`support`/`spirit` all read the `gem` bucket; others key
-by their own slug (or node id for keystones/notables).
+`browse-cards.json` remains the shared pre-rendered card key space for consumers
+that need embedded cards. Theory Crafting no longer downloads it: its compact
+master rows come from `search-index.json`, and selecting one fetches the
+prerendered detail page or fragment for that kind.
 
 ## Shared query core (`public/js/query-core.js`)
 
@@ -210,11 +209,11 @@ On the static site there is no server at runtime, so two small modules take over
 - **`public/js/search-client.js`** (header dropdown) — loads `search-index.json`,
   ranks with the shared core, renders the same markup as
   `partials/search-results.njk`.
-- **`public/js/theorycraft-client.js`** — loads both artifacts, groups with the
-  shared core, renders each result by looking up `browse-cards.json` (compact
-  fallback for affixes / missing), mirroring `partials/theorycraft-results.njk`.
-  Reads `?q=` from the URL for deep links and writes it back via
-  `history.replaceState` so any query is shareable.
+- **`public/js/theorycraft-client.js`** — loads `search-index.json`, groups with
+  the shared core, and renders the mixed-kind left table before delegating
+  selection/history/detail fetching to the shared item-index controller. Reads
+  `?q=` plus a `#kind:slug` selection hash and writes query changes back via
+  `history.replaceState` so the combined state is shareable.
 
 ### How they take over from htmx
 

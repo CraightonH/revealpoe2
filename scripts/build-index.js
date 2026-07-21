@@ -1,12 +1,12 @@
-// Build the static client-side artifacts that back search + Theory Crafting:
+// Build the static client-side artifacts that back search, Theory Crafting,
+// and card-key consumers:
 //
 //   public/generated/search-index.json   allDocs() — the full-text doc set the
 //                                         browser ranks/filters in place of the
 //                                         /search and /theorycraft/results routes.
 //   public/generated/browse-cards.json   the real macro-rendered browse cards,
-//                                         keyed by category -> slug/id, so client
-//                                         results reuse the exact server card HTML
-//                                         (no card macros ported to JS).
+//                                         keyed by category -> slug/id for clients
+//                                         that embed cards by reference.
 //
 // Written under public/ so the dev server serves them at /static/generated/* and
 // the prerenderer copies them into dist/. Gitignored — regenerable from source.

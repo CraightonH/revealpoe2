@@ -16,7 +16,6 @@
 
 import { createApp } from '../src/server.js';
 import { allDocs } from '../src/data/theorycraft.js';
-import { toSearchDocs } from '../public/js/query-core.js';
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
@@ -62,19 +61,22 @@ export function passiveCardSeeds() {
 }
 
 // Keystone/notable detail pages + hover-card fragments aren't link-reachable by
-// the crawler: the /keystones index is gone (the tree replaced it) and search /
-// theorycraft results now deep-link the tree (/passives?node=<hash>), not the
-// detail page. So seed them the same divergence-proof way affixCardSeeds does —
-// from toSearchDocs(allDocs()), the exact doc set the client search dropdown and
-// Theory Crafting read. d.cardUrl is the hover fragment (keystone /keystone/:id/card,
+// the crawler: the /keystones index is gone (the tree replaced it), search
+// deep-links the tree, and Theory Crafting builds its rows in the browser. Seed
+// them the same divergence-proof way affixCardSeeds does —
+// from allDocs(), the exact doc set Theory Crafting reads. d.cardUrl is the hover fragment (keystone /keystone/:id/card,
 // notable /passive/:id/card); stripping the trailing /card gives the detail page.
 export function passiveDocSeeds() {
   const out = new Set();
-  for (const d of toSearchDocs(allDocs())) {
-    if (d.cat !== 'keystone' && d.cat !== 'notable') continue;
+  for (const d of allDocs()) {
+    if (d.category !== 'keystone' && d.category !== 'notable') continue;
     if (!d.cardUrl) continue;
     out.add(d.cardUrl);                          // hover-card fragment
     out.add(d.cardUrl.replace(/\/card$/, ''));   // detail page (still a direct-link fallback)
+    // Theory Crafting intentionally resolves notables through their canonical
+    // /notable/:id detail page rather than the generic /passive/:id fallback.
+    // Its rows are client-rendered, so expose that computed fetch target here.
+    if (d.slug) out.add(`/${d.category}/${d.slug}`);
   }
   return [...out];
 }

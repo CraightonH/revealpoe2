@@ -1,5 +1,5 @@
-import { listGems, listGemCards, buildGemViewModel, getGem } from './gems.js';
-import { listUniques, listUniqueCards } from './uniques.js';
+import { listGems, buildGemViewModel, getGem } from './gems.js';
+import { listUniques } from './uniques.js';
 import { listItemClasses, getItemClass, affixBaseTargets } from './baseItems.js';
 import { listKeystones, listNotables } from './passiveTree.js';
 import { listAugments } from './augments.js';
@@ -12,54 +12,8 @@ import { parseQuery, docMatches, groupQuery } from '../../public/js/query-core.j
 // pieces the tests and routes import from here.
 export { parseQuery, docMatches };
 
-// Per-category slug → browse-card lookup. The same condensed card objects the
-// /gems, /uniques, /bases and /keystones pages render, so theorycraft results
-// can reuse those macros verbatim instead of a bespoke result card. Built once
-// (same cost the browse pages pay) and cached. gem/support/spirit share one map.
-let _cardMaps = null;
-function cardMaps() {
-  if (_cardMaps) return _cardMaps;
-  const bySlug = (list) => new Map(list.map((c) => [c.slug, c]));
-  const byId = (list) => new Map(list.map((c) => [c.id, c]));
-  const bases = listItemClasses().flatMap((group) =>
-    group.classes.flatMap((cls) => getItemClass(cls.classSlug)?.bases ?? [])
-  );
-  _cardMaps = {
-    gem: bySlug(listGemCards()),
-    unique: bySlug(listUniqueCards()),
-    base: bySlug(bases),
-    keystone: byId(listKeystones()),
-    notable: byId(listNotables()),
-    augment: bySlug(listAugments()),
-  };
-  return _cardMaps;
-}
-
-// Which lookup map serves a result category (gem/support/spirit all map to gems).
-function cardMapFor(category) {
-  const maps = cardMaps();
-  if (category === 'support' || category === 'spirit') return maps.gem;
-  return maps[category] ?? null;
-}
-
 export function runQuery(q, { docs = allDocs(), capPerGroup = 100 } = {}) {
-  const base = groupQuery(q, { docs, capPerGroup });
-  if (base.empty || !base.groups.length) return base;
-  // Attach the full browse-card object to each shown item so the template can
-  // render the real /gems, /uniques, /bases, /keystones card. Affixes have no
-  // browse card (card stays null → template keeps the compact fallback). The
-  // browser path does the same lookup against browse-cards.json.
-  const groups = base.groups.map((g) => {
-    const map = cardMapFor(g.category);
-    return {
-      ...g,
-      items: g.items.map((it) => ({
-        ...it,
-        card: map && it.slug ? map.get(it.slug) ?? null : null,
-      })),
-    };
-  });
-  return { ...base, groups };
+  return groupQuery(q, { docs, capPerGroup });
 }
 
 const stripHtml = (s) => String(s ?? '').replace(/<[^>]*>/g, ' ');
@@ -93,9 +47,11 @@ function gemDocs() {
       .filter(Boolean);
     let textParts = [g.name];
     let subtitle = '';
+    let hint = '';
     try {
       const vm = buildGemViewModel(g.slug);
       subtitle = vm.typeLine || '';
+      hint = vm.description || vm.sections.flatMap((s) => s.lines || [])[0] || subtitle;
       // Effect text spans each section's base lines PLUS its quality effects: the
       // standard quality bonus and the Gemling Legionnaire alternate ("second")
       // quality (altQuality). Without these, a query for a quality-only effect
@@ -115,6 +71,7 @@ function gemDocs() {
       category: gemCategory(g.gemType),
       iconUrl: g.iconUrl || null,
       subtitle,
+      hint,
       color: g.color || '',
       tags: (raw.tags ?? []).map((t) => String(t).toLowerCase()),
       req: g.req || [],
@@ -132,6 +89,7 @@ function uniqueDocs() {
     category: 'unique',
     iconUrl: u.iconUrl || null,
     subtitle: u.base || '',
+    hint: u.stats?.[0] || u.base || '',
     color: '',
     tags: [String(u.itemClass || '').toLowerCase()].filter(Boolean),
     req: [],
@@ -154,6 +112,7 @@ function affixDocs() {
       if (!targets.length) return null;
       return {
         name: g.displayName,
+        slug: g.typeSlug,
         genericText: g.genericText, // compact generic form, used as the search-bar label
         typeSlug: g.typeSlug,
         // Every affix gets the "Can roll on" flyout on hover. A single-base affix
@@ -164,6 +123,7 @@ function affixDocs() {
         category: 'affix',
         iconUrl: null,
         subtitle: g.text,
+        hint: g.text,
         color: '',
         tags: [g.generation_type].filter(Boolean),
         req: [],
@@ -190,6 +150,7 @@ function nodeDocs(list, category, urlBase) {
     category,
     iconUrl: n.iconUrl || null,
     subtitle: '',
+    hint: n.statRaw || n.flavourText || '',
     color: '',
     tags: [],
     req: [],
@@ -210,6 +171,7 @@ function augmentDocs() {
     category: 'augment',
     iconUrl: a.iconUrl || null,
     subtitle: a.familyLabel || '',
+    hint: a.categories.flatMap((c) => c.lines)[0] || a.familyLabel || '',
     color: '',
     tags: [String(a.family || '').toLowerCase(), String(a.tierLabel || '').toLowerCase()].filter(Boolean),
     req: [],
@@ -233,6 +195,7 @@ function baseDocs() {
         category: 'base',
         iconUrl: b.iconUrl || null,
         subtitle: c?.className || '',
+        hint: b.implicits?.[0]?.html || b.properties?.[0]?.value || c?.className || '',
         color: '',
         tags: b.tags || [],
         req: [],

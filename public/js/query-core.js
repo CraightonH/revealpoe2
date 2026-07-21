@@ -66,8 +66,8 @@ export function docMatches(doc, terms) {
 }
 
 // ---------------------------------------------------------------------------
-// Theory Crafting: grouped results (no card attachment — the presentation
-// layer, server macros or browse-cards.json, supplies the rendered card)
+// Theory Crafting: grouped results. Presentation layers turn these raw docs
+// into compact master-list rows; selection resolves full details separately.
 // ---------------------------------------------------------------------------
 
 export const GROUPS = [

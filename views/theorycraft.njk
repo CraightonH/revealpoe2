@@ -1,16 +1,30 @@
 {% extends "base.njk" %}
-{% from "macros/nav.njk" import pageHeader %}
 {% block title %}Theory Crafting — Reveal · PoE2 Wiki{% endblock %}
 {% block content %}
-<div class="page page--column">
-  {{ pageHeader('Theory Crafting', 'search everything') }}
-  <div class="tc-search">
+<div class="gem-index item-index theorycraft-index">
+  <header class="gem-index-header item-index-header">
+    <div>
+      <p class="gem-index-eyebrow item-index-eyebrow">Search everything</p>
+      <h1>Theory Crafting</h1>
+      <p>Search every content type, then select a compact row to inspect its full details.</p>
+    </div>
+    <div class="gem-index-total item-index-total"><strong data-filter-count>{{ result.total }}</strong><span>results</span></div>
+  </header>
+
+  <div class="gem-index-workspace item-index-workspace">
+    <section class="gem-index-list item-index-list" aria-label="Theory Crafting search results">
+      <div class="gem-index-search item-index-search tc-search">
+        <label class="gem-index-search__label item-index-search__label" for="theorycraft-search">Search everything</label>
+        <div class="gem-index-search__control item-index-search__control">
     <input class="tc-input" type="search" name="q" value="{{ q }}" autocomplete="off" autofocus
+           id="theorycraft-search" aria-controls="tc-results"
            placeholder="Search everything — try: onslaught, type:support cold, color:green tag:attack"
            hx-get="/theorycraft/results" hx-trigger="input changed delay:200ms, search"
            hx-target="#tc-results">
+          <kbd class="gem-index-search__shortcut item-index-search__shortcut" aria-hidden="true">/</kbd>
+        </div>
     <p class="tc-lead">Type any words to match anything; combine terms to narrow — all terms must match.</p>
-    <details class="tc-help">
+    <details class="tc-help"{% if not q %} open{% endif %}>
       <summary>How to search — terms &amp; examples</summary>
       <dl class="tc-help-terms">
         <dt>Free text</dt>
@@ -87,13 +101,39 @@
         </dd>
       </dl>
     </details>
+      </div>
+      <div class="gem-index-list__header item-index-list__header">
+        <span><strong data-tc-result-count>{{ result.total }}</strong> shown</span>
+        <span class="gem-index-list__hint item-index-list__hint">Grouped by kind</span>
+      </div>
+      <div class="gem-index-rows item-index-rows" id="tc-results">
+        {% include "partials/theorycraft-results.njk" %}
+      </div>
+    </section>
+
+    <aside class="gem-index-pane item-index-pane" aria-label="Selected result details" aria-live="polite" aria-busy="false">
+      <div class="gem-index-pane__status item-index-pane__status" hidden>Loading details…</div>
+      <div class="gem-index-pane__content item-index-pane__content">
+        <div class="tc-detail-placeholder">
+          <h2>Search, then select</h2>
+          <p>Choose any result to inspect its complete details without leaving this workspace.</p>
+        </div>
+      </div>
+    </aside>
   </div>
-  <div id="tc-results">
-    {% include "partials/theorycraft-results.njk" %}
-  </div>
+
+  <div class="gem-index-sheet-scrim item-index-sheet-scrim" data-item-sheet-dismiss aria-hidden="true"></div>
+  <section class="gem-index-sheet item-index-sheet" role="dialog" aria-modal="true" aria-labelledby="theorycraft-sheet-title" aria-hidden="true">
+    <header class="gem-index-sheet__header item-index-sheet__header">
+      <h2 id="theorycraft-sheet-title" class="gem-index-sheet__title item-index-sheet__title">Result details</h2>
+      <button class="gem-index-sheet__close item-index-sheet__close" type="button" data-item-sheet-dismiss aria-label="Close result details">×</button>
+    </header>
+    <div class="gem-index-sheet__status item-index-sheet__status" hidden>Loading details…</div>
+    <div class="gem-index-sheet__content item-index-sheet__content"></div>
+  </section>
   <script src="/static/js/theorycraft.js" defer></script>
-  <!-- Client-side results: renders from the prebuilt index + browse cards,
-       taking over from the /theorycraft/results route on the static build. -->
+  <!-- Static production renders these rows from the prebuilt full-text index.
+       The htmx server route remains the no-JS/dev-parity fallback. -->
   <script type="module" src="/static/js/theorycraft-client.js"></script>
 </div>
 {% endblock %}

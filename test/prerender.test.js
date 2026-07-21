@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { affixCardSeeds, extractLinks } from '../scripts/prerender.js';
+import { affixCardSeeds, passiveDocSeeds, extractLinks } from '../scripts/prerender.js';
 import { search } from '../src/data/search.js';
 
 // Regression: affix flyout fragments (/mod/:typeSlug/card) are linked ONLY from
@@ -30,4 +30,10 @@ test('prerender discovers item-index detail pages and bases class rows', () => {
     '<a class="bases-list-card" href="/base/stellar-amulet">Stellar Amulet</a>',
   ].join(''));
   assert.deepEqual([...links], ['/unique/astramentis', '/bases/bow', '/base/stellar-amulet']);
+});
+
+test('prerender seeds canonical passive detail URLs fetched by Theory Crafting', () => {
+  const seeds = new Set(passiveDocSeeds());
+  assert.ok(seeds.has('/keystone/passive_keystone_zealots_oath'));
+  assert.ok(seeds.has('/notable/ailments38'));
 });

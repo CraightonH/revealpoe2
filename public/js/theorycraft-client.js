@@ -1,109 +1,155 @@
-// Client-side Theory Crafting results. Replaces the /theorycraft/results route
-// on the static site: strips htmx from the .tc-input, runs the shared grouping
-// core over the prebuilt search index, and renders each result by reusing the
-// real browse-card HTML from browse-cards.json (compact fallback for affixes /
-// missing cards). Markup mirrors views/partials/theorycraft-results.njk.
-import { groupQuery } from '/static/js/query-core.js';
+// Static Theory Crafting master-detail surface. The left table is rendered from
+// search-index.json; the shared item-index controller owns selection, history,
+// detail fetching/cache, mobile sheets, and arrival motion.
+import { GROUPS, groupQuery } from '/static/js/query-core.js';
+import { initItemIndex } from '/static/js/item-index.js';
 
 const INDEX_URL = '/static/generated/search-index.json';
-const CARDS_URL = '/static/generated/browse-cards.json';
 
-const input = document.querySelector('.tc-input');
-const target = document.querySelector('#tc-results');
+// The only category -> detail-source registry. Adding a future kind requires a
+// row here (plus its label in query-core GROUPS), not another controller branch.
+const DETAIL_RESOLVERS = {
+  gem:      { url: (doc) => `/gem/${doc.slug}`, selector: '.gem-detail' },
+  support:  { url: (doc) => `/gem/${doc.slug}`, selector: '.gem-detail' },
+  spirit:   { url: (doc) => `/gem/${doc.slug}`, selector: '.gem-detail' },
+  unique:   { url: (doc) => `/unique/${doc.slug}`, selector: '.item-detail' },
+  base:     { url: (doc) => `/base/${doc.slug}`, selector: '.item-detail' },
+  keystone: { url: (doc) => `/keystone/${doc.slug}`, selector: '.item-detail' },
+  notable:  { url: (doc) => `/notable/${doc.slug}`, selector: '.item-detail' },
+  affix:    { url: (doc) => `/mod/${doc.slug}/card`, selector: null },
+  augment:  { url: (doc) => `/augment/${doc.slug}/card`, selector: null },
+};
 
-if (input && target) {
+const root = document.querySelector('.theorycraft-index');
+const input = root?.querySelector('.tc-input');
+const target = root?.querySelector('#tc-results');
+
+if (root && input && target) {
   input.removeAttribute('hx-get');
   input.removeAttribute('hx-trigger');
   input.removeAttribute('hx-target');
 
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-
-  let data = null;     // { docs, cards }
+  const stripHtml = (s) => String(s ?? '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  const labelFor = new Map(GROUPS.map((group) => [group.category, group.label]));
+  const slugFor = (doc) => doc.category === 'affix' ? doc.typeSlug : doc.slug;
+  let docs = null;
   let loading = null;
+
   function load() {
-    if (data) return Promise.resolve(data);
+    if (docs) return Promise.resolve(docs);
     if (!loading) {
-      loading = Promise.all([
-        fetch(INDEX_URL).then((r) => r.json()),
-        fetch(CARDS_URL).then((r) => r.json()),
-      ]).then(([docs, cards]) => { data = { docs, cards }; return data; });
+      input.setAttribute('aria-busy', 'true');
+      loading = fetch(INDEX_URL)
+        .then((response) => {
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return response.json();
+        })
+        .then((raw) => { docs = raw; return docs; })
+        .finally(() => input.removeAttribute('aria-busy'));
     }
     return loading;
   }
 
-  // gem/support/spirit all read the gem card set, matching the server's
-  // cardMapFor(); other categories key by their own name.
-  function cardFor(cards, category, slug) {
-    const bucket = (category === 'support' || category === 'spirit') ? 'gem' : category;
-    return cards[bucket] ? cards[bucket][slug] : undefined;
-  }
-
-  function compactCard(it, category) {
-    const cardUrl = it.cardUrl || (it.url ? it.url + '/card' : null);
-    const attrs = [`class="tc-result-card tc-result-card--${esc(category)}"`];
-    if (it.url) attrs.push(`href="${esc(it.url)}"`);
-    else if (cardUrl) attrs.push('tabindex="0"', 'role="button"');
-    if (cardUrl) attrs.push(`data-card-url="${esc(cardUrl)}"`);
-    const icon = it.iconUrl
-      ? `<img class="tc-result-icon" src="${esc(it.iconUrl)}" alt="${esc(it.name)}" loading="lazy" onerror="this.style.visibility='hidden'">`
+  function rowHtml(doc, category) {
+    const slug = slugFor(doc);
+    const resolver = DETAIL_RESOLVERS[category];
+    if (!slug || !resolver) return '';
+    const href = resolver.url({ ...doc, slug });
+    const hint = stripHtml(doc.hint || doc.subtitle || doc.genericText || doc.text);
+    const icon = doc.iconUrl
+      ? `<img class="gem-index-row__icon item-index-row__icon" src="${esc(doc.iconUrl)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`
       : '';
-    const sub = it.subtitle ? `<span class="tc-result-sub">${esc(it.subtitle)}</span>` : '';
-    return `<a ${attrs.join(' ')}>${icon}<span class="tc-result-name">${esc(it.name)}</span>${sub}</a>`;
+    const uniqueClass = category === 'unique' ? ' item-index-row__name--unique' : '';
+    return `<a class="gem-index-row item-index-row tc-index-row item-index-row--${esc(category)}" ` +
+      `href="${esc(href)}" data-item-slug="${esc(slug)}" data-item-name="${esc(doc.name)}" ` +
+      `data-item-kind="${esc(category)}" style="--row-accent:var(--tc-kind-${esc(category)});">` +
+      `<span class="gem-index-row__icon-wrap item-index-row__icon-wrap">${icon}</span>` +
+      `<span class="tc-kind-chip search-result-cat search-result-cat--${esc(category)}">${esc(labelFor.get(category) || category)}</span>` +
+      '<span class="gem-index-row__identity item-index-row__identity">' +
+      `<span class="gem-index-row__name item-index-row__name${uniqueClass}">${esc(doc.name)}</span>` +
+      `<span class="gem-index-row__tags item-index-row__tags">${esc(hint)}</span></span>` +
+      '<span class="tc-index-row__action" aria-hidden="true"></span></a>';
   }
 
-  function resultCard(cards, it, category) {
-    return cardFor(cards, category, it.slug) || compactCard(it, category);
-  }
-
-  function gridClass(category) {
-    if (category === 'gem' || category === 'support' || category === 'spirit') return 'gem-browse-grid';
-    if (category === 'unique' || category === 'base') return 'bases-list-grid';
-    if (category === 'keystone' || category === 'notable') return 'tc-passive-grid';
-    if (category === 'augment') return 'augment-grid';
-    return 'tc-result-grid';
-  }
-
-  const EMPTY_PROMPT =
-    '<div class="tc-empty">' +
-    '<p>Search across gems, supports, uniques, affixes, keystones, notables and bases.</p>' +
-    '<p class="tc-examples">Examples: <code>onslaught</code> &middot; <code>type:support cold</code> &middot; ' +
-    '<code>color:green tag:attack</code> &middot; <code>-type:unique chaos resistance</code></p></div>';
-
-  function renderResult(cards, result) {
-    if (result.empty) return EMPTY_PROMPT;
-    if (!result.groups.length) {
-      return `<div class="tc-empty"><p>No results for <code>${esc(result.query)}</code>.</p></div>`;
+  function renderResult(result) {
+    if (result.empty) {
+      target.innerHTML = '<div class="tc-empty tc-empty--initial"><p>Search across gems, supports, uniques, affixes, keystones, notables, bases, and augments.</p><p>Choose an example above or combine search terms to begin.</p></div>';
+    } else if (!result.groups.length) {
+      target.innerHTML = `<div class="tc-empty"><p>No results for <code>${esc(result.query)}</code>.</p></div>`;
+    } else {
+      target.innerHTML = result.groups.map((group) => {
+        const rows = group.items.map((doc) => rowHtml(doc, group.category)).join('');
+        const more = group.shown < group.total ? `<p class="tc-more">Showing ${group.shown} of ${group.total}</p>` : '';
+        return `<section class="tc-index-group" data-result-category="${esc(group.category)}">` +
+          `<h2 class="tc-index-group__heading"><span>${esc(group.label)}</span><span>${group.total}</span></h2>` +
+          `${rows}${more}</section>`;
+      }).join('');
     }
-    let html = `<div class="tc-summary">${result.total} result${result.total !== 1 ? 's' : ''} ` +
-      `for <code>${esc(result.query)}</code></div>`;
-    for (const g of result.groups) {
-      const cardsHtml = g.items.map((it) => resultCard(cards, it, g.category)).join('');
-      const more = g.shown < g.total ? `<p class="tc-more">Showing ${g.shown} of ${g.total}</p>` : '';
-      html += '<section class="tc-group">' +
-        `<h2 class="tc-group-heading">${esc(g.label)} (${g.total})</h2>` +
-        `<div class="${gridClass(g.category)}">${cardsHtml}</div>${more}</section>`;
-    }
-    return html;
+    root.querySelectorAll('[data-filter-count], [data-tc-result-count]').forEach((node) => { node.textContent = result.total; });
+    const help = root.querySelector('.tc-help');
+    if (help) help.open = result.empty;
+    root.dispatchEvent(new CustomEvent('item-index:rows-changed'));
   }
 
-  function run(q) {
-    load().then(({ docs, cards }) => {
-      if (input.value === q) target.innerHTML = renderResult(cards, groupQuery(q, { docs }));
+  function run(query) {
+    const requested = query;
+    load().then((indexDocs) => {
+      if (input.value === requested) renderResult(groupQuery(requested, { docs: indexDocs }));
+    }).catch(() => {
+      if (input.value === requested) target.innerHTML = '<div class="tc-empty"><p>The search index could not be loaded.</p></div>';
     });
   }
 
-  let timer = null;
-  input.addEventListener('input', () => {
-    const q = input.value;
-    // Keep the URL shareable without spamming history.
-    const next = q ? `?q=${encodeURIComponent(q)}` : location.pathname;
-    history.replaceState(null, '', next);
-    clearTimeout(timer);
-    timer = setTimeout(() => run(q), 200);
+  const identity = (row) => `${row.dataset.itemKind}:${row.dataset.itemSlug}`;
+  initItemIndex({
+    rootSelector: '.theorycraft-index',
+    rowSelector: '.tc-index-row[data-item-kind][data-item-slug]',
+    slugDataKey: 'itemSlug',
+    nameDataKey: 'itemName',
+    identityForRow: identity,
+    hashForRow: identity,
+    identityFromHash(hash) {
+      const split = hash.indexOf(':');
+      if (split < 1) return null;
+      return `${hash.slice(0, split)}:${decodeURIComponent(hash.slice(split + 1))}`;
+    },
+    detailResolver(row) {
+      const resolver = DETAIL_RESOLVERS[row.dataset.itemKind];
+      return resolver ? { url: resolver.url({ slug: row.dataset.itemSlug }), selector: resolver.selector } : null;
+    },
+    // Cross-links stay in this workspace only when their target is already in
+    // the current result table; otherwise the browser follows the dedicated URL.
+    identityForDetailLink(anchor) {
+      let url;
+      try { url = new URL(anchor.href, location.href); } catch { return null; }
+      if (url.origin !== location.origin) return null;
+      const match = url.pathname.match(/^\/(gem|unique|base)\/([^/]+)\/?$/);
+      if (!match) return null;
+      let slug;
+      try { slug = decodeURIComponent(match[2]); } catch { return null; }
+      const allowed = match[1] === 'gem' ? new Set(['gem', 'support', 'spirit']) : new Set([match[1]]);
+      const row = Array.from(root.querySelectorAll('.tc-index-row')).find((candidate) =>
+        allowed.has(candidate.dataset.itemKind) && candidate.dataset.itemSlug === slug);
+      return row ? identity(row) : null;
+    },
+    noun: 'result',
+    plural: 'results',
+    widgetInitializers: ['initGemLevelSelect', 'initGemQualityInput', 'initScalingToggle'],
   });
 
-  // Deep link: render immediately for a ?q= URL (or a server-prefilled value).
+  let timer = null;
+  input.addEventListener('input', () => {
+    const query = input.value;
+    const url = new URL(location.href);
+    if (query) url.searchParams.set('q', query);
+    else url.searchParams.delete('q');
+    history.replaceState(history.state, '', `${url.pathname}${url.search}${url.hash}`);
+    clearTimeout(timer);
+    timer = setTimeout(() => run(query), 200);
+  });
+
   const initial = new URLSearchParams(location.search).get('q');
   if (initial !== null && initial !== input.value) input.value = initial;
   if (input.value.trim()) run(input.value);

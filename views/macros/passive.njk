@@ -24,11 +24,9 @@
 </a>
 {% endmacro %}
 
-{# Theory Crafting result: the full in-game passive tooltip (passiveDetail),
-   wrapped in a click-through link to the detail page. `urlBase` is 'keystone' or
-   'notable'. Used by both the server results partial and build-index.js (which
-   bakes the identical HTML into browse-cards.json for the client-rendered static
-   page), so the two paths can't diverge. #}
+{# Full in-game passive tooltip embedded in a click-through card. `urlBase` is
+   'keystone' or 'notable'. build-index.js also bakes this HTML into the shared
+   browse-card artifact for clients that need an embedded passive card. #}
 {% macro passiveResultCard(node, urlBase='keystone') %}
 <a class="tc-passive-card" href="{% if node.hash %}/passives?node={{ node.hash }}{% else %}/{{ urlBase }}/{{ node.id }}{% endif %}">{{ passiveDetail(node) }}</a>
 {% endmacro %}

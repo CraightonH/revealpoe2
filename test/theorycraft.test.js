@@ -153,30 +153,43 @@ test('GET /theorycraft renders the page with a query input', async () => {
   assert.equal(res.status, 200);
   assert.match(res.text, /hx-get="\/theorycraft\/results"/);
   assert.match(res.text, /Theory Crafting/);
+  assert.match(res.text, /theorycraft-index/);
+  assert.match(res.text, /item-index-workspace/);
+  assert.match(res.text, /item-index-pane/);
+  assert.match(res.text, /item-index-sheet/);
 });
 
-test('GET /theorycraft/results?q=herald returns grouped results', async () => {
+test('GET /theorycraft/results?q=herald returns grouped compact index rows', async () => {
   const res = await request(createApp()).get('/theorycraft/results?q=herald');
   assert.equal(res.status, 200);
   assert.match(res.text, /Skill Gems/);
   assert.match(res.text, /Herald of Ash/);
+  assert.match(res.text, /tc-index-group__heading/);
+  assert.match(res.text, /tc-index-row/);
+  assert.match(res.text, /data-item-kind="gem"/);
+  assert.match(res.text, /tc-kind-chip/);
 });
 
-test('GET /theorycraft/results renders keystone matches as the full in-game tooltip', async () => {
+test('GET /theorycraft/results renders keystone matches as selectable rows', async () => {
   const res = await request(createApp()).get('/theorycraft/results?q=zealot');
   assert.equal(res.status, 200);
-  // Full passive tooltip (passiveDetail) in a click-through wrapper, on the
-  // tooltip-sized grid — not the old condensed keystone-index browse card.
-  assert.match(res.text, /tc-passive-grid/);
-  assert.match(res.text, /tc-passive-card/);
-  assert.match(res.text, /PassivePopup/);
-  assert.ok(!/keystone-index-card/.test(res.text), 'must not use the old compact browse card');
+  assert.match(res.text, /data-item-kind="keystone"/);
+  assert.match(res.text, /href="\/keystone\/passive_keystone_zealots_oath"/);
+  assert.doesNotMatch(res.text, /PassivePopup/);
+});
+
+test('GET /theorycraft/results renders affixes as fragment-backed rows', async () => {
+  const res = await request(createApp()).get('/theorycraft/results?q=type%3Aaffix');
+  assert.equal(res.status, 200);
+  assert.match(res.text, /data-item-kind="affix"/);
+  assert.match(res.text, /href="\/mod\/[^\"]+\/card"/);
 });
 
 test('GET /theorycraft/results with empty q shows the prompt', async () => {
   const res = await request(createApp()).get('/theorycraft/results?q=');
   assert.equal(res.status, 200);
   assert.match(res.text, /tc-empty/);
+  assert.match(res.text, /Choose an example above/);
 });
 
 test('runQuery: color word and color letter match the same gems (real index)', () => {

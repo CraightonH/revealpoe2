@@ -41,18 +41,28 @@ export function initItemIndex(config) {
   const rows = () => Array.from(root.querySelectorAll(rowSelector));
   const slugOf = (row) => row.dataset[slugKey];
   const nameOf = (row) => row.dataset[nameKey];
+  const identityOf = config.identityForRow || slugOf;
 
-  function rowForSlug(slug) {
-    return rows().find((row) => slugOf(row) === slug) || null;
+  function rowForIdentity(identity) {
+    return rows().find((row) => identityOf(row) === identity) || null;
   }
 
   function rowForHash() {
-    let slug;
-    try { slug = decodeURIComponent(window.location.hash.slice(1)); } catch { return null; }
-    return slug ? rowForSlug(slug) : null;
+    let identity;
+    try {
+      identity = config.identityFromHash
+        ? config.identityFromHash(window.location.hash.slice(1))
+        : decodeURIComponent(window.location.hash.slice(1));
+    } catch { return null; }
+    return identity ? rowForIdentity(identity) : null;
   }
 
   function rowForDetailLink(anchor) {
+    if (config.identityForDetailLink) {
+      const identity = config.identityForDetailLink(anchor);
+      return identity ? rowForIdentity(identity) : null;
+    }
+    if (!pathPrefix) return null;
     let url;
     try { url = new URL(anchor.href, window.location.href); } catch { return null; }
     if (url.origin !== window.location.origin) return null;
@@ -61,7 +71,7 @@ export function initItemIndex(config) {
     if (!match) return null;
     let slug;
     try { slug = decodeURIComponent(match[1]); } catch { return null; }
-    return rowForSlug(slug);
+    return rowForIdentity(slug);
   }
 
   function crossIndexUrl(anchor) {
@@ -101,7 +111,8 @@ export function initItemIndex(config) {
   function hideStatus(status) { status.hidden = true; }
 
   function updateHash(row, replace, sheetEntry) {
-    const next = `#${encodeURIComponent(slugOf(row))}`;
+    const encoded = config.hashForRow ? config.hashForRow(row) : encodeURIComponent(slugOf(row));
+    const next = `#${encoded}`;
     lastHandledHash = next;
     if (window.location.hash === next) return;
     const keepSheetEntry = replace && history.state && history.state.itemIndexSheet;
@@ -203,15 +214,27 @@ export function initItemIndex(config) {
     }, 1000);
   }
 
-  function extractDetail(html) {
+  function detailRequest(row) {
+    if (config.detailResolver) return config.detailResolver(row);
+    return { url: row.getAttribute('href'), selector: detailSelector };
+  }
+
+  function extractDetail(html, request, row) {
+    if (!request.selector) {
+      return `<div class="gem-detail item-detail tc-fragment-detail" data-item-slug="${slugOf(row)}">` +
+        '<p class="tc-fragment-detail__note">This kind has no standalone page; showing its prebuilt detail fragment.</p>' +
+        html + '</div>';
+    }
     const page = new DOMParser().parseFromString(html, 'text/html');
-    const detail = page.querySelector(detailSelector);
-    if (!detail) throw new Error(`Missing ${detailSelector}`);
+    const detail = page.querySelector(request.selector);
+    if (!detail) throw new Error(`Missing ${request.selector}`);
     return detail.outerHTML;
   }
 
   function loadDetails(row, target) {
-    const url = row.getAttribute('href');
+    const request = detailRequest(row);
+    const url = request?.url;
+    if (!url) return;
     const targetPane = target === 'pane';
     const targetElement = targetPane ? pane : sheet;
     const targetContent = targetPane ? paneContent : sheetContent;
@@ -230,7 +253,7 @@ export function initItemIndex(config) {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.text();
       })
-      .then(extractDetail)
+      .then((html) => extractDetail(html, request, row))
       .then((html) => {
         cache.set(url, html);
         if (currentRequest !== requestId) return;
@@ -298,6 +321,10 @@ export function initItemIndex(config) {
 
   window.addEventListener('hashchange', selectFromLocation);
   window.addEventListener('popstate', selectFromLocation);
+  root.addEventListener('item-index:rows-changed', () => {
+    lastHandledHash = null;
+    selectFromLocation();
+  });
   root.addEventListener('filter-bar:applied', () => {
     if (!desktop.matches) return;
     const selected = root.querySelector(`${rowSelector}.is-selected`);
