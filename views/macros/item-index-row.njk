@@ -55,7 +55,7 @@
 {% set hint = item.hint or item.subtitle or item.genericText or item.text %}
 <a class="gem-index-row item-index-row tc-index-row item-index-row--{{ kind }}"
    href="{{ href }}" data-public-url="{{ item.url or href }}" data-item-slug="{{ rowSlug }}" data-item-name="{{ item.name }}"
-   data-item-kind="{{ kind }}" style="--row-accent:var(--tc-kind-{{ kind }});">
+   data-item-kind="{{ kind }}"{% if item.classSlug %} data-class-slug="{{ item.classSlug }}"{% endif %} style="--row-accent:var(--tc-kind-{{ kind }});">
   <span class="gem-index-row__icon-wrap item-index-row__icon-wrap">
     {% if item.iconUrl %}<img class="gem-index-row__icon item-index-row__icon" src="{{ item.iconUrl }}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">{% endif %}
   </span>

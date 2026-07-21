@@ -13,7 +13,9 @@ const DETAIL_RESOLVERS = {
   support:  { url: (doc) => `/gem/${doc.slug}`, selector: '.gem-detail' },
   spirit:   { url: (doc) => `/gem/${doc.slug}`, selector: '.gem-detail' },
   unique:   { url: (doc) => `/unique/${doc.slug}`, selector: '.item-detail' },
-  base:     { url: (doc) => `/base/${doc.slug}`, selector: '.item-detail' },
+  // Bases show their CLASS detail (mods/augments — same as the /bases index),
+  // not the per-base tooltip page; classSlug is on every base doc.
+  base:     { url: (doc) => `/bases/${doc.classSlug || doc.slug}`, selector: '.item-detail' },
   keystone: { url: (doc) => `/keystone/${doc.slug}`, selector: '.item-detail' },
   notable:  { url: (doc) => `/notable/${doc.slug}`, selector: '.item-detail' },
   affix:    { url: (doc) => `/mod/${doc.slug}/card`, selector: null },
@@ -64,7 +66,7 @@ if (root && input && target) {
     const uniqueClass = category === 'unique' ? ' item-index-row__name--unique' : '';
     return `<a class="gem-index-row item-index-row tc-index-row item-index-row--${esc(category)}" ` +
       `href="${esc(href)}" data-public-url="${esc(doc.url || href)}" data-item-slug="${esc(slug)}" data-item-name="${esc(doc.name)}" ` +
-      `data-item-kind="${esc(category)}" style="--row-accent:var(--tc-kind-${esc(category)});">` +
+      `data-item-kind="${esc(category)}"${doc.classSlug ? ` data-class-slug="${esc(doc.classSlug)}"` : ''} style="--row-accent:var(--tc-kind-${esc(category)});">` +
       `<span class="gem-index-row__icon-wrap item-index-row__icon-wrap">${icon}</span>` +
       `<span class="tc-kind-chip search-result-cat search-result-cat--${esc(category)}">${esc(labelFor.get(category) || category)}</span>` +
       '<span class="gem-index-row__identity item-index-row__identity">' +
@@ -117,7 +119,7 @@ if (root && input && target) {
     },
     detailResolver(row) {
       const resolver = DETAIL_RESOLVERS[row.dataset.itemKind];
-      return resolver ? { url: resolver.url({ slug: row.dataset.itemSlug }), selector: resolver.selector } : null;
+      return resolver ? { url: resolver.url({ slug: row.dataset.itemSlug, classSlug: row.dataset.classSlug }), selector: resolver.selector } : null;
     },
     // Cross-links stay in this workspace only when their new public index URL
     // matches a target already present in the current result table.
