@@ -714,6 +714,12 @@ html[data-card-size="xl"] .gem-index { --gem-index-content-scale: 1.5; }
 .tc-index-row:hover .tc-row-pin,
 .tc-index-row:focus-within .tc-row-pin,
 .tc-row-pin[aria-pressed="true"] { opacity: 1; }
+/* No hover on touch: reveal-on-hover would cost a tap before the sheet opens,
+   so the pin is always visible (dimmed until pinned). */
+@media (hover: none), (max-width: 899px) {
+  .tc-row-pin { opacity: 0.55; }
+  .tc-row-pin[aria-pressed="true"] { opacity: 1; }
+}
 .tc-pin-toggle:hover,
 .tc-pin-toggle:focus-visible,
 .tc-pin-toggle[aria-pressed="true"] { background: color-mix(in srgb, var(--color-normal) 8%, transparent); color: var(--color-normal); outline: none; }
