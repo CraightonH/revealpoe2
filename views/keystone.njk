@@ -10,6 +10,7 @@
   ]) }}
   <div class="gem-detail item-detail" data-item-slug="{{ k.id }}">
     {{ passiveDetail(k) }}
+    {% if k.hash %}<a class="passive-tree-jump" href="/passives?node={{ k.hash }}">View on Passive Tree →</a>{% endif %}
   </div>
 </div>
 {% endblock %}

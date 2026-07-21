@@ -19,6 +19,7 @@
   {% endif %}
   <div class="gem-detail">
     {{ passiveDetail(node) }}
+    {% if node.hash %}<a class="passive-tree-jump" href="/passives?node={{ node.hash }}">View on Passive Tree →</a>{% endif %}
   </div>
 </div>
 {% endblock %}
