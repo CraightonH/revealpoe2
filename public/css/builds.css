@@ -136,6 +136,26 @@
 .dossier-action--danger:hover { color: var(--color-corrupted);
   border-color: color-mix(in srgb, var(--color-corrupted) 55%, var(--border)); }
 
+/* ---- read-only (shared preview / import) ---- */
+.dossier-banner { margin: 0 0 12px; padding: 8px 12px;
+  border: 1px solid color-mix(in srgb, var(--color-gem) 30%, var(--border)); border-radius: 6px;
+  background: color-mix(in srgb, var(--color-gem) 6%, transparent);
+  color: var(--color-normal); font-size: 12px; }
+.dossier-name--static { color: var(--color-normal); font-family: var(--font-display);
+  font-weight: 500; letter-spacing: .015em; line-height: 1.15; }
+.dossier-desc--static { margin: 4px 0 0; max-width: 44rem; border: 0; padding: 0;
+  background: none; color: var(--text); font: 13px/1.5 var(--font-regular); }
+.editor-notes-static { padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
+  background: rgb(0 0 0 / .25); color: var(--text); font: 13px/1.6 var(--font-regular);
+  white-space: pre-wrap; }
+.editor-slot.is-readonly { cursor: default; }
+.editor-slot.is-readonly:hover { transform: none; box-shadow: none; border-color: var(--border); }
+.editor-slot.is-unique.is-readonly:hover { border-color: color-mix(in srgb, var(--color-unique) 50%, var(--border));
+  box-shadow: inset 0 0 18px rgb(239 105 22 / .07); }
+.dossier--readonly .editor-orb { cursor: default; }
+.build-switcher__name--static { display: block; margin-top: 6px; color: var(--color-normal);
+  font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 /* ---- chapters ---- */
 .editor-chapter { padding: 26px 0 6px; scroll-margin-top: 16px; }
 .chapter-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 14px; }

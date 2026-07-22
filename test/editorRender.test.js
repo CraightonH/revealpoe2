@@ -208,6 +208,41 @@ test('renderEditor: switcher popover only renders while open', () => {
   assert.match(closed, /aria-expanded="false"/);
 });
 
+test('renderEditor: view mode strips every edit affordance, offers Edit + share', () => {
+  const b = fixed({
+    gear: { helmet: { item: { kind: 'base', slug: 'iron-hat' }, wishlist: [] } },
+    skills: [{ gem: { slug: 'spark' }, level: null, supports: [{ slug: 'pierce' }] }],
+    unassigned: [{ kind: 'base', slug: 'iron-hat' }],
+    notes: 'note text', description: 'desc text',
+  });
+  const html = renderEditor(b, { ...sctx, mode: 'view', builds: [b], currentId: 'b1' });
+  for (const hook of ['data-slot-id', 'data-slot-clear', 'data-setup-add', 'data-socket',
+    'data-build-rename', 'data-description', 'data-tree-code', 'data-build-delete',
+    'data-build-duplicate', 'data-gem-well', 'data-notes', 'data-tray-equip', 'data-class-toggle']) {
+    assert.ok(!html.includes(hook), `${hook} must be absent in view mode`);
+  }
+  assert.match(html, /data-edit-build/);
+  assert.match(html, /data-share/);
+  assert.ok(!html.includes('editor-orb--empty'), 'empty sockets hidden');
+  assert.match(html, /data-weapon-set="2"/);       // set toggle is view state, stays
+  assert.ok(html.includes('note text') && html.includes('desc text'), 'content still shown');
+  assert.match(html, /data-switcher-toggle/);       // own-build navigation stays
+});
+
+test('renderEditor: edit mode offers the view-published toggle', () => {
+  assert.match(renderEditor(fixed(), sctx), /data-view-published/);
+});
+
+test('renderEditor: import mode — save-a-copy banner, no switcher/manage/share', () => {
+  const { id, createdAt, updatedAt, ...canonical } = fixed();
+  const html = renderEditor(canonical, { ...sctx, mode: 'import' });
+  assert.match(html, /data-import-save/);
+  assert.ok(!html.includes('data-switcher-toggle'));
+  assert.ok(!html.includes('data-edit-build'));
+  assert.ok(!html.includes('data-share'));
+  assert.ok(!html.includes('data-slot-id'));
+});
+
 import { treeSummary } from '../public/js/editor-render.js';
 import { encode, synthesizeState } from '../public/js/passive-code.js';
 

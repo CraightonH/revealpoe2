@@ -3,6 +3,7 @@
 // builds-render.js (node-tested); this file is DOM wiring only.
 import { getStore, safeWrite } from '/static/js/build-host.js';
 import { parseRoute, renderBuild, renderImport } from '/static/js/builds-render.js';
+import { renderEditor } from '/static/js/editor-render.js';
 import { decodeBuild } from '/static/js/build-code.js';
 import { mountEditor } from '/static/js/build-editor.js';
 
@@ -61,7 +62,7 @@ if (root && view) {
       unmount();
     }
     const route = parseRoute(location.hash);
-    root.classList.toggle('builds-page--editing', route.view === 'build');
+    root.classList.toggle('builds-page--editing', route.view !== 'list');
     if (route.view === 'list') {
       // The landing page IS the planner (2026-07-22): jump to the most
       // recently touched build, creating a first empty one on a fresh store.
@@ -102,12 +103,12 @@ if (root && view) {
     }
     // import view
     if (importState?.code !== route.code) {
-      const st = { code: route.code, state: { status: 'loading' } };
+      const st = { code: route.code, state: { status: 'loading' }, weaponSet: 1 };
       importState = st;
       // Guard every write with `importState === st` so a stale decode (from a
       // hash that has since moved to a different import code) can't clobber
       // the current importState after this chain settles.
-      Promise.all([decodeBuild(route.code), loadDocs().catch(() => null)])
+      Promise.all([decodeBuild(route.code), loadDocs().catch(() => null), loadPlanner().catch(() => null)])
         .then(([build]) => { if (importState === st) st.state = { status: 'ready', build }; })
         .catch((e) => {
           if (importState === st) st.state = { status: 'error', message: e?.code === 'bad-version'
@@ -116,11 +117,35 @@ if (root && view) {
         })
         .finally(() => { if (importState === st) render(); });
     }
-    view.innerHTML = renderImport(importState.state, resolveRef);
+    // Same dossier page, read-only: planner data present renders the real
+    // thing; without it (fetch failed) fall back to the plain preview.
+    if (importState.state.status === 'ready' && planner) {
+      view.innerHTML = renderEditor(importState.state.build, {
+        planner, resolveRef, weaponSet: importState.weaponSet, mode: 'import',
+      });
+    } else {
+      view.innerHTML = renderImport(importState.state, resolveRef);
+    }
   }
 
   view.addEventListener('click', (e) => {
     const attr = (name) => e.target.closest(`[${name}]`)?.getAttribute(name);
+    // Rail anchors: this page routes on location.hash, so a real #gear
+    // navigation would bounce to the landing redirect. Scroll instead.
+    const rail = e.target.closest('[data-rail-link]');
+    if (rail) {
+      e.preventDefault();
+      view.querySelector(rail.getAttribute('href'))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    // Weapon-set toggle on the read-only import preview (the editor owns it
+    // on the build route).
+    const ws = attr('data-weapon-set');
+    if (ws && parseRoute(location.hash).view === 'import' && importState?.state.status === 'ready') {
+      importState.weaponSet = Number(ws);
+      render();
+      return;
+    }
     if (e.target.closest('[data-builds-new]')) {
       const b = safeWrite(() => store.create());
       if (b) location.hash = `#/b/${encodeURIComponent(b.id)}`;

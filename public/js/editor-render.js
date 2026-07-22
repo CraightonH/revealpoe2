@@ -45,8 +45,12 @@ export function rankDocs(docs, rankedSlugs) {
 }
 
 
+/** True for the read-only renderings (own-build shared preview + import). */
+const isReadonly = (ctx) => !!ctx.mode && ctx.mode !== 'edit';
+
 export function renderGear(build, ctx) {
   const { planner, resolveRef, weaponSet } = ctx;
+  const ro = isReadonly(ctx);
   const violations = gearViolations(build, planner);
   const bySlot = new Map(violations.filter((v) => v.slotId).map((v) => [v.slotId, v]));
   const visible = planner.slots.filter((s) => !s.group || s.group === `weaponset${weaponSet}`);
@@ -61,16 +65,17 @@ export function renderGear(build, ctx) {
     if (g?.item) {
       state = g.item.kind === 'unique' ? 'is-unique' : 'is-filled';
       body = `<span class="editor-slot__label">${esc(s.name)}</span>` + wellBody(g.item, resolveRef) +
-        `<button class="editor-slot__clear" type="button" data-slot-clear="${esc(s.id)}" aria-label="Unequip ${esc(s.name)}">×</button>`;
+        (ro ? '' : `<button class="editor-slot__clear" type="button" data-slot-clear="${esc(s.id)}" aria-label="Unequip ${esc(s.name)}">×</button>`);
     } else if (ghosted(s)) {
       state = 'is-ghost';
       body = `<span class="editor-slot__label">${esc(s.name)}</span><span class="editor-slot__ghost">two-handed</span>`;
     } else {
       state = 'is-empty';
-      body = `<span class="editor-slot__hint">＋ ${esc(s.name)}</span>`;
+      body = `<span class="editor-slot__hint">${ro ? '' : '＋ '}${esc(s.name)}</span>`;
     }
-    return `<div class="editor-slot editor-slot--${esc(s.id)} ${state}${violation ? ' editor-slot--violation' : ''}"` +
-      ` data-slot-id="${esc(s.id)}" role="button" tabindex="0" aria-label="${esc(s.name)}"` +
+    const hooks = ro ? '' : ` data-slot-id="${esc(s.id)}" role="button" tabindex="0"`;
+    return `<div class="editor-slot editor-slot--${esc(s.id)} ${state}${violation ? ' editor-slot--violation' : ''}${ro ? ' is-readonly' : ''}"` +
+      `${hooks} aria-label="${esc(s.name)}"` +
       `${violation ? ` title="${esc(violation.message)}"` : ''}>${body}</div>`;
   }).join('');
 
@@ -89,10 +94,13 @@ export function renderGear(build, ctx) {
 
   const tray = build.unassigned.map((ref, i) =>
     `<li class="editor-tray__row">${wellBody(ref, resolveRef)}` +
-    `<span class="editor-tray__actions">` +
-    `<button type="button" data-tray-equip="${i}">Equip</button>` +
-    `<button type="button" data-tray-remove="${i}" aria-label="Remove from build">×</button>` +
-    `</span></li>`).join('');
+    (ro ? '' : `<span class="editor-tray__actions">` +
+      `<button type="button" data-tray-equip="${i}">Equip</button>` +
+      `<button type="button" data-tray-remove="${i}" aria-label="Remove from build">×</button>` +
+      `</span>`) + '</li>').join('');
+  const trayCard = (ro && !tray) ? '' :
+    `<div class="editor-side-card"><h3>Unassigned — added from the wiki</h3>
+      ${tray ? `<ul class="editor-tray__list">${tray}</ul>` : '<p class="editor-none">Nothing waiting. Use “Add to build” on any card.</p>'}</div>`;
 
   return `<section class="editor-chapter editor-gear" id="gear" aria-labelledby="gear-h">
     <header class="chapter-head"><h2 id="gear-h">Gear</h2><span class="chapter-rule"></span>
@@ -101,8 +109,7 @@ export function renderGear(build, ctx) {
       <div class="editor-doll-board"><div class="editor-doll">${wells}</div></div>
       <div class="editor-gear-side">
         <div class="editor-side-card"><h3>Checks</h3>${checksHtml}</div>
-        <div class="editor-side-card"><h3>Unassigned — added from the wiki</h3>
-          ${tray ? `<ul class="editor-tray__list">${tray}</ul>` : '<p class="editor-none">Nothing waiting. Use “Add to build” on any card.</p>'}</div>
+        ${trayCard}
       </div>
     </div></section>`;
 }
@@ -127,7 +134,9 @@ export function grantedRows(build, planner) {
 const ORB_COLOR = { r: 'r', g: 'g', b: 'b', w: 'w', red: 'r', green: 'g', blue: 'b', white: 'w' };
 
 function supportNode(idPrefix, j, supRef, ctx) {
+  const ro = isReadonly(ctx);
   if (!supRef) {
+    if (ro) return '';   // a viewer only cares about filled sockets
     return `<span class="chain-link chain-link--dim"></span><span class="editor-node editor-node--support">` +
       `<span class="editor-orb editor-orb--empty" data-socket="${esc(`${idPrefix}:${j}`)}"` +
       ` role="button" tabindex="0" aria-label="Empty support socket">＋</span>` +
@@ -137,14 +146,17 @@ function supportNode(idPrefix, j, supRef, ctx) {
   const name = doc.name || supRef.slug;
   const color = ORB_COLOR[ctx.planner.gems[supRef.slug]?.color] ?? 'w';
   const card = doc.cardUrl ? ` data-card-url="${esc(doc.cardUrl)}"` : '';
+  const hooks = ro ? '' : ` data-socket="${esc(`${idPrefix}:${j}`)}" role="button" tabindex="0"`;
+  const clear = ro ? '' :
+    `<button class="editor-socket__clear" type="button" data-socket-clear="${esc(`${idPrefix}:${j}`)}" aria-label="Remove support">×</button>`;
   return `<span class="chain-link"></span><span class="editor-node editor-node--support">` +
-    `<span class="editor-orb editor-orb--${color}" data-socket="${esc(`${idPrefix}:${j}`)}"` +
-    ` role="button" tabindex="0"${card} aria-label="Support: ${esc(name)}">${tile(doc, name, 'orb-tile')}` +
-    `<button class="editor-socket__clear" type="button" data-socket-clear="${esc(`${idPrefix}:${j}`)}" aria-label="Remove support">×</button></span>` +
+    `<span class="editor-orb editor-orb--${color}"${hooks}${card} aria-label="Support: ${esc(name)}">${tile(doc, name, 'orb-tile')}` +
+    `${clear}</span>` +
     `<span class="editor-node__name">${esc(name)}</span></span>`;
 }
 
 function chainRow({ idPrefix, gemRef, supports, label, removable, index, warnings, ctx }) {
+  const ro = isReadonly(ctx);
   const rec = ctx.planner.gems[gemRef.slug] ?? {};
   const max = rec.maxSupports ?? 5;
   const spirit = rec.gemType === 'spirit';
@@ -153,13 +165,13 @@ function chainRow({ idPrefix, gemRef, supports, label, removable, index, warning
   const name = doc.name || gemRef.slug;
   const card = doc.cardUrl ? ` data-card-url="${esc(doc.cardUrl)}"` : '';
   const sockets = Array.from({ length: max }, (_, j) => supportNode(idPrefix, j, supports[j], ctx)).join('');
-  const controls = removable
+  const controls = (removable && !ro)
     ? `<span class="editor-setup__controls">` +
       `<button type="button" data-setup-move="${index}:up" aria-label="Move up">↑</button>` +
       `<button type="button" data-setup-move="${index}:down" aria-label="Move down">↓</button>` +
       `<button type="button" data-setup-remove="${index}" aria-label="Remove setup">×</button></span>`
     : '';
-  const orb = `<span class="editor-orb editor-orb--gem"${removable ? ` data-gem-well="${index}" role="button" tabindex="0"` : ''}${card}` +
+  const orb = `<span class="editor-orb editor-orb--gem"${(removable && !ro) ? ` data-gem-well="${index}" role="button" tabindex="0"` : ''}${card}` +
     ` aria-label="${esc(name)}">${tile(doc, name, 'orb-tile')}</span>`;
   return `<li class="editor-chain${spirit ? ' editor-chain--spirit' : ''}${removable ? '' : ' editor-chain--granted'}">
     <div class="chain-meta">${spirit ? '<span class="chain-spirit">Spirit</span>' : ''}${controls}</div>
@@ -185,7 +197,7 @@ export function renderSkills(build, ctx) {
     ${rows.length || grantedHtml.length
       ? `<ul class="editor-chains">${rows.join('')}${grantedHtml.join('')}</ul>`
       : '<p class="editor-none">No skill setups yet.</p>'}
-    <button class="editor-setup-add" type="button" data-setup-add>＋ Add skill setup</button>
+    ${isReadonly(ctx) ? '' : '<button class="editor-setup-add" type="button" data-setup-add>＋ Add skill setup</button>'}
   </section>`;
 }
 
@@ -263,56 +275,98 @@ function renderClassPicker(build, ctx) {
 }
 
 export function renderEditor(build, ctx) {
+  const mode = ctx.mode ?? 'edit';
+  const ro = mode !== 'edit';
   const t = treeSummary(build);
   const stat = !t.saved ? 'No passive tree saved yet'
     : t.points !== null ? `${t.points} passives allocated` : 'Passive tree saved';
   const prio = build.tree.notablePriority.length;
-  const nameHtml = ctx.renaming
-    ? `<input class="dossier-name-input" data-build-name-input type="text" maxlength="60"
-        value="${esc(build.name)}" aria-label="Build name" spellcheck="false">`
-    : `<button class="dossier-name" type="button" data-build-rename="${esc(build.id)}"
-        title="Rename build">${esc(build.name)}<span class="dossier-name__pen" aria-hidden="true">✎</span></button>`;
-  return `<article class="editor dossier" data-editor>
+
+  const nameHtml = ro
+    ? `<span class="dossier-name dossier-name--static">${esc(build.name)}</span>`
+    : ctx.renaming
+      ? `<input class="dossier-name-input" data-build-name-input type="text" maxlength="60"
+          value="${esc(build.name)}" aria-label="Build name" spellcheck="false">`
+      : `<button class="dossier-name" type="button" data-build-rename="${esc(build.id)}"
+          title="Rename build">${esc(build.name)}<span class="dossier-name__pen" aria-hidden="true">✎</span></button>`;
+
+  const classHtml = ro
+    ? `<p class="dossier-class">${esc(classLine(build))}</p>`
+    : renderClassPicker(build, ctx);
+
+  const descHtml = ro
+    ? (build.description ? `<p class="dossier-desc dossier-desc--static">${esc(build.description)}</p>` : '')
+    : `<textarea class="dossier-desc" data-description rows="2"
+        placeholder="Add a short description — what this build is and how it plays…">${esc(build.description ?? '')}</textarea>`;
+
+  const actions = {
+    edit: `<button class="dossier-share" type="button" data-share>Copy share link</button>
+      <button class="dossier-action" type="button" data-view-published>View as shared</button>
+      <button class="dossier-action" type="button" data-build-duplicate="${esc(build.id)}">Duplicate</button>
+      <button class="dossier-action dossier-action--danger" type="button" data-build-delete="${esc(build.id)}">Delete</button>`,
+    view: `<button class="dossier-share" type="button" data-edit-build>← Back to editing</button>
+      <button class="dossier-action" type="button" data-share>Copy share link</button>`,
+    import: `<button class="dossier-share" type="button" data-import-save>Save a copy</button>`,
+  }[mode];
+
+  const banner = mode === 'view'
+    ? '<p class="dossier-banner">Shared preview — this is exactly what someone opening your link sees.</p>'
+    : mode === 'import'
+      ? '<p class="dossier-banner">Shared build preview — not saved in this browser yet.</p>'
+      : '';
+
+  const railTop = mode === 'import'
+    ? `<span class="build-switcher__name build-switcher__name--static">${esc(build.name)}</span>`
+    : renderSwitcher(build, ctx);
+  const railNote = mode === 'import'
+    ? 'Someone shared this build with you. Save a copy to make it yours.'
+    : 'Saved in this browser only. The share link makes this build portable.';
+
+  const treeBody = ro
+    ? `<p class="editor-tree-stat">${esc(stat)}${prio ? ` · ${prio} notables prioritized` : ''}</p>
+      <a class="editor-tree-open" href="/passives">Open the passive tree →</a>`
+    : `<p class="editor-tree-stat">${esc(stat)}${prio ? ` · ${prio} notables prioritized` : ''}</p>
+      <label class="editor-tree-code">Tree share code
+        <input type="text" data-tree-code spellcheck="false"
+          placeholder="Paste a code from the passive tree page…" value="${esc(build.tree.code ?? '')}"></label>
+      <a class="editor-tree-open" href="/passives">Open the passive tree →</a>
+      <p class="editor-tree-hint">Embedded editing lands in a later phase — for now, build your tree on the tree page and paste its share code here.</p>`;
+
+  const notesBody = ro
+    ? (build.notes ? `<div class="editor-notes-static">${esc(build.notes)}</div>`
+                   : '<p class="editor-none">No notes.</p>')
+    : `<textarea data-notes rows="6" placeholder="Build notes — leveling route, upgrade order, reminders…">${esc(build.notes)}</textarea>`;
+
+  return `<article class="editor dossier${ro ? ' dossier--readonly' : ''}" data-editor>
     <nav class="dossier-rail" aria-label="Build sections">
       <div class="dossier-rail__mark"><span class="dossier-eyebrow">Build Planner</span>
-        ${renderSwitcher(build, ctx)}</div>
+        ${railTop}</div>
       <ol class="dossier-rail__nav">
         <li><a href="#gear" class="is-here" data-rail-link>Gear</a></li>
         <li><a href="#skills" data-rail-link>Skills</a></li>
         <li><a href="#tree" data-rail-link>Passive Tree</a></li>
         <li><a href="#notes" data-rail-link>Notes</a></li>
       </ol>
-      <p class="dossier-rail__note">Saved in this browser only. The share link makes this build portable.</p>
+      <p class="dossier-rail__note">${railNote}</p>
     </nav>
     <div class="dossier-main">
+      ${banner}
       <header class="dossier-head">
         <div class="dossier-head__copy">
           <h2>${nameHtml}</h2>
-          ${renderClassPicker(build, ctx)}
-          <textarea class="dossier-desc" data-description rows="2"
-            placeholder="Add a short description — what this build is and how it plays…">${esc(build.description ?? '')}</textarea>
+          ${classHtml}
+          ${descHtml}
         </div>
-        <div class="dossier-actions">
-          <button class="dossier-share" type="button" data-share>Copy share link</button>
-          <button class="dossier-action" type="button" data-build-duplicate="${esc(build.id)}">Duplicate</button>
-          <button class="dossier-action dossier-action--danger" type="button" data-build-delete="${esc(build.id)}">Delete</button>
-        </div>
+        <div class="dossier-actions">${actions}</div>
       </header>
       ${renderGear(build, ctx)}
       ${renderSkills(build, ctx)}
       <section class="editor-chapter editor-tree" id="tree" aria-labelledby="tree-h">
         <header class="chapter-head"><h2 id="tree-h">Passive Tree</h2><span class="chapter-rule"></span></header>
-        <div class="editor-tree-band">
-          <p class="editor-tree-stat">${esc(stat)}${prio ? ` · ${prio} notables prioritized` : ''}</p>
-          <label class="editor-tree-code">Tree share code
-            <input type="text" data-tree-code spellcheck="false"
-              placeholder="Paste a code from the passive tree page…" value="${esc(build.tree.code ?? '')}"></label>
-          <a class="editor-tree-open" href="/passives">Open the passive tree →</a>
-          <p class="editor-tree-hint">Embedded editing lands in a later phase — for now, build your tree on the tree page and paste its share code here.</p>
-        </div></section>
+        <div class="editor-tree-band">${treeBody}</div></section>
       <section class="editor-chapter editor-notes" id="notes" aria-labelledby="notes-h">
         <header class="chapter-head"><h2 id="notes-h">Notes</h2><span class="chapter-rule"></span></header>
-        <textarea data-notes rows="6" placeholder="Build notes — leveling route, upgrade order, reminders…">${esc(build.notes)}</textarea>
+        ${notesBody}
       </section>
     </div></article>`;
 }

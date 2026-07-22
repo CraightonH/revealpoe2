@@ -14,6 +14,7 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
   let switcherOpen = false;
   let classPicker = null;   // null | 'class' | 'asc'
   let renaming = false;
+  let mode = 'edit';        // 'edit' | 'view' (read-only shared preview)
 
   const build = () => store.get(buildId);
   const patch = (p) => safeWrite(() => store.update(buildId, p));
@@ -21,7 +22,7 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
     const b = build();
     if (!b) { location.hash = ''; return; }
     container.innerHTML = renderEditor(b, {
-      planner, resolveRef, weaponSet,
+      planner, resolveRef, weaponSet, mode,
       builds: store.list(), currentId: buildId, switcherOpen, classPicker, renaming,
     });
   };
@@ -120,6 +121,17 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
   function onClick(e) {
     const attr = (n) => e.target.closest(`[${n}]`)?.getAttribute(n);
 
+    if (e.target.closest('[data-view-published]')) {
+      mode = 'view';
+      switcherOpen = false; classPicker = null; renaming = false;
+      render();
+      return;
+    }
+    if (e.target.closest('[data-edit-build]')) {
+      mode = 'edit';
+      render();
+      return;
+    }
     if (e.target.closest('[data-switcher-toggle]')) {
       switcherOpen = !switcherOpen;
       classPicker = null;
@@ -164,15 +176,6 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
       switcherOpen = false;
       classPicker = null;
       render();
-      return;
-    }
-
-    // Rail anchors: this page routes on location.hash, so a real #gear
-    // navigation would bounce back to the builds list. Scroll instead.
-    const rail = e.target.closest('[data-rail-link]');
-    if (rail) {
-      e.preventDefault();
-      container.querySelector(rail.getAttribute('href'))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
     }
 
