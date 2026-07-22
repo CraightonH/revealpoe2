@@ -124,6 +124,16 @@ test('grantedRows + renderSkills: equipped granting item yields a non-removable 
   assert.ok(!/data-setup-remove="g:/.test(html), 'granted rows have no remove');
 });
 
+test('renderSkills: granted chains are pinned above user setups', () => {
+  const b = fixed({
+    gear: { helmet: { item: { kind: 'unique', slug: 'storm-amulet' }, wishlist: [] } },
+    skills: [{ gem: { slug: 'spark' }, level: null, supports: [] }],
+  });
+  const html = renderSkills(b, sctx);
+  assert.ok(html.indexOf('editor-chain--granted') < html.indexOf('data-gem-well="0"'),
+    'granted chain renders before the first user setup');
+});
+
 test('grantedRows: prototype-key item slug does not leak Object.prototype members', () => {
   const b = fixed({
     gear: { helmet: { item: { kind: 'unique', slug: '__proto__' }, wishlist: [] } },

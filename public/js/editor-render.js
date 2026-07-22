@@ -209,7 +209,7 @@ export function renderSkills(build, ctx) {
   return `<section class="editor-chapter editor-skills" id="skills" aria-labelledby="skills-h">
     <header class="chapter-head"><h2 id="skills-h">Skills</h2><span class="chapter-rule"></span></header>
     ${rows.length || grantedHtml.length
-      ? `<ul class="editor-chains">${rows.join('')}${grantedHtml.join('')}</ul>`
+      ? `<ul class="editor-chains">${grantedHtml.join('')}${rows.join('')}</ul>`
       : '<p class="editor-none">No skill setups yet.</p>'}
     ${isReadonly(ctx) ? '' : '<button class="editor-setup-add" type="button" data-setup-add>＋ Add skill setup</button>'}
   </section>`;
