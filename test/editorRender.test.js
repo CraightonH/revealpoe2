@@ -148,6 +148,28 @@ test('renderSkills: duplicate-support violation renders inline warning', () => {
   assert.match(renderSkills(b, sctx), /editor-chain__warning/);
 });
 
+test('renderEditor: rail build switcher lists local builds, header carries manage hooks', () => {
+  const b = fixed();
+  const other = fixed({ uuid: () => 'b2', name: '<b>Other</b>' });
+  const html = renderEditor(b, { ...sctx, builds: [b, other], currentId: 'b1', switcherOpen: true });
+  assert.match(html, /data-switcher-toggle/);
+  assert.match(html, /aria-expanded="true"/);
+  assert.match(html, /href="#\/b\/b2"/);
+  assert.match(html, /data-builds-new/);
+  assert.ok(html.includes('&lt;b&gt;Other&lt;/b&gt;'));
+  assert.ok(!html.includes('<b>Other</b>'));
+  assert.match(html, /data-build-rename="b1"/);
+  assert.match(html, /data-build-duplicate="b1"/);
+  assert.match(html, /data-build-delete="b1"/);
+});
+
+test('renderEditor: switcher popover only renders while open', () => {
+  const b = fixed();
+  const closed = renderEditor(b, { ...sctx, builds: [b], currentId: 'b1', switcherOpen: false });
+  assert.ok(!closed.includes('build-switcher__pop'));
+  assert.match(closed, /aria-expanded="false"/);
+});
+
 import { treeSummary } from '../public/js/editor-render.js';
 import { encode, synthesizeState } from '../public/js/passive-code.js';
 

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseRoute, renderList, renderBuild, renderImport, esc } from '../public/js/builds-render.js';
+import { parseRoute, renderBuild, renderImport, esc } from '../public/js/builds-render.js';
 import { emptyBuild } from '../public/js/build-store.js';
 
 const fixedBuild = (over = {}) => emptyBuild({ now: () => 1750000000000, uuid: () => 'b-1', ...over });
@@ -13,22 +13,8 @@ test('parseRoute maps hashes to views', () => {
   assert.deepEqual(parseRoute('#/nonsense'), { view: 'list' });
 });
 
-test('renderList: empty state invites creation', () => {
-  const html = renderList([]);
-  assert.match(html, /data-builds-new/);
-  assert.match(html, /saved in this browser/i);
-});
-
-test('renderList: rows carry action hooks and escape names', () => {
-  const b = fixedBuild({ name: '<b>xss</b>', class: 'sorceress' });
-  const html = renderList([b]);
-  assert.ok(html.includes('&lt;b&gt;xss&lt;/b&gt;'));
-  assert.ok(!html.includes('<b>xss</b>'));
-  assert.match(html, /href="#\/b\/b-1"/);
-  for (const act of ['rename', 'duplicate', 'delete']) {
-    assert.ok(html.includes(`data-build-${act}="b-1"`), `missing ${act}`);
-  }
-});
+// The standalone list view is gone (2026-07-22): '#' lands in the editor and
+// the rail build-switcher popover took over listing — see editorRender tests.
 
 test('renderBuild: resolves refs, humanizes slots, shows setups', () => {
   const b = fixedBuild({

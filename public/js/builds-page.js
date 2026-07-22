@@ -2,7 +2,7 @@
 // and delegates all actions to the shared store. Rendering logic lives in
 // builds-render.js (node-tested); this file is DOM wiring only.
 import { getStore, safeWrite } from '/static/js/build-host.js';
-import { parseRoute, renderList, renderBuild, renderImport } from '/static/js/builds-render.js';
+import { parseRoute, renderBuild, renderImport } from '/static/js/builds-render.js';
 import { decodeBuild } from '/static/js/build-code.js';
 import { mountEditor } from '/static/js/build-editor.js';
 
@@ -63,8 +63,20 @@ if (root && view) {
     const route = parseRoute(location.hash);
     root.classList.toggle('builds-page--editing', route.view === 'build');
     if (route.view === 'list') {
+      // The landing page IS the planner (2026-07-22): jump to the most
+      // recently touched build, creating a first empty one on a fresh store.
+      // location.replace keeps the redirect out of history so Back leaves
+      // the page instead of bouncing.
       importState = null;
-      view.innerHTML = renderList(store.list());
+      const builds = store.list();
+      if (builds.length) {
+        const recent = builds.reduce((a, b) => (b.updatedAt > a.updatedAt ? b : a));
+        location.replace(`#/b/${encodeURIComponent(recent.id)}`);
+        return;
+      }
+      const b = safeWrite(() => store.create());
+      if (b) location.replace(`#/b/${encodeURIComponent(b.id)}`);
+      else view.innerHTML = '<p class="builds-load-error">Could not create a build — browser storage is unavailable.</p>';
       return;
     }
     if (route.view === 'build') {

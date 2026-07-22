@@ -11,13 +11,17 @@ const KIND_FOR_CATEGORY = { gem: 'gem', support: 'gem', spirit: 'gem', unique: '
 
 export function mountEditor(container, buildId, { store, planner, docs, resolveRef }) {
   let weaponSet = 1;
+  let switcherOpen = false;
 
   const build = () => store.get(buildId);
   const patch = (p) => safeWrite(() => store.update(buildId, p));
   const render = () => {
     const b = build();
     if (!b) { location.hash = ''; return; }
-    container.innerHTML = renderEditor(b, { planner, resolveRef, weaponSet });
+    container.innerHTML = renderEditor(b, {
+      planner, resolveRef, weaponSet,
+      builds: store.list(), currentId: buildId, switcherOpen,
+    });
   };
 
   function equip(slotId, ref) {
@@ -113,6 +117,19 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
   // ---- delegated events ------------------------------------------------
   function onClick(e) {
     const attr = (n) => e.target.closest(`[${n}]`)?.getAttribute(n);
+
+    if (e.target.closest('[data-switcher-toggle]')) {
+      switcherOpen = !switcherOpen;
+      render();
+      return;
+    }
+    // Any click outside the switcher closes an open popover (row links
+    // navigate via hashchange before this re-render matters).
+    if (switcherOpen && !e.target.closest('[data-switcher]')) {
+      switcherOpen = false;
+      render();
+      return;
+    }
 
     // Rail anchors: this page routes on location.hash, so a real #gear
     // navigation would bounce back to the builds list. Scroll instead.

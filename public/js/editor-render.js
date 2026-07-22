@@ -198,6 +198,30 @@ export function treeSummary(build) {
   } catch { return { saved: true, points: null }; }
 }
 
+/** Rail build-switcher: current build + popover of every local build. */
+function renderSwitcher(build, ctx) {
+  const open = !!ctx.switcherOpen;
+  const builds = [...(ctx.builds ?? [])].sort((a, b) => b.updatedAt - a.updatedAt);
+  const rows = builds.map((b) => {
+    const items = Object.values(b.gear).filter((g) => g.item).length + b.unassigned.length;
+    const current = b.id === ctx.currentId;
+    return `<li><a class="build-switcher__row${current ? ' is-current' : ''}" href="#/b/${encodeURIComponent(b.id)}">
+      <b>${esc(b.name)}</b>
+      <span>${esc(classLine(b))} · ${items} items · ${b.skills.length} setups</span></a></li>`;
+  }).join('');
+  const pop = open
+    ? `<div class="build-switcher__pop">
+        <ul class="build-switcher__list">${rows}</ul>
+        <button class="build-switcher__new" type="button" data-builds-new>＋ New build</button>
+      </div>`
+    : '';
+  return `<div class="build-switcher" data-switcher>
+    <button class="build-switcher__btn" type="button" data-switcher-toggle
+      aria-expanded="${open}" aria-haspopup="true" title="Switch build">
+      <span class="build-switcher__name">${esc(build.name)}</span><span class="build-switcher__chev" aria-hidden="true">▾</span>
+    </button>${pop}</div>`;
+}
+
 export function renderEditor(build, ctx) {
   const t = treeSummary(build);
   const stat = !t.saved ? 'No passive tree saved yet'
@@ -205,8 +229,8 @@ export function renderEditor(build, ctx) {
   const prio = build.tree.notablePriority.length;
   return `<article class="editor dossier" data-editor>
     <nav class="dossier-rail" aria-label="Build sections">
-      <p class="dossier-rail__mark"><span class="dossier-eyebrow">Build Planner</span>
-        <a class="builds-back" href="#">← All builds</a></p>
+      <div class="dossier-rail__mark"><span class="dossier-eyebrow">Build Planner</span>
+        ${renderSwitcher(build, ctx)}</div>
       <ol class="dossier-rail__nav">
         <li><a href="#gear" class="is-here" data-rail-link>Gear</a></li>
         <li><a href="#skills" data-rail-link>Skills</a></li>
@@ -218,13 +242,16 @@ export function renderEditor(build, ctx) {
     <div class="dossier-main">
       <header class="dossier-head">
         <div class="dossier-head__copy">
-          <h2>${esc(build.name)}</h2>
+          <h2><button class="dossier-name" type="button" data-build-rename="${esc(build.id)}"
+            title="Rename build">${esc(build.name)}<span class="dossier-name__pen" aria-hidden="true">✎</span></button></h2>
           <p class="dossier-class">${esc(classLine(build))}</p>
           <textarea class="dossier-desc" data-description rows="2"
             placeholder="Add a short description — what this build is and how it plays…">${esc(build.description ?? '')}</textarea>
         </div>
         <div class="dossier-actions">
           <button class="dossier-share" type="button" data-share>Copy share link</button>
+          <button class="dossier-action" type="button" data-build-duplicate="${esc(build.id)}">Duplicate</button>
+          <button class="dossier-action dossier-action--danger" type="button" data-build-delete="${esc(build.id)}">Delete</button>
         </div>
       </header>
       ${renderGear(build, ctx)}

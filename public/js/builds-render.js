@@ -25,7 +25,6 @@ const titleCase = (slug) => String(slug ?? '').split('-')
 
 export const classLine = (b) => [b.class, b.ascendancy].filter(Boolean).map(titleCase).join(' · ') || 'No class chosen';
 
-const dateLine = (ms) => new Date(ms).toISOString().slice(0, 10);
 
 function refHtml(ref, resolveRef) {
   const doc = resolveRef(ref) || {};
@@ -38,31 +37,8 @@ function refHtml(ref, resolveRef) {
                  : `<span class="builds-ref">${inner}</span>`;
 }
 
-export function renderList(builds) {
-  const newBtn = '<button class="builds-new" type="button" data-builds-new>New build</button>';
-  if (!builds.length) {
-    return `<div class="builds-empty">
-      <h2>No builds yet</h2>
-      <p>Builds are saved in this browser only. Create one here, or use the
-      “Add to build” icon on any gem, unique, or base item card.</p>
-      ${newBtn}</div>`;
-  }
-  const rows = builds.map((b) => {
-    const items = Object.values(b.gear).filter((g) => g.item).length + b.unassigned.length;
-    return `<li class="builds-row">
-      <a class="builds-row__open" href="#/b/${encodeURIComponent(b.id)}">
-        <span class="builds-row__name">${esc(b.name)}</span>
-        <span class="builds-row__meta">${esc(classLine(b))} — ${items} items · ${b.skills.length} skill setups</span>
-        <span class="builds-row__date">updated ${esc(dateLine(b.updatedAt))}</span>
-      </a>
-      <span class="builds-row__actions">
-        <button type="button" data-build-rename="${esc(b.id)}">Rename</button>
-        <button type="button" data-build-duplicate="${esc(b.id)}">Duplicate</button>
-        <button type="button" data-build-delete="${esc(b.id)}">Delete</button>
-      </span></li>`;
-  }).join('');
-  return `<div class="builds-list-head">${newBtn}</div><ul class="builds-list">${rows}</ul>`;
-}
+// The standalone list view was retired 2026-07-22 — the landing page is the
+// editor itself and the rail build-switcher (editor-render.js) lists builds.
 
 function sections(b, resolveRef) {
   const gear = Object.entries(b.gear).filter(([, g]) => g.item)
