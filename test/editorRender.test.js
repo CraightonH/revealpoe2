@@ -35,9 +35,12 @@ test('modCardSections: separate corrupted + mods Stats blocks, empty when nothin
   assert.deepEqual(modCardSections({ mods: [], corrupted: null }, MODPOOLS), { corrupted: '', mods: '' });
   const { corrupted, mods } = modCardSections({ mods: [{ affix: 'life', tier: 'life1' }],
     corrupted: { affix: 'corrarm', tier: 'carm1' } }, MODPOOLS);
-  // Explicit mods render as an in-game .Stats block of .explicitMod lines.
+  // Explicit mods render as an in-game .Stats block of .explicitMod lines,
+  // each flagged P/S (left) with its tier rank T1–TX (right).
   assert.match(mods, /^<div class="separator"><\/div><div class="Stats">/);
-  assert.match(mods, /explicitMod/);
+  assert.match(mods, /explicitMod planner-mod/);
+  assert.match(mods, /planner-mod__kind">P</);           // life is a prefix
+  assert.match(mods, /planner-mod__tier">T1</);           // single-tier family → T1
   assert.ok(mods.includes('+(10-19) to maximum Life'));
   // Corrupted is its own separated .Stats section, tagged red.
   assert.match(corrupted, /^<div class="separator"><\/div><div class="Stats">/);

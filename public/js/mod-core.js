@@ -138,13 +138,21 @@ export function corruptedForRef(pools, ref) {
   return poolsForBase(pools, baseSlug).corrupted;
 }
 
-/** A chosen { affix, tier } to renderable data, or null if it no longer resolves. */
+/**
+ * A chosen { affix, tier } to renderable data, or null if it no longer resolves.
+ * `tierNum` is the in-game tier rank (T1 = top/highest, matching the picker's
+ * `tierSelect` labelling); `tierCount` is the family's tier total.
+ */
 export function resolveMod(pools, chosen) {
   if (!chosen) return null;
   const fam = pools?.families?.[chosen.affix];
-  const tier = fam?.tiers.find((t) => t.id === chosen.tier);
-  if (!fam || !tier) return null;
-  return { affix: chosen.affix, name: fam.name, id: tier.id, level: tier.level, gen: tier.gen, text: tier.text };
+  const idx = fam ? fam.tiers.findIndex((t) => t.id === chosen.tier) : -1;
+  if (!fam || idx < 0) return null;
+  const tier = fam.tiers[idx];
+  return {
+    affix: chosen.affix, name: fam.name, id: tier.id, level: tier.level, gen: tier.gen, text: tier.text,
+    tierNum: fam.tiers.length - idx, tierCount: fam.tiers.length,
+  };
 }
 
 // Which prefix/suffix bucket a chosen standard mod occupies (its resolved tier's gen).

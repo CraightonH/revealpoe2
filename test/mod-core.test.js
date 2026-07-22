@@ -66,6 +66,10 @@ test('resolveMod: returns renderable tier data or null', () => {
   assert.equal(m.name, 'to maximum Life');
   assert.equal(m.text, '+(40-49) to maximum Life');
   assert.equal(m.gen, 'prefix');
+  // Tier rank: T1 = top (highest level). life has 2 tiers; life2 (lvl 20) is T1, life1 (lvl 1) is T2.
+  assert.equal(m.tierNum, 1);
+  assert.equal(m.tierCount, 2);
+  assert.equal(resolveMod(POOLS, { affix: 'life', tier: 'life1' }).tierNum, 2);
   assert.equal(resolveMod(POOLS, { affix: 'life', tier: 'ghost' }), null);
   assert.equal(resolveMod(POOLS, { affix: 'ghost', tier: 'x' }), null);
 });

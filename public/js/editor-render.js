@@ -45,8 +45,13 @@ function wellArt(ref, resolveRef) {
  */
 export function modCardSections(cell, pools) {
   const mods = Array.isArray(cell?.mods) ? cell.mods : [];
+  // Each explicit mod row is flagged prefix/suffix (P/S) on the left and its
+  // tier rank (T1 = top) on the right — build-planner detail the wiki card omits.
   const explicit = mods.map((m) => resolveMod(pools, m)).filter(Boolean)
-    .map((m) => `<div class="explicitMod">${esc(m.text)}</div>`).join('');
+    .map((m) => `<div class="explicitMod planner-mod">` +
+      `<span class="planner-mod__kind">${m.gen === 'suffix' ? 'S' : 'P'}</span>` +
+      `<span class="planner-mod__text">${esc(m.text)}</span>` +
+      `<span class="planner-mod__tier">T${m.tierNum}</span></div>`).join('');
   const corr = cell?.corrupted ? resolveMod(pools, cell.corrupted) : null;
   return {
     corrupted: corr

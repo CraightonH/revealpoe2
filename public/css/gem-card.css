@@ -299,6 +299,13 @@ html[data-card-size="xl"] .augment-section { zoom: 1.5; }
    after .explicitMod so the shared-specificity modifier wins. */
 .corruptedMod { color: var(--color-corrupted); }
 .corruptedMod a { color: var(--color-corrupted); border-bottom-color: currentColor; }
+/* Planner mod row: P/S affix-kind flag left, tier rank (T1–TX) right, mod text
+   between. Scoped to .planner-mod so the shared .explicitMod layout is untouched. */
+.planner-mod { display: flex; align-items: baseline; gap: 8px; }
+.planner-mod__kind { flex: none; width: 1em; text-align: center; color: var(--color-default);
+  font-size: 10px; font-weight: 700; }
+.planner-mod__text { flex: 1; }
+.planner-mod__tier { flex: none; color: var(--color-default); font-size: 10px; letter-spacing: .04em; }
 /* Granted-skill links render gem-teal to stand apart from the blue mod text */
 .explicitMod a.skill-grant-link { color: var(--color-gem); border-bottom-color: var(--color-gem); }
 /* Keywords keep the standard teal glossary color (base .kw) for contrast against
