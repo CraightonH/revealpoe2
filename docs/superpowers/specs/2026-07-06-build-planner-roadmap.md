@@ -1,7 +1,7 @@
 # Build Planner Roadmap (TODO #1)
 
-**Status:** planning complete, execution not started.
-**This document is the cross-session tracking surface.** Each executing session updates the phase checklist below when a phase lands, and commits the change with the phase's final commit.
+**Status:** phases 1–3 complete; scope amended 2026-07-21 (see `2026-07-21-build-planner-amendments-design.md`); execution resumes at Phase 4.
+**This document is the cross-session tracking surface.** Each executing session updates the phase checklist below when a phase lands, and commits the change with the phase's final commit. (Restored from `archive/` 2026-07-21 — it lives in `specs/` until the roadmap completes.)
 
 ## Goal
 
@@ -10,7 +10,8 @@ Complete `docs/TODO.md` item 1: a **Build Planner** — save named groups of ite
 ### Finish line (approved scope: "loadout + light math")
 
 - Named builds persisted in **localStorage** (pure static site — no backend, no accounts; per-browser is an accepted limitation, share URLs cover portability).
-- A build holds: gear slots (uniques/bases + per-slot **affix wishlist**), skill setups (skill gem + supports, levels), spirit gems, a passive-tree share code + **ordered Notable Priority list**, class/ascendancy, notes.
+- A build holds: gear slots (uniques/bases + **chosen modifiers**: 1–6 real mods with tiers on bases, optional corrupted implicit on uniques — amended 2026-07-21, supersedes the affix wishlist), skill setups (skill gem + supports, levels; item-granted skills auto-included), spirit gems, a passive-tree share code + **ordered Notable Priority list**, class/ascendancy, notes.
+- **Variants** (amended 2026-07-21): a parent build carries an ordered list of labeled variant references ("Lv 1–30", …); each variant is a full sibling build. Group shares travel as one URL.
 - **Light math**: attribute/level requirement totals, socket & support-legality warnings, whitelisted stat aggregates (attributes, life/mana/spirit, resists). **No DPS engine** (explicitly out of scope).
 - **UI fidelity** (see reference screenshots in the phase specs):
   - Skill section imitates the in-game **Skill Gems menu** (stacked setup rows: gem icon, name banner, level, circular support sockets).
@@ -23,7 +24,8 @@ Complete `docs/TODO.md` item 1: a **Build Planner** — save named groups of ite
 ### Explicit non-goals
 
 - DPS / damage calculation (PoB territory).
-- Crafted rare/magic items in slots (needs TODO #2, the Item Crafter — the slot schema accepts a future `crafted` item kind, but building the crafter is not on this critical path).
+- Crafting **simulation** (currency steps, odds — TODO #2 territory). Mod *selection* on bases was pulled forward into this roadmap 2026-07-21 (Phase 4c); simulating how you'd craft the result is still out of scope.
+- Quest-reward campaign bonuses — no scraped data; parked for a future roadmap.
 - Backend storage, accounts, cross-device sync (a share-shortlink Worker can be bolted on later without rework).
 
 ## Architecture principles (all phases)
@@ -49,32 +51,34 @@ Execution protocol per phase (for the orchestrating session):
 | 1 | Build store foundation | `2026-07-06-build-store-design.md` | — |
 | 2 | Slot & socket data model | `2026-07-06-slot-socket-model-design.md` | — |
 | 3 | In-game UI art ingestion | `2026-07-06-ui-art-ingestion-design.md` | — |
-| 4 | Builds pages + Add-to-Build | `2026-07-06-builds-pages-design.md` | 1, 2, 3 |
+| 4 | Builds pages + Add-to-Build | `2026-07-06-builds-pages-design.md` + amendments §1, §4 | 1, 2, 3 |
+| 4c | Item mod picker + `mod-pools.json` | `2026-07-21-build-planner-amendments-design.md` §1 | 4b |
 | 5 | Tree embed + Notable Priority | `2026-07-06-tree-embed-notable-priority-design.md` | 1 (parallel with 2–4) |
 | 6 | Theorycraft pinning (TODO #3) | `2026-07-06-theorycraft-pinning-design.md` | 4 |
-| 7 | Light math | `2026-07-06-light-math-design.md` | 4 |
-| 8 | Sharing & in-game export | `2026-07-06-build-sharing-export-design.md` | 4, 5 |
+| 7 | Light math | `2026-07-06-light-math-design.md` + amendments §1 ripple | 4 |
+| 8 | Sharing, variants & in-game export | `2026-07-06-build-sharing-export-design.md` + amendments §2, §3 | 4, 5 |
 
-Phases 1, 2, 3 are independent and may run in parallel sessions. Phases 6, 7, 8 are independent of each other. Phase 4 is the largest and has an internal milestone split (4a/4b) in its spec; expect two sessions.
+Phases 1, 2, 3 are independent and may run in parallel sessions. Phases 6, 7, 8 are independent of each other. Phase 4 is the largest and has an internal milestone split (4a/4b) in its spec plus the amended 4c; expect three sessions. Implementation coding is dispatched to Codex per phase (amendments doc, Execution protocol).
 
 ### Status checklist
 
 - [x] Phase 1 — Build store foundation (654c2a5)
 - [x] Phase 2 — Slot & socket data model (5c728df)
 - [x] Phase 3 — In-game UI art ingestion (6ea4f3b)
-- [ ] Phase 4a — /builds list + Add-to-Build affordance
-- [ ] Phase 4b — Build editor (inventory paper-doll + skill panel + picker)
+- [ ] Phase 4a — /builds list + read-only viewer + Add-to-Build affordance
+- [ ] Phase 4b — Build editor (inventory paper-doll + skill panel + picker; granted-skill rows)
+- [ ] Phase 4c — Item mod picker + `mod-pools.json` (incl. corrupted-implicit data verification)
 - [ ] Phase 5 — Tree embed + Notable Priority
-- [ ] Phase 6 — Theorycraft pinning
+- [ ] Phase 6 — Theorycraft pinning (pin board shipped in 4c41e00; promote-to-build remains, folds into 4a)
 - [ ] Phase 7 — Light math
-- [ ] Phase 8 — Sharing & in-game `.build` export
+- [ ] Phase 8 — Sharing (incl. variants/group codec v2) & in-game `.build` export
 - [ ] TODO.md items 1, 3, 4 marked complete
 
 ## Key cross-phase contracts
 
 These are the interfaces phases share; changing one requires updating the affected specs:
 
-- **Build schema v1** (defined in Phase 1's spec) — every later phase reads/writes it through `build-store.js`, never raw localStorage.
+- **Build schema** (v1 in Phase 1's spec; v2 fields — `mods`/`corrupted` per slot, `variants` list, granted-skill support persistence — in the 2026-07-21 amendments) — every phase reads/writes it through `build-store.js`, never raw localStorage; version bumps go through its migrations framework.
 - **Item reference** `{ kind: 'unique'|'base'|'gem', slug }` — matches the browse-card key space used by `browse-cards.json` and theorycraft docs.
 - **Tree state** — the official v7 share code string (existing `public/js/passive-code.js`) + `notablePriority: [nodeHash]`.
 - **Embeddable tree API** (defined in Phase 5's spec) — `init(root, opts)`, `getState()/setState()`, `setHighlight(hashes)`, `focusNode(hash)`, `onCodeChange` event.
