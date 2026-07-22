@@ -118,7 +118,7 @@
         <div class="property" style="margin-bottom:4px;">Unique versions:</div>
         {% for u in vm.uniquesOnBase %}
         <div class="property" style="padding-left:8px;">
-          <a href="/uniques#{{ u.slug }}" data-card-url="/unique/{{ u.slug }}/card" style="color:var(--unique-color);text-decoration:none;">
+          <a class="base-unique-link" href="/uniques#{{ u.slug }}" data-card-url="/unique/{{ u.slug }}/card">
             {% if u.iconUrl %}
             <img src="{{ u.iconUrl }}" alt="{{ u.name }}"
                  style="width:16px;height:16px;vertical-align:middle;margin-right:4px;object-fit:contain;"

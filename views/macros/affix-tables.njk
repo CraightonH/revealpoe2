@@ -4,7 +4,7 @@
 
 {% macro _affixSide(title, families, accentVar) %}
 <section class="affix-side">
-  <h2 class="affix-side-title" style="color:var({{ accentVar }})">{{ title }} <span class="affix-side-count" data-filter-count>{{ families.length }}</span></h2>
+  <h2 class="affix-side-title affix-side-title--{{ accentVar | replace('--', '') }}">{{ title }} <span class="affix-side-count" data-filter-count>{{ families.length }}</span></h2>
   {% if families.length %}
   <table class="affix-table">
     <thead>

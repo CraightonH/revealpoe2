@@ -451,8 +451,8 @@ html[data-card-size="xl"] .gem-index { --gem-index-content-scale: 1.5; }
   font-size: calc(12.5px * var(--gem-index-content-scale));
   line-height: 1.25;
   white-space: nowrap;
-  -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 24px), transparent 100%);
-  mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 24px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, var(--color-black) 0, var(--color-black) calc(100% - 24px), transparent 100%);
+  mask-image: linear-gradient(to right, var(--color-black) 0, var(--color-black) calc(100% - 24px), transparent 100%);
 }
 
 .gem-index-pane {
@@ -496,8 +496,8 @@ html[data-card-size="xl"] .gem-index { --gem-index-content-scale: 1.5; }
   --tc-kind-spirit: var(--color-gem);
   --tc-kind-unique: var(--color-unique);
   --tc-kind-affix: var(--color-magic);
-  --tc-kind-keystone: #c8b464;
-  --tc-kind-notable: #b8a454;
+  --tc-kind-keystone: var(--search-keystone-color);
+  --tc-kind-notable: var(--search-notable-color);
   --tc-kind-base: var(--color-normal);
   --tc-kind-augment: var(--color-prop);
 }
@@ -562,16 +562,16 @@ html[data-card-size="xl"] .gem-index { --gem-index-content-scale: 1.5; }
   scrollbar-color: var(--border) transparent;
 }
 .tc-pin-tray__viewport.is-overflowing:not(.is-at-start):not(.is-at-end) {
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 calc(18px * var(--gem-index-content-scale)), #000 calc(100% - 18px * var(--gem-index-content-scale)), transparent);
-  mask-image: linear-gradient(to right, transparent, #000 calc(18px * var(--gem-index-content-scale)), #000 calc(100% - 18px * var(--gem-index-content-scale)), transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, var(--color-black) calc(18px * var(--gem-index-content-scale)), var(--color-black) calc(100% - 18px * var(--gem-index-content-scale)), transparent);
+  mask-image: linear-gradient(to right, transparent, var(--color-black) calc(18px * var(--gem-index-content-scale)), var(--color-black) calc(100% - 18px * var(--gem-index-content-scale)), transparent);
 }
 .tc-pin-tray__viewport.is-overflowing.is-at-start:not(.is-at-end) {
-  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 18px * var(--gem-index-content-scale)), transparent);
-  mask-image: linear-gradient(to right, #000 calc(100% - 18px * var(--gem-index-content-scale)), transparent);
+  -webkit-mask-image: linear-gradient(to right, var(--color-black) calc(100% - 18px * var(--gem-index-content-scale)), transparent);
+  mask-image: linear-gradient(to right, var(--color-black) calc(100% - 18px * var(--gem-index-content-scale)), transparent);
 }
 .tc-pin-tray__viewport.is-overflowing.is-at-end:not(.is-at-start) {
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 calc(18px * var(--gem-index-content-scale)));
-  mask-image: linear-gradient(to right, transparent, #000 calc(18px * var(--gem-index-content-scale)));
+  -webkit-mask-image: linear-gradient(to right, transparent, var(--color-black) calc(18px * var(--gem-index-content-scale)));
+  mask-image: linear-gradient(to right, transparent, var(--color-black) calc(18px * var(--gem-index-content-scale)));
 }
 .tc-pin-tray__items { display: flex; gap: calc(6px * var(--gem-index-content-scale)); width: max-content; }
 .tc-pin-chip {
@@ -749,7 +749,7 @@ html[data-card-size="xl"] .gem-index { --gem-index-content-scale: 1.5; }
 .tc-detail-pin[hidden],
 .tc-sheet-pin[hidden] { display: none; }
 .tc-sheet-actions { display: flex; align-items: center; gap: calc(7px * var(--gem-index-content-scale)); }
-.tc-kind-chip.search-result-cat--base { background: rgba(200, 200, 200, 0.1); color: var(--color-normal); }
+.tc-kind-chip.search-result-cat--base { background: var(--surface-normal-subtle); color: var(--color-normal); }
 .tc-kind-chip.search-result-cat--augment { background: color-mix(in srgb, var(--color-prop) 16%, transparent); color: var(--color-prop); }
 .tc-detail-placeholder {
   min-height: 420px;

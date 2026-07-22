@@ -1,16 +1,16 @@
 {% extends "base.njk" %}
 {% block content %}
-<div class="page" style="flex-direction:column;align-items:center;">
-  <h1 style="font-family:'OptimusPrincepsSemiBold',serif;color:var(--color-unique);">
+<div class="page page--column">
+  <h1 class="home-title">
     Path of Exile 2 Wiki
   </h1>
   {% if notFound %}<p>No result found for "{{ notFound }}".</p>{% endif %}
   <p>Search for a skill gem or unique item above.</p>
   <div class="home-links">
-    <a href="/gems#herald-of-ash" style="color:var(--color-gem);">Herald of Ash (gem)</a>
-    <a href="/uniques" style="color:var(--color-unique);">Browse Unique Items →</a>
-    <a href="/bases" style="color:var(--color-normal);">Browse Modifiers →</a>
-    <a href="/passives" style="color:var(--color-normal);">Passive Tree →</a>
+    <a class="home-link--gem" href="/gems#herald-of-ash">Herald of Ash (gem)</a>
+    <a class="home-link--unique" href="/uniques">Browse Unique Items →</a>
+    <a class="home-link--normal" href="/bases">Browse Modifiers →</a>
+    <a class="home-link--normal" href="/passives">Passive Tree →</a>
   </div>
 </div>
 {% endblock %}

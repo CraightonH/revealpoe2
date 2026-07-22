@@ -28,6 +28,103 @@
   --color-desecrated: #39ff7a;
 }
 
+/* Shared neutral foregrounds and functional mask colors */
+:root {
+  --color-black: #000;
+  --color-white: #fff;
+}
+
+/* Site identity and search-result category accents */
+:root {
+  --brand-desecrated-color: #9fe86a;
+  --brand-desecrated-glow: rgba(159, 232, 106, 0.5);
+  --brand-revealed-color: #e6c989;
+  --brand-revealed-glow: rgba(230, 201, 137, 0.35);
+  --search-keystone-color: #c8b464;
+  --search-notable-color: #b8a454;
+}
+
+/* Theory Crafting fallbacks (kept distinct from the site theme palette) */
+:root {
+  --theory-bg-surface: #1a1a1a;
+  --theory-border: #333;
+  --theory-text-muted: #888;
+  --theory-accent: #c8a13a;
+  --theme-dark-bg-base: #0d0d0d;
+  --theme-dark-text: #c8b888;
+}
+
+/* Passive-tree parchment and tooltip references (fenced consumers stay literal) */
+:root {
+  --passive-ui-gold: #c9aa71;
+  --passive-ui-text-muted: #9a8f7a;
+  --passive-ui-text: #e8dcc0;
+  --passive-ui-bg: #181410;
+  --tooltip-body: #b7ab83;
+  --tooltip-term-reference: #e7b478;
+  --tooltip-heading: #f0e6d2;
+  --tooltip-divider: #c9a227;
+}
+
+/* Repeated card fallbacks and translucent surfaces */
+:root {
+  --card-corrupted-border-fallback: rgba(139,48,48,0.7);
+  --card-corrupted-glow-strong: rgba(139,48,48,0.45);
+  --card-corrupted-glow-soft: rgba(139,48,48,0.3);
+  --card-normal-border-fallback: rgba(200,200,200,0.45);
+  --card-normal-glow-fallback: rgba(255,255,255,0.35);
+  --surface-normal-subtle: rgba(200,200,200,0.1);
+  --surface-white-06: rgba(255,255,255,0.06);
+  --color-gem-tab-transparent: rgba(30,41,41,0);
+}
+
+/* Affix tag palette — intentionally brighter than the base element colors */
+:root {
+  /* Elements + resistances */
+  --tag-fire: #e0563c;
+  --tag-cold: #5aa6e0;
+  --tag-lightning: #e8c83c;
+  --tag-chaos: #d050b0;
+  --tag-resistance: #d8a24a;
+  --tag-poison: #84c84a;
+  --tag-caster: #8f86e8;
+
+  /* Physical + offense */
+  --tag-physical: #c8b89a;
+  --tag-damage: #e06a5a;
+  --tag-attack: #d88a4a;
+  --tag-critical: #f0d24a;
+  --tag-speed: #5ccfa0;
+  --tag-ailment: #b070d8;
+  --tag-bleed: #c43a2e;
+
+  /* Defences */
+  --tag-defences: #9aa6b2;
+  --tag-armour: #c87a4a;
+  --tag-evasion: #6cc05a;
+  --tag-energy-shield: #5ab0d8;
+  --tag-block: #8ba0b4;
+
+  /* Resources + attributes */
+  --tag-life: #e06a6a;
+  --tag-mana: #5a86e0;
+  --tag-resource: #7fb0b8;
+  --tag-attribute: #b894d8;
+
+  /* Miscellaneous */
+  --tag-minion: #a8c878;
+  --tag-gem: #36c0b8;
+  --tag-aura: #58c8c0;
+  --tag-flask: #d89a4a;
+  --tag-charm: #e088b8;
+  --tag-drop: #e0c84a;
+
+  /* Desecrated bosses */
+  --tag-ulaman: #e0a93c;
+  --tag-amanamu: #cc5ad6;
+  --tag-kurgal: #4fb4e8;
+}
+
 /* Derived surface shades for dark cards (passive/asc node shells, hovers) */
 :root {
   --card-dark-bg: rgba(0, 0, 0, 0.5);
@@ -71,10 +168,10 @@
 
 :root,
 :root[data-theme="dark"] {
-  --bg-base: #0d0d0d;
+  --bg-base: var(--theme-dark-bg-base);
   --bg-surface: #16181f;
   --border: #2a2d3d;
-  --text: #c8b888;
+  --text: var(--theme-dark-text);
 }
 
 :root[data-theme="light"] {

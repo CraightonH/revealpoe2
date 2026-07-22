@@ -26,8 +26,8 @@ body {
   font-size: 20px; line-height: 1;
   text-transform: uppercase; letter-spacing: 0.06em;
 }
-.brand-desecrated { position: relative; color: #9fe86a; filter: drop-shadow(0 0 6px rgba(159, 232, 106, 0.5)); }
-.brand-revealed { position: absolute; inset: 0; color: #e6c989; filter: drop-shadow(0 0 5px rgba(230, 201, 137, 0.35)); }
+.brand-desecrated { position: relative; color: var(--brand-desecrated-color); filter: drop-shadow(0 0 6px var(--brand-desecrated-glow)); }
+.brand-revealed { position: absolute; inset: 0; color: var(--brand-revealed-color); filter: drop-shadow(0 0 5px var(--brand-revealed-glow)); }
 
 /* On load the gold layer wipes in left-to-right and the green fades — the mark
    performs the Well-of-Souls reveal on every page load. Honors reduced-motion. */
@@ -143,8 +143,8 @@ body {
 .search-result-cat--support,
 .search-result-cat--spirit { background: rgba(27, 162, 155, 0.2); color: var(--color-gem); }
 .search-result-cat--unique { background: rgba(175, 96, 37, 0.2); color: var(--color-unique); }
-.search-result-cat--keystone { background: rgba(200, 180, 100, 0.2); color: #c8b464; }
-.search-result-cat--notable { background: rgba(200, 180, 100, 0.15); color: #b8a454; }
+.search-result-cat--keystone { background: rgba(200, 180, 100, 0.2); color: var(--search-keystone-color); }
+.search-result-cat--notable { background: rgba(200, 180, 100, 0.15); color: var(--search-notable-color); }
 .search-result-cat--affix { background: rgba(136, 136, 255, 0.15); color: var(--magic-color); }
 /* --- Site nav --- */
 .site-nav {
@@ -282,7 +282,7 @@ body {
   border-bottom: 1px solid rgba(0,0,0,0.6);
 }
 .gem-browse-name {
-  color: #fff;
+  color: var(--color-white);
   font-size: 13px;
   white-space: nowrap;
   overflow: hidden;
@@ -613,6 +613,7 @@ main:has(.page--passives) + .site-footer { margin-top: 0; }
 .site-footer a { color: var(--color-magic); }
 /* Page titles use the display face; per-page color stays inline on the element. */
 .page-title { font-family: var(--font-display); }
+.page-title--color-normal { color: var(--color-normal); }
 /* Full page width (up to a cap) so the recommended-supports grid can wrap into
    many columns; align-items:center keeps the gem card itself centered. */
 .gem-detail { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; max-width: 1400px; }
@@ -896,7 +897,7 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
 .filter-btn--g.is-active { border-color: var(--color-gem-g); color: var(--color-gem-g); background: rgba(74,173,74,0.12); }
 .filter-btn--b.is-active { border-color: var(--color-gem-b); color: var(--color-gem-b); background: rgba(102,102,170,0.12); }
 .filter-btn--w.is-active { border-color: var(--color-gem-w); color: var(--color-gem-w); background: rgba(170,170,170,0.12); }
-.filter-btn.is-active    { border-color: var(--color-normal); color: var(--color-normal); background: rgba(200,200,200,0.1); }
+.filter-btn.is-active    { border-color: var(--color-normal); color: var(--color-normal); background: var(--surface-normal-subtle); }
 
 .home-links {
   display: flex;
@@ -909,7 +910,12 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
   text-decoration: none;
   font-family: var(--font-smallcaps);
 }
+.home-title { font-family: var(--font-display); color: var(--color-unique); }
+.home-link--gem { color: var(--color-gem); }
+.home-link--unique { color: var(--color-unique); }
+.home-link--normal { color: var(--color-normal); }
 .home-links a:hover { text-decoration: underline; }
+.base-unique-link { color: var(--unique-color); text-decoration: none; }
 
 /* Theory Crafting search */
 .tc-search { margin-bottom: 18px; }
@@ -917,19 +923,19 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
   width: 100%;
   padding: 12px 16px;
   font-size: 18px;
-  background: var(--surface-2, #1a1a1a);
-  border: 1px solid var(--border, #333);
+  background: var(--surface-2, var(--theory-bg-surface));
+  border: 1px solid var(--border, var(--theory-border));
   border-radius: 6px;
   color: inherit;
 }
-.tc-input:focus { outline: none; border-color: var(--accent, #c8a13a); }
-.tc-hint { margin: 8px 2px 0; font-size: 12.5px; color: var(--color-default, #888); }
+.tc-input:focus { outline: none; border-color: var(--accent, var(--theory-accent)); }
+.tc-hint { margin: 8px 2px 0; font-size: 12.5px; color: var(--color-default, var(--theory-text-muted)); }
 .tc-hint code, .tc-examples code, .tc-summary code {
-  background: var(--surface-2, #1a1a1a); padding: 1px 5px; border-radius: 3px;
+  background: var(--surface-2, var(--theory-bg-surface)); padding: 1px 5px; border-radius: 3px;
 }
-.tc-empty { padding: 24px 4px; color: var(--color-default, #888); }
+.tc-empty { padding: 24px 4px; color: var(--color-default, var(--theory-text-muted)); }
 .tc-examples { margin-top: 8px; }
-.tc-summary { margin: 4px 2px 14px; color: var(--color-default, #888); font-size: 13px; }
+.tc-summary { margin: 4px 2px 14px; color: var(--color-default, var(--theory-text-muted)); font-size: 13px; }
 .tc-group { margin-bottom: 22px; }
 .tc-group-heading { font-size: 15px; margin: 0 0 10px; }
 .tc-result-grid {
@@ -940,26 +946,26 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
 .tc-result-card {
   display: flex; align-items: center; gap: 10px;
   padding: 8px 10px; text-decoration: none; color: inherit;
-  background: var(--surface-2, #1a1a1a);
-  border: 1px solid var(--border, #333);
+  background: var(--surface-2, var(--theory-bg-surface));
+  border: 1px solid var(--border, var(--theory-border));
   border-left-width: 3px;
   border-radius: 5px;
 }
-.tc-result-card:hover { border-color: var(--accent, #c8a13a); }
+.tc-result-card:hover { border-color: var(--accent, var(--theory-accent)); }
 .tc-result-icon { width: 28px; height: 28px; object-fit: contain; flex: 0 0 auto; }
 .tc-result-name { font-weight: 600; }
-.tc-result-sub { color: var(--color-default, #888); font-size: 12px; margin-left: auto; }
-.tc-more { margin: 8px 2px 0; font-size: 12px; color: var(--color-default, #888); }
+.tc-result-sub { color: var(--color-default, var(--theory-text-muted)); font-size: 12px; margin-left: auto; }
+.tc-more { margin: 8px 2px 0; font-size: 12px; color: var(--color-default, var(--theory-text-muted)); }
 
 /* Theory Crafting — search help panel */
-.tc-lead { margin: 8px 2px 6px; font-size: 13px; color: var(--color-default, #888); }
+.tc-lead { margin: 8px 2px 6px; font-size: 13px; color: var(--color-default, var(--theory-text-muted)); }
 .tc-help { margin: 4px 2px 0; font-size: 13px; }
 .tc-help > summary {
-  cursor: pointer; color: var(--color-default, #888);
+  cursor: pointer; color: var(--color-default, var(--theory-text-muted));
   padding: 4px 0; user-select: none;
 }
-.tc-help > summary:hover { color: var(--accent, #c8a13a); }
-.tc-help[open] > summary { color: var(--accent, #c8a13a); margin-bottom: 10px; }
+.tc-help > summary:hover { color: var(--accent, var(--theory-accent)); }
+.tc-help[open] > summary { color: var(--accent, var(--theory-accent)); margin-bottom: 10px; }
 .tc-help-terms {
   margin: 0;
   display: grid;
@@ -973,11 +979,11 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
 .tc-examples-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
 .tc-example {
   font-family: inherit; font-size: 12px;
-  background: var(--surface-2, #1a1a1a); color: inherit;
-  border: 1px solid var(--border, #333); border-radius: 3px;
+  background: var(--surface-2, var(--theory-bg-surface)); color: inherit;
+  border: 1px solid var(--border, var(--theory-border)); border-radius: 3px;
   padding: 2px 7px; cursor: pointer;
 }
-.tc-example:hover { border-color: var(--accent, #c8a13a); color: var(--accent, #c8a13a); }
+.tc-example:hover { border-color: var(--accent, var(--theory-accent)); color: var(--accent, var(--theory-accent)); }
 
 /* ── "Search on PoE Trade" action (Todo 4 part 1) ─────────────────────────────
    `.card-actions` is the action slot; it holds the trade balance-scale icon today
@@ -1016,8 +1022,8 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
   width: 22px;
   height: 22px;
   border-radius: 4px;
-  color: var(--text, #c8b888);
-  background: color-mix(in srgb, var(--bg-base, #0d0d0d) 70%, transparent);
+  color: var(--text, var(--theme-dark-text));
+  background: color-mix(in srgb, var(--bg-base, var(--theme-dark-bg-base)) 70%, transparent);
   opacity: 0.5;
   cursor: pointer;
   text-decoration: none;
@@ -1026,8 +1032,8 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
 .trade-link:hover,
 .trade-link:focus-visible {
   opacity: 1;
-  color: var(--accent, #c8a13a);
-  background: color-mix(in srgb, var(--bg-base, #0d0d0d) 85%, transparent);
+  color: var(--accent, var(--theory-accent));
+  background: color-mix(in srgb, var(--bg-base, var(--theme-dark-bg-base)) 85%, transparent);
   outline: none;
 }
 .trade-scale {

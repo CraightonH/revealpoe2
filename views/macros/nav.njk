@@ -5,6 +5,6 @@
 {% endmacro %}
 
 {% macro pageHeader(title, subtitle='', accentVar='--color-normal') %}
-<h1 class="page-title" style="color:var({{ accentVar }})">{{ title | safe }}</h1>
+<h1 class="page-title page-title--{{ accentVar | replace('--', '') }}">{{ title | safe }}</h1>
 {% if subtitle %}<p class="page-subtitle">{{ subtitle }}</p>{% endif %}
 {% endmacro %}
