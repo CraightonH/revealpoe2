@@ -77,3 +77,25 @@ test('exports: prefix/suffix caps are 3', () => {
   assert.equal(MAX_PREFIX, 3);
   assert.equal(MAX_SUFFIX, 3);
 });
+
+import { modPickerHtml } from '../public/js/mod-core.js';
+
+test('modPickerHtml: base mode renders prefix/suffix add rows + chosen tier selects', () => {
+  const view = { ...poolsForBase(POOLS, 'iron-greaves'), mode: 'base' };
+  const cell = { item: { kind: 'base', slug: 'iron-greaves' }, mods: [{ affix: 'life', tier: 'life1' }], corrupted: null };
+  const html = modPickerHtml(view, cell);
+  assert.match(html, /data-mod-add="armour"/);
+  assert.match(html, /data-mod-add="fireres"/);
+  assert.match(html, /data-mod-remove="life"/);
+  assert.match(html, /data-mod-tier="life"/);
+  assert.match(html, /life2/);                 // both tiers offered in the select
+  assert.match(html, /Prefixes/); assert.match(html, /Suffixes/);
+});
+
+test('modPickerHtml: unique mode renders only the corrupted single-choice section', () => {
+  const view = { prefix: [], suffix: [], corrupted: poolsForBase(POOLS, 'iron-greaves').corrupted, mode: 'unique' };
+  const cell = { item: { kind: 'unique', slug: 'the-anvil' }, mods: [], corrupted: null };
+  const html = modPickerHtml(view, cell);
+  assert.match(html, /data-mod-add="corrarm"/);
+  assert.ok(!/Prefixes/.test(html), 'no prefix column for a unique corrupted picker');
+});

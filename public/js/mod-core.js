@@ -10,6 +10,63 @@ export const MAX_PREFIX = 3;
 export const MAX_SUFFIX = 3;
 export const MAX_MODS = 6;
 
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function tierSelect(affix, fam, chosenTierId) {
+  const opts = fam.tiers.map((t) =>
+    `<option value="${esc(t.id)}"${t.id === chosenTierId ? ' selected' : ''}>` +
+    `T${fam.tiers.length - fam.tiers.indexOf(t)} · ${esc(t.text)}</option>`).join('');
+  return `<select class="mod-picker__tier" data-mod-tier="${esc(affix)}">${opts}</select>`;
+}
+
+function addRows(fams, chosenAffixes) {
+  return fams.map((f) => {
+    const on = chosenAffixes.has(f.affix);
+    return `<button type="button" class="mod-picker__row${on ? ' is-chosen' : ''}" data-mod-add="${esc(f.affix)}">` +
+      `<span class="mod-picker__generic">${esc(f.generic)}</span></button>`;
+  }).join('');
+}
+
+/** Popover inner HTML. `view` = { prefix, suffix, corrupted, mode }. */
+export function modPickerHtml(view, cell) {
+  const mods = Array.isArray(cell?.mods) ? cell.mods : [];
+  const chosen = new Set(mods.map((m) => m.affix));
+  const famByAffix = new Map(
+    [...view.prefix, ...view.suffix, ...view.corrupted].map((f) => [f.affix, f]));
+
+  const chosenList = mods.map((m) => {
+    const fam = famByAffix.get(m.affix);
+    if (!fam) return '';
+    return `<li class="mod-picker__chosen-row">` +
+      `<span class="mod-picker__generic">${esc(fam.name)}</span>` +
+      `${tierSelect(m.affix, fam, m.tier)}` +
+      `<button type="button" class="mod-picker__remove" data-mod-remove="${esc(m.affix)}" aria-label="Remove">×</button></li>`;
+  }).join('');
+
+  if (view.mode === 'unique') {
+    const cur = cell?.corrupted?.affix ?? null;
+    return `<div class="mod-picker" data-mod-picker>` +
+      `<header class="mod-picker__head"><h3>Corrupted implicit</h3>` +
+      `<button type="button" class="mod-picker__close" data-mod-close aria-label="Close">×</button></header>` +
+      `<div class="mod-picker__col"><h4>Vaal implicit</h4>` +
+      `${view.corrupted.map((f) => `<button type="button" class="mod-picker__row${f.affix === cur ? ' is-chosen' : ''}" data-mod-add="${esc(f.affix)}"><span class="mod-picker__generic">${esc(f.generic)}</span></button>`).join('') || '<p class="mod-picker__none">No corrupted implicits on this base.</p>'}</div>` +
+      `${cur ? `<div class="mod-picker__chosen"><h4>Chosen</h4>${tierSelect(cur, famByAffix.get(cur), cell.corrupted.tier)}<button type="button" class="mod-picker__remove" data-mod-remove="${esc(cur)}" aria-label="Remove">×</button></div>` : ''}` +
+      `</div>`;
+  }
+
+  return `<div class="mod-picker" data-mod-picker>` +
+    `<header class="mod-picker__head"><h3>Modifiers</h3>` +
+    `<input class="mod-picker__search" type="search" placeholder="Filter modifiers…" autocomplete="off">` +
+    `<button type="button" class="mod-picker__close" data-mod-close aria-label="Close">×</button></header>` +
+    `<div class="mod-picker__cols">` +
+      `<div class="mod-picker__col"><h4>Prefixes <span>${view.prefix.filter((f) => chosen.has(f.affix)).length}/${MAX_PREFIX}</span></h4>${addRows(view.prefix, chosen)}</div>` +
+      `<div class="mod-picker__col"><h4>Suffixes <span>${view.suffix.filter((f) => chosen.has(f.affix)).length}/${MAX_SUFFIX}</span></h4>${addRows(view.suffix, chosen)}</div>` +
+    `</div>` +
+    `<ul class="mod-picker__chosen">${chosenList}</ul>` +
+    `</div>`;
+}
+
 // One family view for the picker: tiers narrowed to a base's allowed indices.
 function familyView(pools, ref) {
   const fam = pools.families?.[ref.a];
