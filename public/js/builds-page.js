@@ -3,7 +3,7 @@
 // builds-render.js (node-tested); this file is DOM wiring only.
 import { getStore, safeWrite } from '/static/js/build-host.js';
 import { parseRoute, renderBuild, renderImport } from '/static/js/builds-render.js';
-import { renderEditor } from '/static/js/editor-render.js';
+import { modCardLines, renderEditor } from '/static/js/editor-render.js';
 import { decodeBuild } from '/static/js/build-code.js';
 import { mountEditor } from '/static/js/build-editor.js';
 
@@ -44,6 +44,16 @@ if (root && view) {
       .catch((e) => { plannerLoading = null; throw e; });
     return plannerLoading;
   }
+  let pools = null;
+  let poolsLoading = null;
+  function loadPools() {
+    if (pools) return Promise.resolve(pools);
+    poolsLoading ??= fetch('/static/generated/mod-pools.json')
+      .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then((p) => { pools = p; return p; })
+      .catch((e) => { poolsLoading = null; throw e; });
+    return poolsLoading;
+  }
   const resolveRef = (ref) => {
     for (const cat of CATEGORIES[ref.kind] ?? []) {
       const d = docsByKey?.get(`${cat}:${ref.slug}`);
@@ -54,6 +64,29 @@ if (root && view) {
 
   let importState = null; // cached decode for the current #/import/<code>
   let activeUnmount = null;
+
+  // One build-aware tooltip for filled doll wells: the item's prerendered card
+  // + this build's chosen mods. Registered once; reads live build state on show.
+  if (window.poe2Tooltips) {
+    window.poe2Tooltips.init({
+      target: '[data-slot-mods]',
+      resolveUrl: function (ref) {
+        const slotId = ref.getAttribute('data-slot-mods');
+        const route = parseRoute(location.hash);
+        const b = route.id ? store.get(route.id) : (importState?.state?.build ?? null);
+        const item = b?.gear?.[slotId]?.item;
+        return item ? (resolveRef(item)?.cardUrl ?? null) : null;
+      },
+      transform: function (html, ref) {
+        if (!pools) return html;
+        const slotId = ref.getAttribute('data-slot-mods');
+        const route = parseRoute(location.hash);
+        const b = route.id ? store.get(route.id) : (importState?.state?.build ?? null);
+        const cell = b?.gear?.[slotId];
+        return cell ? html + modCardLines(cell, pools) : html;
+      },
+    });
+  }
 
   function render() {
     if (activeUnmount) {
@@ -85,7 +118,7 @@ if (root && view) {
       const b = store.get(route.id);
       if (!b) { location.hash = ''; return; }
       view.innerHTML = renderBuild(b, resolveRef);
-      Promise.all([loadDocs(), loadPlanner()]).then(() => {
+      Promise.all([loadDocs(), loadPlanner(), loadPools()]).then(() => {
         // Mount only if we're still looking at this same build (not a
         // different one, or list/import).
         const cur = parseRoute(location.hash);
@@ -108,7 +141,7 @@ if (root && view) {
       // Guard every write with `importState === st` so a stale decode (from a
       // hash that has since moved to a different import code) can't clobber
       // the current importState after this chain settles.
-      Promise.all([decodeBuild(route.code), loadDocs().catch(() => null), loadPlanner().catch(() => null)])
+      Promise.all([decodeBuild(route.code), loadDocs().catch(() => null), loadPlanner().catch(() => null), loadPools().catch(() => null)])
         .then(([build]) => { if (importState === st) st.state = { status: 'ready', build }; })
         .catch((e) => {
           if (importState === st) st.state = { status: 'error', message: e?.code === 'bad-version'

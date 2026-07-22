@@ -43,6 +43,7 @@
 
     var cache = new Map();
     var fallback = typeof config.fallback === 'string' ? config.fallback : '';
+    var transform = typeof config.transform === 'function' ? config.transform : null;
     var overrides = config.overrides || {};
 
     var baseOptions = {
@@ -107,15 +108,18 @@
         }
         var url = config.resolveUrl(instance.reference);
         if (!url) return false;
+        function apply(html) {
+          instance.setContent(transform ? transform(html, instance.reference) : html);
+        }
         if (cache.has(url)) {
-          instance.setContent(cache.get(url));
+          apply(cache.get(url));
           return;
         }
         if (instance._poe2Loading) return;
         instance._poe2Loading = true;
         fetchFragment(url, cache, fallback)
           .then(function (result) {
-            instance.setContent(result.html);
+            apply(result.html);
           })
           .finally(function () { instance._poe2Loading = false; });
       },
