@@ -6,7 +6,7 @@
 // attributes consumed by build-editor.js.
 import { esc, classLine } from './builds-render.js';
 import { gearViolations } from './build-rules.js';
-import { resolveMod } from './mod-core.js';
+import { modViolations, resolveMod } from './mod-core.js';
 import { decode as decodePassiveCode } from './passive-code.js';
 
 export { esc };
@@ -120,6 +120,12 @@ export function renderGear(build, ctx) {
 
   const checks = [
     ...violations.map((v) => ({ tone: 'is-warn', text: v.message })),
+    ...(ctx.pools ? visible.flatMap((s) => {
+      const cell = build.gear[s.id];
+      if (!cell?.item) return [];
+      return modViolations(cell, ctx.pools)
+        .map(({ message }) => ({ tone: 'is-warn', text: `${s.name}: ${message}` }));
+    }) : []),
     ...visible.filter((s) => !build.gear[s.id]?.item && !ghosted(s))
       .map((s) => ({ tone: 'is-info', text: `${s.name} is empty.` })),
   ];

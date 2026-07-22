@@ -98,6 +98,30 @@ test('renderGear: checks card lists empty slots as info lines', () => {
   assert.match(html, /is-info/);
 });
 
+test('renderGear: checks card warns when a filled slot exceeds the prefix cap', () => {
+  const prefixFamilies = Object.fromEntries(Array.from({ length: 4 }, (_, i) => {
+    const n = i + 1;
+    return [`prefix${n}`, {
+      name: `Prefix ${n}`, origin: 'standard', scope: 'equipment', generic: `Prefix ${n}`,
+      tiers: [{ id: `prefix${n}-tier`, name: `Tier ${n}`, level: 1, gen: 'prefix', text: `Prefix ${n}` }],
+    }];
+  }));
+  const pools = {
+    families: prefixFamilies,
+    bases: { 'iron-hat': Object.keys(prefixFamilies).map((a) => ({ a })) },
+    uniques: {},
+  };
+  const b = fixed();
+  b.gear.helmet = {
+    item: { kind: 'base', slug: 'iron-hat' },
+    mods: Object.keys(prefixFamilies).map((affix) => ({ affix, tier: `${affix}-tier` })),
+    corrupted: null,
+  };
+
+  const html = renderGear(b, { ...ctx, pools });
+  assert.match(html, /<li class="is-warn">Helmet: 4 prefixes exceed 3<\/li>/);
+});
+
 test('rankDocs: stable partition by ranked slugs', () => {
   const docs = [{ slug: 'a' }, { slug: 'b' }, { slug: 'c' }, { slug: 'd' }];
   assert.deepEqual(rankDocs(docs, ['c', 'a']).map((d) => d.slug), ['c', 'a', 'b', 'd']);

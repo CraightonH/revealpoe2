@@ -99,3 +99,14 @@ test('modPickerHtml: unique mode renders only the corrupted single-choice sectio
   assert.match(html, /data-mod-add="corrarm"/);
   assert.ok(!/Prefixes/.test(html), 'no prefix column for a unique corrupted picker');
 });
+
+test('modPickerHtml: unique mode ignores a stale chosen corrupted affix', () => {
+  const view = { prefix: [], suffix: [], corrupted: poolsForBase(POOLS, 'iron-greaves').corrupted, mode: 'unique' };
+  const cell = { item: { kind: 'unique', slug: 'the-anvil' }, mods: [],
+    corrupted: { affix: 'missing-affix', tier: 'missing-tier' } };
+
+  let html;
+  assert.doesNotThrow(() => { html = modPickerHtml(view, cell); });
+  assert.equal(typeof html, 'string');
+  assert.ok(!html.includes('<div class="mod-picker__chosen"><h4>Chosen</h4>'));
+});

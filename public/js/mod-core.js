@@ -46,12 +46,13 @@ export function modPickerHtml(view, cell) {
 
   if (view.mode === 'unique') {
     const cur = cell?.corrupted?.affix ?? null;
+    const curFam = cur ? famByAffix.get(cur) : null;
     return `<div class="mod-picker" data-mod-picker>` +
       `<header class="mod-picker__head"><h3>Corrupted implicit</h3>` +
       `<button type="button" class="mod-picker__close" data-mod-close aria-label="Close">×</button></header>` +
       `<div class="mod-picker__col"><h4>Vaal implicit</h4>` +
       `${view.corrupted.map((f) => `<button type="button" class="mod-picker__row${f.affix === cur ? ' is-chosen' : ''}" data-mod-add="${esc(f.affix)}"><span class="mod-picker__generic">${esc(f.generic)}</span></button>`).join('') || '<p class="mod-picker__none">No corrupted implicits on this base.</p>'}</div>` +
-      `${cur ? `<div class="mod-picker__chosen"><h4>Chosen</h4>${tierSelect(cur, famByAffix.get(cur), cell.corrupted.tier)}<button type="button" class="mod-picker__remove" data-mod-remove="${esc(cur)}" aria-label="Remove">×</button></div>` : ''}` +
+      `${curFam ? `<div class="mod-picker__chosen"><h4>Chosen</h4>${tierSelect(cur, curFam, cell.corrupted.tier)}<button type="button" class="mod-picker__remove" data-mod-remove="${esc(cur)}" aria-label="Remove">×</button></div>` : ''}` +
       `</div>`;
   }
 

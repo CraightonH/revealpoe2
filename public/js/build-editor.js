@@ -23,7 +23,7 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
     const b = build();
     if (!b) { location.hash = ''; return; }
     container.innerHTML = renderEditor(b, {
-      planner, resolveRef, weaponSet, mode,
+      planner, resolveRef, pools, weaponSet, mode,
       builds: store.list(), currentId: buildId, switcherOpen, classPicker, renaming,
     });
   };

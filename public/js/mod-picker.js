@@ -25,13 +25,40 @@ function defaultTier(view, affix) {
 export function openModPicker({ anchorEl, ref, cell, pools, onChange }) {
   closeModPicker();
   const view = viewFor(ref, pools);
+  const slotId = anchorEl.getAttribute('data-mods-edit');
   const el = document.createElement('div');
   el.className = 'mod-picker-pop';
   const onKey = (e) => { if (e.key === 'Escape') closeModPicker(); };
   current = { el, onKey, cell };
   document.addEventListener('keydown', onKey);
 
-  const rerender = () => { el.innerHTML = modPickerHtml(view, current.cell); position(); };
+  const filterRows = (value) => {
+    const q = value.trim().toLowerCase();
+    el.querySelectorAll('.mod-picker__col .mod-picker__row').forEach((row) => {
+      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  };
+  const rerender = () => {
+    const searchInput = el.querySelector('.mod-picker__search');
+    const searchValue = searchInput?.value ?? '';
+    const searchFocused = document.activeElement === searchInput;
+    const selectionStart = searchInput?.selectionStart;
+    const selectionEnd = searchInput?.selectionEnd;
+    el.innerHTML = modPickerHtml(view, current.cell);
+    const nextSearchInput = el.querySelector('.mod-picker__search');
+    if (nextSearchInput) {
+      nextSearchInput.value = searchValue;
+      filterRows(searchValue);
+      if (searchFocused) {
+        nextSearchInput.focus();
+        if (selectionStart !== null && selectionStart !== undefined &&
+            selectionEnd !== null && selectionEnd !== undefined) {
+          nextSearchInput.setSelectionRange(selectionStart, selectionEnd);
+        }
+      }
+    }
+    position();
+  };
   const emit = (next) => { current.cell = next; onChange(next); rerender(); };
 
   el.addEventListener('click', (e) => {
@@ -60,14 +87,14 @@ export function openModPicker({ anchorEl, ref, cell, pools, onChange }) {
   });
   el.addEventListener('input', (e) => {
     if (!e.target.matches('.mod-picker__search')) return;
-    const q = e.target.value.trim().toLowerCase();
-    el.querySelectorAll('.mod-picker__col .mod-picker__row').forEach((row) => {
-      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
-    });
+    filterRows(e.target.value);
   });
 
   function position() {
-    const r = anchorEl.getBoundingClientRect();
+    const live = slotId === null
+      ? anchorEl
+      : document.querySelector(`[data-mods-edit="${slotId}"]`) || anchorEl;
+    const r = live.getBoundingClientRect();
     el.style.top = `${window.scrollY + r.bottom + 6}px`;
     el.style.left = `${Math.min(window.scrollX + r.left, window.scrollX + document.documentElement.clientWidth - 360)}px`;
   }
