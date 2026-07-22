@@ -181,13 +181,13 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
    The doll owns the full section width; checks + tray sit in a card row
    beneath it, so the wells can run mobalytics-large. */
 .editor-gear-layout { display: flex; flex-direction: column; gap: 14px; }
-.editor-doll-board { position: relative; padding: 26px 20px; border: 1px solid var(--border);
+.editor-doll-board { position: relative; padding: 22px 18px; border: 1px solid var(--border);
   border-radius: 8px; box-shadow: 0 12px 32px rgb(0 0 0 / .14);
   background: radial-gradient(ellipse at 50% 28%, rgb(255 255 255 / .025), transparent 60%),
     color-mix(in srgb, var(--bg-surface) 88%, transparent); }
-.editor-doll { display: grid; gap: 12px; max-width: 940px; margin: 0 auto;
+.editor-doll { display: grid; gap: 10px; max-width: 705px; margin: 0 auto;
   grid-template-columns: 1.25fr 1fr 1.25fr 1fr 1.25fr;
-  grid-template-rows: 40px minmax(120px, auto) minmax(140px, auto) minmax(140px, auto) minmax(104px, auto) minmax(116px, auto);
+  grid-template-rows: 30px minmax(90px, auto) minmax(105px, auto) minmax(105px, auto) minmax(78px, auto) minmax(87px, auto);
   grid-template-areas:
     ".  .      helmet .      ."
     "w1 .      helmet amulet w2"
@@ -200,10 +200,10 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
 .editor-slot--helmet { grid-area: helmet; }
 .editor-slot--body   { grid-area: body; }
 .editor-slot--amulet { grid-area: amulet; }
-.editor-slot--ring1  { grid-area: ring1; align-self: end; min-height: 96px; }
-.editor-slot--ring2  { grid-area: ring2; align-self: end; min-height: 96px; }
-.editor-slot--gloves { grid-area: gloves; align-self: end; min-height: 210px; }
-.editor-slot--boots  { grid-area: boots;  align-self: end; min-height: 210px; }
+.editor-slot--ring1  { grid-area: ring1; align-self: end; min-height: 72px; }
+.editor-slot--ring2  { grid-area: ring2; align-self: end; min-height: 72px; }
+.editor-slot--gloves { grid-area: gloves; align-self: end; min-height: 158px; }
+.editor-slot--boots  { grid-area: boots;  align-self: end; min-height: 158px; }
 .editor-slot--belt   { grid-area: belt; }
 .editor-slot--flask1 { grid-area: flask1; }
 .editor-slot--flask2 { grid-area: flask2; }
