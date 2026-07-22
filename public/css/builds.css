@@ -340,10 +340,15 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
 .editor-chain--granted { border-left: 3px solid var(--color-unique); }
 .editor-chain--granted .editor-orb--gem { border-color: var(--color-unique);
   box-shadow: 0 0 14px color-mix(in srgb, var(--color-unique) 25%, transparent); }
-.editor-setup__source { display: block; font-size: 11px; color: var(--color-default); }
-.editor-setup__source .editor-item { flex-direction: row; gap: 4px; display: inline-flex; }
-.editor-setup__source .well-tile { display: none; }
-.editor-setup__source .editor-item__name { font-size: 11px; }
+.editor-setup__source { display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--color-default); }
+.editor-source-chip { display: inline-flex; width: 26px; height: 26px; padding: 2px;
+  border: 1px solid color-mix(in srgb, var(--color-unique) 45%, var(--border)); border-radius: 5px;
+  background: rgb(0 0 0 / .3); cursor: help; }
+.source-tile { position: relative; width: 100%; height: 100%; display: flex; align-items: center;
+  justify-content: center; color: rgb(255 255 255 / .7); font: 9px/1 var(--font-display); }
+.source-tile__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.source-tile__img + .source-tile__initials { display: none; }
 .editor-socket__clear { position: absolute; top: -7px; right: -7px; display: none; width: 18px; height: 18px;
   padding: 0; border: 0; border-radius: 50%; background: rgb(0 0 0 / .7); color: var(--color-normal);
   font-size: 11px; line-height: 1; cursor: pointer; z-index: 1; }

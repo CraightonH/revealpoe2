@@ -37,6 +37,16 @@ function wellArt(ref, resolveRef) {
     `${tile(doc, name, 'well-art')}</span>`;
 }
 
+/** Tiny icon-only chip for the granted "from <item>" tagline — the icon
+    identifies, the hover card / title names. */
+function sourceChip(ref, resolveRef) {
+  const doc = resolveRef(ref) || {};
+  const name = doc.name || ref.slug;
+  const card = doc.cardUrl ? ` data-card-url="${esc(doc.cardUrl)}"` : '';
+  return `<span class="editor-source-chip"${card} aria-label="${esc(name)}" title="${esc(name)}">` +
+    `${tile(doc, name, 'source-tile')}</span>`;
+}
+
 /** Item chip: icon tile + rarity-colored name, card-tooltip wired. */
 function wellBody(ref, resolveRef) {
   const doc = resolveRef(ref) || {};
@@ -203,7 +213,7 @@ export function renderSkills(build, ctx) {
   }));
   const grantedHtml = grantedRows(build, ctx.planner).map((r) => chainRow({
     idPrefix: `g:${r.key}`, gemRef: { kind: 'gem', slug: r.skill }, supports: r.supports,
-    label: `<span class="editor-setup__source">from ${wellBody(r.item, ctx.resolveRef)}</span>`,
+    label: `<span class="editor-setup__source">from ${sourceChip(r.item, ctx.resolveRef)}</span>`,
     removable: false, index: -1, warnings: [], ctx,
   }));
   return `<section class="editor-chapter editor-skills" id="skills" aria-labelledby="skills-h">
