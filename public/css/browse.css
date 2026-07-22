@@ -622,6 +622,7 @@ html[data-card-size="xl"] .gem-index { --gem-index-content-scale: 1.5; }
 }
 .tc-pin-chip__remove:hover,
 .tc-pin-chip__remove:focus-visible { background: color-mix(in srgb, var(--color-normal) 9%, transparent); color: var(--color-normal); outline: none; }
+.tc-pin-tray__promote,
 .tc-pin-tray__clear {
   padding: calc(4px * var(--gem-index-content-scale)) calc(6px * var(--gem-index-content-scale));
   flex: 0 0 auto;
@@ -631,6 +632,8 @@ html[data-card-size="xl"] .gem-index { --gem-index-content-scale: 1.5; }
   font: calc(9px * var(--gem-index-content-scale))/1.2 var(--font-regular);
   cursor: pointer;
 }
+.tc-pin-tray__promote:hover,
+.tc-pin-tray__promote:focus-visible,
 .tc-pin-tray__clear:hover,
 .tc-pin-tray__clear:focus-visible,
 .tc-pin-tray__clear.is-confirming { color: var(--color-normal); outline: none; text-decoration: underline; }

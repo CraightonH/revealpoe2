@@ -227,6 +227,12 @@ test('GET /theorycraft renders the page with a query input', async () => {
   assert.match(res.text, /\/static\/js\/theorycraft-client\.js/);
 });
 
+test('GET /theorycraft renders a control to promote pinned items to a build', async () => {
+  const res = await request(createApp()).get('/theorycraft');
+  assert.equal(res.status, 200);
+  assert.match(res.text, /data-tc-pin-promote/);
+});
+
 test('GET /theorycraft/results?q=herald returns grouped compact index rows', async () => {
   const res = await request(createApp()).get('/theorycraft/results?q=herald');
   assert.equal(res.status, 200);

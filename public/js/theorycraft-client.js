@@ -4,6 +4,7 @@
 import { GROUPS, groupQuery } from '/static/js/query-core.js';
 import { initItemIndex } from '/static/js/item-index.js';
 import { createPinStore, pinKey } from '/static/js/pin-store.js';
+import { openBuildMenu } from '/static/js/add-to-build.js';
 
 const INDEX_URL = '/static/generated/search-index.json';
 
@@ -235,6 +236,21 @@ if (root && input && target) {
       const proxy = Array.from(proxyContainer.querySelectorAll('.tc-pin-proxy')).find((row) => pinKey(refForRow(row)) === pinKey(ref));
       proxy?.click();
       queueMicrotask(syncDetailPins);
+      return;
+    }
+    if (event.target.closest('[data-tc-pin-promote]')) {
+      event.preventDefault();
+      const KIND = { gem: 'gem', support: 'gem', spirit: 'gem', unique: 'unique', base: 'base' };
+      const refs = resolvedPins
+        .filter(({ ref }) => KIND[ref.category])
+        .map(({ ref }) => ({ kind: KIND[ref.category], slug: ref.slug }));
+      if (!refs.length) {
+        notice.hidden = false;
+        notice.innerHTML = '<span>Only gems, uniques, and bases can go in a build — no pinned items qualify.</span>' +
+          '<button type="button" data-tc-pin-notice-dismiss aria-label="Dismiss notice">×</button>';
+        return;
+      }
+      openBuildMenu(event.target.closest('[data-tc-pin-promote]'), refs);
       return;
     }
     if (event.target.closest('[data-tc-pin-clear]')) {
