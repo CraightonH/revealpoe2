@@ -6,7 +6,10 @@ import { poolsForBase, corruptedForRef, modPickerHtml, resolveMod } from '/stati
 let current = null;
 export function closeModPicker() {
   current?.el.remove();
-  if (current) document.removeEventListener('keydown', current.onKey);
+  if (current) {
+    document.removeEventListener('keydown', current.onKey);
+    document.removeEventListener('pointerdown', current.onDocDown, true);
+  }
   current = null;
 }
 
@@ -29,8 +32,14 @@ export function openModPicker({ anchorEl, ref, cell, pools, onChange }) {
   const el = document.createElement('div');
   el.className = 'mod-picker-pop';
   const onKey = (e) => { if (e.key === 'Escape') closeModPicker(); };
-  current = { el, onKey, cell };
+  // Any pointer press outside the popover dismisses it. Listening for
+  // pointerdown (not click) is safe against self-close: this popover is opened
+  // from a click handler, so the opening interaction's pointerdown already
+  // fired before this listener was attached — only a fresh press reaches it.
+  const onDocDown = (e) => { if (!el.contains(e.target)) closeModPicker(); };
+  current = { el, onKey, onDocDown, cell };
   document.addEventListener('keydown', onKey);
+  document.addEventListener('pointerdown', onDocDown, true);
 
   const filterRows = (value) => {
     const q = value.trim().toLowerCase();
