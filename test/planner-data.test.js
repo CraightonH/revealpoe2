@@ -57,3 +57,22 @@ test('plannerData: active gems default to 5 support sockets; spirit gems tagged'
   assert.ok(gems.some((g) => g.gemType === 'spirit' && g.maxSupports === 5));
   assert.ok(gems.some((g) => g.gemType === 'support' && g.maxSupports === 0));
 });
+
+test('granted maps granting uniques to gem slugs that resolve in the gems map', () => {
+  const { granted, gems } = plannerData();
+  assert.ok(Object.keys(granted).length >= 50, 'expect a substantial granted map');
+  assert.ok(granted['choir-of-the-storm'].includes('lightning-bolt'));
+  for (const [slug, skills] of Object.entries(granted)) {
+    assert.ok(Array.isArray(skills) && skills.length > 0, `${slug}: non-empty`);
+    for (const s of skills) assert.ok(gems[s], `${slug} grants unknown gem ${s}`);
+  }
+});
+
+test('recommends maps gems to support slugs, all resolving to support-type gems', () => {
+  const { recommends, gems } = plannerData();
+  assert.ok(recommends['alchemists-boon'].includes('precision-i'));
+  for (const [slug, sups] of Object.entries(recommends)) {
+    assert.ok(gems[slug], `unknown recommending gem ${slug}`);
+    for (const s of sups) assert.equal(gems[s]?.gemType, 'support', `${slug} recommends non-support ${s}`);
+  }
+});

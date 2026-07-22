@@ -7,6 +7,8 @@
 //   slots  ordered gear-slot metadata (paper-doll layout + weapon-set groups)
 //   items  slug -> { slots, twoHanded, class, requiresMainhand? }  (bases + uniques)
 //   gems   slug -> { gemType, maxSupports, color, reqs }           (setup validation)
+//   granted    unique slug -> granted gem slugs
+//   recommends gem slug -> recommended support gem slugs
 //
 // Two-hand occupancy is derived here from the source `twohand` tag; uniques
 // inherit their base's slot mapping through the has_base edge.
@@ -74,5 +76,23 @@ export function plannerData() {
     };
   }
 
-  return { slots, items, gems };
+  // Item-granted skills: grants edges point unique -> gem-kind node (the
+  // granted skill is a gem node; it resolves in the search index too).
+  const granted = {};
+  for (const u of nodesByKind('unique')) {
+    const skills = [...new Set(
+      edgesFrom(u.id, 'grants').map((e) => getNode(e.to)).filter((n) => n && gems[n.slug]).map((n) => n.slug),
+    )];
+    if (skills.length) granted[u.slug] = skills;
+  }
+
+  // Recommended supports, source edge order -- the picker ranks these first.
+  const recommends = {};
+  for (const g of nodesByKind('gem')) {
+    const sups = edgesFrom(g.id, 'recommends_support')
+      .map((e) => getNode(e.to)).filter((n) => n?.props.gemType === 'support').map((n) => n.slug);
+    if (sups.length) recommends[g.slug] = sups;
+  }
+
+  return { slots, items, gems, granted, recommends };
 }
