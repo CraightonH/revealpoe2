@@ -303,8 +303,9 @@
   font-size: 9px; line-height: 1; cursor: pointer; z-index: 1; }
 .editor-orb:hover .editor-socket__clear, .editor-orb:focus-within .editor-socket__clear { display: block; }
 .editor-chain__warning { flex-basis: 100%; margin: 8px 0 0; color: var(--color-notable); font-size: 11px; }
-.editor-setup-add { padding: 4px 14px; border: 1px dashed var(--border); border-radius: 999px;
-  background: none; color: var(--color-default); font: 11.5px/1.4 var(--font-smallcaps);
+.editor-setup-add { display: block; width: 100%; margin-top: 10px; padding: 10px;
+  border: 1px dashed var(--border); border-radius: 8px;
+  background: none; color: var(--color-default); font: 12px/1.4 var(--font-smallcaps);
   letter-spacing: .06em; cursor: pointer; }
 .editor-setup-add:hover { color: var(--color-gem);
   border-color: color-mix(in srgb, var(--color-gem) 45%, var(--border)); }
