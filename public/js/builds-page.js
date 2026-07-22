@@ -170,10 +170,34 @@ if (root && view) {
     }
   });
 
+  // Rail scroll-spy — lives here (not the editor mount) so every dossier
+  // rendering gets it, including the read-only import view. Viewport-relative
+  // rects keep it correct under the S/M/L/XL zoom.
+  function spy() {
+    const links = view.querySelectorAll('[data-rail-link]');
+    if (!links.length) return;
+    let current = 'gear';
+    for (const id of ['gear', 'skills', 'tree', 'notes']) {
+      const el = view.querySelector(`#${id}`);
+      if (el && el.getBoundingClientRect().top <= 140) current = id;
+    }
+    // Pinned at the bottom: the last chapter wins even if it can't reach the top.
+    if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) current = 'notes';
+    links.forEach((a) => a.classList.toggle('is-here', a.getAttribute('href') === `#${current}`));
+  }
+  window.addEventListener('scroll', spy, { passive: true });
+
   store.subscribe(() => {
-    if (activeUnmount && parseRoute(location.hash).view === 'build') return;
+    if (activeUnmount && parseRoute(location.hash).view === 'build') {
+      // The editor re-renders itself on this same emission (its own
+      // subscriber), which resets the rail to the default highlight —
+      // re-run the spy after that render settles.
+      queueMicrotask(spy);
+      return;
+    }
     render();
+    queueMicrotask(spy);
   });
-  window.addEventListener('hashchange', render);
+  window.addEventListener('hashchange', () => { render(); queueMicrotask(spy); });
   render();
 }

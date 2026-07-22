@@ -306,19 +306,6 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
     if (e.key === 'Escape') { renaming = false; render(); }
   }
 
-  // Rail scroll-spy: highlight the chapter currently in view.
-  function spy() {
-    const links = container.querySelectorAll('[data-rail-link]');
-    if (!links.length) return;
-    const y = window.scrollY + 130;
-    let current = 'gear';
-    for (const id of ['gear', 'skills', 'tree', 'notes']) {
-      const el = container.querySelector(`#${id}`);
-      if (el && el.offsetTop <= y) current = id;
-    }
-    links.forEach((a) => a.classList.toggle('is-here', a.getAttribute('href') === `#${current}`));
-  }
-  window.addEventListener('scroll', spy, { passive: true });
 
   container.addEventListener('click', onClick);
   container.addEventListener('change', onChange);
@@ -332,7 +319,6 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
     container.removeEventListener('change', onChange);
     container.removeEventListener('focusout', onFocusOut);
     container.removeEventListener('keydown', onKeyDown);
-    window.removeEventListener('scroll', spy);
     unsub();
     closePicker();
   };
