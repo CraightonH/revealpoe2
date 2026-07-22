@@ -1047,6 +1047,18 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
 .add-build:hover, .add-build:focus-visible { opacity: 1; }
 .add-build-icon { width: 1.05em; height: 1.05em; }
 
+.build-menu { position: absolute; z-index: 60; min-width: 12rem; display: flex; flex-direction: column;
+  background: var(--card-bg, #14130f); border: 1px solid var(--card-border, #3a352a); border-radius: 6px;
+  padding: .25rem; box-shadow: 0 8px 24px rgb(0 0 0 / .5); }
+.build-menu button { text-align: left; padding: .45rem .7rem; background: none; border: 0;
+  color: inherit; cursor: pointer; border-radius: 4px; font: inherit; }
+.build-menu button:hover, .build-menu button:focus-visible { background: rgb(255 255 255 / .08); }
+.build-menu [data-menu-new] { border-top: 1px solid var(--card-border, #3a352a); border-radius: 0 0 4px 4px; }
+.build-toast { position: fixed; bottom: 1.25rem; left: 50%; transform: translateX(-50%); z-index: 70;
+  background: var(--card-bg, #14130f); border: 1px solid var(--card-border, #3a352a); border-radius: 6px;
+  padding: .6rem 1rem; box-shadow: 0 8px 24px rgb(0 0 0 / .5); }
+.build-toast a { text-decoration: underline; }
+
 /* ── Gem scaling table (Levels + Quality) ────────────────────────────────────
    Rendered inside the rec-group collapsible shell (see gem-level-table.njk).
    High-contrast numbers for at-a-glance scanning down a level / quality. */

@@ -232,3 +232,9 @@ test('site nav links to /builds on every page', async () => {
   assert.equal(res.status, 200);
   assert.match(res.text, /href="\/builds"/);
 });
+
+test('every page loads the add-to-build handler', async () => {
+  const app = createApp();
+  const res = await request(app).get('/gems');
+  assert.ok(res.text.includes('/static/js/add-to-build.js'));
+});
