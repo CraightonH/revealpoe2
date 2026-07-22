@@ -103,15 +103,17 @@ export function renderGear(build, ctx) {
     `<div class="editor-side-card"><h3>Unassigned — added from the wiki</h3>
       ${tray ? `<ul class="editor-tray__list">${tray}</ul>` : '<p class="editor-none">Nothing waiting. Use “Add to build” on any card.</p>'}</div>`;
 
+  // Checks and the tray are editor helpers — read-only renders just the doll.
+  const side = ro ? '' : `<div class="editor-gear-side">
+        <div class="editor-side-card"><h3>Checks</h3>${checksHtml}</div>
+        ${trayCard}
+      </div>`;
   return `<section class="editor-chapter editor-gear" id="gear" aria-labelledby="gear-h">
     <header class="chapter-head"><h2 id="gear-h">Gear</h2><span class="chapter-rule"></span>
       <div class="editor-set-toggle" role="group" aria-label="Weapon set">${toggle}</div></header>
-    <div class="editor-gear-layout">
+    <div class="editor-gear-layout${ro ? ' editor-gear-layout--solo' : ''}">
       <div class="editor-doll-board"><div class="editor-doll">${wells}</div></div>
-      <div class="editor-gear-side">
-        <div class="editor-side-card"><h3>Checks</h3>${checksHtml}</div>
-        ${trayCard}
-      </div>
+      ${side}
     </div></section>`;
 }
 

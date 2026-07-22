@@ -165,6 +165,7 @@
 
 /* ---- gear: abstract doll (in-game spatial arrangement, no game art) ---- */
 .editor-gear-layout { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(240px, .75fr); gap: 20px; }
+.editor-gear-layout--solo { grid-template-columns: minmax(0, 1fr); }
 .editor-doll-board { position: relative; padding: 20px 16px; border: 1px solid var(--border);
   border-radius: 8px; box-shadow: 0 12px 32px rgb(0 0 0 / .14);
   background: radial-gradient(ellipse at 50% 28%, rgb(255 255 255 / .025), transparent 60%),
