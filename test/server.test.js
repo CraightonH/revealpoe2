@@ -238,3 +238,11 @@ test('every page loads the add-to-build handler', async () => {
   const res = await request(app).get('/gems');
   assert.ok(res.text.includes('/static/js/add-to-build.js'));
 });
+
+test('/builds shell loads the editor modules', async () => {
+  const app = createApp();
+  const res = await request(app).get('/builds');
+  assert.ok(res.text.includes('/static/js/build-editor.js') || res.text.includes('builds-page.js'),
+    'editor reachable from shell');
+  assert.ok(res.text.includes('/static/css/planner-art.css'));
+});
