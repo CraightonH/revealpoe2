@@ -1631,6 +1631,7 @@ export default function init(canvas, data) {
     const t = ensureTip();
     if (!t) return;
     const best = nodeAtClient(e.clientX, e.clientY);
+    canvas.style.cursor = best ? 'pointer' : '';
     if (best) {
       clearTimeout(hideTimer);
       showCardFor(best);
