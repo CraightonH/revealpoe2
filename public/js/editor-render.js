@@ -92,13 +92,14 @@ export function renderGear(build, ctx) {
     ? `<ul class="editor-checks">${checks.map((c) => `<li class="${c.tone}">${esc(c.text)}</li>`).join('')}</ul>`
     : '<p class="editor-checks editor-checks--clear">Everything checks out.</p>';
 
-  const tray = build.unassigned.map((ref, i) =>
+  // The tray is a workbench, not part of the build — readers never see it.
+  const tray = ro ? '' : build.unassigned.map((ref, i) =>
     `<li class="editor-tray__row">${wellBody(ref, resolveRef)}` +
-    (ro ? '' : `<span class="editor-tray__actions">` +
-      `<button type="button" data-tray-equip="${i}">Equip</button>` +
-      `<button type="button" data-tray-remove="${i}" aria-label="Remove from build">×</button>` +
-      `</span>`) + '</li>').join('');
-  const trayCard = (ro && !tray) ? '' :
+    `<span class="editor-tray__actions">` +
+    `<button type="button" data-tray-equip="${i}">Equip</button>` +
+    `<button type="button" data-tray-remove="${i}" aria-label="Remove from build">×</button>` +
+    `</span></li>`).join('');
+  const trayCard = ro ? '' :
     `<div class="editor-side-card"><h3>Unassigned — added from the wiki</h3>
       ${tray ? `<ul class="editor-tray__list">${tray}</ul>` : '<p class="editor-none">Nothing waiting. Use “Add to build” on any card.</p>'}</div>`;
 

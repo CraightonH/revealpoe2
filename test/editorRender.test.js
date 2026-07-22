@@ -224,6 +224,7 @@ test('renderEditor: view mode strips every edit affordance, offers Edit + share'
   assert.match(html, /data-edit-build/);
   assert.match(html, /data-share/);
   assert.ok(!html.includes('editor-orb--empty'), 'empty sockets hidden');
+  assert.ok(!html.includes('Unassigned'), 'tray hidden in read-only');
   assert.match(html, /data-weapon-set="2"/);       // set toggle is view state, stays
   assert.ok(html.includes('note text') && html.includes('desc text'), 'content still shown');
   assert.match(html, /data-switcher-toggle/);       // own-build navigation stays
