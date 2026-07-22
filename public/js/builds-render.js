@@ -23,7 +23,7 @@ export function parseRoute(hash) {
 const titleCase = (slug) => String(slug ?? '').split('-')
   .map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
-const classLine = (b) => [b.class, b.ascendancy].filter(Boolean).map(titleCase).join(' · ') || 'No class chosen';
+export const classLine = (b) => [b.class, b.ascendancy].filter(Boolean).map(titleCase).join(' · ') || 'No class chosen';
 
 const dateLine = (ms) => new Date(ms).toISOString().slice(0, 10);
 
@@ -70,8 +70,7 @@ function sections(b, resolveRef) {
   const unassigned = b.unassigned.map((ref) => `<li>${refHtml(ref, resolveRef)}</li>`);
   const skills = b.skills.map((s) => {
     const sups = s.supports.map((sup) => `<li>${refHtml({ kind: 'gem', slug: sup.slug }, resolveRef)}</li>`).join('');
-    const lvl = s.level ? ` <span class="builds-setup__level">Lv ${esc(s.level)}</span>` : '';
-    return `<li class="builds-setup">${refHtml({ kind: 'gem', slug: s.gem.slug }, resolveRef)}${lvl}
+    return `<li class="builds-setup">${refHtml({ kind: 'gem', slug: s.gem.slug }, resolveRef)}
       ${sups ? `<ul class="builds-setup__supports">${sups}</ul>` : ''}</li>`;
   });
   const tree = b.tree.code
@@ -79,6 +78,7 @@ function sections(b, resolveRef) {
     : 'No passive tree yet';
   const sec = (title, body) => `<section class="builds-section"><h2>${title}</h2>${body}</section>`;
   return [
+    b.description ? sec('Description', `<p class="builds-desc">${esc(b.description)}</p>`) : '',
     sec('Gear', gear.length ? `<ul class="builds-gear">${gear.join('')}</ul>` : '<p class="builds-none">Nothing equipped.</p>'),
     unassigned.length ? sec('Unassigned items', `<ul class="builds-unassigned">${unassigned.join('')}</ul>`) : '',
     sec('Skills', skills.length ? `<ul class="builds-setups">${skills.join('')}</ul>` : '<p class="builds-none">No skill setups.</p>'),

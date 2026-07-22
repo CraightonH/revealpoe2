@@ -65,3 +65,13 @@ test('renderImport states', () => {
 test('esc escapes html metacharacters', () => {
   assert.equal(esc(`<a b="c">&'`), '&lt;a b=&quot;c&quot;&gt;&amp;&#39;');
 });
+
+test('renderBuild: shows description, never a skill level', () => {
+  const b = emptyBuild({ now: () => 1, uuid: () => 'x',
+    description: 'Lightning bows.',
+    skills: [{ gem: { slug: 'spark' }, level: 12, supports: [] }] });
+  const html = renderBuild(b, () => null);
+  assert.match(html, /builds-desc/);
+  assert.ok(html.includes('Lightning bows.'));
+  assert.ok(!/Lv 12/.test(html), 'levels are not surfaced');
+});
