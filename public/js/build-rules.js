@@ -69,6 +69,12 @@ export function gearViolations(build, plannerData) {
   return out;
 }
 
+/** Violations that placing `ref` into `slotId` would create for that slot. */
+export function equipViolations(build, plannerData, slotId, ref) {
+  const gear = { ...build.gear, [slotId]: { item: ref, wishlist: [] } };
+  return gearViolations({ ...build, gear }, plannerData).filter((v) => v.slotId === slotId);
+}
+
 export function setupViolations(build, gemData) {
   const out = [];
   const setups = build?.skills ?? [];

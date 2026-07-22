@@ -2,7 +2,7 @@
 // editor-render.js; this file owns event wiring and store mutations.
 import { renderEditor } from '/static/js/editor-render.js';
 import { openPicker, closePicker } from '/static/js/entity-picker.js';
-import { legalSlots } from '/static/js/build-rules.js';
+import { legalSlots, equipViolations } from '/static/js/build-rules.js';
 import { safeWrite } from '/static/js/build-host.js';
 
 const KIND_FOR_CATEGORY = { gem: 'gem', support: 'gem', spirit: 'gem', unique: 'unique', base: 'base' };
@@ -25,6 +25,22 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
     gear[slotId] = { item: ref, wishlist: gear[slotId]?.wishlist ?? [] };
     const unassigned = b.unassigned.filter((r) => !(r.kind === ref.kind && r.slug === ref.slug));
     if (prev) unassigned.push(prev);
+
+    // A two-hander landing in a mainhand slot displaces an off-hand it can't
+    // share a weapon set with (in-game behavior). Companion off-hands (e.g.
+    // bow+quiver) produce no violation and stay equipped.
+    const mainMatch = /^weapon(\d+)a$/.exec(slotId);
+    if (mainMatch && planner.items[ref.slug]?.twoHanded) {
+      const offId = `weapon${mainMatch[1]}b`;
+      const offItem = gear[offId]?.item;
+      if (offItem) {
+        const v = equipViolations({ ...b, gear }, planner, offId, offItem);
+        if (v.some((x) => x.code === 'two-hander-blocks-offhand')) {
+          gear[offId] = { ...gear[offId], item: null };
+          unassigned.push(offItem);
+        }
+      }
+    }
     patch({ gear, unassigned });
   }
 
@@ -34,7 +50,11 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
       .filter(([, rec]) => rec.slots.includes(slotId)).map(([slug]) => slug));
     openPicker({
       title: `Choose an item — ${planner.slots.find((s) => s.id === slotId)?.name ?? slotId}`,
-      docs: docs.filter((d) => legal.has(d.slug)),
+      docs: docs.filter((d) => legal.has(d.slug)).filter((d) => {
+        const ref = { kind: KIND_FOR_CATEGORY[d.category], slug: d.slug };
+        return !equipViolations(build(), planner, slotId, ref)
+          .some((x) => x.code === 'two-hander-blocks-offhand');
+      }),
       categories: ['unique', 'base'],
       onPick: (doc) => equip(slotId, { kind: KIND_FOR_CATEGORY[doc.category], slug: doc.slug }),
     });
@@ -112,7 +132,9 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
                 unassigned: b.unassigned.filter((_, i) => i !== Number(equipIdx)) });
         return;
       }
-      const slots = legalSlots(ref, planner);
+      const slots = legalSlots(ref, planner)
+        .filter((s) => !equipViolations(build(), planner, s, ref)
+          .some((x) => x.code === 'two-hander-blocks-offhand'));
       if (!slots.length) return;
       const target = slots.find((s) => !build().gear[s]?.item) ?? slots[0];
       equip(target, ref);   // equip() re-adds any displaced item to the tray

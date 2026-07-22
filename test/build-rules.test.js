@@ -1,7 +1,7 @@
 // test/build-rules.test.js — pure slot/socket legality rules (dual-use module).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { legalSlots, gearViolations, setupViolations } from '../public/js/build-rules.js';
+import { legalSlots, gearViolations, setupViolations, equipViolations } from '../public/js/build-rules.js';
 
 const PD = {
   slots: [
@@ -73,6 +73,28 @@ test('gearViolations tolerates a malformed item record (missing slots) without t
   const b = { gear: { body: { item: { kind: 'base', slug: 'foo' } } }, skills: [] };
   assert.doesNotThrow(() => gearViolations(b, pd));
   assert.deepEqual(gearViolations(b, pd), []); // can't prove illegal → no violation
+});
+
+test('equipViolations: placing a shield into the off-hand of an equipped two-hander is blocked', () => {
+  const b = build({ gear: {
+    weapon1a: { item: { kind: 'base', slug: 'great-mace' } },
+  } });
+  const v = equipViolations(b, PD, 'weapon1b', { kind: 'base', slug: 'tower-shield' });
+  assert.ok(v.some((x) => x.code === 'two-hander-blocks-offhand' && x.slotId === 'weapon1b'));
+});
+
+test('equipViolations: placing a quiver into the off-hand of an equipped bow is legal', () => {
+  const b = build({ gear: {
+    weapon1a: { item: { kind: 'base', slug: 'war-bow' } },
+  } });
+  const v = equipViolations(b, PD, 'weapon1b', { kind: 'base', slug: 'broadhead-quiver' });
+  assert.ok(!v.some((x) => x.code === 'two-hander-blocks-offhand'));
+});
+
+test('equipViolations: placing a shield into an empty off-hand with no main-hand equipped is clean', () => {
+  const b = build({ gear: {} });
+  const v = equipViolations(b, PD, 'weapon1b', { kind: 'base', slug: 'tower-shield' });
+  assert.equal(v.length, 0);
 });
 
 test('setupViolations: duplicate support across setups', () => {
