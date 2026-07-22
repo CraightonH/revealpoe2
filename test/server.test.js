@@ -244,5 +244,8 @@ test('/builds shell loads the editor modules', async () => {
   const res = await request(app).get('/builds');
   assert.ok(res.text.includes('/static/js/build-editor.js') || res.text.includes('builds-page.js'),
     'editor reachable from shell');
-  assert.ok(res.text.includes('/static/css/planner-art.css'));
+  assert.ok(res.text.includes('/static/css/builds.css'));
+  // Dossier redesign (2026-07-22): the editor no longer consumes in-game
+  // texture classes, so the shell must not pay for that stylesheet.
+  assert.ok(!res.text.includes('/static/css/planner-art.css'));
 });
