@@ -99,6 +99,15 @@ if (root && view) {
           sib?.remove();
           sec.remove();
         });
+        // Rarity by chosen explicit-mod count (corrupted implicits don't count):
+        // 1–2 → magic (blue), 3+ → rare (yellow), 0 stays normal (white). Uniques
+        // keep their own UniquePopup styling.
+        const popup = box.querySelector('.newItemPopup.NormalPopup');
+        if (popup) {
+          const n = Array.isArray(cell.mods) ? cell.mods.length : 0;
+          if (n >= 3) popup.classList.replace('NormalPopup', 'RarePopup');
+          else if (n >= 1) popup.classList.replace('NormalPopup', 'MagicPopup');
+        }
         const { corrupted, mods } = modCardSections(cell, pools);
         if (corrupted || mods) {
           const content = box.querySelector('.content') || box.querySelector('.newItemPopup');

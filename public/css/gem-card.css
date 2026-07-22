@@ -635,6 +635,27 @@ a.lc.unique-type:hover {
   text-align: center;
 }
 
+/* Planner rarity by chosen explicit-mod count: magic (1–2) blue, rare (3+)
+   yellow. No in-game magic/rare header art is mirrored, so use a flat
+   rarity-tinted header + name in place of the white 3-slice; the card
+   border/glow pick up the rarity tint too. Applied by builds-page.js. */
+.MagicPopup { --card-border: color-mix(in srgb, var(--color-magic) 55%, transparent);
+  --card-glow: color-mix(in srgb, var(--color-magic) 38%, transparent); }
+.RarePopup  { --card-border: color-mix(in srgb, var(--color-rare) 55%, transparent);
+  --card-glow: color-mix(in srgb, var(--color-rare) 38%, transparent); }
+.MagicPopup .itemHeader.doubleLine,
+.RarePopup .itemHeader.doubleLine {
+  background: linear-gradient(180deg, rgb(0 0 0 / .22), rgb(0 0 0 / .5));
+  height: 56px; padding: 4px 14px; justify-content: center; text-align: center;
+  border-bottom: 1px solid var(--card-border);
+}
+.MagicPopup .normal-name { color: var(--color-magic); padding: 0; text-align: center; }
+.RarePopup .normal-name { color: var(--color-rare); padding: 0; text-align: center; }
+.MagicPopup .normal-type,
+.RarePopup .normal-type { color: var(--color-default); padding: 0; font-size: 13px; text-align: center; }
+.MagicPopup .property, .MagicPopup .requirements, .MagicPopup .default,
+.RarePopup .property, .RarePopup .requirements, .RarePopup .default { text-align: center; }
+
 /* Base item breadcrumb */
 .bases-breadcrumb {
   font-size: 12px;
