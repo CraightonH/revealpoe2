@@ -67,7 +67,7 @@ Phases 1, 2, 3 are independent and may run in parallel sessions. Phases 6, 7, 8 
 - [x] Phase 3 — In-game UI art ingestion (6ea4f3b) — *2026-07-22: the editor no longer consumes these textures (Dossier redesign); `planner-art.css` stays as the ingestion trigger, pruning decision deferred*
 - [x] Phase 4a — /builds list + read-only viewer + Add-to-Build affordance (b66ce2d)
 - [x] Phase 4b — Build editor (inventory paper-doll + skill panel + picker; granted-skill rows) (695a1a0)
-- [ ] Phase 4c — Item mod picker + `mod-pools.json` (incl. corrupted-implicit data verification)
+- [x] Phase 4c — Item mod picker + `mod-pools.json` (incl. corrupted-implicit data verification) — corrupted implicits confirmed in source (113 families, 1023/1067 bases); anchored-popover picker (prefix/suffix 3+3 + tier select, warnings-not-blocks) + build-aware well hover card; plan `docs/superpowers/plans/2026-07-22-item-mod-picker.md`
 - [ ] Phase 5 — Tree embed + Notable Priority
 - [ ] Phase 6 — Theorycraft pinning (pin board shipped in 4c41e00; promote-to-build remains, folds into 4a)
 - [ ] Phase 7 — Light math
