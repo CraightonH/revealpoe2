@@ -42,17 +42,6 @@ export function rankDocs(docs, rankedSlugs) {
   return [...ranked, ...docs.filter((d) => !pos.has(d.slug))];
 }
 
-function itemChip(ref, resolveRef, cls = '') {
-  const doc = resolveRef(ref) || {};
-  const name = doc.name || ref.slug;
-  const icon = doc.iconUrl
-    ? `<img class=\"editor-item__icon\" src=\"${esc(doc.iconUrl)}\" alt=\"\" loading=\"lazy\" onerror=\"this.style.visibility='hidden'\">`
-    : '';
-  // data-card-url rides the existing global card-tooltip harness (base.njk):
-  // hovering a filled well/chip shows the full item card, per the 4b spec.
-  const card = doc.cardUrl ? ` data-card-url=\"${esc(doc.cardUrl)}\"` : '';
-  return `<span class=\"editor-item ${cls}\"${card}>${icon}<span class=\"editor-item__name editor-item__name--${esc(ref.kind)}\">${esc(name)}</span></span>`;
-}
 
 export function renderGear(build, ctx) {
   const { planner, resolveRef, weaponSet } = ctx;
@@ -133,63 +122,66 @@ export function grantedRows(build, planner) {
   return rows;
 }
 
-const SOCKET_COLORS = new Set(['blue', 'green', 'red', 'white']);
+const ORB_COLOR = { r: 'r', g: 'g', b: 'b', w: 'w', red: 'r', green: 'g', blue: 'b', white: 'w' };
 
-function socketHtml(idPrefix, j, supRef, planner) {
+function supportNode(idPrefix, j, supRef, ctx) {
   if (!supRef) {
-    return `<span class="editor-socket planner-support-socket--empty" data-socket="${esc(`${idPrefix}:${j}`)}"` +
-      ' role="button" tabindex="0" aria-label="Empty support socket"></span>';
+    return `<span class="chain-link chain-link--dim"></span><span class="editor-node editor-node--support">` +
+      `<span class="editor-orb editor-orb--empty" data-socket="${esc(`${idPrefix}:${j}`)}"` +
+      ` role="button" tabindex="0" aria-label="Empty support socket">＋</span>` +
+      `<span class="editor-node__sub">Support</span></span>`;
   }
-  const color = planner.gems[supRef.slug]?.color;
-  const art = SOCKET_COLORS.has(color) ? color : 'white';
-  return `<span class="editor-socket editor-socket--filled planner-support-socket--${esc(art)}"` +
-    ` data-socket="${esc(`${idPrefix}:${j}`)}" role="button" tabindex="0" title="${esc(supRef.slug)}"` +
-    ` aria-label="Support: ${esc(supRef.slug)}">` +
-    `<button class="editor-socket__clear" type="button" data-socket-clear="${esc(`${idPrefix}:${j}`)}" aria-label="Remove support">×</button></span>`;
+  const doc = ctx.resolveRef({ kind: 'gem', slug: supRef.slug }) || {};
+  const name = doc.name || supRef.slug;
+  const color = ORB_COLOR[ctx.planner.gems[supRef.slug]?.color] ?? 'w';
+  const card = doc.cardUrl ? ` data-card-url="${esc(doc.cardUrl)}"` : '';
+  return `<span class="chain-link"></span><span class="editor-node editor-node--support">` +
+    `<span class="editor-orb editor-orb--${color}" data-socket="${esc(`${idPrefix}:${j}`)}"` +
+    ` role="button" tabindex="0"${card} aria-label="Support: ${esc(name)}">${tile(doc, name, 'orb-tile')}` +
+    `<button class="editor-socket__clear" type="button" data-socket-clear="${esc(`${idPrefix}:${j}`)}" aria-label="Remove support">×</button></span>` +
+    `<span class="editor-node__name">${esc(name)}</span></span>`;
 }
 
-function setupRow({ idPrefix, gemRef, level, supports, label, removable, index, warnings, ctx }) {
-  const { planner, resolveRef } = ctx;
-  const max = planner.gems[gemRef.slug]?.maxSupports ?? 5;
-  const spirit = planner.gems[gemRef.slug]?.gemType === 'spirit';
-  const sockets = Array.from({ length: max }, (_, j) => socketHtml(idPrefix, j, supports[j], planner)).join('');
-  const levelHtml = removable
-    ? `<label class="editor-setup__level planner-gem-level-bg">Lv <input type="number" min="1" max="40"` +
-      ` data-setup-level="${index}" value="${level ?? ''}"></label>`
-    : '';
+function chainRow({ idPrefix, gemRef, supports, label, removable, index, warnings, ctx }) {
+  const rec = ctx.planner.gems[gemRef.slug] ?? {};
+  const max = rec.maxSupports ?? 5;
+  const spirit = rec.gemType === 'spirit';
+  const doc = ctx.resolveRef(gemRef) || {};
+  const name = doc.name || gemRef.slug;
+  const card = doc.cardUrl ? ` data-card-url="${esc(doc.cardUrl)}"` : '';
+  const sockets = Array.from({ length: max }, (_, j) => supportNode(idPrefix, j, supports[j], ctx)).join('');
   const controls = removable
     ? `<span class="editor-setup__controls">` +
       `<button type="button" data-setup-move="${index}:up" aria-label="Move up">↑</button>` +
       `<button type="button" data-setup-move="${index}:down" aria-label="Move down">↓</button>` +
       `<button type="button" data-setup-remove="${index}" aria-label="Remove setup">×</button></span>`
     : '';
-  const gemWell = removable
-    ? `<span class="editor-setup__gem planner-gem-icon-frame" data-gem-well="${index}" role="button" tabindex="0">${itemChip(gemRef, resolveRef)}</span>`
-    : `<span class="editor-setup__gem planner-gem-icon-frame">${itemChip(gemRef, resolveRef)}</span>`;
-  return `<li class="editor-setup planner-skill-frame${spirit ? ' editor-setup--spirit' : ''}">
-    ${gemWell}${label}${levelHtml}
-    <span class="editor-setup__sockets">${sockets}</span>${controls}
-    ${warnings.map((w) => `<p class="editor-setup__warning">${esc(w.message)}</p>`).join('')}
+  const orb = `<span class="editor-orb editor-orb--gem"${removable ? ` data-gem-well="${index}" role="button" tabindex="0"` : ''}${card}` +
+    ` aria-label="${esc(name)}">${tile(doc, name, 'orb-tile')}</span>`;
+  return `<li class="editor-chain${spirit ? ' editor-chain--spirit' : ''}${removable ? '' : ' editor-chain--granted'}">
+    <div class="chain-meta">${spirit ? '<span class="chain-spirit">Spirit</span>' : ''}${controls}</div>
+    <span class="editor-node editor-node--gem">${orb}<span class="editor-node__name editor-node__name--gem">${esc(name)}</span>${label}</span>
+    ${sockets}
+    ${warnings.map((w) => `<p class="editor-chain__warning">${esc(w.message)}</p>`).join('')}
   </li>`;
 }
 
 export function renderSkills(build, ctx) {
   const violations = setupViolations(build, ctx.planner.gems);
-  const rows = build.skills.map((s, i) => setupRow({
-    idPrefix: `s:${i}`, gemRef: s.gem, level: s.level, supports: s.supports,
-    label: '', removable: true, index: i,
+  const rows = build.skills.map((s, i) => chainRow({
+    idPrefix: `s:${i}`, gemRef: s.gem, supports: s.supports, label: '', removable: true, index: i,
     warnings: violations.filter((v) => v.setup === i), ctx,
   }));
-  const grantedHtml = grantedRows(build, ctx.planner).map((r) => setupRow({
-    idPrefix: `g:${r.key}`, gemRef: { kind: 'gem', slug: r.skill }, level: null, supports: r.supports,
-    label: `<span class="editor-setup__source">from ${itemChip(r.item, ctx.resolveRef)}</span>`,
+  const grantedHtml = grantedRows(build, ctx.planner).map((r) => chainRow({
+    idPrefix: `g:${r.key}`, gemRef: { kind: 'gem', slug: r.skill }, supports: r.supports,
+    label: `<span class="editor-setup__source">from ${wellBody(r.item, ctx.resolveRef)}</span>`,
     removable: false, index: -1, warnings: [], ctx,
   }));
-  return `<section class="editor-skills planner-skill-panel">
-    <header class="editor-section-head"><h2>Skills</h2>
-      <button class="editor-setup-add" type="button" data-setup-add>Add skill</button></header>
+  return `<section class="editor-chapter editor-skills" id="skills" aria-labelledby="skills-h">
+    <header class="chapter-head"><h2 id="skills-h">Skills</h2><span class="chapter-rule"></span>
+      <button class="editor-setup-add" type="button" data-setup-add>＋ Add skill</button></header>
     ${rows.length || grantedHtml.length
-      ? `<ul class="editor-setups">${rows.join('')}${grantedHtml.join('')}</ul>`
+      ? `<ul class="editor-chains">${rows.join('')}${grantedHtml.join('')}</ul>`
       : '<p class="editor-none">No skill setups yet.</p>'}
   </section>`;
 }

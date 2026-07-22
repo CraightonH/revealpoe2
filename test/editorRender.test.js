@@ -88,18 +88,24 @@ const SKILL_PLANNER = { ...PLANNER,
 };
 const sctx = { planner: SKILL_PLANNER, resolveRef: resolve, weaponSet: 1 };
 
-test('renderSkills: setup row with sockets, level, remove/move hooks', () => {
+test('renderSkills: chain row with sockets, icons, remove/move hooks — no level UI', () => {
   const b = fixed({ skills: [{ gem: { slug: 'spark' }, level: 12, supports: [{ slug: 'pierce' }] }] });
   const html = renderSkills(b, sctx);
   assert.match(html, /data-gem-well="0"/);
-  assert.match(html, /data-setup-level="0"[^>]*value="12"/);
+  assert.ok(!html.includes('data-setup-level'), 'level control removed');
   assert.match(html, /data-setup-remove="0"/);
   assert.match(html, /data-setup-move="0:up"/);
   assert.match(html, /data-socket="s:0:0"/);
-  assert.match(html, /planner-support-socket--green/);   // filled by pierce
-  assert.match(html, /data-socket="s:0:4"/);              // 5 sockets rendered
-  assert.match(html, /planner-support-socket--empty/);
+  assert.match(html, /editor-orb--g/);              // pierce is green ('green' fixture → g)
+  assert.match(html, /data-socket="s:0:4"/);         // 5 sockets rendered
+  assert.match(html, /editor-orb--empty/);
   assert.match(html, /data-setup-add/);
+});
+
+test('renderSkills: single-letter planner colors map to orb classes', () => {
+  const planner = { ...SKILL_PLANNER, gems: { ...SKILL_PLANNER.gems, pierce: { gemType: 'support', maxSupports: 0, color: 'g', reqs: null } } };
+  const b = fixed({ skills: [{ gem: { slug: 'spark' }, level: null, supports: [{ slug: 'pierce' }] }] });
+  assert.match(renderSkills(b, { ...sctx, planner }), /editor-orb--g/);
 });
 
 test('grantedRows + renderSkills: equipped granting item yields a non-removable row', () => {
@@ -139,7 +145,7 @@ test('renderSkills: duplicate-support violation renders inline warning', () => {
     { gem: { slug: 'spark' }, level: null, supports: [{ slug: 'pierce' }] },
     { gem: { slug: 'spark' }, level: null, supports: [{ slug: 'pierce' }] },
   ] });
-  assert.match(renderSkills(b, sctx), /editor-setup__warning/);
+  assert.match(renderSkills(b, sctx), /editor-chain__warning/);
 });
 
 test('renderEditor: assembles gear, skills, tree placeholder, notes', () => {
