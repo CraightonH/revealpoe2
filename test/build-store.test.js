@@ -8,7 +8,7 @@ import {
 const fixedNow = () => 1000;
 const fixedUuid = () => 'id-1';
 
-test('emptyBuild fills v1 defaults', () => {
+test('emptyBuild fills v2 defaults', () => {
   const b = emptyBuild({ now: fixedNow, uuid: fixedUuid });
   assert.deepEqual(b, {
     id: 'id-1', schema: SCHEMA_VERSION, name: 'Untitled Build', notes: '', description: '',
@@ -33,8 +33,8 @@ test('validateBuild accepts a default build and an id-less canonical build', () 
 
 test('validateBuild accepts populated collections', () => {
   const b = emptyBuild({ now: fixedNow, uuid: fixedUuid });
-  b.gear.helmet = { item: { kind: 'unique', slug: 'crown-of-eyes' }, wishlist: ['life'] };
-  b.gear.body = { item: null, wishlist: [] };
+  b.gear.helmet = { item: { kind: 'unique', slug: 'crown-of-eyes' }, mods: [], corrupted: null };
+  b.gear.body = { item: null, mods: [], corrupted: null };
   b.unassigned = [{ kind: 'base', slug: 'pronged-spear' }];
   b.skills = [{ gem: { slug: 'arc' }, level: 9, supports: [{ slug: 'unleash' }] }];
   b.tree = { code: 'AAAA', notablePriority: [12345, 678] };
@@ -47,7 +47,7 @@ test('validateBuild rejects bad shapes with error paths', () => {
     [(b) => { b.schema = 'x'; }, 'schema'],
     [(b) => { b.gear = []; }, 'gear'],
     [(b) => { b.gear.helmet = { item: { kind: 'unique' }, wishlist: [] }; }, 'gear.helmet.item.slug'],
-    [(b) => { b.gear.helmet = { item: null }; }, 'gear.helmet.wishlist'],
+    [(b) => { b.gear.helmet = { item: null, mods: 'nope', corrupted: null }; }, 'gear.helmet.mods'],
     [(b) => { b.unassigned = [{ kind: 'gem' }]; }, 'unassigned[0].slug'],
     [(b) => { b.skills = [{ gem: {}, level: null, supports: [] }]; }, 'skills[0].gem.slug'],
     [(b) => { b.skills = [{ gem: { slug: 'arc' }, level: 'x', supports: [] }]; }, 'skills[0].level'],
@@ -93,6 +93,48 @@ function seqStore(storage = memStorage()) {
     store: createStore(storage, { now: () => ++t, uuid: () => `id-${++n}` }),
   };
 }
+
+test('SCHEMA_VERSION is 2', () => {
+  assert.equal(SCHEMA_VERSION, 2);
+});
+
+test('validateBuild: v2 gear cell with mods + corrupted', () => {
+  const b = emptyBuild({ now: () => 1, uuid: () => 'x' });
+  b.gear.helmet = { item: { kind: 'base', slug: 'iron-hat' }, mods: [{ affix: 'life', tier: 'life1' }], corrupted: null };
+  b.gear.body = { item: { kind: 'unique', slug: 'the-x' }, mods: [], corrupted: { affix: 'corrarm', tier: 'carm1' } };
+  assert.equal(validateBuild(b).ok, true, JSON.stringify(validateBuild(b).errors));
+});
+
+test('validateBuild: legacy wishlist cell still validates (old share codes)', () => {
+  const b = emptyBuild({ now: () => 1, uuid: () => 'x' });
+  b.gear.helmet = { item: { kind: 'base', slug: 'iron-hat' }, wishlist: [] };
+  assert.equal(validateBuild(b).ok, true);
+});
+
+test('validateBuild: rejects malformed mods / corrupted', () => {
+  const b = emptyBuild({ now: () => 1, uuid: () => 'x' });
+  b.gear.helmet = { item: null, mods: [{ affix: 5 }], corrupted: null };
+  assert.equal(validateBuild(b).ok, false);
+  const b2 = emptyBuild({ now: () => 1, uuid: () => 'x' });
+  b2.gear.body = { item: null, mods: [], corrupted: { tier: 'x' } }; // no affix
+  assert.equal(validateBuild(b2).ok, false);
+});
+
+test('migrate v1->v2: wishlist cells become mods/corrupted cells on read', () => {
+  const v1 = {
+    ...emptyBuild({ now: () => 1, uuid: () => 'x' }),
+    schema: 1,
+    gear: { helmet: { item: { kind: 'base', slug: 'iron-hat' }, wishlist: ['life'] } },
+  };
+  const storage = memStorage();
+  const store = createStore(storage, { now: () => 2, uuid: () => 'y' });
+  storage.setItem(STORE_KEY, JSON.stringify({ order: ['b'], builds: { b: { ...v1, id: 'b' } } }));
+  const got = store.get('b');
+  assert.equal(got.schema, 2);
+  assert.deepEqual(got.gear.helmet.mods, []);
+  assert.equal(got.gear.helmet.corrupted, null);
+  assert.ok(!('wishlist' in got.gear.helmet));
+});
 
 test('create/list/get round trip, list follows creation order', () => {
   const { store } = seqStore();
@@ -198,7 +240,7 @@ test('storage write failure surfaces as StoreWriteError', () => {
 });
 
 test('a build from a newer schema passes through read untouched', () => {
-  const future = { ...emptyBuild({ now: () => 1, uuid: () => 'id-9' }), schema: 2, newField: true };
+  const future = { ...emptyBuild({ now: () => 1, uuid: () => 'id-9' }), schema: SCHEMA_VERSION + 1, newField: true };
   const storage = memStorage({
     [STORE_KEY]: JSON.stringify({ order: ['id-9'], builds: { 'id-9': future } }),
   });

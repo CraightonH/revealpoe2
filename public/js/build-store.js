@@ -6,13 +6,13 @@
 
 export const STORE_KEY = 'reveal.builds.v1';
 export const CORRUPT_KEY = 'reveal.builds.corrupt';
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 const defaultNow = () => Date.now();
 const defaultUuid = () => globalThis.crypto.randomUUID();
 
 /**
- * A fresh v1 build. `now`/`uuid` are injectable for tests; remaining keys
+ * A fresh v2 build. `now`/`uuid` are injectable for tests; remaining keys
  * are field overrides.
  */
 export function emptyBuild({ now = defaultNow, uuid = defaultUuid, ...overrides } = {}) {
@@ -66,8 +66,22 @@ export function validateBuild(b) {
   else {
     for (const [slot, g] of Object.entries(b.gear)) {
       if (!isObj(g)) { errors.push(`gear.${slot}: expected object`); continue; }
-      if (g.item !== null) checkItemRef(g.item, `gear.${slot}.item`, errors);
-      if (!Array.isArray(g.wishlist) || g.wishlist.some((w) => !isStr(w))) {
+      if (g.item !== null && g.item !== undefined) checkItemRef(g.item, `gear.${slot}.item`, errors);
+      // v2 cells carry `mods` (base explicits) and `corrupted` (unique implicit).
+      // Legacy cells (`wishlist`) and cells missing these keys stay valid for
+      // forward/backward-compatible decode of old share codes.
+      if (g.mods !== undefined) {
+        if (!Array.isArray(g.mods)) errors.push(`gear.${slot}.mods: expected array`);
+        else g.mods.forEach((m, i) => {
+          if (!isObj(m) || !isStr(m.affix)) errors.push(`gear.${slot}.mods[${i}].affix: expected string`);
+          else if (m.tier !== undefined && !isStr(m.tier) && !isNum(m.tier)) errors.push(`gear.${slot}.mods[${i}].tier: expected string/number`);
+        });
+      }
+      if (g.corrupted !== undefined && g.corrupted !== null) {
+        if (!isObj(g.corrupted) || !isStr(g.corrupted.affix)) errors.push(`gear.${slot}.corrupted.affix: expected string`);
+        else if (g.corrupted.tier !== undefined && !isStr(g.corrupted.tier) && !isNum(g.corrupted.tier)) errors.push(`gear.${slot}.corrupted.tier: expected string/number`);
+      }
+      if (g.wishlist !== undefined && (!Array.isArray(g.wishlist) || g.wishlist.some((w) => !isStr(w)))) {
         errors.push(`gear.${slot}.wishlist: expected string[]`);
       }
     }
@@ -115,9 +129,19 @@ export function validateBuild(b) {
 
 const deepCopy = (v) => JSON.parse(JSON.stringify(v));
 
-// Schema migrations, keyed by from-version; v1 has none. A future schema
-// bump adds `1: (build) => ({ ...migrated, schema: 2 })` here.
-const MIGRATIONS = {};
+// Schema migrations, keyed by from-version. v1->v2: the per-slot affix
+// "wishlist" became real chosen mods; convert cells to the {mods, corrupted}
+// shape (wishlists were never written by a shipped UI, so they drop cleanly).
+const MIGRATIONS = {
+  1: (build) => ({
+    ...build,
+    schema: 2,
+    gear: Object.fromEntries(Object.entries(build.gear ?? {}).map(([slot, g]) => {
+      const { wishlist, ...rest } = g ?? {};
+      return [slot, { item: rest.item ?? null, mods: rest.mods ?? [], corrupted: rest.corrupted ?? null }];
+    })),
+  }),
+};
 
 function migrate(build) {
   let b = build;
