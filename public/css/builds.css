@@ -245,6 +245,16 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
   justify-content: center; border-radius: 6px; background: rgb(255 255 255 / .06);
   color: rgb(255 255 255 / .75); font: 11px/1 var(--font-display); }
 .well-tile__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+/* Full-bleed art in filled wells — identity from the icon, detail from the
+   hover card (mobalytics pattern). */
+.editor-item--art { position: absolute; inset: 5px; display: block; }
+.well-art { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  color: rgb(255 255 255 / .7); font: 16px/1 var(--font-display); }
+.well-art__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain;
+  filter: drop-shadow(0 4px 10px rgb(0 0 0 / .55)); }
+.well-art__img + .well-art__initials { display: none; }
+.editor-slot.is-filled:hover .well-art__img, .editor-slot.is-unique:hover .well-art__img {
+  transform: scale(1.04); transition: transform 120ms ease; }
 /* Initials are the fallback only — hidden while real art is present. */
 .well-tile__img + .well-tile__initials, .orb-tile__img + .orb-tile__initials { display: none; }
 

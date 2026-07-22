@@ -26,6 +26,17 @@ function tile(doc, name, cls) {
   return `<span class="${cls}" aria-hidden="true">${img}<span class="${cls}__initials">${esc(initials(name))}</span></span>`;
 }
 
+/** Full-bleed item art for a gear well — the icon carries the identity, the
+    hover card (data-card-url) carries the detail. Initials remain the
+    no-art fallback via tile(). */
+function wellArt(ref, resolveRef) {
+  const doc = resolveRef(ref) || {};
+  const name = doc.name || ref.slug;
+  const card = doc.cardUrl ? ` data-card-url="${esc(doc.cardUrl)}"` : '';
+  return `<span class="editor-item editor-item--art"${card} aria-label="${esc(name)}" title="${esc(name)}">` +
+    `${tile(doc, name, 'well-art')}</span>`;
+}
+
 /** Item chip: icon tile + rarity-colored name, card-tooltip wired. */
 function wellBody(ref, resolveRef) {
   const doc = resolveRef(ref) || {};
@@ -64,7 +75,7 @@ export function renderGear(build, ctx) {
     let body, state;
     if (g?.item) {
       state = g.item.kind === 'unique' ? 'is-unique' : 'is-filled';
-      body = `<span class="editor-slot__label">${esc(s.name)}</span>` + wellBody(g.item, resolveRef) +
+      body = wellArt(g.item, resolveRef) +
         (ro ? '' : `<button class="editor-slot__clear" type="button" data-slot-clear="${esc(s.id)}" aria-label="Unequip ${esc(s.name)}">×</button>`);
     } else if (ghosted(s)) {
       state = 'is-ghost';
