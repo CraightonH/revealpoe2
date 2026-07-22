@@ -65,7 +65,7 @@ Phases 1, 2, 3 are independent and may run in parallel sessions. Phases 6, 7, 8 
 - [x] Phase 1 — Build store foundation (654c2a5)
 - [x] Phase 2 — Slot & socket data model (5c728df)
 - [x] Phase 3 — In-game UI art ingestion (6ea4f3b)
-- [ ] Phase 4a — /builds list + read-only viewer + Add-to-Build affordance
+- [x] Phase 4a — /builds list + read-only viewer + Add-to-Build affordance (b66ce2d)
 - [ ] Phase 4b — Build editor (inventory paper-doll + skill panel + picker; granted-skill rows)
 - [ ] Phase 4c — Item mod picker + `mod-pools.json` (incl. corrupted-implicit data verification)
 - [ ] Phase 5 — Tree embed + Notable Priority
