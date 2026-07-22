@@ -2,6 +2,7 @@
 // editor-render.js; this file owns event wiring and store mutations.
 import { renderEditor } from '/static/js/editor-render.js';
 import { openPicker, closePicker } from '/static/js/entity-picker.js';
+import { openModPicker, closeModPicker } from '/static/js/mod-picker.js';
 import { legalSlots, equipViolations } from '/static/js/build-rules.js';
 import { safeWrite } from '/static/js/build-host.js';
 import { encodeBuild } from '/static/js/build-code.js';
@@ -9,7 +10,7 @@ import { decode as decodePassiveCode } from '/static/js/passive-code.js';
 
 const KIND_FOR_CATEGORY = { gem: 'gem', support: 'gem', spirit: 'gem', unique: 'unique', base: 'base' };
 
-export function mountEditor(container, buildId, { store, planner, docs, resolveRef }) {
+export function mountEditor(container, buildId, { store, planner, docs, resolveRef, pools }) {
   let weaponSet = 1;
   let switcherOpen = false;
   let classPicker = null;   // null | 'class' | 'asc'
@@ -31,7 +32,7 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
     const b = build();
     const gear = { ...b.gear };
     const prev = gear[slotId]?.item;
-    gear[slotId] = { item: ref, wishlist: gear[slotId]?.wishlist ?? [] };
+    gear[slotId] = { item: ref, mods: gear[slotId]?.mods ?? [], corrupted: gear[slotId]?.corrupted ?? null };
     const unassigned = b.unassigned.filter((r) => !(r.kind === ref.kind && r.slug === ref.slug));
     if (prev) unassigned.push(prev);
 
@@ -208,6 +209,19 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
                         unassigned: [...b.unassigned, item] });
       return;
     }
+    const modsEdit = e.target.closest('[data-mods-edit]');
+    if (modsEdit) {
+      e.stopPropagation();
+      const slotId = modsEdit.getAttribute('data-mods-edit');
+      const b = build();
+      const cell = b.gear[slotId];
+      if (!cell?.item || !pools) return;
+      openModPicker({
+        anchorEl: modsEdit, ref: cell.item, cell, pools,
+        onChange: (next) => patch({ gear: { ...build().gear, [slotId]: next } }),
+      });
+      return;
+    }
     const slot = e.target.closest('[data-slot-id]');
     if (slot) { pickForSlot(slot.getAttribute('data-slot-id')); return; }
 
@@ -321,5 +335,6 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
     container.removeEventListener('keydown', onKeyDown);
     unsub();
     closePicker();
+    closeModPicker();
   };
 }

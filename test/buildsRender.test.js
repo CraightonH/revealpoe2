@@ -40,6 +40,14 @@ test('renderBuild: unresolved refs fall back to the slug', () => {
   assert.match(renderBuild(b, () => null), /mystery-gem/);
 });
 
+test('renderBuild: lists chosen mods under an equipped item', () => {
+  const pools = { families: { life: { name: 'to maximum Life', origin: 'standard', tiers: [{ id: 'life1', gen: 'prefix', text: '+(40-49) to maximum Life' }] } }, bases: {}, uniques: {} };
+  const b = emptyBuild({ now: () => 1, uuid: () => 'x' });
+  b.gear.helmet = { item: { kind: 'base', slug: 'iron-hat' }, mods: [{ affix: 'life', tier: 'life1' }], corrupted: null };
+  const html = renderBuild(b, () => ({ name: 'Iron Hat' }), pools);
+  assert.ok(html.includes('+(40-49) to maximum Life'));
+});
+
 test('renderImport states', () => {
   assert.match(renderImport({ status: 'loading' }, () => null), /Decoding/i);
   assert.match(renderImport({ status: 'error', message: 'nope' }, () => null), /nope/);

@@ -3,6 +3,8 @@
 // viewer, import preview). No DOM access, no fetch: node-testable
 // (query-core.js pattern). The controller (builds-page.js) owns wiring.
 
+import { resolveMod } from './mod-core.js';
+
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -40,9 +42,16 @@ function refHtml(ref, resolveRef) {
 // The standalone list view was retired 2026-07-22 — the landing page is the
 // editor itself and the rail build-switcher (editor-render.js) lists builds.
 
-function sections(b, resolveRef) {
+function sections(b, resolveRef, pools) {
+  const modLines = (g) => {
+    if (!pools) return '';
+    const lines = (g.mods ?? []).map((m) => resolveMod(pools, m)).filter(Boolean).map((m) => m.text);
+    const corr = g.corrupted ? resolveMod(pools, g.corrupted) : null;
+    const all = [...lines, ...(corr ? [corr.text] : [])];
+    return all.length ? `<ul class="builds-slot__mods">${all.map((t) => `<li class="explicitMod">${esc(t)}</li>`).join('')}</ul>` : '';
+  };
   const gear = Object.entries(b.gear).filter(([, g]) => g.item)
-    .map(([slot, g]) => `<li class="builds-slot"><span class="builds-slot__label">${esc(titleCase(slot))}</span>${refHtml(g.item, resolveRef)}</li>`);
+    .map(([slot, g]) => `<li class="builds-slot"><span class="builds-slot__label">${esc(titleCase(slot))}</span>${refHtml(g.item, resolveRef)}${modLines(g)}</li>`);
   const unassigned = b.unassigned.map((ref) => `<li>${refHtml(ref, resolveRef)}</li>`);
   const skills = b.skills.map((s) => {
     const sups = s.supports.map((sup) => `<li>${refHtml({ kind: 'gem', slug: sup.slug }, resolveRef)}</li>`).join('');
@@ -64,14 +73,14 @@ function sections(b, resolveRef) {
 }
 
 /** Read-only build viewer (editing arrives in Phase 4b). */
-export function renderBuild(b, resolveRef) {
+export function renderBuild(b, resolveRef, pools) {
   return `<article class="builds-viewer">
     <header class="builds-viewer__head">
       <a class="builds-back" href="#">← All builds</a>
       <h2>${esc(b.name)}</h2>
       <p class="builds-viewer__class">${esc(classLine(b))}</p>
     </header>
-    ${sections(b, resolveRef)}</article>`;
+    ${sections(b, resolveRef, pools)}</article>`;
 }
 
 /** Import preview: decode states for #/import/<code>. */

@@ -117,14 +117,14 @@ if (root && view) {
       importState = null;
       const b = store.get(route.id);
       if (!b) { location.hash = ''; return; }
-      view.innerHTML = renderBuild(b, resolveRef);
+      view.innerHTML = renderBuild(b, resolveRef, pools);
       Promise.all([loadDocs(), loadPlanner(), loadPools()]).then(() => {
         // Mount only if we're still looking at this same build (not a
         // different one, or list/import).
         const cur = parseRoute(location.hash);
         if (cur.view === 'build' && cur.id === route.id) {
           activeUnmount?.();
-          activeUnmount = mountEditor(view, route.id, { store, planner, docs: docsArray, resolveRef });
+          activeUnmount = mountEditor(view, route.id, { store, planner, docs: docsArray, resolveRef, pools });
         }
       }).catch(() => {
         const cur = parseRoute(location.hash);
