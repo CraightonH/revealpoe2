@@ -11,7 +11,7 @@ const fixedUuid = () => 'id-1';
 test('emptyBuild fills v1 defaults', () => {
   const b = emptyBuild({ now: fixedNow, uuid: fixedUuid });
   assert.deepEqual(b, {
-    id: 'id-1', schema: SCHEMA_VERSION, name: 'Untitled Build', notes: '',
+    id: 'id-1', schema: SCHEMA_VERSION, name: 'Untitled Build', notes: '', description: '',
     createdAt: 1000, updatedAt: 1000, class: null, ascendancy: null,
     gear: {}, unassigned: [], skills: [],
     tree: { code: null, notablePriority: [] },
@@ -220,4 +220,16 @@ test('validateBuild rejects malformed grantedSupports', () => {
   assert.ok(r1.errors.some((e) => e.includes('grantedSupports.bad[0].slug')));
   b.grantedSupports = 'nope';
   assert.equal(validateBuild(b).ok, false);
+});
+
+test('emptyBuild: includes empty description', () => {
+  assert.equal(emptyBuild({ now: () => 1, uuid: () => 'x' }).description, '');
+});
+
+test('validateBuild: description optional but must be a string', () => {
+  const base = emptyBuild({ now: () => 1, uuid: () => 'x' });
+  assert.equal(validateBuild(base).ok, true);
+  const { description, ...legacy } = base;
+  assert.equal(validateBuild(legacy).ok, true, 'pre-description builds still validate');
+  assert.equal(validateBuild({ ...base, description: 5 }).ok, false);
 });

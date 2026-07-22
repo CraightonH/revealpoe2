@@ -22,6 +22,7 @@ export function emptyBuild({ now = defaultNow, uuid = defaultUuid, ...overrides 
     schema: SCHEMA_VERSION,
     name: 'Untitled Build',
     notes: '',
+    description: '',
     createdAt: t,
     updatedAt: t,
     class: null,
@@ -56,6 +57,7 @@ export function validateBuild(b) {
   if (!isNum(b.schema) || b.schema < 1) errors.push('schema: expected number >= 1');
   if (!isStr(b.name)) errors.push('name: expected string');
   if (!isStr(b.notes)) errors.push('notes: expected string');
+  if (b.description !== undefined && !isStr(b.description)) errors.push('description: expected string');
   for (const k of ['id']) if (b[k] !== undefined && !isStr(b[k])) errors.push(`${k}: expected string`);
   for (const k of ['createdAt', 'updatedAt']) if (b[k] !== undefined && !isNum(b[k])) errors.push(`${k}: expected number`);
   for (const k of ['class', 'ascendancy']) if (b[k] !== null && !isStr(b[k])) errors.push(`${k}: expected string or null`);
