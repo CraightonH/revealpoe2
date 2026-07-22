@@ -181,3 +181,20 @@ test('GET /gem/fireball renders the scaling table outside the card popup', async
   assert.ok(!/gem-levels-cap-badge/.test(res.text), 'no max badge');
   assert.ok(!/gem-levels-row--cap/.test(res.text), 'no permanent level-20 highlight');
 });
+
+test('unique popup and condensed card carry the Add-to-Build affordance', async () => {
+  const app = createApp();
+  const detail = await request(app).get('/unique/astramentis');
+  assert.match(detail.text, /data-add-build-kind="unique"/);
+  assert.match(detail.text, /data-add-build-slug="astramentis"/);
+  const index = await request(app).get('/uniques');
+  assert.match(index.text, /data-add-build-kind="unique"/);
+});
+
+test('gem and base cards carry the Add-to-Build affordance', async () => {
+  const app = createApp();
+  const gem = await request(app).get('/gems');
+  assert.match(gem.text, /data-add-build-kind="gem"/);
+  const bases = await request(app).get('/bases');
+  assert.match(bases.text, /data-add-build-kind="base"/);
+});

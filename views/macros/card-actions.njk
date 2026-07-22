@@ -1,13 +1,13 @@
-{# Card action affordances. Currently just the "Search on PoE Trade" balance-scale
-   icon (Todo 4 part 1); built as a `.card-actions` container so part 2
-   ("Add to Theory Craft") drops a second button alongside with no rework.
+{# Card action affordances: the "Search on PoE Trade" balance-scale icon and the
+   "Add to build" plus-in-circle icon share a single `.card-actions` container.
 
    Two render forms because of where they sit:
-   - tradeLink(url):   a real <a>, for the full tooltip popups (uniqueCard /
-     gemCard / baseCard) which are NOT wrapped in an anchor. Works with no JS.
-   - tradeButton(url): a <span data-trade-url>, for the condensed browse/list
-     cards, which are themselves <a> (a nested <a> is invalid HTML and spills the
-     card). public/js/trade-link.js delegates the click → window.open. #}
+   - tradeLink(url, kind, slug):   a real trade <a>, for the full tooltip popups
+     (uniqueCard / gemCard / baseCard) which are NOT wrapped in an anchor.
+   - tradeButton(url, kind, slug): a <span data-trade-url> trade control, for the
+     condensed browse/list cards, which are themselves <a> (a nested <a> is
+     invalid HTML). public/js/trade-link.js delegates the click → window.open.
+   The Add-to-Build control is a span in both forms for Task 5's JS handler. #}
 
 {# Traditional balance scales (scales of justice) — self-contained inline SVG. #}
 {% macro scaleIcon() %}
@@ -24,20 +24,39 @@
 </svg>
 {% endmacro %}
 
-{% macro tradeLink(url) %}
-{% if url %}
+{# Plus-in-circle "add to build" icon — self-contained inline SVG, scaleIcon's style. #}
+{% macro buildIcon() %}
+<svg class="add-build-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+     stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+  <path d="M12 5v14M5 12h14"/>
+  <circle cx="12" cy="12" r="9"/>
+</svg>
+{% endmacro %}
+
+{% macro addBuild(kind, slug) %}
+{% if kind and slug %}
+  <span class="add-build" role="button" tabindex="0"
+        data-add-build-kind="{{ kind }}" data-add-build-slug="{{ slug }}"
+        title="Add to build" aria-label="Add to build">{{ buildIcon() }}</span>
+{% endif %}
+{% endmacro %}
+
+{% macro tradeLink(url, kind, slug) %}
+{% if url or (kind and slug) %}
 <div class="card-actions">
-  <a class="trade-link" href="{{ url }}" target="_blank" rel="noopener nofollow"
-     title="Search on PoE Trade" aria-label="Search on PoE Trade">{{ scaleIcon() }}</a>
+  {% if url %}<a class="trade-link" href="{{ url }}" target="_blank" rel="noopener nofollow"
+     title="Search on PoE Trade" aria-label="Search on PoE Trade">{{ scaleIcon() }}</a>{% endif %}
+  {{ addBuild(kind, slug) }}
 </div>
 {% endif %}
 {% endmacro %}
 
-{% macro tradeButton(url) %}
-{% if url %}
+{% macro tradeButton(url, kind, slug) %}
+{% if url or (kind and slug) %}
 <span class="card-actions card-actions--overlay">
-  <span class="trade-link" role="button" tabindex="0" data-trade-url="{{ url }}"
-        title="Search on PoE Trade" aria-label="Search on PoE Trade">{{ scaleIcon() }}</span>
+  {% if url %}<span class="trade-link" role="button" tabindex="0" data-trade-url="{{ url }}"
+        title="Search on PoE Trade" aria-label="Search on PoE Trade">{{ scaleIcon() }}</span>{% endif %}
+  {{ addBuild(kind, slug) }}
 </span>
 {% endif %}
 {% endmacro %}

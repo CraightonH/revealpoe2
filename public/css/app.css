@@ -1042,6 +1042,11 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
   display: block;
 }
 
+/* Add-to-Build affordance sits beside the trade scale in .card-actions. */
+.add-build { cursor: pointer; display: inline-flex; opacity: .75; }
+.add-build:hover, .add-build:focus-visible { opacity: 1; }
+.add-build-icon { width: 1.05em; height: 1.05em; }
+
 /* ── Gem scaling table (Levels + Quality) ────────────────────────────────────
    Rendered inside the rec-group collapsible shell (see gem-level-table.njk).
    High-contrast numbers for at-a-glance scanning down a level / quality. */
