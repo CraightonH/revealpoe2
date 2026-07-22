@@ -438,9 +438,9 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
 .mod-picker__col--corrupt { padding: 8px 10px; border-top: 1px solid var(--border); }
 .mod-picker__row--corrupt .mod-picker__generic--corrupt,
 .mod-picker__chosen-row--corrupt .mod-picker__generic--corrupt {
-  color: color-mix(in srgb, var(--color-corrupted) 72%, #fff); }
+  color: var(--color-corrupted); }
 .mod-picker__row--corrupt:hover { border-color: color-mix(in srgb, var(--color-corrupted) 55%, var(--border)); }
-.mod-picker__col--corrupt > h4 { color: color-mix(in srgb, var(--color-corrupted) 72%, #fff); }
+.mod-picker__col--corrupt > h4 { color: var(--color-corrupted); }
 .mod-picker__chosen-row--corrupt { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
 .mod-picker__col h4 { margin: 0 0 6px; padding: 2px 0;
   font-size: 9px; letter-spacing: .12em; text-transform: uppercase;
