@@ -76,12 +76,20 @@ export function plannerData() {
     };
   }
 
-  // Item-granted skills: grants edges point unique -> gem-kind node (the
-  // granted skill is a gem node; it resolves in the search index too).
+  // Item-granted skills: grants edges point unique -> skill-kind node, not
+  // directly at the gem. Find the granting gem by reverse-traversing the same
+  // skill node's grants edges for its gem-kind source (gem -> skill also uses
+  // 'grants'). Slug-matching the skill node itself only works by coincidence
+  // for most skills and silently drops cases where names diverge (e.g. The
+  // Last Lament's "Compose Requiem" skill is granted by the `requiem` gem).
   const granted = {};
   for (const u of nodesByKind('unique')) {
+    const skillNodes = edgesFrom(u.id, 'grants').map((e) => getNode(e.to)).filter(Boolean);
     const skills = [...new Set(
-      edgesFrom(u.id, 'grants').map((e) => getNode(e.to)).filter((n) => n && gems[n.slug]).map((n) => n.slug),
+      skillNodes.flatMap((skillNode) => edgesTo(skillNode.id, 'grants')
+        .map((e) => getNode(e.from))
+        .filter((n) => n?.kind === 'gem')
+        .map((n) => n.slug)),
     )];
     if (skills.length) granted[u.slug] = skills;
   }

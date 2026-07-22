@@ -62,6 +62,8 @@ test('granted maps granting uniques to gem slugs that resolve in the gems map', 
   const { granted, gems } = plannerData();
   assert.ok(Object.keys(granted).length >= 50, 'expect a substantial granted map');
   assert.ok(granted['choir-of-the-storm'].includes('lightning-bolt'));
+  assert.ok(granted['the-last-lament'].includes('requiem'));
+  assert.ok(granted['the-dark-defiler'].includes('skeletal-warrior'));
   for (const [slug, skills] of Object.entries(granted)) {
     assert.ok(Array.isArray(skills) && skills.length > 0, `${slug}: non-empty`);
     for (const s of skills) assert.ok(gems[s], `${slug} grants unknown gem ${s}`);
