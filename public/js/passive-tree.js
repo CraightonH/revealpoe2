@@ -507,8 +507,9 @@ export default function init(canvas, data) {
   // travel from the node into the (interactive) card to reach keyword tooltips.
   let tip = null, hoverHash = null, overTip = false, hideTimer = null;
   // Hash of the generic-attribute node whose Str/Int/Dex picker is currently
-  // open (set on node-click, cleared on pick / hover-change / hide). Transient
-  // to the hovered node — re-hovering shows the generic line again until clicked.
+  // open (set on node-click, cleared on pick / hover-change / hide). It may be
+  // an unallocated node awaiting its initial choice, or an allocated cut node
+  // being re-chosen before a possible second-click cascade refund.
   let attrChoosing = null;
   let tipRect = { x: 0, y: 0, w: 0, h: 0 };
   function ensureTip() {
@@ -559,43 +560,61 @@ export default function init(canvas, data) {
   // imported builds whose pick we don't yet decode from the share-code tag).
   const attrOf = (h) => attrChoice.get(h) ?? ATTR_DEFAULT;
 
-  // Paint an attribute node's card across its three states:
+  // Paint an attribute node's card across its states:
   //   resting (unallocated, not choosing) → generic "+5 to any Attribute" line;
   //   choosing (node clicked)             → the full Str/Int/Dex picker;
-  //   allocated                           → collapse to just the chosen stat.
-  // Respec by deallocating (node click), which returns it to the resting line.
+  //   allocated                           → collapse to just the chosen stat;
+  //   allocated + choosing                → show all choices, current one marked.
   function paintAttrChoice(popper, h) {
     if (!popper) return;
-    const alloc = allocated.has(h);
-    const choosing = !alloc && attrChoosing === h;
+    const alloc = allocated.has(h) || wsAlloc[1].has(h) || wsAlloc[2].has(h);
+    const choosing = attrChoosing === h;
+    const rechoosing = alloc && choosing;
     const chosen = alloc ? attrOf(h) : null;
     const generic = popper.querySelector('.attr-generic');
     const box = popper.querySelector('.attr-choice');
     if (generic) generic.hidden = alloc || choosing;
     if (box) {
       box.hidden = !(alloc || choosing);
-      box.classList.toggle('locked', alloc);
+      box.classList.toggle('locked', alloc && !rechoosing);
       for (const el of box.querySelectorAll('.attr-opt')) {
         const k = el.getAttribute('data-attr');
         el.classList.toggle('chosen', k === chosen);
-        el.hidden = alloc && k !== chosen;
+        el.hidden = alloc && !rechoosing && k !== chosen;
       }
     }
   }
 
-  // Clicking an option in an attribute node's card sets that attribute (and
-  // allocates the node if it's allocatable), mirroring the in-game pick menu.
+  // Clicking an option either changes an allocated node in place or sets the
+  // choice while allocating a new node, mirroring the in-game pick menu.
   function onAttrOptionClick(e) {
     const opt = e.target.closest('.attr-opt[data-attr]');
     if (!opt) return;
     const h = hoverHash;
     const n = h != null ? nodeMap.get(h) : null;
-    if (!n || !n.attr) return;
-    if (allocated.has(h)) return;     // locked once selected — respec via node click
+    if (!n || !n.attr || attrChoosing !== h) return;
+    const pick = opt.getAttribute('data-attr');
+    const alreadyAllocated = allocated.has(h) || wsAlloc[1].has(h) || wsAlloc[2].has(h);
+    if (alreadyAllocated) {
+      attrChoice.set(h, pick);
+      decodedState = null;
+      attrChoosing = null;
+      touchInspect = null;
+      updatePoints();
+      if (tip) paintAttrChoice(tip.popper, h);
+      requestDraw();
+      return;
+    }
     if (!_canAllocateSync(h)) return; // not reachable from the allocated tree yet
-    if (!canAfford([h])) return;      // out of passive points — don't record a pick
-    attrChoice.set(h, opt.getAttribute('data-attr'));
-    _allocateSync(h);
+    const m = modeFor(h);
+    if (m != null) {
+      if (!_allocMod.wsCanAfford(wsAlloc[m], 1, budgets().ws)) return;
+      _wsAllocateSync(h, pick);
+    } else {
+      if (!canAfford([h])) return;    // out of passive points — don't record a pick
+      attrChoice.set(h, pick);
+      _allocateSync(h);
+    }
     attrChoosing = null;
     if (tip) paintAttrChoice(tip.popper, h);
     requestDraw();
@@ -826,6 +845,25 @@ export default function init(canvas, data) {
     return nodeMap.get(h)?.asc != null ? null : wsMode;
   }
 
+  // True only when the active pool owns this allocated attribute node and its
+  // removal would refund at least one additional node.
+  function canRechooseBeforeCascade(h) {
+    if (!_allocMod || !nodeMap.get(h)?.attr) return false;
+    const m = modeFor(h);
+    if (m != null) {
+      return wsAlloc[m].has(h) &&
+        _allocMod.wsWouldCascade(adj, allocated, starts, wsAlloc[m], h);
+    }
+    return allocated.has(h) && _allocMod.wouldCascade(adj, allocated, starts, h);
+  }
+
+  function openAttrRechoice(h) {
+    if (!canRechooseBeforeCascade(h)) return false;
+    attrChoosing = h;
+    if (tip && hoverHash === h) paintAttrChoice(tip.popper, h);
+    return true;
+  }
+
   // We also keep synchronous versions for click handlers after the modules are loaded.
   // Mode-aware: in a weapon-set mode, "can allocate" tests the active set's frontier
   // (but ascendancy nodes always test the shared frontier — see modeFor).
@@ -861,11 +899,11 @@ export default function init(canvas, data) {
   }
 
   // Allocate/deallocate within the active weapon set (its own 25-pt pool).
-  function _wsAllocateSync(h) {
+  function _wsAllocateSync(h, attr = classPrimaryAttr()) {
     if (!_allocMod || wsMode == null) return;
     if (!_allocMod.wsCanAfford(wsAlloc[wsMode], 1, budgets().ws)) return; // set full
     const n = nodeMap.get(h);
-    if (n && n.attr) attrChoice.set(h, classPrimaryAttr()); // ws attr nodes default like path-alloc
+    if (n && n.attr) attrChoice.set(h, attr); // path alloc defaults; picker passes the explicit choice
     wsAlloc[wsMode] = _allocMod.wsAllocate(adj, allocated, starts, wsAlloc[wsMode], h);
     decodedState = null;
     clearPathPreview();
@@ -1522,12 +1560,23 @@ export default function init(canvas, data) {
   // Allocate/deallocate the node under a committed tap/click. Mirrors the desktop
   // click semantics exactly (weapon-set mode, path collapse, attr picker).
   function commitTap(hit) {
+    // Moving the commit to another node cancels a pending re-choice without
+    // changing the original node.
+    if (attrChoosing != null && attrChoosing !== hit.h) {
+      const prior = attrChoosing;
+      attrChoosing = null;
+      if (tip && hoverHash === prior) paintAttrChoice(tip.popper, prior);
+    }
+
     // Weapon-set editing mode acts on the active set's own pool, never the shared
     // backbone (managed in default mode). Ascendancy nodes are exempt — modeFor()
     // forces them to the shared/ascendancy pool below even with a set active.
     if (modeFor(hit.h) != null) {
       if (wsAlloc[wsMode].has(hit.h)) {
-        _wsDeallocateSync(hit.h); // cascades within the set
+        if (attrChoosing === hit.h || !openAttrRechoice(hit.h)) {
+          _wsDeallocateSync(hit.h); // second click, non-attr, or leaf: refund now
+          attrChoosing = null;
+        }
       } else if (allocated.has(hit.h) || starts.includes(hit.h)) {
         // Shared/anchor node — backbone, not editable from here. No-op.
       } else {
@@ -1539,8 +1588,10 @@ export default function init(canvas, data) {
     } else if (allocated.has(hit.h)) {
       // Default / ascendancy — shared pool (also reached for ascendancy nodes while
       // a weapon set is active, since modeFor() returns null for them).
-      _deallocateSync(hit.h); // also clears any attribute pick (pruneAttrChoices)
-      attrChoosing = null;
+      if (attrChoosing === hit.h || !openAttrRechoice(hit.h)) {
+        _deallocateSync(hit.h); // second click, non-attr, or leaf: refund now
+        attrChoosing = null;
+      }
     } else if (wsAlloc[1].has(hit.h) || wsAlloc[2].has(hit.h)) {
       // Allocated in a weapon set — edit it from that set's mode, not the shared
       // view (so a shared-mode click can't pull it into the main pool too).
@@ -1673,15 +1724,23 @@ export default function init(canvas, data) {
     // the SAME node commits. A tap on empty space dismisses the inspection.
     if (e.pointerType === 'touch') {
       if (!hit) { touchInspect = null; hideTip(); clearPathPreview(); return; }
-      if (touchInspect !== hit.h) { touchInspect = hit.h; showCardFor(hit); return; }
+      if (touchInspect !== hit.h) {
+        touchInspect = hit.h;
+        showCardFor(hit);
+        // For an allocated mid-line attribute, inspection itself is the first
+        // step: show its current choice immediately, then the next tap refunds.
+        openAttrRechoice(hit.h);
+        return;
+      }
       touchInspect = null;
       commitTap(hit);
       clearPathPreview(); // no hover on touch to recompute it after the state change
       return;
     }
 
-    // Mouse: click commits immediately (unchanged desktop behaviour).
+    // Mouse: click commits immediately. Empty space dismisses a pending picker.
     if (hit) commitTap(hit);
+    else if (attrChoosing != null) { hideTip(); clearPathPreview(); }
   });
 
   canvas.addEventListener('pointercancel', (e) => {
@@ -1699,6 +1758,13 @@ export default function init(canvas, data) {
     if (e.pointerType === 'touch') return;
     // Delay so the cursor can travel into the (interactive) card without it closing.
     scheduleHide();
+    clearPathPreview();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || attrChoosing == null) return;
+    touchInspect = null;
+    hideTip();
     clearPathPreview();
   });
 

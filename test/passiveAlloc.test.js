@@ -2,8 +2,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  canAllocate, allocate, deallocate, pointsSpent, pointsNeeded, canAfford,
-  wsCanAllocate, wsAllocate, wsDeallocate, pruneWeaponSets, wsCanAfford,
+  canAllocate, allocate, deallocate, wouldCascade, pointsSpent, pointsNeeded, canAfford,
+  wsCanAllocate, wsAllocate, wsDeallocate, wsWouldCascade, pruneWeaponSets, wsCanAfford,
 } from '../public/js/passive-alloc.js';
 
 // graph: 0-1-2-3 chain, start=0
@@ -48,6 +48,13 @@ test('deallocate of a leaf removes only that leaf', () => {
   const allocated = new Set([1, 2, 3]);
   const after = deallocate(adj, allocated, starts, 3);
   assert.deepEqual([...after].sort((x,y)=>x-y), [1, 2]);
+});
+
+test('wouldCascade distinguishes a cut node from a leaf', () => {
+  const allocated = new Set([1, 2, 3]);
+  assert.equal(wouldCascade(adj, allocated, starts, 1), true);
+  assert.equal(wouldCascade(adj, allocated, starts, 3), false);
+  assert.equal(wouldCascade(adj, allocated, starts, 99), false);
 });
 
 test('pointsSpent splits main vs ascendancy pools', () => {
@@ -112,6 +119,13 @@ test('wsDeallocate cascades: removing a cut node frees what it orphaned', () => 
   const set = new Set([3, 4]);             // 2(main)-3-4
   assert.deepEqual([...wsDeallocate(wsAdj, wsMain, wsStarts, set, 3)], []); // 4 orphaned too
   assert.deepEqual([...wsDeallocate(wsAdj, wsMain, wsStarts, set, 4)].sort((a, b) => a - b), [3]);
+});
+
+test('wsWouldCascade distinguishes a cut node from a leaf', () => {
+  const set = new Set([3, 4]);
+  assert.equal(wsWouldCascade(wsAdj, wsMain, wsStarts, set, 3), true);
+  assert.equal(wsWouldCascade(wsAdj, wsMain, wsStarts, set, 4), false);
+  assert.equal(wsWouldCascade(wsAdj, wsMain, wsStarts, set, 99), false);
 });
 
 test('pruneWeaponSets re-anchors a set after the main tree shrinks', () => {

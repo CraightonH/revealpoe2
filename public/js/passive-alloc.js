@@ -37,6 +37,13 @@ export function deallocate(adj, allocated, starts, hash) {
   return reachable(adj, trimmed, starts);
 }
 
+// Whether removing `hash` would also orphan at least one other allocated node.
+// Pure dry-run over the same connectivity rule as deallocate().
+export function wouldCascade(adj, allocated, starts, hash) {
+  if (!allocated.has(hash)) return false;
+  return deallocate(adj, allocated, starts, hash).size < allocated.size - 1;
+}
+
 export function pointsSpent(allocated, nodeKindOf) {
   let main = 0, ascendancy = 0;
   for (const h of allocated) {
@@ -124,6 +131,13 @@ export function wsDeallocate(adj, mainAllocated, starts, wsSet, hash) {
   return wsReachable(adj, mainAllocated, starts, trimmed);
 }
 
+// Weapon-set counterpart to wouldCascade(), using the shared tree as its
+// frontier exactly as wsDeallocate() does.
+export function wsWouldCascade(adj, mainAllocated, starts, wsSet, hash) {
+  if (!wsSet.has(hash)) return false;
+  return wsDeallocate(adj, mainAllocated, starts, wsSet, hash).size < wsSet.size - 1;
+}
+
 // Re-anchor a weapon set after the shared tree shrinks: drop nodes that no
 // longer reach the (smaller) frontier. Call for BOTH sets on any main dealloc.
 export function pruneWeaponSets(adj, mainAllocated, starts, wsSet) {
@@ -135,4 +149,3 @@ export function pruneWeaponSets(adj, mainAllocated, starts, wsSet) {
 export function wsCanAfford(wsSet, count, budget) {
   return wsSet.size + count <= (budget ?? Infinity);
 }
-
