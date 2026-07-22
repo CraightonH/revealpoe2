@@ -91,6 +91,26 @@ gone): `sample.html` (real gems-page snapshot, all assets as data: URIs, plus
 above are the durable copies. To regenerate a sample base: boot the app, capture
 `/gems` + one unique/base card fragment, inline CSS/fonts/images as data: URIs.
 
+## Builds page (decided 2026-07-22)
+
+The Build Planner editor got its own exploration round (owner: current page
+"looks like a 3rd grader's attempt", PoE2 artwork doesn't jive with the site
+outside the passive tree and tooltips). Five mockups produced — 2 by Claude,
+3 by Codex; both "dossier" concepts converged independently.
+
+- **Winner: Concept B "The Dossier"** (Claude) — scrolling four-chapter sheet
+  (Gear / Skills / Passive Tree / Notes), sticky section rail, share link
+  front-and-center. Artifacts: Claude A ⚔️ 32ae2163, **B 📜 c43f47d1 (winner)**;
+  Codex 1 🗺️ ac867b37, 2 🗂️ 2e0e9809, 3 📖 f75161bb.
+- **Owner amendments:** gear keeps the in-game *spatial arrangement* (weapons
+  at the shoulders, helmet top-center, amulet right of the helmet/body seam,
+  rings at body mid-line, gloves/boots bottom-aligned with belt, flasks under
+  gloves/boots, charm centered) but drops all in-game artwork; skills lose the
+  level control and render real gem icons with hover tooltips; granted-by
+  callout kept; `description` added at top, notes stay at bottom.
+- Implemented 2026-07-22 on `planner/phase-4a-builds-pages` —
+  plan: `docs/superpowers/plans/2026-07-22-builds-dossier-redesign.md`.
+
 ## Next steps when resumed
 
 1. Optionally another exploration round riffing on the Ledger (variations on

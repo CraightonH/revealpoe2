@@ -13,9 +13,9 @@ Complete `docs/TODO.md` item 1: a **Build Planner** — save named groups of ite
 - A build holds: gear slots (uniques/bases + **chosen modifiers**: 1–6 real mods with tiers on bases, optional corrupted implicit on uniques — amended 2026-07-21, supersedes the affix wishlist), skill setups (skill gem + supports, levels; item-granted skills auto-included), spirit gems, a passive-tree share code + **ordered Notable Priority list**, class/ascendancy, notes.
 - **Variants** (amended 2026-07-21): a parent build carries an ordered list of labeled variant references ("Lv 1–30", …); each variant is a full sibling build. Group shares travel as one URL.
 - **Light math**: attribute/level requirement totals, socket & support-legality warnings, whitelisted stat aggregates (attributes, life/mana/spirit, resists). **No DPS engine** (explicitly out of scope).
-- **UI fidelity** (see reference screenshots in the phase specs):
-  - Skill section imitates the in-game **Skill Gems menu** (stacked setup rows: gem icon, name banner, level, circular support sockets).
-  - Item section imitates the in-game **Inventory paper-doll** (slot-art grid).
+- **UI fidelity** — **Amended 2026-07-22:** the in-game-imitation goals below are superseded by the owner-approved "Dossier" design (`docs/superpowers/plans/2026-07-22-builds-dossier-redesign.md`): the in-game *spatial arrangement* is retained for gear but the in-game *artwork* is dropped (planner-art textures no longer consumed by the editor); skill setups render as icon "constellation chains" with real gem icons and **no level controls**; a `description` field was added (notes stay). The passive-tree embed goal (Phase 5) stands. Original goals, for history:
+  - ~~Skill section imitates the in-game **Skill Gems menu** (stacked setup rows: gem icon, name banner, level, circular support sockets).~~
+  - ~~Item section imitates the in-game **Inventory paper-doll** (slot-art grid).~~
   - Passive section **embeds the real interactive tree** (full /passives functionality) with a **Notable Priority** ordered list; hovering a priority row highlights that node in the embedded tree.
 - Sharing: compressed **URL fragment** codes; export to the official in-game **`.build` file** (JSON, v1 Experimental — GGG developer docs at pathofexile.com/developer/docs/game).
 - "Add to Build" icon on every card/tooltip site-wide (pick existing build / create new).
@@ -64,7 +64,7 @@ Phases 1, 2, 3 are independent and may run in parallel sessions. Phases 6, 7, 8 
 
 - [x] Phase 1 — Build store foundation (654c2a5)
 - [x] Phase 2 — Slot & socket data model (5c728df)
-- [x] Phase 3 — In-game UI art ingestion (6ea4f3b)
+- [x] Phase 3 — In-game UI art ingestion (6ea4f3b) — *2026-07-22: the editor no longer consumes these textures (Dossier redesign); `planner-art.css` stays as the ingestion trigger, pruning decision deferred*
 - [x] Phase 4a — /builds list + read-only viewer + Add-to-Build affordance (b66ce2d)
 - [x] Phase 4b — Build editor (inventory paper-doll + skill panel + picker; granted-skill rows) (695a1a0)
 - [ ] Phase 4c — Item mod picker + `mod-pools.json` (incl. corrupted-implicit data verification)
