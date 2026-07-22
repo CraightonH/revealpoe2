@@ -4,6 +4,7 @@
 // a target build. Also exports openBuildMenu for programmatic callers
 // (theorycraft pin-tray promote).
 import { getStore } from '/static/js/build-host.js';
+import { StoreWriteError } from '/static/js/build-store.js';
 
 let menu = null;
 function closeMenu() { menu?.remove(); menu = null; }
@@ -55,9 +56,14 @@ export function openBuildMenu(anchor, refs) {
     if (!pick && !isNew) return;
     e.preventDefault();
     e.stopPropagation();
-    const id = pick ? pick.getAttribute('data-menu-build') : store.create().id;
     closeMenu();
-    addRefs(id, refs);
+    try {
+      const id = pick ? pick.getAttribute('data-menu-build') : store.create().id;
+      addRefs(id, refs);
+    } catch (err) {
+      if (err instanceof StoreWriteError) return toast(`Couldn't save — browser storage is full.`);
+      throw err;
+    }
   });
   menu.querySelector('button')?.focus();
 }
