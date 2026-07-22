@@ -91,6 +91,14 @@ if (root && view) {
         const box = document.createElement('div');
         box.innerHTML = html;
         box.querySelector('.itemboximage')?.remove(); // redundant with the hovered art
+        // Drop wiki-only sections that aren't part of "what you want for this build":
+        // the runeforged-variants table and the "Unique versions" cross-reference.
+        box.querySelectorAll('.base-card-runeforged, .base-card-uniques').forEach((sec) => {
+          const sib = sec.nextElementSibling?.classList.contains('separator') ? sec.nextElementSibling
+            : (sec.previousElementSibling?.classList.contains('separator') ? sec.previousElementSibling : null);
+          sib?.remove();
+          sec.remove();
+        });
         const { corrupted, mods } = modCardSections(cell, pools);
         if (corrupted || mods) {
           const content = box.querySelector('.content') || box.querySelector('.newItemPopup');

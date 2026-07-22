@@ -102,7 +102,7 @@
       <div class="separator"></div>
       {% endif %}
       {% if vm.runeVariants.length %}
-      <div class="Stats">
+      <div class="Stats base-card-runeforged">
         <div class="property" style="margin-bottom:4px;">Runeforged variants:</div>
         {% for rv in vm.runeVariants %}
         <div class="property" style="padding-left:8px;">{{ rv.name }}</div>
@@ -114,7 +114,7 @@
       <div class="separator"></div>
       {% endif %}
       {% if vm.uniquesOnBase.length %}
-      <div class="Stats">
+      <div class="Stats base-card-uniques">
         <div class="property" style="margin-bottom:4px;">Unique versions:</div>
         {% for u in vm.uniquesOnBase %}
         <div class="property" style="padding-left:8px;">
