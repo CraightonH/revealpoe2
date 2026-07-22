@@ -22,6 +22,7 @@ import { listItemClasses, getItemClass } from '../src/data/baseItems.js';
 import { listKeystones, listNotables } from '../src/data/passiveTree.js';
 import { listAugments } from '../src/data/augments.js';
 import { plannerData } from '../src/data/planner.js';
+import { modPools } from '../src/data/modPools.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
@@ -75,9 +76,13 @@ fs.writeFileSync(path.join(OUT, 'browse-cards.json'), JSON.stringify(cards));
 const planner = plannerData();
 fs.writeFileSync(path.join(OUT, 'planner-data.json'), JSON.stringify(planner));
 
+const modpools = modPools();
+fs.writeFileSync(path.join(OUT, 'mod-pools.json'), JSON.stringify(modpools));
+
 const count = Object.values(cards).reduce((n, m) => n + Object.keys(m).length, 0);
 console.log(
   `build-index: ${docs.length} docs, ${count} browse cards, ` +
   `${planner.slots.length} slots / ${Object.keys(planner.items).length} items / ${Object.keys(planner.gems).length} gems ` +
+  `/ ${Object.keys(modpools.families).length} affix families ` +
   `-> public/generated/`,
 );
