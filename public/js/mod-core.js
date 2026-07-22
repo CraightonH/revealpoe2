@@ -150,8 +150,8 @@ export function resolveMod(pools, chosen) {
   if (!fam || idx < 0) return null;
   const tier = fam.tiers[idx];
   return {
-    affix: chosen.affix, name: fam.name, id: tier.id, level: tier.level, gen: tier.gen, text: tier.text,
-    tierNum: fam.tiers.length - idx, tierCount: fam.tiers.length,
+    affix: chosen.affix, name: fam.name, origin: fam.origin, id: tier.id, level: tier.level,
+    gen: tier.gen, text: tier.text, tierNum: fam.tiers.length - idx, tierCount: fam.tiers.length,
   };
 }
 

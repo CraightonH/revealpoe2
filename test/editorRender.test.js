@@ -28,6 +28,9 @@ const MODPOOLS = {
       tiers: [{ id: 'life1', name: 'Hale', level: 1, gen: 'prefix', text: '+(10-19) to maximum Life' }] },
     corrarm: { name: 'increased Armour', origin: 'corrupted', scope: 'equipment', generic: '#% increased Armour',
       tiers: [{ id: 'carm1', name: 'Corrupted', level: 1, gen: 'corrupted', text: '(15-25)% increased Armour' }] },
+    abyss: { name: 'increased Armour and Life', origin: 'desecrated', scope: 'equipment', boss: 'Ulaman',
+      generic: '#% increased Armour and Life',
+      tiers: [{ id: 'ab1', name: 'of Ulaman', level: 1, gen: 'suffix', text: '(30-40)% increased Armour, +10 Life' }] },
   }, bases: {}, uniques: {},
 };
 
@@ -42,10 +45,19 @@ test('modCardSections: separate corrupted + mods Stats blocks, empty when nothin
   assert.match(mods, /planner-mod__kind">P</);           // life is a prefix
   assert.match(mods, /planner-mod__tier">T1</);           // single-tier family → T1
   assert.ok(mods.includes('+(10-19) to maximum Life'));
+  // A standard mod row is NOT flagged desecrated.
+  assert.ok(!/planner-mod--desecrated/.test(mods));
   // Corrupted is its own separated .Stats section, tagged red.
   assert.match(corrupted, /^<div class="separator"><\/div><div class="Stats">/);
   assert.match(corrupted, /explicitMod corruptedMod/);
   assert.ok(corrupted.includes('(15-25)% increased Armour'));
+});
+
+test('modCardSections: a desecrated mod row carries the Abyssal-band class + S/tier', () => {
+  const { mods } = modCardSections({ mods: [{ affix: 'abyss', tier: 'ab1' }], corrupted: null }, MODPOOLS);
+  assert.match(mods, /explicitMod planner-mod planner-mod--desecrated/);
+  assert.match(mods, /planner-mod__kind">S</);   // fixture desecrated tier is a suffix
+  assert.match(mods, /planner-mod__tier">T1</);
 });
 
 test('renderGear: a filled well exposes data-slot-mods and a mods-edit affordance', () => {

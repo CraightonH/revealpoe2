@@ -48,7 +48,7 @@ export function modCardSections(cell, pools) {
   // Each explicit mod row is flagged prefix/suffix (P/S) on the left and its
   // tier rank (T1 = top) on the right — build-planner detail the wiki card omits.
   const explicit = mods.map((m) => resolveMod(pools, m)).filter(Boolean)
-    .map((m) => `<div class="explicitMod planner-mod">` +
+    .map((m) => `<div class="explicitMod planner-mod${m.origin === 'desecrated' ? ' planner-mod--desecrated' : ''}">` +
       `<span class="planner-mod__kind">${m.gen === 'suffix' ? 'S' : 'P'}</span>` +
       `<span class="planner-mod__text">${esc(m.text)}</span>` +
       `<span class="planner-mod__tier">T${m.tierNum}</span></div>`).join('');
