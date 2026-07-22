@@ -172,3 +172,11 @@ test('renderEditor: dossier shell — rail, header hooks, four chapters, escapes
   assert.ok(html.includes('hi &lt;b&gt;there&lt;/b&gt;'));
   assert.ok(html.includes('desc &lt;i&gt;x&lt;/i&gt;'));
 });
+
+test('treeSummary: non-v7 decodable garbage yields no point count', () => {
+  // base64-decodes fine but is not a v7 code — decode() is lenient, so
+  // treeSummary must gate on the version word.
+  const junk = 'not-a-real-code';
+  assert.deepEqual(treeSummary(fixed({ tree: { code: junk, notablePriority: [] } })),
+    { saved: true, points: null });
+});

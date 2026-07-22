@@ -223,7 +223,10 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
     if (tc) {
       const v = tc.value.trim();
       if (!v) { patch({ tree: { ...build().tree, code: null } }); return; }
-      try { decodePassiveCode(v); } catch { tc.classList.add('is-invalid'); return; }
+      // decode() is lenient with garbage bytes — the version word is the
+      // reliable validity signal (official codes are v7).
+      try { if (decodePassiveCode(v).version !== 7) throw new Error('bad version'); }
+      catch { tc.classList.add('is-invalid'); return; }
       patch({ tree: { ...build().tree, code: v } });
       return;
     }

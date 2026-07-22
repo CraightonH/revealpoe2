@@ -21,7 +21,9 @@ function tile(doc, name, cls) {
   const img = doc.iconUrl
     ? `<img class="${cls}__img" src="${esc(doc.iconUrl)}" alt="" loading="lazy" onerror="this.remove()">`
     : '';
-  return `<span class="${cls}" aria-hidden="true"><span class="${cls}__initials">${esc(initials(name))}</span>${img}</span>`;
+  // img first: CSS hides the initials while art is present; onerror removes
+  // the img so the initials reappear as the offline/missing fallback.
+  return `<span class="${cls}" aria-hidden="true">${img}<span class="${cls}__initials">${esc(initials(name))}</span></span>`;
 }
 
 /** Item chip: icon tile + rarity-colored name, card-tooltip wired. */
@@ -146,7 +148,8 @@ function chainRow({ idPrefix, gemRef, supports, label, removable, index, warning
   const rec = ctx.planner.gems[gemRef.slug] ?? {};
   const max = rec.maxSupports ?? 5;
   const spirit = rec.gemType === 'spirit';
-  const doc = ctx.resolveRef(gemRef) || {};
+  // Setup gem refs are stored as {slug} only — resolve as kind 'gem'.
+  const doc = ctx.resolveRef({ kind: 'gem', slug: gemRef.slug }) || {};
   const name = doc.name || gemRef.slug;
   const card = doc.cardUrl ? ` data-card-url="${esc(doc.cardUrl)}"` : '';
   const sockets = Array.from({ length: max }, (_, j) => supportNode(idPrefix, j, supports[j], ctx)).join('');
@@ -188,8 +191,11 @@ export function renderSkills(build, ctx) {
 
 export function treeSummary(build) {
   if (!build.tree.code) return { saved: false, points: null };
-  try { return { saved: true, points: decodePassiveCode(build.tree.code).nodes.length }; }
-  catch { return { saved: true, points: null }; }
+  try {
+    const state = decodePassiveCode(build.tree.code);
+    // decode() is lenient with garbage bytes — trust only v7 states.
+    return { saved: true, points: state.version === 7 ? state.nodes.length : null };
+  } catch { return { saved: true, points: null }; }
 }
 
 export function renderEditor(build, ctx) {
