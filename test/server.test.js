@@ -214,3 +214,21 @@ test('GET /passives renders the tree shell', async () => {
   assert.match(res.text, /<canvas/);
   assert.match(res.text, /passive-tree\.js/);
 });
+
+test('GET /builds returns the planner shell', async () => {
+  const app = createApp();
+  const res = await request(app).get('/builds');
+  assert.equal(res.status, 200);
+  assert.ok(res.text.includes('data-builds-root'));
+  assert.ok(res.text.includes('data-builds-view'));
+  assert.ok(res.text.includes('/static/js/builds-page.js'));
+  assert.ok(res.text.includes('/static/css/builds.css'));
+  assert.ok(res.text.includes('<noscript>'));
+});
+
+test('site nav links to /builds on every page', async () => {
+  const app = createApp();
+  const res = await request(app).get('/gems');
+  assert.equal(res.status, 200);
+  assert.match(res.text, /href="\/builds"/);
+});

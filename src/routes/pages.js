@@ -100,6 +100,10 @@ export function registerPages(app) {
     res.render('passives.njk', { title: 'Passive Tree' });
   });
 
+  app.get('/builds', (_req, res) => {
+    res.render('builds.njk');
+  });
+
   app.get('/credits', (_req, res) => {
     res.render('credits.njk');
   });

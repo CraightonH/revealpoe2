@@ -1,0 +1,21 @@
+{% extends "base.njk" %}
+{% block title %}Builds — Reveal · PoE2 Wiki{% endblock %}
+{% block og_title %}Build Planner — Reveal · PoE2 Wiki{% endblock %}
+{% block og_desc %}Plan PoE2 builds — gear, skills, supports, and passives — saved in your browser, shareable by URL.{% endblock %}
+{% block styles %}<link rel="stylesheet" href="/static/css/builds.css">{% endblock %}
+{% block content %}
+<div class="builds-page" data-builds-root>
+  <header class="builds-header">
+    <div>
+      <p class="item-index-eyebrow">Build Planner</p>
+      <h1>Builds</h1>
+      <p class="builds-lead">Plan gear, skills, and passives. Builds are saved in this browser only —
+        share codes make them portable.</p>
+    </div>
+  </header>
+  <noscript><p class="builds-noscript">The Build Planner needs JavaScript. Builds are stored locally
+    in your browser; nothing is uploaded.</p></noscript>
+  <div class="builds-view" data-builds-view></div>
+  <script type="module" src="/static/js/builds-page.js"></script>
+</div>
+{% endblock %}

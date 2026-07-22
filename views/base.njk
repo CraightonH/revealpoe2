@@ -38,6 +38,7 @@
   <link rel="stylesheet" href="/static/css/app.css">
   <link rel="stylesheet" href="/static/css/gem-card.css">
   <link rel="stylesheet" href="/static/css/browse.css">
+  {% block styles %}{% endblock %}
   <link rel="stylesheet" href="/static/vendor/tippy.css">
   <script src="/static/vendor/htmx.min.js" defer></script>
   <!-- Popper must load before Tippy (Tippy's UMD build depends on window.Popper). -->
@@ -99,6 +100,9 @@
       </li>
       <li class="site-nav__item">
         <a href="/theorycraft" class="site-nav__top">Theory Crafting</a>
+      </li>
+      <li class="site-nav__item">
+        <a href="/builds" class="site-nav__top">Builds</a>
       </li>
     </ul>
   </nav>

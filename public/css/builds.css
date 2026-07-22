@@ -1,0 +1,5 @@
+/* Build Planner surfaces: /builds list + read-only viewer. */
+.builds-page { max-width: 72rem; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+.builds-header { display: flex; justify-content: space-between; align-items: end; gap: 1rem; margin-bottom: 1.25rem; }
+.builds-lead { color: var(--text-muted, #9a927e); max-width: 46rem; }
+.builds-noscript { border: 1px solid var(--card-border, #3a352a); padding: .75rem 1rem; border-radius: 6px; }
