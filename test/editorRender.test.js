@@ -62,3 +62,64 @@ test('rankDocs: stable partition by ranked slugs', () => {
   assert.deepEqual(rankDocs(docs, ['c', 'a']).map((d) => d.slug), ['c', 'a', 'b', 'd']);
   assert.deepEqual(rankDocs(docs, []).map((d) => d.slug), ['a', 'b', 'c', 'd']);
 });
+
+import { renderSkills, renderEditor, grantedRows } from '../public/js/editor-render.js';
+
+const SKILL_PLANNER = { ...PLANNER,
+  gems: {
+    spark: { gemType: 'active', maxSupports: 5, color: 'blue', reqs: null },
+    pierce: { gemType: 'support', maxSupports: 0, color: 'green', reqs: null },
+    'storm-call': { gemType: 'active', maxSupports: 5, color: 'blue', reqs: null },
+  },
+  granted: { 'storm-amulet': ['storm-call'] },
+};
+const sctx = { planner: SKILL_PLANNER, resolveRef: resolve, weaponSet: 1 };
+
+test('renderSkills: setup row with sockets, level, remove/move hooks', () => {
+  const b = fixed({ skills: [{ gem: { slug: 'spark' }, level: 12, supports: [{ slug: 'pierce' }] }] });
+  const html = renderSkills(b, sctx);
+  assert.match(html, /data-gem-well="0"/);
+  assert.match(html, /data-setup-level="0"[^>]*value="12"/);
+  assert.match(html, /data-setup-remove="0"/);
+  assert.match(html, /data-setup-move="0:up"/);
+  assert.match(html, /data-socket="s:0:0"/);
+  assert.match(html, /planner-support-socket--green/);   // filled by pierce
+  assert.match(html, /data-socket="s:0:4"/);              // 5 sockets rendered
+  assert.match(html, /planner-support-socket--empty/);
+  assert.match(html, /data-setup-add/);
+});
+
+test('grantedRows + renderSkills: equipped granting item yields a non-removable row', () => {
+  const b = fixed({
+    gear: { helmet: { item: { kind: 'unique', slug: 'storm-amulet' }, wishlist: [] } },
+    grantedSupports: { 'storm-amulet:storm-call': [{ slug: 'pierce' }] },
+  });
+  const rows = grantedRows(b, SKILL_PLANNER);
+  assert.equal(rows.length, 1);
+  assert.deepEqual(rows[0], { key: 'storm-amulet:storm-call', item: { kind: 'unique', slug: 'storm-amulet' },
+    skill: 'storm-call', supports: [{ slug: 'pierce' }] });
+  const html = renderSkills(b, sctx);
+  assert.match(html, /editor-setup__source/);       // "from <item>" label present
+  assert.match(html, /N:storm-amulet/);             // resolved granting item name
+  assert.match(html, /data-socket="g:storm-amulet:storm-call:1"/);
+  assert.ok(!/data-setup-remove="g:/.test(html), 'granted rows have no remove');
+});
+
+test('renderSkills: duplicate-support violation renders inline warning', () => {
+  const b = fixed({ skills: [
+    { gem: { slug: 'spark' }, level: null, supports: [{ slug: 'pierce' }] },
+    { gem: { slug: 'spark' }, level: null, supports: [{ slug: 'pierce' }] },
+  ] });
+  assert.match(renderSkills(b, sctx), /editor-setup__warning/);
+});
+
+test('renderEditor: assembles gear, skills, tree placeholder, notes', () => {
+  const b = fixed({ notes: 'hi <b>there</b>', tree: { code: 'v7abc', notablePriority: [1] } });
+  const html = renderEditor(b, sctx);
+  assert.match(html, /editor-gear/);
+  assert.match(html, /editor-skills/);
+  assert.match(html, /Passive tree saved/);
+  assert.match(html, /href="\/passives"/);
+  assert.match(html, /data-notes/);
+  assert.ok(html.includes('hi &lt;b&gt;there&lt;/b&gt;'));
+});
