@@ -23,3 +23,78 @@
 .picker-row__name { flex: none; }
 .picker-row__hint { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; opacity: .55; font-size: .85em; }
 .picker-more { padding: .3rem .5rem; opacity: .6; font-size: .85em; }
+
+/* ---- Editor: paper-doll ---- */
+.editor-section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: .6rem; }
+.editor-gear { padding: 1rem; }
+.editor-doll {
+  display: grid; gap: .4rem; justify-content: center;
+  grid-template-areas:
+    "wa amulet helmet ring1 wb"
+    "wa gloves body   boots wb"
+    "wa .      belt   ring2 wb"
+    "flask1 flask2 charm1 . ."
+    "tray tray tray tray tray";
+  grid-template-columns: 5.2rem 4rem 4.6rem 4rem 5.2rem;
+}
+.editor-slot { position: relative; min-height: 4rem; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; text-align: center; }
+.editor-slot--weapon1a, .editor-slot--weapon2a { grid-area: wa; min-height: 10rem; }
+.editor-slot--weapon1b, .editor-slot--weapon2b { grid-area: wb; min-height: 10rem; }
+.editor-slot--helmet { grid-area: helmet; } .editor-slot--body { grid-area: body; min-height: 6rem; }
+.editor-slot--gloves { grid-area: gloves; } .editor-slot--boots { grid-area: boots; }
+.editor-slot--belt { grid-area: belt; } .editor-slot--amulet { grid-area: amulet; }
+.editor-slot--ring1 { grid-area: ring1; } .editor-slot--ring2 { grid-area: ring2; }
+.editor-slot--flask1 { grid-area: flask1; } .editor-slot--flask2 { grid-area: flask2; }
+.editor-slot--charm1 { grid-area: charm1; }
+.editor-slot__hint { font-size: .7rem; opacity: .55; pointer-events: none; }
+.editor-slot__ghost { font-size: .7rem; opacity: .4; font-style: italic; }
+.editor-slot__clear { position: absolute; top: 2px; right: 2px; background: rgb(0 0 0 / .55);
+  border: 0; color: inherit; border-radius: 3px; cursor: pointer; line-height: 1; }
+.editor-slot--violation { outline: 1px solid #a33; }
+.editor-item { display: flex; flex-direction: column; align-items: center; gap: .2rem; min-width: 0; }
+.editor-item__icon { max-width: 3rem; max-height: 3.4rem; object-fit: contain; }
+.editor-item__name { font-size: .68rem; line-height: 1.15; overflow-wrap: anywhere; }
+.editor-item__name--unique { color: #af6025; }
+.editor-set-toggle { display: flex; gap: .3rem; }
+.editor-set-btn { font: inherit; font-size: .8rem; padding: .25rem .6rem; cursor: pointer;
+  background: rgb(255 255 255 / .06); border: 1px solid var(--card-border, #3a352a); color: inherit; border-radius: 4px; }
+.editor-set-btn.is-active { background: rgb(255 255 255 / .16); }
+.editor-warnings { margin: .6rem 0 0; padding-left: 1.2rem; color: #d9a24a; font-size: .85rem; }
+.editor-tray { grid-area: tray; margin-top: .8rem; }
+.editor-tray__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .25rem; }
+.editor-tray__row { display: flex; align-items: center; justify-content: space-between; gap: .5rem;
+  padding: .3rem .5rem; background: rgb(0 0 0 / .25); border-radius: 4px; }
+.editor-tray__row .editor-item { flex-direction: row; }
+.editor-tray__actions button { font: inherit; font-size: .8rem; background: none; border: 1px solid var(--card-border, #3a352a);
+  color: inherit; border-radius: 4px; padding: .15rem .5rem; cursor: pointer; }
+.editor-none { opacity: .55; }
+
+/* ---- Editor: skill panel ---- */
+.editor-skills { margin-top: 1.2rem; padding: 1rem; }
+.editor-setups { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .6rem; }
+.editor-setup { display: flex; align-items: center; flex-wrap: wrap; gap: .6rem; padding: .55rem .8rem; }
+.editor-setup--spirit { box-shadow: inset 0 0 0 1px rgb(180 160 255 / .35); }
+.editor-setup__gem { width: 3rem; height: 3rem; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.editor-setup__gem .editor-item__name { display: none; }
+.editor-setup__gem + .editor-setup__source, .editor-setup__source { font-size: .78rem; opacity: .75; }
+.editor-setup__level input { width: 3.2rem; background: transparent; border: 0; color: inherit; font: inherit; text-align: center; }
+.editor-setup__sockets { display: flex; gap: .35rem; margin-left: auto; }
+.editor-socket { position: relative; width: 1.9rem; height: 1.9rem; display: inline-block; cursor: pointer; }
+.editor-socket__clear { position: absolute; top: -6px; right: -6px; display: none; background: rgb(0 0 0 / .7);
+  border: 0; color: inherit; border-radius: 50%; width: 1rem; height: 1rem; line-height: 1; font-size: .7rem; cursor: pointer; }
+.editor-socket:hover .editor-socket__clear, .editor-socket:focus-within .editor-socket__clear { display: block; }
+.editor-setup__controls { display: flex; gap: .25rem; }
+.editor-setup__controls button { font: inherit; background: none; border: 1px solid var(--card-border, #3a352a);
+  color: inherit; border-radius: 4px; cursor: pointer; padding: .1rem .45rem; }
+.editor-setup__warning { flex-basis: 100%; margin: 0; color: #d9a24a; font-size: .8rem; }
+.editor-setup-add { font: inherit; padding: .3rem .8rem; cursor: pointer;
+  background: rgb(255 255 255 / .08); border: 1px solid var(--card-border, #3a352a); color: inherit; border-radius: 4px; }
+.editor-tree, .editor-notes { margin-top: 1.2rem; }
+.editor-notes textarea { width: 100%; font: inherit; color: inherit; background: rgb(0 0 0 / .3);
+  border: 1px solid var(--card-border, #3a352a); border-radius: 5px; padding: .5rem .7rem; }
+
+@media (max-width: 720px) {
+  .editor-doll { grid-template-columns: 4rem 3.2rem 3.8rem 3.2rem 4rem; gap: .3rem; }
+  .editor-setup__sockets { margin-left: 0; flex-basis: 100%; }
+}
