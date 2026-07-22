@@ -36,15 +36,26 @@ function wellArt(ref, resolveRef) {
     `${tile(doc, name, 'well-art')}</span>`;
 }
 
-/** poe2db-styled chosen-mod block for a gear cell's hover card. Empty when none. */
-export function modCardLines(cell, pools) {
+/**
+ * The chosen-mod blocks for a gear cell, as in-game `.Stats` sections to splice
+ * into the item card's `.content` (the controller places them after the level
+ * requirements). Each is a leading-separator + `.Stats` block, or '' when empty.
+ * `corrupted` is its own separated section (rendered red) so it sits between the
+ * requirements and the explicit mod list; `mods` is the explicit prefix/suffix list.
+ */
+export function modCardSections(cell, pools) {
   const mods = Array.isArray(cell?.mods) ? cell.mods : [];
   const explicit = mods.map((m) => resolveMod(pools, m)).filter(Boolean)
     .map((m) => `<div class="explicitMod">${esc(m.text)}</div>`).join('');
   const corr = cell?.corrupted ? resolveMod(pools, cell.corrupted) : null;
-  const corrHtml = corr ? `<div class="separator"></div><div class="implicitMod corruptedMod">${esc(corr.text)}</div>` : '';
-  if (!explicit && !corrHtml) return '';
-  return `<div class="Stats editor-mod-lines">${explicit}${corrHtml}</div>`;
+  return {
+    corrupted: corr
+      ? `<div class="separator"></div><div class="Stats"><div class="explicitMod corruptedMod">${esc(corr.text)}</div></div>`
+      : '',
+    mods: explicit
+      ? `<div class="separator"></div><div class="Stats">${explicit}</div>`
+      : '',
+  };
 }
 
 /** Tiny icon-only chip for the granted "from <item>" tagline — the icon

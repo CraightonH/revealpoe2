@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderGear, rankDocs, initials, modCardLines } from '../public/js/editor-render.js';
+import { renderGear, rankDocs, initials, modCardSections } from '../public/js/editor-render.js';
 import { emptyBuild } from '../public/js/build-store.js';
 
 const PLANNER = {
@@ -31,15 +31,18 @@ const MODPOOLS = {
   }, bases: {}, uniques: {},
 };
 
-test('modCardLines: explicit + corrupted lines, empty when nothing chosen', () => {
-  assert.equal(modCardLines({ mods: [], corrupted: null }, MODPOOLS), '');
-  const html = modCardLines({ mods: [{ affix: 'life', tier: 'life1' }],
+test('modCardSections: separate corrupted + mods Stats blocks, empty when nothing chosen', () => {
+  assert.deepEqual(modCardSections({ mods: [], corrupted: null }, MODPOOLS), { corrupted: '', mods: '' });
+  const { corrupted, mods } = modCardSections({ mods: [{ affix: 'life', tier: 'life1' }],
     corrupted: { affix: 'corrarm', tier: 'carm1' } }, MODPOOLS);
-  assert.match(html, /explicitMod/);
-  assert.ok(html.includes('+(10-19) to maximum Life'));
-  assert.match(html, /implicitMod|separator/);
-  assert.match(html, /corruptedMod/, 'corrupted implicit line is tagged for red styling');
-  assert.ok(html.includes('(15-25)% increased Armour'));
+  // Explicit mods render as an in-game .Stats block of .explicitMod lines.
+  assert.match(mods, /^<div class="separator"><\/div><div class="Stats">/);
+  assert.match(mods, /explicitMod/);
+  assert.ok(mods.includes('+(10-19) to maximum Life'));
+  // Corrupted is its own separated .Stats section, tagged red.
+  assert.match(corrupted, /^<div class="separator"><\/div><div class="Stats">/);
+  assert.match(corrupted, /explicitMod corruptedMod/);
+  assert.ok(corrupted.includes('(15-25)% increased Armour'));
 });
 
 test('renderGear: a filled well exposes data-slot-mods and a mods-edit affordance', () => {

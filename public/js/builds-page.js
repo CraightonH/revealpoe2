@@ -3,7 +3,7 @@
 // builds-render.js (node-tested); this file is DOM wiring only.
 import { getStore, safeWrite } from '/static/js/build-host.js';
 import { parseRoute, renderBuild, renderImport } from '/static/js/builds-render.js';
-import { modCardLines, renderEditor } from '/static/js/editor-render.js';
+import { modCardSections, renderEditor } from '/static/js/editor-render.js';
 import { decodeBuild } from '/static/js/build-code.js';
 import { mountEditor } from '/static/js/build-editor.js';
 
@@ -77,13 +77,29 @@ if (root && view) {
         const item = b?.gear?.[slotId]?.item;
         return item ? (resolveRef(item)?.cardUrl ?? null) : null;
       },
+      // Tailor the wiki item card to a build tooltip: drop the redundant art
+      // (the well itself is the art) and splice the chosen mods into the in-game
+      // render — corrupted as its own section between requirements and the mod
+      // list, like a real corrupted item — rather than tacking a block on the end.
       transform: function (html, ref) {
         if (!pools) return html;
         const slotId = ref.getAttribute('data-slot-mods');
         const route = parseRoute(location.hash);
         const b = route.id ? store.get(route.id) : (importState?.state?.build ?? null);
         const cell = b?.gear?.[slotId];
-        return cell ? html + modCardLines(cell, pools) : html;
+        if (!cell) return html;
+        const box = document.createElement('div');
+        box.innerHTML = html;
+        box.querySelector('.itemboximage')?.remove(); // redundant with the hovered art
+        const { corrupted, mods } = modCardSections(cell, pools);
+        if (corrupted || mods) {
+          const content = box.querySelector('.content') || box.querySelector('.newItemPopup');
+          const reqStats = content && content.querySelector('.requirements')?.closest('.Stats');
+          const anchor = reqStats || (content && content.lastElementChild);
+          if (anchor) anchor.insertAdjacentHTML('afterend', corrupted + mods);
+          else if (content) content.insertAdjacentHTML('beforeend', corrupted + mods);
+        }
+        return box.innerHTML;
       },
     });
   }

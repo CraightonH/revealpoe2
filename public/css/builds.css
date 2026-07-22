@@ -417,7 +417,6 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
   cursor: pointer; opacity: 0; transition: opacity 120ms ease; }
 .editor-slot:hover .editor-slot__mods-edit, .editor-slot__mods-edit:focus-visible { opacity: 1; }
 .editor-slot__mods-edit:hover { color: var(--color-crafted); }
-.editor-mod-lines { margin-top: 6px; }
 
 /* ---- anchored mod picker popover ---- */
 .mod-picker-pop { position: absolute; z-index: 60; width: 340px; }
