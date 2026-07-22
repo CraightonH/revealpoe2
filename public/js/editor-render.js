@@ -42,7 +42,7 @@ export function modCardLines(cell, pools) {
   const explicit = mods.map((m) => resolveMod(pools, m)).filter(Boolean)
     .map((m) => `<div class="explicitMod">${esc(m.text)}</div>`).join('');
   const corr = cell?.corrupted ? resolveMod(pools, cell.corrupted) : null;
-  const corrHtml = corr ? `<div class="separator"></div><div class="implicitMod">${esc(corr.text)}</div>` : '';
+  const corrHtml = corr ? `<div class="separator"></div><div class="implicitMod corruptedMod">${esc(corr.text)}</div>` : '';
   if (!explicit && !corrHtml) return '';
   return `<div class="Stats editor-mod-lines">${explicit}${corrHtml}</div>`;
 }

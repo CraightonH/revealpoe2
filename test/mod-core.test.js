@@ -104,6 +104,9 @@ test('modPickerHtml: base mode renders prefix/suffix add rows + chosen tier sele
   assert.match(html, /data-mod-tier="life"/);
   assert.match(html, /life2/);                 // both tiers offered in the select
   assert.match(html, /Prefixes/); assert.match(html, /Suffixes/);
+  // Bases now also offer a corrupted implicit chooser (distinct hook).
+  assert.match(html, /Corrupted implicit/);
+  assert.match(html, /data-mod-corrupt="corrarm"/);
 });
 
 test('modPickerHtml: desecrated add rows carry an origin badge with the boss name', () => {
@@ -119,7 +122,7 @@ test('modPickerHtml: unique mode renders only the corrupted single-choice sectio
   const view = { prefix: [], suffix: [], corrupted: poolsForBase(POOLS, 'iron-greaves').corrupted, mode: 'unique' };
   const cell = { item: { kind: 'unique', slug: 'the-anvil' }, mods: [], corrupted: null };
   const html = modPickerHtml(view, cell);
-  assert.match(html, /data-mod-add="corrarm"/);
+  assert.match(html, /data-mod-corrupt="corrarm"/);
   assert.ok(!/Prefixes/.test(html), 'no prefix column for a unique corrupted picker');
 });
 
@@ -131,5 +134,5 @@ test('modPickerHtml: unique mode ignores a stale chosen corrupted affix', () => 
   let html;
   assert.doesNotThrow(() => { html = modPickerHtml(view, cell); });
   assert.equal(typeof html, 'string');
-  assert.ok(!html.includes('<div class="mod-picker__chosen"><h4>Chosen</h4>'));
+  assert.ok(!/data-mod-tier-corrupt/.test(html), 'no tier select for an unresolvable chosen affix');
 });

@@ -38,6 +38,7 @@ test('modCardLines: explicit + corrupted lines, empty when nothing chosen', () =
   assert.match(html, /explicitMod/);
   assert.ok(html.includes('+(10-19) to maximum Life'));
   assert.match(html, /implicitMod|separator/);
+  assert.match(html, /corruptedMod/, 'corrupted implicit line is tagged for red styling');
   assert.ok(html.includes('(15-25)% increased Armour'));
 });
 

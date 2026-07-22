@@ -45,10 +45,11 @@ function refHtml(ref, resolveRef) {
 function sections(b, resolveRef, pools) {
   const modLines = (g) => {
     if (!pools) return '';
-    const lines = (g.mods ?? []).map((m) => resolveMod(pools, m)).filter(Boolean).map((m) => m.text);
+    const items = (g.mods ?? []).map((m) => resolveMod(pools, m)).filter(Boolean)
+      .map((m) => `<li class="explicitMod">${esc(m.text)}</li>`);
     const corr = g.corrupted ? resolveMod(pools, g.corrupted) : null;
-    const all = [...lines, ...(corr ? [corr.text] : [])];
-    return all.length ? `<ul class="builds-slot__mods">${all.map((t) => `<li class="explicitMod">${esc(t)}</li>`).join('')}</ul>` : '';
+    if (corr) items.push(`<li class="explicitMod corruptedMod">${esc(corr.text)}</li>`);
+    return items.length ? `<ul class="builds-slot__mods">${items.join('')}</ul>` : '';
   };
   const gear = Object.entries(b.gear).filter(([, g]) => g.item)
     .map(([slot, g]) => `<li class="builds-slot"><span class="builds-slot__label">${esc(titleCase(slot))}</span>${refHtml(g.item, resolveRef)}${modLines(g)}</li>`);

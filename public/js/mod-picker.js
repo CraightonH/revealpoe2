@@ -72,27 +72,27 @@ export function openModPicker({ anchorEl, ref, cell, pools, onChange }) {
 
   el.addEventListener('click', (e) => {
     if (e.target.closest('[data-mod-close]')) { closeModPicker(); return; }
+    // Corrupted implicit (single choice) — base and unique alike.
+    const corr = e.target.closest('[data-mod-corrupt]')?.getAttribute('data-mod-corrupt');
+    if (corr) { emit({ ...current.cell, corrupted: { affix: corr, tier: defaultTier(view, corr) } }); return; }
+    if (e.target.closest('[data-mod-corrupt-remove]')) { emit({ ...current.cell, corrupted: null }); return; }
+    // Prefix/suffix explicit mods (bases).
     const add = e.target.closest('[data-mod-add]')?.getAttribute('data-mod-add');
     if (add) {
       const c = current.cell;
-      if (ref.kind === 'unique') { emit({ ...c, corrupted: { affix: add, tier: defaultTier(view, add) } }); return; }
       if ((c.mods ?? []).some((m) => m.affix === add)) return;   // one row per family
       emit({ ...c, mods: [...(c.mods ?? []), { affix: add, tier: defaultTier(view, add) }] });
       return;
     }
     const rm = e.target.closest('[data-mod-remove]')?.getAttribute('data-mod-remove');
-    if (rm) {
-      const c = current.cell;
-      if (ref.kind === 'unique') emit({ ...c, corrupted: null });
-      else emit({ ...c, mods: (c.mods ?? []).filter((m) => m.affix !== rm) });
-    }
+    if (rm) emit({ ...current.cell, mods: (current.cell.mods ?? []).filter((m) => m.affix !== rm) });
   });
   el.addEventListener('change', (e) => {
+    const corrAffix = e.target.closest('[data-mod-tier-corrupt]')?.getAttribute('data-mod-tier-corrupt');
+    if (corrAffix) { emit({ ...current.cell, corrupted: { affix: corrAffix, tier: e.target.value } }); return; }
     const affix = e.target.closest('[data-mod-tier]')?.getAttribute('data-mod-tier');
     if (!affix) return;
-    const c = current.cell;
-    if (ref.kind === 'unique') emit({ ...c, corrupted: { affix, tier: e.target.value } });
-    else emit({ ...c, mods: (c.mods ?? []).map((m) => (m.affix === affix ? { ...m, tier: e.target.value } : m)) });
+    emit({ ...current.cell, mods: (current.cell.mods ?? []).map((m) => (m.affix === affix ? { ...m, tier: e.target.value } : m)) });
   });
   el.addEventListener('input', (e) => {
     if (!e.target.matches('.mod-picker__search')) return;
@@ -104,8 +104,18 @@ export function openModPicker({ anchorEl, ref, cell, pools, onChange }) {
       ? anchorEl
       : document.querySelector(`[data-mods-edit="${slotId}"]`) || anchorEl;
     const r = live.getBoundingClientRect();
-    el.style.top = `${window.scrollY + r.bottom + 6}px`;
-    el.style.left = `${Math.min(window.scrollX + r.left, window.scrollX + document.documentElement.clientWidth - 360)}px`;
+    const vw = document.documentElement.clientWidth;
+    const vh = document.documentElement.clientHeight;
+    const h = el.offsetHeight;
+    const w = el.offsetWidth || 340;
+    const M = 8; // viewport margin
+    // Prefer just below the anchor; if the popover would run past the viewport
+    // bottom, slide it up so the whole thing stays on screen without scrolling.
+    let top = r.bottom + 6;
+    if (top + h > vh - M) top = Math.max(M, vh - M - h);
+    const left = Math.max(M, Math.min(r.left, vw - w - M));
+    el.style.top = `${window.scrollY + top}px`;
+    el.style.left = `${window.scrollX + left}px`;
   }
   document.body.append(el);
   rerender();

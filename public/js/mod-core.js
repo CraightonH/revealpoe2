@@ -13,11 +13,30 @@ export const MAX_MODS = 6;
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-function tierSelect(affix, fam, chosenTierId) {
+function tierSelect(affix, fam, chosenTierId, attr = 'data-mod-tier') {
   const opts = fam.tiers.map((t) =>
     `<option value="${esc(t.id)}"${t.id === chosenTierId ? ' selected' : ''}>` +
     `T${fam.tiers.length - fam.tiers.indexOf(t)} · ${esc(t.text)}</option>`).join('');
-  return `<select class="mod-picker__tier" data-mod-tier="${esc(affix)}">${opts}</select>`;
+  return `<select class="mod-picker__tier" ${attr}="${esc(affix)}">${opts}</select>`;
+}
+
+// Corrupted-implicit chooser (single choice), rendered red. Shared by base mode
+// (appended after prefix/suffix) and unique mode (the whole body). Uses distinct
+// data-mod-corrupt* hooks so it never collides with the mods[] prefix/suffix flow.
+function corruptedCol(view, cell) {
+  const cur = cell?.corrupted?.affix ?? null;
+  const curFam = cur ? view.corrupted.find((f) => f.affix === cur) : null;
+  const rows = view.corrupted.map((f) =>
+    `<button type="button" class="mod-picker__row mod-picker__row--corrupt${f.affix === cur ? ' is-chosen' : ''}" data-mod-corrupt="${esc(f.affix)}">` +
+    `<span class="mod-picker__generic mod-picker__generic--corrupt">${esc(f.generic)}</span></button>`).join('')
+    || '<p class="mod-picker__none">No corrupted implicits on this base.</p>';
+  const chosen = curFam
+    ? `<div class="mod-picker__chosen-row mod-picker__chosen-row--corrupt">` +
+      `<span class="mod-picker__generic mod-picker__generic--corrupt">${esc(curFam.name)}</span>` +
+      `${tierSelect(cur, curFam, cell.corrupted.tier, 'data-mod-tier-corrupt')}` +
+      `<button type="button" class="mod-picker__remove" data-mod-corrupt-remove aria-label="Remove corruption">×</button></div>`
+    : '';
+  return `<div class="mod-picker__col mod-picker__col--corrupt"><h4>Corrupted implicit <span>${cur ? '1' : '0'}/1</span></h4>${rows}${chosen}</div>`;
 }
 
 // Origin pill for non-standard families (desecrated = Well-of-Souls boss, or
@@ -41,8 +60,17 @@ function addRows(fams, chosenAffixes) {
 export function modPickerHtml(view, cell) {
   const mods = Array.isArray(cell?.mods) ? cell.mods : [];
   const chosen = new Set(mods.map((m) => m.affix));
-  const famByAffix = new Map(
-    [...view.prefix, ...view.suffix, ...view.corrupted].map((f) => [f.affix, f]));
+  const famByAffix = new Map([...view.prefix, ...view.suffix].map((f) => [f.affix, f]));
+
+  const head = (title, withSearch) =>
+    `<header class="mod-picker__head"><h3>${esc(title)}</h3>` +
+    (withSearch ? '<input class="mod-picker__search" type="search" placeholder="Filter modifiers…" autocomplete="off">' : '') +
+    `<button type="button" class="mod-picker__close" data-mod-close aria-label="Close">×</button></header>`;
+
+  // Uniques: only the corrupted implicit.
+  if (view.mode === 'unique') {
+    return `<div class="mod-picker" data-mod-picker>${head('Corrupted implicit', false)}${corruptedCol(view, cell)}</div>`;
+  }
 
   const chosenList = mods.map((m) => {
     const fam = famByAffix.get(m.affix);
@@ -53,26 +81,14 @@ export function modPickerHtml(view, cell) {
       `<button type="button" class="mod-picker__remove" data-mod-remove="${esc(m.affix)}" aria-label="Remove">×</button></li>`;
   }).join('');
 
-  if (view.mode === 'unique') {
-    const cur = cell?.corrupted?.affix ?? null;
-    const curFam = cur ? famByAffix.get(cur) : null;
-    return `<div class="mod-picker" data-mod-picker>` +
-      `<header class="mod-picker__head"><h3>Corrupted implicit</h3>` +
-      `<button type="button" class="mod-picker__close" data-mod-close aria-label="Close">×</button></header>` +
-      `<div class="mod-picker__col"><h4>Vaal implicit</h4>` +
-      `${view.corrupted.map((f) => `<button type="button" class="mod-picker__row${f.affix === cur ? ' is-chosen' : ''}" data-mod-add="${esc(f.affix)}"><span class="mod-picker__generic">${esc(f.generic)}</span></button>`).join('') || '<p class="mod-picker__none">No corrupted implicits on this base.</p>'}</div>` +
-      `${curFam ? `<div class="mod-picker__chosen"><h4>Chosen</h4>${tierSelect(cur, curFam, cell.corrupted.tier)}<button type="button" class="mod-picker__remove" data-mod-remove="${esc(cur)}" aria-label="Remove">×</button></div>` : ''}` +
-      `</div>`;
-  }
-
+  // Bases: prefix/suffix explicits + (if any) a corrupted implicit chooser.
   return `<div class="mod-picker" data-mod-picker>` +
-    `<header class="mod-picker__head"><h3>Modifiers</h3>` +
-    `<input class="mod-picker__search" type="search" placeholder="Filter modifiers…" autocomplete="off">` +
-    `<button type="button" class="mod-picker__close" data-mod-close aria-label="Close">×</button></header>` +
+    head('Modifiers', true) +
     `<div class="mod-picker__cols">` +
       `<div class="mod-picker__col"><h4>Prefixes <span>${view.prefix.filter((f) => chosen.has(f.affix)).length}/${MAX_PREFIX}</span></h4>${addRows(view.prefix, chosen)}</div>` +
       `<div class="mod-picker__col"><h4>Suffixes <span>${view.suffix.filter((f) => chosen.has(f.affix)).length}/${MAX_SUFFIX}</span></h4>${addRows(view.suffix, chosen)}</div>` +
     `</div>` +
+    (view.corrupted.length ? corruptedCol(view, cell) : '') +
     `<ul class="mod-picker__chosen">${chosenList}</ul>` +
     `</div>`;
 }
