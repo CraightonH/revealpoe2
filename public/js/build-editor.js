@@ -48,11 +48,16 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
   function pickForSlot(slotId) {
     const legal = new Set(Object.entries(planner.items)
       .filter(([, rec]) => rec.slots.includes(slotId)).map(([slug]) => slug));
+    // two-hander-blocks-offhand can only ever fire for an off-hand slot, so
+    // only run the (relatively expensive) per-candidate simulation there.
+    const isOffhandSlot = /^weapon\d+b$/.test(slotId);
+    const b = build();
     openPicker({
       title: `Choose an item — ${planner.slots.find((s) => s.id === slotId)?.name ?? slotId}`,
       docs: docs.filter((d) => legal.has(d.slug)).filter((d) => {
+        if (!isOffhandSlot) return true;
         const ref = { kind: KIND_FOR_CATEGORY[d.category], slug: d.slug };
-        return !equipViolations(build(), planner, slotId, ref)
+        return !equipViolations(b, planner, slotId, ref)
           .some((x) => x.code === 'two-hander-blocks-offhand');
       }),
       categories: ['unique', 'base'],
