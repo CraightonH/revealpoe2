@@ -26,7 +26,8 @@ if (root && view) {
           if (!docsByKey.has(key)) docsByKey.set(key, d);
         }
         return docsByKey;
-      });
+      })
+      .catch((e) => { docsLoading = null; throw e; });
     return docsLoading;
   }
   const resolveRef = (ref) => {
@@ -52,22 +53,28 @@ if (root && view) {
       if (!b) { location.hash = ''; return; }
       view.innerHTML = renderBuild(b, resolveRef);
       loadDocs().then(() => {
-        // Re-render once docs arrive so slugs upgrade to names/icons.
-        if (parseRoute(location.hash).view === 'build') view.innerHTML = renderBuild(store.get(route.id) ?? b, resolveRef);
+        // Re-render once docs arrive so slugs upgrade to names/icons — but only
+        // if we're still looking at this same build (not a different one, or list/import).
+        const cur = parseRoute(location.hash);
+        if (cur.view === 'build' && cur.id === route.id) view.innerHTML = renderBuild(store.get(cur.id) ?? b, resolveRef);
       }).catch(() => {});
       return;
     }
     // import view
     if (importState?.code !== route.code) {
-      importState = { code: route.code, state: { status: 'loading' } };
+      const st = { code: route.code, state: { status: 'loading' } };
+      importState = st;
+      // Guard every write with `importState === st` so a stale decode (from a
+      // hash that has since moved to a different import code) can't clobber
+      // the current importState after this chain settles.
       Promise.all([decodeBuild(route.code), loadDocs().catch(() => null)])
-        .then(([build]) => { importState.state = { status: 'ready', build }; })
+        .then(([build]) => { if (importState === st) st.state = { status: 'ready', build }; })
         .catch((e) => {
-          importState.state = { status: 'error', message: e?.code === 'bad-version'
+          if (importState === st) st.state = { status: 'error', message: e?.code === 'bad-version'
             ? 'This code was made by a newer version of the site.'
             : 'The code is damaged or incomplete — recopy the full link.' };
         })
-        .finally(() => { if (parseRoute(location.hash).code === route.code) render(); });
+        .finally(() => { if (importState === st) render(); });
     }
     view.innerHTML = renderImport(importState.state, resolveRef);
   }
