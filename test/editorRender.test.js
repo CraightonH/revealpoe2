@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderGear, rankDocs, initials } from '../public/js/editor-render.js';
+import { renderGear, rankDocs, initials, modCardLines } from '../public/js/editor-render.js';
 import { emptyBuild } from '../public/js/build-store.js';
 
 const PLANNER = {
@@ -22,6 +22,34 @@ const fixed = (over = {}) => emptyBuild({ now: () => 1, uuid: () => 'b1', ...ove
 const resolve = (ref) => ({ name: `N:${ref.slug}`, iconUrl: null, url: `/x/${ref.slug}` });
 const ctx = { planner: PLANNER, resolveRef: resolve, weaponSet: 1 };
 
+const MODPOOLS = {
+  families: {
+    life: { name: 'to maximum Life', origin: 'standard', scope: 'equipment', generic: '# to maximum Life',
+      tiers: [{ id: 'life1', name: 'Hale', level: 1, gen: 'prefix', text: '+(10-19) to maximum Life' }] },
+    corrarm: { name: 'increased Armour', origin: 'corrupted', scope: 'equipment', generic: '#% increased Armour',
+      tiers: [{ id: 'carm1', name: 'Corrupted', level: 1, gen: 'corrupted', text: '(15-25)% increased Armour' }] },
+  }, bases: {}, uniques: {},
+};
+
+test('modCardLines: explicit + corrupted lines, empty when nothing chosen', () => {
+  assert.equal(modCardLines({ mods: [], corrupted: null }, MODPOOLS), '');
+  const html = modCardLines({ mods: [{ affix: 'life', tier: 'life1' }],
+    corrupted: { affix: 'corrarm', tier: 'carm1' } }, MODPOOLS);
+  assert.match(html, /explicitMod/);
+  assert.ok(html.includes('+(10-19) to maximum Life'));
+  assert.match(html, /implicitMod|separator/);
+  assert.ok(html.includes('(15-25)% increased Armour'));
+});
+
+test('renderGear: a filled well exposes data-slot-mods and a mods-edit affordance', () => {
+  const b = fixed();
+  b.gear.helmet = { item: { kind: 'base', slug: 'iron-hat' },
+    mods: [{ affix: 'life', tier: 'life1' }], corrupted: null };
+  const html = renderGear(b, ctx);
+  assert.match(html, /data-slot-mods="helmet"/);
+  assert.match(html, /data-mods-edit="helmet"/);
+});
+
 test('renderGear: wells for active weapon set + slotless slots, hooks present', () => {
   const html = renderGear(fixed(), ctx);
   for (const id of ['weapon1a', 'weapon1b', 'helmet']) assert.ok(html.includes(`data-slot-id=\"${id}\"`), id);
@@ -29,13 +57,13 @@ test('renderGear: wells for active weapon set + slotless slots, hooks present', 
   assert.match(html, /data-weapon-set="2"/);
 });
 
-test('renderGear: filled slot shows resolved item + clear hook + card hover; escapes names', () => {
+test('renderGear: filled slot shows resolved item + clear hook without static card hover; escapes names', () => {
   const b = fixed({ gear: { helmet: { item: { kind: 'base', slug: 'iron-hat' }, wishlist: [] } } });
   const html = renderGear(b, { ...ctx, resolveRef: () => ({ name: '<i>x</i>', iconUrl: null, url: null, cardUrl: '/base/iron-hat/card' }) });
   assert.ok(html.includes('&lt;i&gt;x&lt;/i&gt;'));
   assert.ok(!html.includes('<i>x</i>'));
   assert.match(html, /data-slot-clear="helmet"/);
-  assert.match(html, /data-card-url="\/base\/iron-hat\/card"/);
+  assert.ok(!html.includes('data-card-url="/base/iron-hat/card"'));
 });
 
 test('renderGear: two-hander ghosts the off-hand and blocked off-hand renders a warning', () => {
@@ -228,7 +256,8 @@ test('renderEditor: view mode strips every edit affordance, offers Edit + share'
   const html = renderEditor(b, { ...sctx, mode: 'view', builds: [b], currentId: 'b1' });
   for (const hook of ['data-slot-id', 'data-slot-clear', 'data-setup-add', 'data-socket',
     'data-build-rename', 'data-description', 'data-tree-code', 'data-build-delete',
-    'data-build-duplicate', 'data-gem-well', 'data-notes', 'data-tray-equip', 'data-class-toggle']) {
+    'data-build-duplicate', 'data-gem-well', 'data-notes', 'data-tray-equip', 'data-class-toggle',
+    'data-mods-edit']) {
     assert.ok(!html.includes(hook), `${hook} must be absent in view mode`);
   }
   assert.match(html, /data-edit-build/);

@@ -6,6 +6,7 @@
 // attributes consumed by build-editor.js.
 import { esc, classLine } from './builds-render.js';
 import { gearViolations } from './build-rules.js';
+import { resolveMod } from './mod-core.js';
 import { decode as decodePassiveCode } from './passive-code.js';
 
 export { esc };
@@ -26,15 +27,24 @@ function tile(doc, name, cls) {
   return `<span class="${cls}" aria-hidden="true">${img}<span class="${cls}__initials">${esc(initials(name))}</span></span>`;
 }
 
-/** Full-bleed item art for a gear well — the icon carries the identity, the
-    hover card (data-card-url) carries the detail. Initials remain the
-    no-art fallback via tile(). */
+/** Full-bleed item art for a gear well — the icon carries the identity.
+    Initials remain the no-art fallback via tile(). */
 function wellArt(ref, resolveRef) {
   const doc = resolveRef(ref) || {};
   const name = doc.name || ref.slug;
-  const card = doc.cardUrl ? ` data-card-url="${esc(doc.cardUrl)}"` : '';
-  return `<span class="editor-item editor-item--art"${card} aria-label="${esc(name)}" title="${esc(name)}">` +
+  return `<span class="editor-item editor-item--art" aria-label="${esc(name)}" title="${esc(name)}">` +
     `${tile(doc, name, 'well-art')}</span>`;
+}
+
+/** poe2db-styled chosen-mod block for a gear cell's hover card. Empty when none. */
+export function modCardLines(cell, pools) {
+  const mods = Array.isArray(cell?.mods) ? cell.mods : [];
+  const explicit = mods.map((m) => resolveMod(pools, m)).filter(Boolean)
+    .map((m) => `<div class="explicitMod">${esc(m.text)}</div>`).join('');
+  const corr = cell?.corrupted ? resolveMod(pools, cell.corrupted) : null;
+  const corrHtml = corr ? `<div class="separator"></div><div class="implicitMod">${esc(corr.text)}</div>` : '';
+  if (!explicit && !corrHtml) return '';
+  return `<div class="Stats editor-mod-lines">${explicit}${corrHtml}</div>`;
 }
 
 /** Tiny icon-only chip for the granted "from <item>" tagline — the icon
@@ -85,7 +95,10 @@ export function renderGear(build, ctx) {
     let body, state;
     if (g?.item) {
       state = g.item.kind === 'unique' ? 'is-unique' : 'is-filled';
-      body = wellArt(g.item, resolveRef) +
+      const nMods = (g.mods?.length ?? 0) + (g.corrupted ? 1 : 0);
+      const indicator = nMods ? `<span class="editor-slot__mods">${nMods} mod${nMods === 1 ? '' : 's'}</span>` : '';
+      const modsBtn = ro ? '' : `<button class="editor-slot__mods-edit" type="button" data-mods-edit="${esc(s.id)}" aria-label="Choose modifiers for ${esc(s.name)}">✎ mods</button>`;
+      body = wellArt(g.item, resolveRef) + indicator + modsBtn +
         (ro ? '' : `<button class="editor-slot__clear" type="button" data-slot-clear="${esc(s.id)}" aria-label="Unequip ${esc(s.name)}">×</button>`);
     } else if (ghosted(s)) {
       state = 'is-ghost';
@@ -95,8 +108,9 @@ export function renderGear(build, ctx) {
       body = `<span class="editor-slot__hint">${ro ? '' : '＋ '}${esc(s.name)}</span>`;
     }
     const hooks = ro ? '' : ` data-slot-id="${esc(s.id)}" role="button" tabindex="0"`;
+    const modsHook = g?.item ? ` data-slot-mods="${esc(s.id)}"` : '';
     return `<div class="editor-slot editor-slot--${esc(s.id)} ${state}${violation ? ' editor-slot--violation' : ''}${ro ? ' is-readonly' : ''}"` +
-      `${hooks} aria-label="${esc(s.name)}"` +
+      `${hooks}${modsHook} aria-label="${esc(s.name)}"` +
       `${violation ? ` title="${esc(violation.message)}"` : ''}>${body}</div>`;
   }).join('');
 
