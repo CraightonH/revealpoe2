@@ -238,8 +238,10 @@ if (root && input && target) {
       queueMicrotask(syncDetailPins);
       return;
     }
-    if (event.target.closest('[data-tc-pin-promote]')) {
+    const promote = event.target.closest('[data-tc-pin-promote]');
+    if (promote) {
       event.preventDefault();
+      event.stopImmediatePropagation();
       const KIND = { gem: 'gem', support: 'gem', spirit: 'gem', unique: 'unique', base: 'base' };
       const refs = resolvedPins
         .filter(({ ref }) => KIND[ref.category])
@@ -250,7 +252,7 @@ if (root && input && target) {
           '<button type="button" data-tc-pin-notice-dismiss aria-label="Dismiss notice">×</button>';
         return;
       }
-      openBuildMenu(event.target.closest('[data-tc-pin-promote]'), refs);
+      openBuildMenu(promote, refs);
       return;
     }
     if (event.target.closest('[data-tc-pin-clear]')) {
