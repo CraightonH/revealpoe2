@@ -10,10 +10,16 @@ export function imageRelPath(ddsPath) {
   return `${ddsPath.replace(/\.dds$/i, '')}.webp`;
 }
 
-// Renderable URL for an in-game dds asset path.
+// Renderable URL for an in-game dds asset path. Some source records carry a
+// truthy but malformed dds path — e.g. Lineage support gems' icon_dds_file is
+// a bare directory ("4k/") with no filename — which would otherwise resolve to
+// a URL with an empty basename (".../4k/.webp") that 404s. Treat that the same
+// as no icon at all.
 export function ddsUrl(ddsPath) {
   if (!ddsPath) return null;
-  return `${IMG_BASE}/${imageRelPath(ddsPath)}`;
+  const rel = imageRelPath(ddsPath);
+  if (/(?:^|\/)\.webp$/.test(rel)) return null;
+  return `${IMG_BASE}/${rel}`;
 }
 
 const GEM_HUE = { r: 0, g: 120, b: 240, w: 0 };

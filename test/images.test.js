@@ -20,6 +20,15 @@ test('ddsUrl returns null for falsy input', () => {
   assert.equal(ddsUrl(null), null);
 });
 
+test('ddsUrl returns null for a malformed path with an empty basename', () => {
+  // Lineage support gems' icon_dds_file is a bare directory in the source
+  // data ("4k/") — resolving that would 404 (".../4k/.webp"); treat it as
+  // no icon rather than emitting a broken URL.
+  assert.equal(ddsUrl('4k/'), null);
+  assert.equal(ddsUrl('Art/2DArt/SkillIcons/4k/'), null);
+  assert.equal(ddsUrl('.dds'), null);
+});
+
 test('placeholder is deterministic for the same key', () => {
   const a = placeholder({ name: 'Herald of Ash', color: 'r' });
   const b = placeholder({ name: 'Herald of Ash', color: 'r' });

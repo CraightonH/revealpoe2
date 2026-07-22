@@ -195,6 +195,15 @@ test('allDocs: a known gem doc carries deep text and fields', () => {
   assert.ok(Array.isArray(herald.tags));
 });
 
+test('allDocs: a Lineage support gem with a malformed source icon path gets no iconUrl rather than a broken one', () => {
+  // arbiters-reach's icon_dds_file is a bare directory ("4k/") in the scraped
+  // RePoE source (a known upstream gap for Lineage support gems) — confirm
+  // the doc builder never surfaces the resulting empty-basename junk URL.
+  const doc = allDocs().find((d) => d.slug === 'arbiters-reach' && d.category === 'support');
+  assert.ok(doc, 'arbiters-reach should be indexed');
+  assert.equal(doc.iconUrl, null);
+});
+
 test('allDocs: public urls target master-detail indexes while cards stay dedicated', () => {
   const docs = allDocs();
   const gem = docs.find((d) => d.slug === 'herald-of-ash' && d.category === 'gem');
