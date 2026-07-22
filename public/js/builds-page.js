@@ -4,6 +4,7 @@
 import { getStore } from '/static/js/build-host.js';
 import { parseRoute, renderList, renderBuild, renderImport } from '/static/js/builds-render.js';
 import { decodeBuild } from '/static/js/build-code.js';
+import { StoreWriteError } from '/static/js/build-store.js';
 
 const root = document.querySelector('[data-builds-root]');
 const view = root?.querySelector('[data-builds-view]');
@@ -79,22 +80,34 @@ if (root && view) {
     view.innerHTML = renderImport(importState.state, resolveRef);
   }
 
+  function reportWriteError(e) {
+    if (!(e instanceof StoreWriteError)) throw e;
+    window.alert("Couldn't save — browser storage is full.");
+  }
+
   view.addEventListener('click', (e) => {
     const attr = (name) => e.target.closest(`[${name}]`)?.getAttribute(name);
     if (e.target.closest('[data-builds-new]')) {
-      const b = store.create();
-      location.hash = `#/b/${encodeURIComponent(b.id)}`;
+      try {
+        const b = store.create();
+        location.hash = `#/b/${encodeURIComponent(b.id)}`;
+      } catch (err) { reportWriteError(err); }
       return;
     }
     const rename = attr('data-build-rename');
     if (rename) {
       const cur = store.get(rename);
       const name = cur && window.prompt('Build name', cur.name);
-      if (name?.trim()) store.update(rename, { name: name.trim() });
+      if (name?.trim()) {
+        try { store.update(rename, { name: name.trim() }); } catch (err) { reportWriteError(err); }
+      }
       return;
     }
     const dup = attr('data-build-duplicate');
-    if (dup) { store.duplicate(dup); return; }
+    if (dup) {
+      try { store.duplicate(dup); } catch (err) { reportWriteError(err); }
+      return;
+    }
     const del = attr('data-build-delete');
     if (del) {
       const cur = store.get(del);
@@ -102,8 +115,10 @@ if (root && view) {
       return;
     }
     if (e.target.closest('[data-import-save]') && importState?.state.status === 'ready') {
-      const saved = store.create({ ...importState.state.build });
-      location.hash = `#/b/${encodeURIComponent(saved.id)}`;
+      try {
+        const saved = store.create({ ...importState.state.build });
+        location.hash = `#/b/${encodeURIComponent(saved.id)}`;
+      } catch (err) { reportWriteError(err); }
     }
   });
 
