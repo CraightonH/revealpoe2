@@ -84,7 +84,9 @@ export function grantedRows(build, planner) {
   const rows = [];
   for (const g of Object.values(build.gear)) {
     if (!g?.item) continue;
-    for (const skill of planner.granted?.[g.item.slug] ?? []) {
+    const skills = planner.granted?.[g.item.slug];
+    if (!Array.isArray(skills)) continue;
+    for (const skill of skills) {
       const key = `${g.item.slug}:${skill}`;
       rows.push({ key, item: g.item, skill, supports: build.grantedSupports?.[key] ?? [] });
     }

@@ -105,6 +105,22 @@ test('grantedRows + renderSkills: equipped granting item yields a non-removable 
   assert.ok(!/data-setup-remove="g:/.test(html), 'granted rows have no remove');
 });
 
+test('grantedRows: prototype-key item slug does not leak Object.prototype members', () => {
+  const b = fixed({
+    gear: { helmet: { item: { kind: 'unique', slug: '__proto__' }, wishlist: [] } },
+  });
+  assert.deepEqual(grantedRows(b, SKILL_PLANNER), []);
+  assert.doesNotThrow(() => renderGear(b, sctx));
+  assert.doesNotThrow(() => renderSkills(b, sctx));
+
+  const c = fixed({
+    gear: { helmet: { item: { kind: 'unique', slug: 'constructor' }, wishlist: [] } },
+  });
+  assert.deepEqual(grantedRows(c, SKILL_PLANNER), []);
+  assert.doesNotThrow(() => renderGear(c, sctx));
+  assert.doesNotThrow(() => renderSkills(c, sctx));
+});
+
 test('renderSkills: duplicate-support violation renders inline warning', () => {
   const b = fixed({ skills: [
     { gem: { slug: 'spark' }, level: null, supports: [{ slug: 'pierce' }] },

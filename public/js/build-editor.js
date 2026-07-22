@@ -172,8 +172,8 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
 
   container.addEventListener('click', onClick);
   container.addEventListener('change', onChange);
-  const unsub = store.subscribe(() => render());
   render();
+  const unsub = store.subscribe(() => render());
 
   return function unmount() {
     container.removeEventListener('click', onClick);
