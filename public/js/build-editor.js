@@ -12,6 +12,8 @@ const KIND_FOR_CATEGORY = { gem: 'gem', support: 'gem', spirit: 'gem', unique: '
 export function mountEditor(container, buildId, { store, planner, docs, resolveRef }) {
   let weaponSet = 1;
   let switcherOpen = false;
+  let classPicker = null;   // null | 'class' | 'asc'
+  let renaming = false;
 
   const build = () => store.get(buildId);
   const patch = (p) => safeWrite(() => store.update(buildId, p));
@@ -20,7 +22,7 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
     if (!b) { location.hash = ''; return; }
     container.innerHTML = renderEditor(b, {
       planner, resolveRef, weaponSet,
-      builds: store.list(), currentId: buildId, switcherOpen,
+      builds: store.list(), currentId: buildId, switcherOpen, classPicker, renaming,
     });
   };
 
@@ -120,13 +122,47 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
 
     if (e.target.closest('[data-switcher-toggle]')) {
       switcherOpen = !switcherOpen;
+      classPicker = null;
       render();
       return;
     }
-    // Any click outside the switcher closes an open popover (row links
-    // navigate via hashchange before this re-render matters).
-    if (switcherOpen && !e.target.closest('[data-switcher]')) {
+    const classToggle = attr('data-class-toggle');
+    if (classToggle) {
+      classPicker = classPicker === classToggle ? null : classToggle;
       switcherOpen = false;
+      render();
+      return;
+    }
+    const setClass = attr('data-set-class');
+    if (setClass !== null && setClass !== undefined) {
+      classPicker = null;
+      const cls = planner.classes?.find((c) => c.slug === setClass) ?? null;
+      const b = build();
+      // Changing class drops an ascendancy that no longer belongs.
+      const keepAsc = cls?.ascendancies.some((a) => a.slug === b.ascendancy);
+      patch({ class: setClass || null, ascendancy: keepAsc ? b.ascendancy : null });
+      return;
+    }
+    const setAsc = attr('data-set-asc');
+    if (setAsc !== null && setAsc !== undefined) {
+      classPicker = null;
+      patch({ ascendancy: setAsc || null });
+      return;
+    }
+    if (e.target.closest('[data-build-rename]')) {
+      renaming = true;
+      render();
+      const inp = container.querySelector('[data-build-name-input]');
+      inp?.focus();
+      inp?.select();
+      return;
+    }
+    // Any click outside an open popover closes it (row links navigate via
+    // hashchange before this re-render matters).
+    if ((switcherOpen || classPicker)
+        && !e.target.closest('[data-switcher]') && !e.target.closest('[data-class-picker]')) {
+      switcherOpen = false;
+      classPicker = null;
       render();
       return;
     }
@@ -250,6 +286,23 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
     if (e.target.closest('[data-notes]')) patch({ notes: e.target.value });
   }
 
+  // Inline rename: blur or Enter commits (non-empty, changed), Escape cancels.
+  function commitRename(input) {
+    if (!renaming) return;
+    renaming = false;
+    const v = input.value.trim();
+    if (v && v !== build().name) patch({ name: v });
+    else render();
+  }
+  function onFocusOut(e) {
+    if (e.target.closest?.('[data-build-name-input]')) commitRename(e.target);
+  }
+  function onKeyDown(e) {
+    if (!e.target.closest?.('[data-build-name-input]')) return;
+    if (e.key === 'Enter') { e.preventDefault(); commitRename(e.target); }
+    if (e.key === 'Escape') { renaming = false; render(); }
+  }
+
   // Rail scroll-spy: highlight the chapter currently in view.
   function spy() {
     const links = container.querySelectorAll('[data-rail-link]');
@@ -266,12 +319,16 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
 
   container.addEventListener('click', onClick);
   container.addEventListener('change', onChange);
+  container.addEventListener('focusout', onFocusOut);
+  container.addEventListener('keydown', onKeyDown);
   render();
   const unsub = store.subscribe(() => render());
 
   return function unmount() {
     container.removeEventListener('click', onClick);
     container.removeEventListener('change', onChange);
+    container.removeEventListener('focusout', onFocusOut);
+    container.removeEventListener('keydown', onKeyDown);
     window.removeEventListener('scroll', spy);
     unsub();
     closePicker();

@@ -78,3 +78,13 @@ test('recommends maps gems to support slugs, all resolving to support-type gems'
     for (const s of sups) assert.equal(gems[s]?.gemType, 'support', `${slug} recommends non-support ${s}`);
   }
 });
+
+test('plannerData emits character classes with their ascendancies', () => {
+  const d = plannerData();
+  assert.ok(Array.isArray(d.classes) && d.classes.length >= 6, 'classes present');
+  const ranger = d.classes.find((c) => c.slug === 'ranger');
+  assert.ok(ranger, 'ranger class exists');
+  assert.equal(ranger.name, 'Ranger');
+  assert.ok(ranger.ascendancies.some((a) => a.slug === 'deadeye' && a.name === 'Deadeye'));
+  for (const c of d.classes) assert.ok(c.ascendancies.length >= 1, `${c.slug} has ascendancies`);
+});

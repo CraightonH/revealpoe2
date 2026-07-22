@@ -126,15 +126,8 @@ if (root && view) {
       if (b) location.hash = `#/b/${encodeURIComponent(b.id)}`;
       return;
     }
-    const rename = attr('data-build-rename');
-    if (rename) {
-      const cur = store.get(rename);
-      const name = cur && window.prompt('Build name', cur.name);
-      if (name?.trim()) {
-        safeWrite(() => store.update(rename, { name: name.trim() }));
-      }
-      return;
-    }
+    // Rename is handled inline by the editor (build-editor.js) — no
+    // window.prompt fallback remains.
     const dup = attr('data-build-duplicate');
     if (dup) {
       safeWrite(() => store.duplicate(dup));

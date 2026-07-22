@@ -163,6 +163,44 @@ test('renderEditor: rail build switcher lists local builds, header carries manag
   assert.match(html, /data-build-delete="b1"/);
 });
 
+const CLASS_PLANNER = { ...SKILL_PLANNER,
+  classes: [
+    { slug: 'ranger', name: 'Ranger', ascendancies: [
+      { slug: 'deadeye', name: 'Deadeye' }, { slug: 'pathfinder', name: 'Pathfinder' }] },
+    { slug: 'witch', name: 'Witch', ascendancies: [{ slug: 'lich', name: 'Lich' }] },
+  ],
+};
+
+test('renderEditor: class picker lists classes, marks current, hooks present', () => {
+  const b = fixed({ class: 'ranger', ascendancy: null });
+  const html = renderEditor(b, { ...sctx, planner: CLASS_PLANNER, classPicker: 'class' });
+  assert.match(html, /data-class-toggle="class"/);
+  assert.match(html, /data-class-toggle="asc"/);
+  assert.match(html, /data-set-class="witch"/);
+  assert.match(html, /data-set-class=""/);            // clear option
+  assert.ok(html.includes('>Ranger<') || /Ranger/.test(html), 'class name shown');
+});
+
+test('renderEditor: ascendancy picker scoped to the chosen class; disabled without one', () => {
+  const b = fixed({ class: 'ranger', ascendancy: 'deadeye' });
+  const html = renderEditor(b, { ...sctx, planner: CLASS_PLANNER, classPicker: 'asc' });
+  assert.match(html, /data-set-asc="pathfinder"/);
+  assert.ok(!html.includes('data-set-asc="lich"'), 'other classes hidden');
+  const none = renderEditor(fixed(), { ...sctx, planner: CLASS_PLANNER });
+  assert.match(none, /data-class-toggle="asc"[^>]*disabled/);
+});
+
+test('renderEditor: inline rename swaps the name button for an input', () => {
+  const b = fixed({ name: 'My <b>Build</b>' });
+  const html = renderEditor(b, { ...sctx, renaming: true });
+  assert.match(html, /data-build-name-input/);
+  assert.ok(html.includes('value="My &lt;b&gt;Build&lt;/b&gt;"'));
+  assert.ok(!html.includes('data-build-rename'), 'button hidden while editing');
+  const idle = renderEditor(b, sctx);
+  assert.match(idle, /data-build-rename="b1"/);
+  assert.ok(!idle.includes('data-build-name-input'));
+});
+
 test('renderEditor: switcher popover only renders while open', () => {
   const b = fixed();
   const closed = renderEditor(b, { ...sctx, builds: [b], currentId: 'b1', switcherOpen: false });

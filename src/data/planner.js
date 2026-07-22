@@ -13,6 +13,7 @@
 // Two-hand occupancy is derived here from the source `twohand` tag; uniques
 // inherit their base's slot mapping through the has_base edge.
 import { nodesByKind, edgesTo, edgesFrom, getNode } from './graph.js';
+import { slugify } from './slug.js';
 
 const SUPPORTABLE = new Set(['active', 'spirit']); // gem types that take support sockets
 const DEFAULT_MAX_SUPPORTS = 5; // source has no per-gem socket count (see Phase 2 spec)
@@ -102,5 +103,21 @@ export function plannerData() {
     if (sups.length) recommends[g.slug] = sups;
   }
 
-  return { slots, items, gems, granted, recommends };
+  // Character classes, derived from ascendancy nodes' charClass — the graph
+  // has no standalone character-class kind ('class' nodes are item classes).
+  const byClass = new Map();
+  for (const a of nodesByKind('ascendancy')) {
+    const cls = a.props.charClass;
+    if (!cls) continue;
+    if (!byClass.has(cls)) byClass.set(cls, []);
+    byClass.get(cls).push({ slug: slugify(a.name), name: a.name });
+  }
+  const classes = [...byClass.entries()]
+    .map(([name, ascendancies]) => ({
+      slug: slugify(name), name,
+      ascendancies: ascendancies.sort((x, y) => x.name.localeCompare(y.name)),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  return { slots, items, gems, granted, recommends, classes };
 }

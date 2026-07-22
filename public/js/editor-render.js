@@ -222,11 +222,56 @@ function renderSwitcher(build, ctx) {
     </button>${pop}</div>`;
 }
 
+const titleCase = (slug) => String(slug ?? '').split('-')
+  .map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+/** Class · Ascendancy row: two popover pickers fed by planner.classes. */
+function renderClassPicker(build, ctx) {
+  const classes = ctx.planner.classes ?? [];
+  const cls = classes.find((c) => c.slug === build.class) ?? null;
+  const ascName = (cls?.ascendancies ?? []).find((a) => a.slug === build.ascendancy)?.name
+    ?? (build.ascendancy ? titleCase(build.ascendancy) : null);
+  const open = ctx.classPicker;
+
+  const row = (hook, slug, name, current) =>
+    `<li><button class="class-pick__row${current ? ' is-current' : ''}" type="button" ${hook}="${esc(slug)}">${esc(name)}</button></li>`;
+  const pop = (which, rows) => open === which
+    ? `<ul class="class-pick__pop" role="list">${rows}</ul>` : '';
+
+  const classRows = [
+    row('data-set-class', '', 'No class', !build.class),
+    ...classes.map((c) => row('data-set-class', c.slug, c.name, c.slug === build.class)),
+  ].join('');
+  const ascRows = cls ? [
+    row('data-set-asc', '', 'No ascendancy', !build.ascendancy),
+    ...cls.ascendancies.map((a) => row('data-set-asc', a.slug, a.name, a.slug === build.ascendancy)),
+  ].join('') : '';
+
+  return `<div class="dossier-class" data-class-picker>
+    <span class="class-pick">
+      <button class="class-pick__btn" type="button" data-class-toggle="class"
+        aria-expanded="${open === 'class'}" aria-haspopup="true">${esc(cls?.name ?? (build.class ? titleCase(build.class) : 'Choose class'))}<span aria-hidden="true"> ▾</span></button>
+      ${pop('class', classRows)}
+    </span>
+    <span class="dossier-class__sep" aria-hidden="true">·</span>
+    <span class="class-pick">
+      <button class="class-pick__btn" type="button" data-class-toggle="asc"
+        aria-expanded="${open === 'asc'}" aria-haspopup="true"${cls ? '' : ' disabled'}>${esc(ascName ?? 'Ascendancy')}<span aria-hidden="true"> ▾</span></button>
+      ${pop('asc', ascRows)}
+    </span>
+  </div>`;
+}
+
 export function renderEditor(build, ctx) {
   const t = treeSummary(build);
   const stat = !t.saved ? 'No passive tree saved yet'
     : t.points !== null ? `${t.points} passives allocated` : 'Passive tree saved';
   const prio = build.tree.notablePriority.length;
+  const nameHtml = ctx.renaming
+    ? `<input class="dossier-name-input" data-build-name-input type="text" maxlength="60"
+        value="${esc(build.name)}" aria-label="Build name" spellcheck="false">`
+    : `<button class="dossier-name" type="button" data-build-rename="${esc(build.id)}"
+        title="Rename build">${esc(build.name)}<span class="dossier-name__pen" aria-hidden="true">✎</span></button>`;
   return `<article class="editor dossier" data-editor>
     <nav class="dossier-rail" aria-label="Build sections">
       <div class="dossier-rail__mark"><span class="dossier-eyebrow">Build Planner</span>
@@ -242,9 +287,8 @@ export function renderEditor(build, ctx) {
     <div class="dossier-main">
       <header class="dossier-head">
         <div class="dossier-head__copy">
-          <h2><button class="dossier-name" type="button" data-build-rename="${esc(build.id)}"
-            title="Rename build">${esc(build.name)}<span class="dossier-name__pen" aria-hidden="true">✎</span></button></h2>
-          <p class="dossier-class">${esc(classLine(build))}</p>
+          <h2>${nameHtml}</h2>
+          ${renderClassPicker(build, ctx)}
           <textarea class="dossier-desc" data-description rows="2"
             placeholder="Add a short description — what this build is and how it plays…">${esc(build.description ?? '')}</textarea>
         </div>
