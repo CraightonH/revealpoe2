@@ -26,6 +26,23 @@
 
 /* ==== Dossier editor (2026-07-22 redesign) ==== */
 .builds-page--editing .builds-header { display: none; }
+
+/* UI scale (S/M/L/XL header control) — zoom the planner content, matching
+   the card grids / detail panes (gem-card.css precedent). Zoom reflows the
+   dossier narrower and scales it up, so the page never overflows sideways. */
+html[data-card-size="s"] .dossier,
+html[data-card-size="s"] .builds-import,
+html[data-card-size="s"] .picker-panel { zoom: 0.85; }
+html[data-card-size="l"] .dossier,
+html[data-card-size="l"] .builds-import,
+html[data-card-size="l"] .picker-panel { zoom: 1.25; }
+html[data-card-size="xl"] .dossier,
+html[data-card-size="xl"] .builds-import,
+html[data-card-size="xl"] .picker-panel { zoom: 1.5; }
+/* At XL the zoomed effective width can't hold the checks/tray column beside
+   the doll — stack it, same treatment as the narrow-viewport layout. */
+html[data-card-size="xl"] .editor-gear-layout { grid-template-columns: minmax(0, 1fr); }
+html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: flex-end; }
 .dossier { display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: 28px; }
 .dossier-rail { position: sticky; top: 24px; align-self: start; }
 .dossier-eyebrow { display: block; color: var(--color-gem); font-size: 10px; font-weight: 650;
@@ -74,9 +91,9 @@
 .dossier-rail__nav a.is-here { color: var(--color-gem); border-left-color: var(--color-gem); }
 .dossier-rail__note { margin-top: 20px; color: var(--color-default); font-size: 10px; line-height: 1.5; }
 
-.dossier-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px;
-  padding-bottom: 16px; margin-bottom: 4px; border-bottom: 1px solid var(--border); }
-.dossier-head__copy { min-width: 0; flex: 1; }
+.dossier-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between;
+  gap: 12px 24px; padding-bottom: 16px; margin-bottom: 4px; border-bottom: 1px solid var(--border); }
+.dossier-head__copy { min-width: 0; flex: 1 1 24rem; }
 .dossier-head h2 { margin: 0 0 2px; font-size: clamp(24px, 3vw, 36px); }
 .dossier-name { padding: 0; border: 0; background: none; cursor: pointer; text-align: left;
   color: var(--color-normal); font-family: var(--font-display);
