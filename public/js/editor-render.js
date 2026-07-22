@@ -1,13 +1,38 @@
 // public/js/editor-render.js
-// Pure ES module — HTML renderers for the /builds editor (Phase 4b): inventory
-// paper-doll + tray (this file's renderGear), skill setup panel (renderSkills,
-// Task 4), and the assembled renderEditor. No DOM/fetch/window — node-testable.
-// In-game art comes from planner-art.css classes; interaction hooks are
-// data-* attributes consumed by build-editor.js.
-import { esc } from './builds-render.js';
+// Pure ES module — HTML renderers for the /builds editor ("Dossier" layout,
+// 2026-07-22 redesign): document header + section rail, spatial gear doll,
+// skill constellation chains, passive-tree summary, description + notes.
+// No DOM/fetch/window — node-testable. Interaction hooks are data-*
+// attributes consumed by build-editor.js.
+import { esc, classLine } from './builds-render.js';
 import { gearViolations } from './build-rules.js';
+import { decode as decodePassiveCode } from './passive-code.js';
 
 export { esc };
+
+/** "Lightning Arrow" -> "LA" — deterministic icon-fallback initials. */
+export function initials(name) {
+  const words = String(name ?? '').trim().split(/\s+/).filter(Boolean);
+  return words.length ? words.slice(0, 2).map((w) => w[0].toUpperCase()).join('') : '?';
+}
+
+/** Icon tile: real art when the doc has one, initials always underneath. */
+function tile(doc, name, cls) {
+  const img = doc.iconUrl
+    ? `<img class="${cls}__img" src="${esc(doc.iconUrl)}" alt="" loading="lazy" onerror="this.remove()">`
+    : '';
+  return `<span class="${cls}" aria-hidden="true"><span class="${cls}__initials">${esc(initials(name))}</span>${img}</span>`;
+}
+
+/** Item chip: icon tile + rarity-colored name, card-tooltip wired. */
+function wellBody(ref, resolveRef) {
+  const doc = resolveRef(ref) || {};
+  const name = doc.name || ref.slug;
+  // data-card-url rides the existing global card-tooltip harness (base.njk).
+  const card = doc.cardUrl ? ` data-card-url="${esc(doc.cardUrl)}"` : '';
+  return `<span class="editor-item"${card}>${tile(doc, name, 'well-tile')}` +
+    `<span class="editor-item__name editor-item__name--${esc(ref.kind)}">${esc(name)}</span></span>`;
+}
 
 /** Stable partition: docs whose slug is ranked come first, in ranked order. */
 export function rankDocs(docs, rankedSlugs) {
@@ -33,48 +58,62 @@ export function renderGear(build, ctx) {
   const { planner, resolveRef, weaponSet } = ctx;
   const violations = gearViolations(build, planner);
   const bySlot = new Map(violations.filter((v) => v.slotId).map((v) => [v.slotId, v]));
-
   const visible = planner.slots.filter((s) => !s.group || s.group === `weaponset${weaponSet}`);
   const mainhand = build.gear[`weapon${weaponSet}a`]?.item;
   const mainTwoHanded = mainhand && planner.items[mainhand.slug]?.twoHanded;
+  const ghosted = (s) => s.id === `weapon${weaponSet}b` && mainTwoHanded && !build.gear[s.id]?.item;
 
   const wells = visible.map((s) => {
     const g = build.gear[s.id];
     const violation = bySlot.get(s.id);
-    let body;
+    let body, state;
     if (g?.item) {
-      body = itemChip(g.item, resolveRef) +
-        `<button class=\"editor-slot__clear\" type=\"button\" data-slot-clear=\"${esc(s.id)}\" aria-label=\"Unequip ${esc(s.name)}\">×</button>`;
-    } else if (s.id === `weapon${weaponSet}b` && mainTwoHanded) {
-      body = '<span class="editor-slot__ghost">two-handed</span>';
+      state = g.item.kind === 'unique' ? 'is-unique' : 'is-filled';
+      body = `<span class="editor-slot__label">${esc(s.name)}</span>` + wellBody(g.item, resolveRef) +
+        `<button class="editor-slot__clear" type="button" data-slot-clear="${esc(s.id)}" aria-label="Unequip ${esc(s.name)}">×</button>`;
+    } else if (ghosted(s)) {
+      state = 'is-ghost';
+      body = `<span class="editor-slot__label">${esc(s.name)}</span><span class="editor-slot__ghost">two-handed</span>`;
     } else {
-      body = `<span class=\"editor-slot__hint\">${esc(s.name)}</span>`;
+      state = 'is-empty';
+      body = `<span class="editor-slot__hint">＋ ${esc(s.name)}</span>`;
     }
-    return `<div class=\"editor-slot planner-slot-well editor-slot--${esc(s.id)}${violation ? ' editor-slot--violation' : ''}\"` +
-      ` data-slot-id=\"${esc(s.id)}\" role=\"button\" tabindex=\"0\" aria-label=\"${esc(s.name)}\"` +
-      `${violation ? ` title=\"${esc(violation.message)}\"` : ''}>${body}</div>`;
+    return `<div class="editor-slot editor-slot--${esc(s.id)} ${state}${violation ? ' editor-slot--violation' : ''}"` +
+      ` data-slot-id="${esc(s.id)}" role="button" tabindex="0" aria-label="${esc(s.name)}"` +
+      `${violation ? ` title="${esc(violation.message)}"` : ''}>${body}</div>`;
   }).join('');
 
   const toggle = [1, 2].map((n) =>
-    `<button class=\"editor-set-btn${n === weaponSet ? ' is-active' : ''}\" type=\"button\" data-weapon-set=\"${n}\"` +
-    ` aria-pressed=\"${n === weaponSet}\">Weapon Set ${n === 1 ? 'I' : 'II'}</button>`).join('');
+    `<button class="editor-set-btn${n === weaponSet ? ' is-active' : ''}" type="button" data-weapon-set="${n}"` +
+    ` aria-pressed="${n === weaponSet}">Set ${n === 1 ? 'I' : 'II'}</button>`).join('');
+
+  const checks = [
+    ...violations.map((v) => ({ tone: 'is-warn', text: v.message })),
+    ...visible.filter((s) => !build.gear[s.id]?.item && !ghosted(s))
+      .map((s) => ({ tone: 'is-info', text: `${s.name} is empty.` })),
+  ];
+  const checksHtml = checks.length
+    ? `<ul class="editor-checks">${checks.map((c) => `<li class="${c.tone}">${esc(c.text)}</li>`).join('')}</ul>`
+    : '<p class="editor-checks editor-checks--clear">Everything checks out.</p>';
 
   const tray = build.unassigned.map((ref, i) =>
-    `<li class=\"editor-tray__row\">${itemChip(ref, resolveRef)}` +
-    `<span class=\"editor-tray__actions\">` +
-    `<button type=\"button\" data-tray-equip=\"${i}\">Equip</button>` +
-    `<button type=\"button\" data-tray-remove=\"${i}\" aria-label=\"Remove from build\">×</button>` +
+    `<li class="editor-tray__row">${wellBody(ref, resolveRef)}` +
+    `<span class="editor-tray__actions">` +
+    `<button type="button" data-tray-equip="${i}">Equip</button>` +
+    `<button type="button" data-tray-remove="${i}" aria-label="Remove from build">×</button>` +
     `</span></li>`).join('');
 
-  const warnings = violations.length
-    ? `<ul class=\"editor-warnings\">${violations.map((v) => `<li>${esc(v.message)}</li>`).join('')}</ul>` : '';
-
-  return `<section class=\"editor-gear planner-area-frame\">
-    <header class=\"editor-section-head\"><h2>Gear</h2><div class=\"editor-set-toggle\" role=\"group\" aria-label=\"Weapon set\">${toggle}</div></header>
-    <div class=\"editor-doll\">${wells}</div>
-    ${warnings}
-    <div class=\"editor-tray\"><h3>Unassigned</h3>${tray ? `<ul class=\"editor-tray__list\">${tray}</ul>` : '<p class="editor-none">Nothing waiting. Use "Add to build" on any card.</p>'}</div>
-  </section>`;
+  return `<section class="editor-chapter editor-gear" id="gear" aria-labelledby="gear-h">
+    <header class="chapter-head"><h2 id="gear-h">Gear</h2><span class="chapter-rule"></span>
+      <div class="editor-set-toggle" role="group" aria-label="Weapon set">${toggle}</div></header>
+    <div class="editor-gear-layout">
+      <div class="editor-doll-board"><div class="editor-doll">${wells}</div></div>
+      <div class="editor-gear-side">
+        <div class="editor-side-card"><h3>Checks</h3>${checksHtml}</div>
+        <div class="editor-side-card"><h3>Unassigned — added from the wiki</h3>
+          ${tray ? `<ul class="editor-tray__list">${tray}</ul>` : '<p class="editor-none">Nothing waiting. Use “Add to build” on any card.</p>'}</div>
+      </div>
+    </div></section>`;
 }
 
 import { setupViolations } from './build-rules.js';

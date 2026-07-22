@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderGear, rankDocs } from '../public/js/editor-render.js';
+import { renderGear, rankDocs, initials } from '../public/js/editor-render.js';
 import { emptyBuild } from '../public/js/build-store.js';
 
 const PLANNER = {
@@ -44,7 +44,8 @@ test('renderGear: two-hander ghosts the off-hand and blocked off-hand renders a 
     weapon1b: { item: { kind: 'base', slug: 'buckler' }, wishlist: [] },
   } });
   const html = renderGear(b, ctx);
-  assert.match(html, /editor-warnings/);
+  assert.match(html, /editor-checks/);
+  assert.match(html, /is-warn/);
   assert.match(html, /editor-slot--violation/);
   const empty = fixed({ gear: { weapon1a: { item: { kind: 'base', slug: 'big-maul' }, wishlist: [] } } });
   assert.match(renderGear(empty, ctx), /editor-slot__ghost/);
@@ -55,6 +56,18 @@ test('renderGear: unassigned tray rows carry equip/remove hooks', () => {
   const html = renderGear(b, ctx);
   assert.match(html, /data-tray-equip="1"/);
   assert.match(html, /data-tray-remove="0"/);
+});
+
+test('initials: two-word cap, safe on empties', () => {
+  assert.equal(initials('Lightning Arrow'), 'LA');
+  assert.equal(initials('Pin'), 'P');
+  assert.equal(initials(''), '?');
+});
+
+test('renderGear: checks card lists empty slots as info lines', () => {
+  const html = renderGear(fixed(), ctx);
+  assert.match(html, /editor-checks/);
+  assert.match(html, /is-info/);
 });
 
 test('rankDocs: stable partition by ranked slugs', () => {
