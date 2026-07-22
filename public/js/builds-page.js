@@ -61,6 +61,7 @@ if (root && view) {
       unmount();
     }
     const route = parseRoute(location.hash);
+    root.classList.toggle('builds-page--editing', route.view === 'build');
     if (route.view === 'list') {
       importState = null;
       view.innerHTML = renderList(store.list());

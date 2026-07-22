@@ -4,6 +4,8 @@ import { renderEditor } from '/static/js/editor-render.js';
 import { openPicker, closePicker } from '/static/js/entity-picker.js';
 import { legalSlots, equipViolations } from '/static/js/build-rules.js';
 import { safeWrite } from '/static/js/build-host.js';
+import { encodeBuild } from '/static/js/build-code.js';
+import { decode as decodePassiveCode } from '/static/js/passive-code.js';
 
 const KIND_FOR_CATEGORY = { gem: 'gem', support: 'gem', spirit: 'gem', unique: 'unique', base: 'base' };
 
@@ -112,6 +114,35 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
   function onClick(e) {
     const attr = (n) => e.target.closest(`[${n}]`)?.getAttribute(n);
 
+    // Rail anchors: this page routes on location.hash, so a real #gear
+    // navigation would bounce back to the builds list. Scroll instead.
+    const rail = e.target.closest('[data-rail-link]');
+    if (rail) {
+      e.preventDefault();
+      container.querySelector(rail.getAttribute('href'))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+
+    if (e.target.closest('[data-share]')) {
+      const btn = e.target.closest('[data-share]');
+      btn.disabled = true;
+      encodeBuild(build())
+        .then((code) => {
+          const url = `${location.origin}/builds#/import/${code}`;
+          return navigator.clipboard.writeText(url).then(
+            () => { btn.textContent = 'Link copied ✓'; },
+            () => { window.prompt('Copy this share link:', url); });
+        })
+        .finally(() => {
+          btn.disabled = false;
+          setTimeout(() => {
+            const b2 = container.querySelector('[data-share]');
+            if (b2) b2.textContent = 'Copy share link';
+          }, 1800);
+        });
+      return;
+    }
+
     const clear = attr('data-slot-clear');
     if (clear) {
       e.stopPropagation();
@@ -187,15 +218,31 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
   }
 
   function onChange(e) {
-    const lvl = e.target.closest('[data-setup-level]');
-    if (lvl) {
-      const i = Number(lvl.getAttribute('data-setup-level'));
-      const v = lvl.value === '' ? null : Math.max(1, Math.min(40, Number(lvl.value) || 1));
-      patch({ skills: build().skills.map((s, idx) => idx === i ? { ...s, level: v } : s) });
+    if (e.target.closest('[data-description]')) { patch({ description: e.target.value }); return; }
+    const tc = e.target.closest('[data-tree-code]');
+    if (tc) {
+      const v = tc.value.trim();
+      if (!v) { patch({ tree: { ...build().tree, code: null } }); return; }
+      try { decodePassiveCode(v); } catch { tc.classList.add('is-invalid'); return; }
+      patch({ tree: { ...build().tree, code: v } });
       return;
     }
     if (e.target.closest('[data-notes]')) patch({ notes: e.target.value });
   }
+
+  // Rail scroll-spy: highlight the chapter currently in view.
+  function spy() {
+    const links = container.querySelectorAll('[data-rail-link]');
+    if (!links.length) return;
+    const y = window.scrollY + 130;
+    let current = 'gear';
+    for (const id of ['gear', 'skills', 'tree', 'notes']) {
+      const el = container.querySelector(`#${id}`);
+      if (el && el.offsetTop <= y) current = id;
+    }
+    links.forEach((a) => a.classList.toggle('is-here', a.getAttribute('href') === `#${current}`));
+  }
+  window.addEventListener('scroll', spy, { passive: true });
 
   container.addEventListener('click', onClick);
   container.addEventListener('change', onChange);
@@ -205,6 +252,7 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
   return function unmount() {
     container.removeEventListener('click', onClick);
     container.removeEventListener('change', onChange);
+    window.removeEventListener('scroll', spy);
     unsub();
     closePicker();
   };
