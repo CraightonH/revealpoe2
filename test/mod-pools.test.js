@@ -7,9 +7,10 @@ test('modPools: families carry origin, tiers with gen + display text', () => {
   const { families } = modPools();
   const slugs = Object.keys(families);
   assert.ok(slugs.length > 400, `expected a large family table, got ${slugs.length}`);
-  // Every family is standard or corrupted; never desecrated.
+  // Standard, corrupted, and desecrated are all projected (essences are not yet
+  // in the graph, so never appear).
   for (const f of Object.values(families)) {
-    assert.ok(f.origin === 'standard' || f.origin === 'corrupted', `bad origin ${f.origin}`);
+    assert.ok(['standard', 'corrupted', 'desecrated'].includes(f.origin), `bad origin ${f.origin}`);
     assert.ok(f.tiers.length >= 1);
     for (const t of f.tiers) {
       assert.ok(typeof t.id === 'string' && t.id.length);
@@ -17,6 +18,20 @@ test('modPools: families carry origin, tiers with gen + display text', () => {
       assert.ok(!/\[[^\]]*\|/.test(t.text), `tier text still has [a|b] markup: ${t.text}`);
     }
   }
+});
+
+test('modPools: desecrated (Abyssal) families are projected and reach equipment bases', () => {
+  const { families, bases } = modPools();
+  const desecrated = Object.values(families).filter((f) => f.origin === 'desecrated');
+  assert.ok(desecrated.length >= 100, `expected desecrated families, got ${desecrated.length}`);
+  // Some desecrated families carry a Well-of-Souls boss (origin pill).
+  assert.ok(desecrated.some((f) => f.boss), 'at least one desecrated family carries a boss');
+  // At least one base offers a desecrated family alongside standard ones.
+  const mixed = Object.keys(bases).find((slug) => {
+    const origins = new Set((bases[slug] || []).map((r) => families[r.a]?.origin));
+    return origins.has('standard') && origins.has('desecrated');
+  });
+  assert.ok(mixed, 'a base offers both standard and desecrated families');
 });
 
 test('modPools: a body-armour base has standard prefixes and suffixes', () => {

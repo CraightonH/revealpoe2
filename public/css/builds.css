@@ -432,11 +432,17 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
 .mod-picker__cols { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 8px 10px; }
 .mod-picker__col h4 { margin: 0 0 6px; font-size: 9px; letter-spacing: .12em; text-transform: uppercase;
   color: var(--color-default); display: flex; justify-content: space-between; }
-.mod-picker__row { display: block; width: 100%; text-align: left; padding: 4px 6px; margin-bottom: 2px;
+.mod-picker__row { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  width: 100%; text-align: left; padding: 4px 6px; margin-bottom: 2px;
   border: 1px solid transparent; border-radius: 5px; background: none; color: var(--color-normal);
   font: 11px/1.3 var(--font-regular); cursor: pointer; }
 .mod-picker__row:hover { border-color: color-mix(in srgb, var(--color-crafted) 45%, var(--border)); }
 .mod-picker__row.is-chosen { color: var(--color-crafted); }
+.mod-picker__origin { flex: none; padding: 1px 6px; border-radius: 999px; font-size: 8.5px;
+  letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
+.mod-picker__origin--desecrated { color: var(--color-desecrated, #c9a0ff);
+  border: 1px solid color-mix(in srgb, var(--color-desecrated, #c9a0ff) 45%, var(--border));
+  background: color-mix(in srgb, var(--color-desecrated, #c9a0ff) 12%, transparent); }
 .mod-picker__chosen { list-style: none; margin: 0; padding: 8px 10px; border-top: 1px solid var(--border);
   display: flex; flex-direction: column; gap: 5px; }
 .mod-picker__chosen-row { display: flex; align-items: center; gap: 6px; }

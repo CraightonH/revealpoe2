@@ -20,10 +20,13 @@ const POOLS = {
       tiers: [{ id: 'fr1', name: 'of the Cinder', level: 6, gen: 'suffix', text: '+(6-11)% to Fire Resistance' }] },
     corrarm: { name: 'increased Armour', origin: 'corrupted', scope: 'equipment', generic: '#% increased Armour',
       tiers: [{ id: 'carm1', name: 'Corrupted', level: 1, gen: 'corrupted', text: '(15-25)% increased Armour' }] },
+    abyssarm: { name: 'increased Armour and Life', origin: 'desecrated', scope: 'equipment', boss: 'Ulaman',
+      generic: '#% increased Armour and Life',
+      tiers: [{ id: 'aarm1', name: 'of Ulaman', level: 1, gen: 'prefix', text: '(30-40)% increased Armour, +10 Life' }] },
   },
   bases: {
     'iron-greaves': [
-      { a: 'life', t: [0, 1] }, { a: 'armour' }, { a: 'fireres' }, { a: 'corrarm' },
+      { a: 'life', t: [0, 1] }, { a: 'armour' }, { a: 'fireres' }, { a: 'corrarm' }, { a: 'abyssarm' },
     ],
     'plated-boots': [{ a: 'life', t: [0] }],
   },
@@ -32,13 +35,24 @@ const POOLS = {
 
 test('poolsForBase: partitions prefix/suffix/corrupted, narrows tiers', () => {
   const p = poolsForBase(POOLS, 'iron-greaves');
-  assert.deepEqual(p.prefix.map((f) => f.affix).sort(), ['armour', 'life']);
+  assert.deepEqual(p.prefix.map((f) => f.affix).sort(), ['abyssarm', 'armour', 'life']);
   assert.deepEqual(p.suffix.map((f) => f.affix), ['fireres']);
   assert.deepEqual(p.corrupted.map((f) => f.affix), ['corrarm']);
   const life = p.prefix.find((f) => f.affix === 'life');
   assert.equal(life.tiers.length, 2);
   const boots = poolsForBase(POOLS, 'plated-boots');
   assert.equal(boots.prefix.find((f) => f.affix === 'life').tiers.length, 1, 'narrowed to allowed index');
+});
+
+test('poolsForBase: desecrated families join prefix/suffix, ordered after standard, carry origin + boss', () => {
+  const p = poolsForBase(POOLS, 'iron-greaves');
+  const aby = p.prefix.find((f) => f.affix === 'abyssarm');
+  assert.ok(aby, 'desecrated family present in prefix bucket');
+  assert.equal(aby.origin, 'desecrated');
+  assert.equal(aby.boss, 'Ulaman');
+  // Standard families sort before desecrated within a bucket.
+  assert.equal(p.prefix.at(-1).affix, 'abyssarm', 'desecrated sorts last');
+  assert.ok(p.prefix.slice(0, -1).every((f) => f.origin === 'standard'));
 });
 
 test('corruptedForRef: base uses own slug, unique resolves via uniques map', () => {
@@ -90,6 +104,15 @@ test('modPickerHtml: base mode renders prefix/suffix add rows + chosen tier sele
   assert.match(html, /data-mod-tier="life"/);
   assert.match(html, /life2/);                 // both tiers offered in the select
   assert.match(html, /Prefixes/); assert.match(html, /Suffixes/);
+});
+
+test('modPickerHtml: desecrated add rows carry an origin badge with the boss name', () => {
+  const view = { ...poolsForBase(POOLS, 'iron-greaves'), mode: 'base' };
+  const cell = { item: { kind: 'base', slug: 'iron-greaves' }, mods: [], corrupted: null };
+  const html = modPickerHtml(view, cell);
+  assert.match(html, /data-mod-add="abyssarm"/);
+  assert.match(html, /mod-picker__origin/);       // desecrated rows get an origin pill
+  assert.match(html, /Ulaman/);                    // boss name shown on the pill
 });
 
 test('modPickerHtml: unique mode renders only the corrupted single-choice section', () => {

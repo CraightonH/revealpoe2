@@ -5,17 +5,23 @@
 // browser. Reads ONLY the graph (src/data/graph.js) — no source files.
 //
 // Normalized to stay small (measured: 2.32 MB raw / 0.10 MB gzip):
-//   families  affixSlug -> { name, origin, scope, generic, tiers[] }
+//   families  affixSlug -> { name, origin, scope, boss, generic, tiers[] }
 //   bases     baseSlug  -> [{ a: affixSlug, t?: allowedTierIndices }]
 //   uniques   uniqueSlug -> baseSlug   (corrupted-implicit lookup)
 //
-// Only `standard` (craftable prefix/suffix) and `corrupted` (Vaal implicit)
-// origins are projected; `desecrated` is out of scope for the planner picker.
+// Every rollable origin whose eligibility is frozen into `rolls_on` edges is
+// projected: `standard` (craftable prefix/suffix), `desecrated` (Abyssal
+// Well-of-Souls prefix/suffix, boss-tagged), and `corrupted` (Vaal implicit).
+// Base eligibility is per-base (standard via the mods_by_base join, desecrated
+// via the spawn-weight item-tag predicate), so map/area desecrated mods only
+// ever attach to map/tablet bases and never surface on slottable equipment.
+// Essences are NOT yet in the graph (scripts/graph/affixes.js does not map
+// generation_type "essence" to an origin); they join automatically once it does.
 import { nodesByKind, edgesTo, edgesFrom, getNode } from './graph.js';
 import { stripGameText } from './keywords.js';
 import { toGenericText } from './affixText.js';
 
-const KEEP = new Set(['standard', 'corrupted']);
+const KEEP = new Set(['standard', 'corrupted', 'desecrated']);
 
 // Tier generation bucket for the client's prefix/suffix/corrupted partition.
 // Standard mods split on their source generation type; corrupted mods are a
@@ -38,6 +44,7 @@ export function modPools() {
       name: node.name,
       origin: node.props.origin,
       scope: node.props.scope,
+      boss: node.props.boss ?? null, // Well-of-Souls boss for desecrated families (origin pill)
       generic: stripGameText(toGenericText(top.text)),
       tiers: tiers.map((t) => ({
         id: t.id,

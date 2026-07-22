@@ -20,11 +20,20 @@ function tierSelect(affix, fam, chosenTierId) {
   return `<select class="mod-picker__tier" data-mod-tier="${esc(affix)}">${opts}</select>`;
 }
 
+// Origin pill for non-standard families (desecrated = Well-of-Souls boss, or
+// "Abyssal" when unbossed). Standard families get none — they are the default.
+function originPill(f) {
+  if (f.origin === 'desecrated') {
+    return `<span class="mod-picker__origin mod-picker__origin--desecrated">${esc(f.boss || 'Abyssal')}</span>`;
+  }
+  return '';
+}
+
 function addRows(fams, chosenAffixes) {
   return fams.map((f) => {
     const on = chosenAffixes.has(f.affix);
     return `<button type="button" class="mod-picker__row${on ? ' is-chosen' : ''}" data-mod-add="${esc(f.affix)}">` +
-      `<span class="mod-picker__generic">${esc(f.generic)}</span></button>`;
+      `<span class="mod-picker__generic">${esc(f.generic)}</span>${originPill(f)}</button>`;
   }).join('');
 }
 
@@ -75,7 +84,11 @@ function familyView(pools, ref) {
   const allow = ref.t ? new Set(ref.t) : null;
   const tiers = fam.tiers.filter((_, i) => !allow || allow.has(i));
   if (!tiers.length) return null;
-  return { affix: ref.a, name: fam.name, generic: fam.generic, gen: fam.origin === 'corrupted' ? 'corrupted' : null, tiers };
+  return {
+    affix: ref.a, name: fam.name, generic: fam.generic,
+    origin: fam.origin, boss: fam.boss ?? null,
+    gen: fam.origin === 'corrupted' ? 'corrupted' : null, tiers,
+  };
 }
 
 /** { prefix, suffix, corrupted } family views legal on a base slug. */
@@ -94,8 +107,10 @@ export function poolsForBase(pools, baseSlug) {
       if (tiers.length) out[bucket].push({ ...view, gen: bucket, tiers });
     }
   }
-  const byName = (a, b) => a.name.localeCompare(b.name);
-  out.prefix.sort(byName); out.suffix.sort(byName); out.corrupted.sort(byName);
+  // Standard families first, then desecrated (Abyssal); alphabetical within each.
+  const rank = (o) => (o === 'standard' ? 0 : o === 'desecrated' ? 1 : 2);
+  const cmp = (a, b) => rank(a.origin) - rank(b.origin) || a.name.localeCompare(b.name);
+  out.prefix.sort(cmp); out.suffix.sort(cmp); out.corrupted.sort(cmp);
   return out;
 }
 
