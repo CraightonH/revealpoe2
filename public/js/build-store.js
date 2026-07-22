@@ -96,6 +96,18 @@ export function validateBuild(b) {
     });
   }
 
+  if (b.grantedSupports !== undefined) {
+    if (!isObj(b.grantedSupports)) errors.push('grantedSupports: expected object');
+    else {
+      for (const [k, list] of Object.entries(b.grantedSupports)) {
+        if (!Array.isArray(list)) { errors.push(`grantedSupports.${k}: expected array`); continue; }
+        list.forEach((sup, i) => {
+          if (!isObj(sup) || !isStr(sup.slug)) errors.push(`grantedSupports.${k}[${i}].slug: expected string`);
+        });
+      }
+    }
+  }
+
   return { ok: errors.length === 0, errors };
 }
 

@@ -205,3 +205,19 @@ test('a build from a newer schema passes through read untouched', () => {
   const store = createStore(storage, { now: () => 1, uuid: () => 'id-1' });
   assert.deepEqual(store.get('id-9'), future);
 });
+
+test('validateBuild accepts a well-formed grantedSupports map', () => {
+  const b = emptyBuild({ now: () => 1, uuid: () => 'x' });
+  b.grantedSupports = { 'choir-item:lightning-bolt': [{ slug: 'pierce' }] };
+  assert.equal(validateBuild(b).ok, true);
+});
+
+test('validateBuild rejects malformed grantedSupports', () => {
+  const b = emptyBuild({ now: () => 1, uuid: () => 'x' });
+  b.grantedSupports = { bad: [{ nope: 1 }] };
+  const r1 = validateBuild(b);
+  assert.equal(r1.ok, false);
+  assert.ok(r1.errors.some((e) => e.includes('grantedSupports.bad[0].slug')));
+  b.grantedSupports = 'nope';
+  assert.equal(validateBuild(b).ok, false);
+});
