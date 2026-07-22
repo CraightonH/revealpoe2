@@ -186,20 +186,56 @@ export function renderSkills(build, ctx) {
   </section>`;
 }
 
+export function treeSummary(build) {
+  if (!build.tree.code) return { saved: false, points: null };
+  try { return { saved: true, points: decodePassiveCode(build.tree.code).nodes.length }; }
+  catch { return { saved: true, points: null }; }
+}
+
 export function renderEditor(build, ctx) {
-  const tree = build.tree.code
-    ? `Passive tree saved · ${build.tree.notablePriority.length} prioritized`
-    : 'No passive tree yet';
-  return `<article class="editor" data-editor>
-    <header class="editor-head">
-      <a class="builds-back" href="#">← All builds</a>
-      <h2>${esc(build.name)}</h2>
-    </header>
-    ${renderGear(build, ctx)}
-    ${renderSkills(build, ctx)}
-    <section class="editor-tree"><h2>Passive tree</h2>
-      <p>${esc(tree)} — <a href="/passives">open the tree</a> (embedding arrives in a later phase).</p></section>
-    <section class="editor-notes"><h2>Notes</h2>
-      <textarea data-notes rows="4" placeholder="Build notes…">${esc(build.notes)}</textarea></section>
-  </article>`;
+  const t = treeSummary(build);
+  const stat = !t.saved ? 'No passive tree saved yet'
+    : t.points !== null ? `${t.points} passives allocated` : 'Passive tree saved';
+  const prio = build.tree.notablePriority.length;
+  return `<article class="editor dossier" data-editor>
+    <nav class="dossier-rail" aria-label="Build sections">
+      <p class="dossier-rail__mark"><span class="dossier-eyebrow">Build Planner</span>
+        <a class="builds-back" href="#">← All builds</a></p>
+      <ol class="dossier-rail__nav">
+        <li><a href="#gear" class="is-here" data-rail-link>Gear</a></li>
+        <li><a href="#skills" data-rail-link>Skills</a></li>
+        <li><a href="#tree" data-rail-link>Passive Tree</a></li>
+        <li><a href="#notes" data-rail-link>Notes</a></li>
+      </ol>
+      <p class="dossier-rail__note">Saved in this browser only. The share link makes this build portable.</p>
+    </nav>
+    <div class="dossier-main">
+      <header class="dossier-head">
+        <div class="dossier-head__copy">
+          <h2>${esc(build.name)}</h2>
+          <p class="dossier-class">${esc(classLine(build))}</p>
+          <textarea class="dossier-desc" data-description rows="2"
+            placeholder="Add a short description — what this build is and how it plays…">${esc(build.description ?? '')}</textarea>
+        </div>
+        <div class="dossier-actions">
+          <button class="dossier-share" type="button" data-share>Copy share link</button>
+        </div>
+      </header>
+      ${renderGear(build, ctx)}
+      ${renderSkills(build, ctx)}
+      <section class="editor-chapter editor-tree" id="tree" aria-labelledby="tree-h">
+        <header class="chapter-head"><h2 id="tree-h">Passive Tree</h2><span class="chapter-rule"></span></header>
+        <div class="editor-tree-band">
+          <p class="editor-tree-stat">${esc(stat)}${prio ? ` · ${prio} notables prioritized` : ''}</p>
+          <label class="editor-tree-code">Tree share code
+            <input type="text" data-tree-code spellcheck="false"
+              placeholder="Paste a code from the passive tree page…" value="${esc(build.tree.code ?? '')}"></label>
+          <a class="editor-tree-open" href="/passives">Open the passive tree →</a>
+          <p class="editor-tree-hint">Embedded editing lands in a later phase — for now, build your tree on the tree page and paste its share code here.</p>
+        </div></section>
+      <section class="editor-chapter editor-notes" id="notes" aria-labelledby="notes-h">
+        <header class="chapter-head"><h2 id="notes-h">Notes</h2><span class="chapter-rule"></span></header>
+        <textarea data-notes rows="6" placeholder="Build notes — leveling route, upgrade order, reminders…">${esc(build.notes)}</textarea>
+      </section>
+    </div></article>`;
 }

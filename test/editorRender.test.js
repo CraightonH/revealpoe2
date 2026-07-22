@@ -148,13 +148,27 @@ test('renderSkills: duplicate-support violation renders inline warning', () => {
   assert.match(renderSkills(b, sctx), /editor-chain__warning/);
 });
 
-test('renderEditor: assembles gear, skills, tree placeholder, notes', () => {
-  const b = fixed({ notes: 'hi <b>there</b>', tree: { code: 'v7abc', notablePriority: [1] } });
+import { treeSummary } from '../public/js/editor-render.js';
+import { encode, synthesizeState } from '../public/js/passive-code.js';
+
+test('treeSummary: decodes allocated count, tolerates junk codes', () => {
+  assert.deepEqual(treeSummary(fixed()), { saved: false, points: null });
+  const code = encode(synthesizeState({ allocated: [101, 202, 303],
+    ascOf: () => null, isAttr: () => false, attrOf: () => 'str' }));
+  assert.deepEqual(treeSummary(fixed({ tree: { code, notablePriority: [] } })), { saved: true, points: 3 });
+  assert.deepEqual(treeSummary(fixed({ tree: { code: '!!!', notablePriority: [] } })), { saved: true, points: null });
+});
+
+test('renderEditor: dossier shell — rail, header hooks, four chapters, escapes', () => {
+  const b = fixed({ notes: 'hi <b>there</b>', description: 'desc <i>x</i>', tree: { code: null, notablePriority: [] } });
   const html = renderEditor(b, sctx);
-  assert.match(html, /editor-gear/);
-  assert.match(html, /editor-skills/);
-  assert.match(html, /Passive tree saved/);
-  assert.match(html, /href="\/passives"/);
+  for (const id of ['id="gear"', 'id="skills"', 'id="tree"', 'id="notes"']) assert.ok(html.includes(id), id);
+  assert.match(html, /data-rail-link/);
+  assert.match(html, /data-share/);
+  assert.match(html, /data-description/);
+  assert.match(html, /data-tree-code/);
   assert.match(html, /data-notes/);
+  assert.match(html, /href="\/passives"/);
   assert.ok(html.includes('hi &lt;b&gt;there&lt;/b&gt;'));
+  assert.ok(html.includes('desc &lt;i&gt;x&lt;/i&gt;'));
 });
