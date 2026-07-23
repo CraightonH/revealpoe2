@@ -17,8 +17,8 @@ test('renderPriorityList: rows carry hooks, icon canvas, escaped names', () => {
   assert.match(html, /draggable="true"/);
   assert.match(html, /data-prio-icon="52"/);
   assert.match(html, /data-prio-remove="52"/);
-  assert.match(html, /prio-name is-keystone/);
-  assert.ok(html.includes('Zealot&#39;s &lt;b&gt;Oath&lt;/b&gt;'), 'name escaped');
+  assert.match(html, /prio-tile is-keystone/);
+  assert.ok(html.includes('Zealot&#39;s &lt;b&gt;Oath&lt;/b&gt;'), 'name escaped in tooltip/label');
 });
 
 test('renderPriorityList: readonly hides controls; empty shows a message', () => {

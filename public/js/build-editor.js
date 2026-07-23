@@ -393,7 +393,7 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
       return;
     }
     const prioRow = e.target.closest('[data-prio-row]');
-    if (prioRow && !e.target.closest('[data-prio-remove]') && !e.target.closest('.prio-handle')) {
+    if (prioRow && !e.target.closest('[data-prio-remove]')) {
       treeEmbed?.focusNode(Number(prioRow.getAttribute('data-prio-row')));
       treeWrapEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
