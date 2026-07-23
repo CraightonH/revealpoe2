@@ -656,10 +656,12 @@ a.lc.unique-type:hover {
    ItemsHeader{Magic,Rare}{Left,Middle,Right} art as poe2db, ingested from
    ggpk.exposed), mirroring the NormalPopup white-header technique. Applied by
    builds-page.js by swapping NormalPopup -> Magic/RarePopup. */
-.MagicPopup { --card-border: color-mix(in srgb, var(--color-magic) 55%, transparent);
-  --card-glow: color-mix(in srgb, var(--color-magic) 38%, transparent); }
-.RarePopup  { --card-border: color-mix(in srgb, var(--color-rare) 55%, transparent);
-  --card-glow: color-mix(in srgb, var(--color-rare) 38%, transparent); }
+/* Neutral border/glow (same as the normal white tooltip) — rarity reads from the
+   header art, name, and dividers, not a colored frame. */
+.MagicPopup, .RarePopup {
+  --card-border: var(--card-normal-border-fallback);
+  --card-glow: var(--card-normal-glow-fallback);
+}
 .MagicPopup .itemHeader.doubleLine {
   background:
     url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderMagicLeft.webp) top left no-repeat,
