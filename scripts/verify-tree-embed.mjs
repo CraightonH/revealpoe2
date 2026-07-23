@@ -139,6 +139,31 @@ try {
   ok('editor auto-saves the tree code after allocation', ed.savedCode === true, JSON.stringify(ed));
   ok('editor persists a Notable Priority entry', ed.savedPriority > 0, `saved=${ed.savedPriority}`);
   ok('editor renders a Notable Priority row', ed.prioRows > 0, `rows=${ed.prioRows}`);
+
+  // 4) The embed's class/ascendancy follow the build's own selection. Seed a
+  //    fresh build (no tree code) with a non-default class + ascendancy and
+  //    confirm the mounted embed switched to it (its hidden class/asc selects).
+  const c = await browser.newPage();
+  await c.goto(`${BASE}/builds`, { waitUntil: 'networkidle2', timeout: 60000 });
+  const want = await c.evaluate(async () => {
+    const planner = await fetch('/static/generated/planner-data.json').then((r) => r.json());
+    const cls = planner.classes.find((x) => x.ascendancies?.length) || planner.classes[0];
+    const asc = cls.ascendancies?.[0] || null;
+    const now = 1700000000000;
+    const b = { id: 'sync1', schema: 2, name: 'Sync', notes: '', description: '', createdAt: now, updatedAt: now,
+      class: cls.slug, ascendancy: asc ? asc.slug : null, gear: {}, unassigned: [], skills: [], tree: { code: null, notablePriority: [] } };
+    localStorage.setItem('reveal.builds.v1', JSON.stringify({ order: [b.id], builds: { [b.id]: b } }));
+    return { className: cls.name, ascName: asc ? asc.name : null };
+  });
+  await c.goto(`${BASE}/builds#/b/sync1`, { waitUntil: 'networkidle2', timeout: 60000 });
+  await c.waitForSelector('[data-tree-mount] [data-tree-class]', { timeout: 20000 }).catch(() => {});
+  await sleep(1600);
+  const got = await c.evaluate(() => ({
+    cls: document.querySelector('[data-tree-mount] [data-tree-class]')?.value || null,
+    asc: document.querySelector('[data-tree-mount] [data-tree-asc]')?.selectedOptions?.[0]?.textContent || null,
+  }));
+  ok('embed class follows the build class on mount', got.cls === want.className, `embed=${got.cls} build=${want.className}`);
+  ok('embed ascendancy follows the build ascendancy', !want.ascName || got.asc === want.ascName, `embed=${got.asc} build=${want.ascName}`);
 } finally {
   await browser.close();
 }

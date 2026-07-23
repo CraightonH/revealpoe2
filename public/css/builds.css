@@ -482,6 +482,10 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
   border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
   background: color-mix(in srgb, var(--bg-base) 60%, transparent); }
 .passive-tree-wrap--embed canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+/* The build's own class/ascendancy picker (Dossier header) is authoritative and
+   drives the embed, so hide the embed's redundant selectors in the editor. */
+.passive-tree-wrap--embed .tree-field--class,
+.passive-tree-wrap--embed .tree-field--asc { display: none; }
 .editor-tree-points { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; }
 .tree-chip { display: inline-flex; align-items: baseline; gap: 5px; padding: 4px 10px;
   border: 1px solid var(--border); border-radius: 999px;

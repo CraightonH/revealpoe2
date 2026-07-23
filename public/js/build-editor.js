@@ -56,7 +56,7 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
       // The editor copies the raw tree code — it must NEVER touch location.hash
       // (that is the /builds router).
       onCopy: (code) => navigator.clipboard.writeText(code),
-      onReady: () => { captureNotables(); refreshTreeUI(); },
+      onReady: () => { syncTreeClass(); captureNotables(); refreshTreeUI(); },
       onChange: () => { captureNotables(); refreshTreeUI(); },
       onCodeChange: (code) => persistTree(code),
     }).then((api) => { treeEmbed = api; }).catch((err) => console.warn('[builds] tree embed failed:', err));
@@ -94,6 +94,43 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
         treeEmbed?.paintNodeIcon(Number(c.getAttribute('data-prio-icon')), c);
       }
     }
+  }
+  // Keep the embed's class/ascendancy matched to the build's own picker (the
+  // authoritative selection). `force` = the user just changed the picker, so
+  // drive the embed even if that resets the tree (changing class is a reset,
+  // in-game). Without force (on mount) we never wipe an existing tree over a
+  // metadata disagreement — we adopt the tree's class into the build instead.
+  function syncTreeClass({ force = false } = {}) {
+    if (!treeEmbed) return;
+    const b = build(); if (!b) return;
+    const meta = treeEmbed.data?.meta; if (!meta) return;
+    const classes = planner.classes || [];
+    const buildCls = b.class ? classes.find((c) => c.slug === b.class) : null;
+    const cur = treeEmbed.getClassAscendancy();
+    if (!buildCls) {
+      // No class picked: on load, reflect an imported tree's class so the picker
+      // matches; on an explicit "No class" pick, leave the tree untouched.
+      if (!force && b.tree.code) adoptEmbedClassIntoBuild(meta, classes);
+      return;
+    }
+    const targetClassName = buildCls.name;
+    const ascName = b.ascendancy ? buildCls.ascendancies.find((a) => a.slug === b.ascendancy)?.name : null;
+    const targetAscId = ascName ? (meta.ascByClass?.[targetClassName] || []).find((a) => a.name === ascName)?.id ?? null : null;
+    if (!force && b.tree.code && (cur.className !== targetClassName || (!b.ascendancy && cur.ascId))) {
+      adoptEmbedClassIntoBuild(meta, classes);
+      return;
+    }
+    treeEmbed.setClassAscendancy(targetClassName, targetAscId);
+  }
+  function adoptEmbedClassIntoBuild(meta, classes) {
+    const cur = treeEmbed.getClassAscendancy();
+    const cls = classes.find((c) => c.name === cur.className);
+    if (!cls) return;
+    const ascName = cur.ascId ? (meta.ascByClass?.[cur.className] || []).find((a) => a.id === cur.ascId)?.name : null;
+    const ascSlug = ascName ? (cls.ascendancies.find((a) => a.name === ascName)?.slug ?? null) : null;
+    const b = build();
+    if (b.class === cls.slug && b.ascendancy === ascSlug) return; // already matches
+    patch({ class: cls.slug, ascendancy: ascSlug });              // re-renders → picker updates
   }
 
   function equip(slotId, ref) {
@@ -222,12 +259,14 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
       // Changing class drops an ascendancy that no longer belongs.
       const keepAsc = cls?.ascendancies.some((a) => a.slug === b.ascendancy);
       patch({ class: setClass || null, ascendancy: keepAsc ? b.ascendancy : null });
+      syncTreeClass({ force: true });   // drive the embed to the picked class
       return;
     }
     const setAsc = attr('data-set-asc');
     if (setAsc !== null && setAsc !== undefined) {
       classPicker = null;
       patch({ ascendancy: setAsc || null });
+      syncTreeClass({ force: true });   // drive the embed to the picked ascendancy
       return;
     }
     if (e.target.closest('[data-build-rename]')) {

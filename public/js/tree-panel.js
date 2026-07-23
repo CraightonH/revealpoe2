@@ -30,11 +30,11 @@ export function treePanelsHtml() {
             <span class="tree-ws-count" data-ws-count="2">0 / 25</span>
           </div>
         </div>
-        <label class="tree-panel-field">
+        <label class="tree-panel-field tree-field--class">
           <span class="tree-panel-label">Character Class</span>
           <select data-tree-class class="passive-tree-select"></select>
         </label>
-        <label class="tree-panel-field">
+        <label class="tree-panel-field tree-field--asc">
           <span class="tree-panel-label">Ascendancy</span>
           <select data-tree-asc class="passive-tree-select"></select>
         </label>

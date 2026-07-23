@@ -2288,6 +2288,19 @@ export default function init(canvas, data, opts = {}) {
     async setState(code) { return api.setCode(code); },
     async getState() { return { code: await api.getCode() }; },
     setHighlight, focusNode, getAllocatedNotables, getPoints, paintNodeIcon, deallocate, destroy,
+    /** Current class (GGG name) + ascendancy id, for the host to mirror. */
+    getClassAscendancy() { return { className: activeClass, ascId: activeAsc }; },
+    /**
+     * Point the tree at a class + ascendancy (host-driven, e.g. the build's own
+     * class picker). Switching class resets the tree (in-game behavior); a same-
+     * class call only (re)selects the ascendancy. Pass ascId null/'' to clear.
+     */
+    setClassAscendancy(className, ascId) {
+      if (className && className !== activeClass && (ascByClass[className] || classArt?.[className])) {
+        selectClass(className);   // resets allocations, sets activeClass, repopulates asc options
+      }
+      if ((ascId || null) !== activeAsc) selectAscendancy(ascId || null);
+    },
     view, nodeMap, data,
   };
 
