@@ -214,6 +214,27 @@ export default function init(canvas, data, opts = {}) {
     }
     return null;
   }
+  const pendingIcons = [];
+  function blitIcon(canvasEl, node) {
+    const at = atlas('skills');
+    if (!at) return false;
+    const key = `${node.iconKind}Active:${node.icon}`;
+    const f = at.frames[key]; if (!f) return false;
+    const fr = f.frame;
+    const c = canvasEl.getContext('2d');
+    c.clearRect(0, 0, canvasEl.width, canvasEl.height);
+    c.drawImage(at.img, fr.x, fr.y, fr.w, fr.h, 0, 0, canvasEl.width, canvasEl.height);
+    return true;
+  }
+  function paintNodeIcon(hash, canvasEl) {
+    const n = nodeMap.get(hash); if (!n || !canvasEl) return;
+    if (!blitIcon(canvasEl, n)) pendingIcons.push({ hash, canvasEl });
+  }
+  function flushPendingIcons() {
+    if (!pendingIcons.length) return;
+    const q2 = pendingIcons.splice(0);
+    for (const { hash, canvasEl } of q2) { const n = nodeMap.get(hash); if (n && canvasEl.isConnected) blitIcon(canvasEl, n); }
+  }
   function atlas(name) {
     const c = atlasCache.get(name);
     if (c && typeof c === 'object') return c;
@@ -225,6 +246,7 @@ export default function init(canvas, data, opts = {}) {
       ]).then(([map, img]) => {
         atlasCache.set(name, { img, frames: map.frames, scale: Number(map.meta?.scale) || 1 });
         requestDraw();
+        if (name === 'skills') flushPendingIcons();
       }).catch(() => atlasCache.set(name, 'error'));
     }
     return null;
@@ -656,6 +678,37 @@ export default function init(canvas, data, opts = {}) {
     };
   }
 
+  const NOTABLE_KINDS = new Set(['keystone', 'notable', 'ascNotable', 'blighted']);
+  function getAllocatedNotables() {
+    const out = [];
+    const seen = new Set();
+    for (const set of [allocated, wsAlloc[1], wsAlloc[2]]) {
+      for (const h of set) {
+        if (seen.has(h)) continue; seen.add(h);
+        const n = nodeMap.get(h);
+        if (n && NOTABLE_KINDS.has(n.k)) out.push({ h, kind: n.k, name: n.name || String(h), icon: n.icon || '' });
+      }
+    }
+    return out.sort((a, b) => a.h - b.h);
+  }
+
+  function setHighlight(hashes) {
+    hoverHits = (hashes && hashes[Symbol.iterator]) ? new Set(hashes) : null;
+    if (hoverHits && hoverHits.size === 0) hoverHits = null;
+    requestDraw();
+  }
+
+  function getPoints() {
+    const b = budgets();
+    const p = _allocMod ? _allocMod.pointsSpent(allocated, nodeKindOf) : { main: 0, ascendancy: 0 };
+    return {
+      main: { spent: p.main, max: b.main === Infinity ? null : b.main },
+      asc:  { spent: p.ascendancy, max: b.ascendancy === Infinity ? null : b.ascendancy },
+      ws1:  { spent: wsAlloc[1].size, max: b.ws === Infinity ? null : b.ws },
+      ws2:  { spent: wsAlloc[2].size, max: b.ws === Infinity ? null : b.ws },
+    };
+  }
+
   // Whether the given new-node hashes fit the remaining MAIN budget (all-or-nothing).
   function canAfford(hashes) {
     if (!_allocMod) return false;
@@ -918,6 +971,10 @@ export default function init(canvas, data, opts = {}) {
     clearPathPreview(); // frontier changed → stale preview
     updatePoints();
     requestDraw();
+  }
+
+  function deallocate(h) {
+    if (_allocMod && allocated.has(h)) _deallocateSync(h);
   }
 
   // Allocate/deallocate within the active weapon set (its own 25-pt pool).
@@ -2216,21 +2273,22 @@ export default function init(canvas, data, opts = {}) {
   // Public API
   // ---------------------------------------------------------------------------
 
+  function destroy() {
+    ro.disconnect();
+    document.removeEventListener('fullscreenchange', syncFsLabel);
+    clearTimeout(codeTimer); clearTimeout(hideTimer); clearTimeout(hoverTimer);
+    if (tip) { try { tip.destroy(); } catch {} tip = null; }
+  }
   const api = {
-    /** Set the currently allocated node hashes and trigger a redraw. */
-    setAllocated(set) {
-      allocated = set instanceof Set ? set : new Set(set);
-      requestDraw();
-    },
-    /** Set which nodes are class/ascendancy start anchors. */
-    setStarts(arr) {
-      starts = arr;
-    },
-    /** Force an immediate redraw (e.g. after icon load). */
+    setAllocated(set) { allocated = set instanceof Set ? set : new Set(set); requestDraw(); },
+    setStarts(arr) { starts = arr; },
     redraw: requestDraw,
-    view,
-    nodeMap,
-    data,
+    async setCode(code) { await importCode(code || null); lastEmitted = code || null; updatePoints(); },
+    async getCode() { const cm = await codeMod(); return buildShareCode(cm); },
+    async setState(code) { return api.setCode(code); },
+    async getState() { return { code: await api.getCode() }; },
+    setHighlight, focusNode, getAllocatedNotables, getPoints, paintNodeIcon, deallocate, destroy,
+    view, nodeMap, data,
   };
 
   // Atlases load lazily via atlas(); each triggers requestDraw() on load, so no
