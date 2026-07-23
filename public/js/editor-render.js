@@ -95,6 +95,17 @@ export function rankDocs(docs, rankedSlugs) {
 /** True for the read-only renderings (own-build shared preview + import). */
 const isReadonly = (ctx) => !!ctx.mode && ctx.mode !== 'edit';
 
+/**
+ * Rarity of a BASE-item gear cell by chosen explicit-mod count (corrupted
+ * implicits don't count): 3+ → 'rare', 1–2 → 'magic', else 'normal'. Shared by
+ * the gear-well tint (renderGear) and the tooltip header (builds-page.js) so the
+ * two never disagree.
+ */
+export function baseRarity(cell) {
+  const n = Array.isArray(cell?.mods) ? cell.mods.length : 0;
+  return n >= 3 ? 'rare' : n >= 1 ? 'magic' : 'normal';
+}
+
 export function renderGear(build, ctx) {
   const { planner, resolveRef, weaponSet } = ctx;
   const ro = isReadonly(ctx);
@@ -110,7 +121,8 @@ export function renderGear(build, ctx) {
     const violation = bySlot.get(s.id);
     let body, state;
     if (g?.item) {
-      state = g.item.kind === 'unique' ? 'is-unique' : 'is-filled';
+      state = g.item.kind === 'unique' ? 'is-unique'
+        : { rare: 'is-rare', magic: 'is-magic', normal: 'is-filled' }[baseRarity(g)];
       const nMods = (g.mods?.length ?? 0) + (g.corrupted ? 1 : 0);
       const indicator = nMods ? `<span class="editor-slot__mods">${nMods} mod${nMods === 1 ? '' : 's'}</span>` : '';
       const modsBtn = ro ? '' : `<button class="editor-slot__mods-edit" type="button" data-mods-edit="${esc(s.id)}" aria-label="Choose modifiers for ${esc(s.name)}">✎ mods</button>`;

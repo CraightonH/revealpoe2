@@ -166,6 +166,8 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
 .editor-slot.is-readonly:hover { transform: none; box-shadow: none; border-color: var(--border); }
 .editor-slot.is-unique.is-readonly:hover { border-color: color-mix(in srgb, var(--color-unique) 50%, var(--border));
   box-shadow: inset 0 0 18px rgb(239 105 22 / .07); }
+.editor-slot.is-magic.is-readonly:hover { border-color: color-mix(in srgb, var(--color-magic) 50%, var(--border)); }
+.editor-slot.is-rare.is-readonly:hover { border-color: color-mix(in srgb, var(--color-rare) 50%, var(--border)); }
 .dossier--readonly .editor-orb { cursor: default; }
 .build-switcher__name--static { display: block; margin-top: 6px; color: var(--color-normal);
   font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -222,6 +224,14 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
 .editor-slot.is-unique { border-color: color-mix(in srgb, var(--color-unique) 50%, var(--border));
   box-shadow: inset 0 0 18px rgb(239 105 22 / .07); }
 .editor-slot.is-unique:hover { border-color: color-mix(in srgb, var(--color-unique) 75%, var(--border)); }
+/* Base-item rarity tint by chosen mod count — magic blue, rare yellow (mirrors
+   the unique treatment above). */
+.editor-slot.is-magic { border-color: color-mix(in srgb, var(--color-magic) 50%, var(--border));
+  box-shadow: inset 0 0 18px color-mix(in srgb, var(--color-magic) 10%, transparent); }
+.editor-slot.is-magic:hover { border-color: color-mix(in srgb, var(--color-magic) 78%, var(--border)); }
+.editor-slot.is-rare { border-color: color-mix(in srgb, var(--color-rare) 50%, var(--border));
+  box-shadow: inset 0 0 18px color-mix(in srgb, var(--color-rare) 10%, transparent); }
+.editor-slot.is-rare:hover { border-color: color-mix(in srgb, var(--color-rare) 78%, var(--border)); }
 .editor-slot.is-ghost { border-style: dashed; opacity: .6; cursor: default; }
 .editor-slot--violation { outline: 1px solid color-mix(in srgb, var(--color-corrupted) 70%, transparent); }
 .editor-slot__label { font-size: 8.5px; letter-spacing: .14em; text-transform: uppercase;
@@ -251,7 +261,8 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
 .well-art__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain;
   filter: drop-shadow(0 4px 10px rgb(0 0 0 / .55)); }
 .well-art__img + .well-art__initials { display: none; }
-.editor-slot.is-filled:hover .well-art__img, .editor-slot.is-unique:hover .well-art__img {
+.editor-slot.is-filled:hover .well-art__img, .editor-slot.is-unique:hover .well-art__img,
+.editor-slot.is-magic:hover .well-art__img, .editor-slot.is-rare:hover .well-art__img {
   transform: scale(1.04); transition: transform 120ms ease; }
 /* Initials are the fallback only — hidden while real art is present. */
 .well-tile__img + .well-tile__initials, .orb-tile__img + .orb-tile__initials { display: none; }

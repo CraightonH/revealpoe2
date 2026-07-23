@@ -3,7 +3,7 @@
 // builds-render.js (node-tested); this file is DOM wiring only.
 import { getStore, safeWrite } from '/static/js/build-host.js';
 import { parseRoute, renderBuild, renderImport } from '/static/js/builds-render.js';
-import { modCardSections, renderEditor } from '/static/js/editor-render.js';
+import { baseRarity, modCardSections, renderEditor } from '/static/js/editor-render.js';
 import { decodeBuild } from '/static/js/build-code.js';
 import { mountEditor } from '/static/js/build-editor.js';
 
@@ -104,9 +104,9 @@ if (root && view) {
         // keep their own UniquePopup styling.
         const popup = box.querySelector('.newItemPopup.NormalPopup');
         if (popup) {
-          const n = Array.isArray(cell.mods) ? cell.mods.length : 0;
-          if (n >= 3) popup.classList.replace('NormalPopup', 'RarePopup');
-          else if (n >= 1) popup.classList.replace('NormalPopup', 'MagicPopup');
+          const rarity = baseRarity(cell);
+          if (rarity === 'rare') popup.classList.replace('NormalPopup', 'RarePopup');
+          else if (rarity === 'magic') popup.classList.replace('NormalPopup', 'MagicPopup');
         }
         const { corrupted, mods } = modCardSections(cell, pools);
         if (corrupted || mods) {

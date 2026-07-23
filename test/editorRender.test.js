@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderGear, rankDocs, initials, modCardSections } from '../public/js/editor-render.js';
+import { renderGear, rankDocs, initials, modCardSections, baseRarity } from '../public/js/editor-render.js';
 import { emptyBuild } from '../public/js/build-store.js';
 
 const PLANNER = {
@@ -67,6 +67,25 @@ test('renderGear: a filled well exposes data-slot-mods and a mods-edit affordanc
   const html = renderGear(b, ctx);
   assert.match(html, /data-slot-mods="helmet"/);
   assert.match(html, /data-mods-edit="helmet"/);
+});
+
+test('baseRarity: normal / magic / rare by explicit-mod count (corrupted excluded)', () => {
+  assert.equal(baseRarity({ mods: [] }), 'normal');
+  assert.equal(baseRarity({ mods: [], corrupted: { affix: 'x', tier: 'y' } }), 'normal');
+  assert.equal(baseRarity({ mods: [{ affix: 'a' }, { affix: 'b' }] }), 'magic');
+  assert.equal(baseRarity({ mods: [{ affix: 'a' }, { affix: 'b' }, { affix: 'c' }] }), 'rare');
+});
+
+test('renderGear: base well takes a rarity class by mod count; unique stays is-unique', () => {
+  const magic = fixed(); magic.gear.helmet = { item: { kind: 'base', slug: 'iron-hat' },
+    mods: [{ affix: 'life', tier: 'life1' }], corrupted: null };
+  assert.match(renderGear(magic, ctx), /editor-slot--helmet[^"]*is-magic/);
+  const rare = fixed(); rare.gear.helmet = { item: { kind: 'base', slug: 'iron-hat' },
+    mods: [{ affix: 'a' }, { affix: 'b' }, { affix: 'c' }], corrupted: null };
+  assert.match(renderGear(rare, ctx), /editor-slot--helmet[^"]*is-rare/);
+  const uniq = fixed(); uniq.gear.helmet = { item: { kind: 'unique', slug: 'the-x' },
+    mods: [{ affix: 'a' }, { affix: 'b' }, { affix: 'c' }], corrupted: null };
+  assert.match(renderGear(uniq, ctx), /editor-slot--helmet[^"]*is-unique/);
 });
 
 test('renderGear: wells for active weapon set + slotless slots, hooks present', () => {
