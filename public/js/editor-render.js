@@ -396,13 +396,14 @@ export function renderEditor(build, ctx) {
 
   const treeBody = ro
     ? `<p class="editor-tree-stat">${esc(stat)}${prio ? ` · ${prio} notables prioritized` : ''}</p>
-      <a class="editor-tree-open" href="/passives">Open the passive tree →</a>`
-    : `<p class="editor-tree-stat">${esc(stat)}${prio ? ` · ${prio} notables prioritized` : ''}</p>
-      <label class="editor-tree-code">Tree share code
-        <input type="text" data-tree-code spellcheck="false"
-          placeholder="Paste a code from the passive tree page…" value="${esc(build.tree.code ?? '')}"></label>
-      <a class="editor-tree-open" href="/passives">Open the passive tree →</a>
-      <p class="editor-tree-hint">Embedded editing lands in a later phase — for now, build your tree on the tree page and paste its share code here.</p>`;
+       <a class="editor-tree-open" href="/passives${build.tree.code ? '#' + esc(build.tree.code) : ''}">Open the passive tree →</a>`
+    : `<div class="editor-tree-points" data-tree-points-summary></div>
+       <div class="editor-tree-embed"><div class="passive-tree-wrap passive-tree-wrap--embed" data-tree-mount></div></div>
+       <a class="editor-tree-open" href="/passives${build.tree.code ? '#' + esc(build.tree.code) : ''}">Open full page →</a>
+       <div class="editor-notable-priority" data-notable-priority>
+         <h3 class="editor-subhead">Notable Priority</h3>
+         <p class="editor-none">Loading tree…</p>
+       </div>`;
 
   const notesBody = ro
     ? (build.notes ? `<div class="editor-notes-static">${esc(build.notes)}</div>`

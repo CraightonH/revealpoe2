@@ -364,11 +364,28 @@ test('renderEditor: dossier shell — rail, header hooks, four chapters, escapes
   assert.match(html, /data-rail-link/);
   assert.match(html, /data-share/);
   assert.match(html, /data-description/);
-  assert.match(html, /data-tree-code/);
   assert.match(html, /data-notes/);
   assert.match(html, /href="\/passives"/);
   assert.ok(html.includes('hi &lt;b&gt;there&lt;/b&gt;'));
   assert.ok(html.includes('desc &lt;i&gt;x&lt;/i&gt;'));
+});
+
+test('renderEditor: tree chapter mounts the embed, drops the code paste', () => {
+  const b = fixed({ tree: { code: null, notablePriority: [] } });
+  const html = renderEditor(b, sctx);
+  assert.match(html, /data-tree-mount/);
+  assert.match(html, /data-tree-points-summary/);
+  assert.match(html, /data-notable-priority/);
+  assert.match(html, /Notable Priority/);
+  assert.ok(!html.includes('data-tree-code'), 'code paste input removed in edit mode');
+  assert.match(html, /href="\/passives/);
+});
+
+test('renderEditor: read-only tree chapter is a static summary (no embed mount)', () => {
+  const b = fixed({ tree: { code: null, notablePriority: [] } });
+  const html = renderEditor(b, { ...sctx, mode: 'view' });
+  assert.ok(!html.includes('data-tree-mount'), 'no interactive embed in read-only');
+  assert.match(html, /Open the passive tree/);
 });
 
 test('treeSummary: non-v7 decodable garbage yields no point count', () => {
