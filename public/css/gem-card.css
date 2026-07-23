@@ -652,18 +652,31 @@ a.lc.unique-type:hover {
 }
 
 /* Planner rarity by chosen explicit-mod count: magic (1–2) blue, rare (3+)
-   yellow. No in-game magic/rare header art is mirrored, so use a flat
-   rarity-tinted header + name in place of the white 3-slice; the card
-   border/glow pick up the rarity tint too. Applied by builds-page.js. */
+   yellow. Uses the genuine in-game Magic/Rare header 3-slice textures (the same
+   ItemsHeader{Magic,Rare}{Left,Middle,Right} art as poe2db, ingested from
+   ggpk.exposed), mirroring the NormalPopup white-header technique. Applied by
+   builds-page.js by swapping NormalPopup -> Magic/RarePopup. */
 .MagicPopup { --card-border: color-mix(in srgb, var(--color-magic) 55%, transparent);
   --card-glow: color-mix(in srgb, var(--color-magic) 38%, transparent); }
 .RarePopup  { --card-border: color-mix(in srgb, var(--color-rare) 55%, transparent);
   --card-glow: color-mix(in srgb, var(--color-rare) 38%, transparent); }
-.MagicPopup .itemHeader.doubleLine,
-.RarePopup .itemHeader.doubleLine {
-  background: linear-gradient(180deg, rgb(0 0 0 / .22), rgb(0 0 0 / .5));
+.MagicPopup .itemHeader.doubleLine {
+  background:
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderMagicLeft.webp) top left no-repeat,
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderMagicRight.webp) top right no-repeat,
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderMagicMiddle.webp) 0 top repeat-x,
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderMagicMiddle.webp) 24px top repeat-x;
+  background-size: auto 100%, auto 100%, auto 100%, auto 100%;
   height: 56px; padding: 4px 14px; justify-content: center; text-align: center;
-  border-bottom: 1px solid var(--card-border);
+}
+.RarePopup .itemHeader.doubleLine {
+  background:
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderRareLeft.webp) top left no-repeat,
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderRareRight.webp) top right no-repeat,
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderRareMiddle.webp) 0 top repeat-x,
+    url(/static/img/Art/Textures/Interface/2D/2DArt/UIImages/InGame/ItemsHeaderRareMiddle.webp) 24px top repeat-x;
+  background-size: auto 100%, auto 100%, auto 100%, auto 100%;
+  height: 56px; padding: 4px 14px; justify-content: center; text-align: center;
 }
 .MagicPopup .normal-name { color: var(--color-magic); padding: 0; text-align: center; }
 .RarePopup .normal-name { color: var(--color-rare); padding: 0; text-align: center; }
@@ -671,6 +684,11 @@ a.lc.unique-type:hover {
 .RarePopup .normal-type { color: var(--color-default); padding: 0; font-size: 13px; text-align: center; }
 .MagicPopup .property, .MagicPopup .requirements, .MagicPopup .default,
 .RarePopup .property, .RarePopup .requirements, .RarePopup .default { text-align: center; }
+/* Rarity-colored dividers (blue / yellow), matching the in-game tooltip. */
+.MagicPopup .separator {
+  background-image: radial-gradient(ellipse at center, var(--color-magic) 0%, var(--color-magic) 10%, transparent 33%); }
+.RarePopup .separator {
+  background-image: radial-gradient(ellipse at center, var(--color-rare) 0%, var(--color-rare) 10%, transparent 33%); }
 
 /* Base item breadcrumb */
 .bases-breadcrumb {
