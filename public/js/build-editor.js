@@ -6,7 +6,8 @@ import { openModPicker, closeModPicker } from '/static/js/mod-picker.js';
 import { legalSlots, equipViolations } from '/static/js/build-rules.js';
 import { safeWrite } from '/static/js/build-host.js';
 import { encodeBuild } from '/static/js/build-code.js';
-import { decode as decodePassiveCode } from '/static/js/passive-code.js';
+import { load as loadTree } from '/static/js/passive-tree.js';
+import { reconcilePriority, renderPriorityList } from '/static/js/tree-priority.js';
 
 const KIND_FOR_CATEGORY = { gem: 'gem', support: 'gem', spirit: 'gem', unique: 'unique', base: 'base' };
 
@@ -17,16 +18,83 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
   let renaming = false;
   let mode = 'edit';        // 'edit' | 'view' (read-only shared preview)
 
+  // ---- embedded passive tree (Phase 5) --------------------------------
+  let treeEmbed = null;       // the embed API (passive-tree.js init return)
+  let treeWrapEl = null;      // the live .passive-tree-wrap DOM, reparented across renders
+  let notableMeta = new Map();// h -> {kind,name,icon}, sourced live from the embed
+  let suppressRender = false; // true while persisting a tree-only change (skip our own re-render)
+  let dragH = null;
+
   const build = () => store.get(buildId);
   const patch = (p) => safeWrite(() => store.update(buildId, p));
   const render = () => {
     const b = build();
     if (!b) { location.hash = ''; return; }
+    // Detach the live embed before innerHTML wipes the old mount, so its canvas +
+    // allocation state survive a full dossier re-render (gear/skill edits, etc.).
+    if (treeWrapEl && treeWrapEl.parentNode) treeWrapEl.remove();
     container.innerHTML = renderEditor(b, {
       planner, resolveRef, pools, weaponSet, mode,
       builds: store.list(), currentId: buildId, switcherOpen, classPicker, renaming,
     });
+    if (mode === 'edit') mountTree(b);
   };
+
+  // ---- passive-tree embed: mount / reparent / persist / refresh -------
+  function mountTree(b) {
+    const mountEl = container.querySelector('[data-tree-mount]');
+    if (!mountEl) return;
+    if (treeWrapEl) { mountEl.appendChild(treeWrapEl); refreshTreeUI(); return; } // reattach live embed
+    treeWrapEl = document.createElement('div');
+    treeWrapEl.className = 'passive-tree-wrap passive-tree-wrap--embed';
+    const canvas = document.createElement('canvas');
+    treeWrapEl.appendChild(canvas);
+    mountEl.appendChild(treeWrapEl);
+    loadTree(canvas, {
+      root: treeWrapEl,
+      initialCode: b.tree.code || null,
+      // The editor copies the raw tree code — it must NEVER touch location.hash
+      // (that is the /builds router).
+      onCopy: (code) => navigator.clipboard.writeText(code),
+      onReady: () => { captureNotables(); refreshTreeUI(); },
+      onChange: () => { captureNotables(); refreshTreeUI(); },
+      onCodeChange: (code) => persistTree(code),
+    }).then((api) => { treeEmbed = api; }).catch((err) => console.warn('[builds] tree embed failed:', err));
+  }
+  function captureNotables() {
+    if (!treeEmbed) return;
+    notableMeta = new Map(treeEmbed.getAllocatedNotables().map((n) => [n.h, { kind: n.kind, name: n.name, icon: n.icon }]));
+  }
+  function currentOrder(b) {
+    return reconcilePriority(b.tree.notablePriority || [], [...notableMeta.keys()]);
+  }
+  function persistTree(code) {
+    const b = build(); if (!b) return;
+    captureNotables();
+    const notablePriority = currentOrder(b);
+    suppressRender = true;
+    patch({ tree: { code: code || null, notablePriority } });
+    suppressRender = false;
+  }
+  const pts = (label, o) => `<span class="tree-chip"><b>${o.spent}</b>${o.max != null ? ` / ${o.max}` : ''} <span>${label}</span></span>`;
+  function refreshTreeUI() {
+    const b = build(); if (!b) return;
+    const summary = container.querySelector('[data-tree-points-summary]');
+    if (summary && treeEmbed) {
+      const p = treeEmbed.getPoints();
+      summary.innerHTML = pts('Passives', p.main) + (p.asc.spent ? pts('Ascendancy', p.asc) : '')
+        + (p.ws1.spent ? pts('Set I', p.ws1) : '') + (p.ws2.spent ? pts('Set II', p.ws2) : '');
+    }
+    const box = container.querySelector('[data-notable-priority]');
+    if (box) {
+      const order = currentOrder(b);
+      box.innerHTML = '<h3 class="editor-subhead">Notable Priority</h3>'
+        + renderPriorityList(order, notableMeta, { readonly: false });
+      for (const c of box.querySelectorAll('[data-prio-icon]')) {
+        treeEmbed?.paintNodeIcon(Number(c.getAttribute('data-prio-icon')), c);
+      }
+    }
+  }
 
   function equip(slotId, ref) {
     const b = build();
@@ -278,6 +346,19 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
       patch({ skills });
       return;
     }
+    const prioRemove = attr('data-prio-remove');
+    if (prioRemove !== null && prioRemove !== undefined) {
+      const h = Number(prioRemove);
+      treeEmbed?.setHighlight(null);
+      treeEmbed?.deallocate(h);
+      return;
+    }
+    const prioRow = e.target.closest('[data-prio-row]');
+    if (prioRow && !e.target.closest('[data-prio-remove]') && !e.target.closest('.prio-handle')) {
+      treeEmbed?.focusNode(Number(prioRow.getAttribute('data-prio-row')));
+      treeWrapEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
     const sc = attr('data-socket-clear');
     if (sc) { e.stopPropagation(); setSocket(parseSocket(sc), null); return; }
     const so = attr('data-socket');
@@ -289,18 +370,52 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
 
   function onChange(e) {
     if (e.target.closest('[data-description]')) { patch({ description: e.target.value }); return; }
-    const tc = e.target.closest('[data-tree-code]');
-    if (tc) {
-      const v = tc.value.trim();
-      if (!v) { patch({ tree: { ...build().tree, code: null } }); return; }
-      // decode() is lenient with garbage bytes — the version word is the
-      // reliable validity signal (official codes are v7).
-      try { if (decodePassiveCode(v).version !== 7) throw new Error('bad version'); }
-      catch { tc.classList.add('is-invalid'); return; }
-      patch({ tree: { ...build().tree, code: v } });
+    if (e.target.closest('[data-notes]')) patch({ notes: e.target.value });
+  }
+
+  function onPointerOver(e) {
+    if (mode !== 'edit') return;
+    const row = e.target.closest?.('[data-prio-row]');
+    if (row && treeEmbed) treeEmbed.setHighlight([Number(row.getAttribute('data-prio-row'))]);
+  }
+
+  function onPointerOut(e) {
+    if (mode !== 'edit') return;
+    const row = e.target.closest?.('[data-prio-row]');
+    if (row && !row.contains(e.relatedTarget) && treeEmbed) treeEmbed.setHighlight(null);
+  }
+
+  function onDragStart(e) {
+    if (mode !== 'edit') return;
+    const row = e.target.closest?.('[data-prio-row]');
+    if (!row) return;
+    dragH = Number(row.getAttribute('data-prio-row'));
+    e.dataTransfer.effectAllowed = 'move';
+  }
+
+  function onDragOver(e) {
+    if (mode === 'edit' && dragH != null && e.target.closest?.('[data-prio-dnd]')) e.preventDefault();
+  }
+
+  function onDrop(e) {
+    if (mode !== 'edit') return;
+    const target = e.target.closest?.('[data-prio-row]');
+    if (dragH == null || !target) return;
+    e.preventDefault();
+    const b = build();
+    const order = currentOrder(b);
+    const from = order.indexOf(dragH);
+    const to = order.indexOf(Number(target.getAttribute('data-prio-row')));
+    if (from < 0 || to < 0 || from === to) {
+      dragH = null;
       return;
     }
-    if (e.target.closest('[data-notes]')) patch({ notes: e.target.value });
+    order.splice(to, 0, order.splice(from, 1)[0]);
+    dragH = null;
+    suppressRender = true;
+    patch({ tree: { ...b.tree, notablePriority: order } });
+    suppressRender = false;
+    refreshTreeUI();
   }
 
   // Inline rename: blur or Enter commits (non-empty, changed), Escape cancels.
@@ -325,14 +440,27 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
   container.addEventListener('change', onChange);
   container.addEventListener('focusout', onFocusOut);
   container.addEventListener('keydown', onKeyDown);
+  container.addEventListener('pointerover', onPointerOver);
+  container.addEventListener('pointerout', onPointerOut);
+  container.addEventListener('dragstart', onDragStart);
+  container.addEventListener('dragover', onDragOver);
+  container.addEventListener('drop', onDrop);
   render();
-  const unsub = store.subscribe(() => render());
+  const unsub = store.subscribe(() => { if (suppressRender) return; render(); });
 
   return function unmount() {
     container.removeEventListener('click', onClick);
     container.removeEventListener('change', onChange);
     container.removeEventListener('focusout', onFocusOut);
     container.removeEventListener('keydown', onKeyDown);
+    container.removeEventListener('pointerover', onPointerOver);
+    container.removeEventListener('pointerout', onPointerOut);
+    container.removeEventListener('dragstart', onDragStart);
+    container.removeEventListener('dragover', onDragOver);
+    container.removeEventListener('drop', onDrop);
+    treeEmbed?.destroy?.();
+    treeEmbed = null;
+    treeWrapEl = null;
     unsub();
     closePicker();
     closeModPicker();
