@@ -18,6 +18,7 @@ test('renderPriorityList: rows carry hooks, icon canvas, escaped names', () => {
   assert.match(html, /data-prio-icon="52"/);
   assert.match(html, /data-prio-remove="52"/);
   assert.match(html, /prio-tile is-keystone/);
+  assert.match(html, /prio-handle/);
   assert.ok(html.includes('Zealot&#39;s &lt;b&gt;Oath&lt;/b&gt;'), 'name escaped in tooltip/label');
 });
 
@@ -25,6 +26,7 @@ test('renderPriorityList: readonly hides controls; empty shows a message', () =>
   const meta = new Map([[52, { kind: 'notable', name: 'X', icon: '' }]]);
   const ro = renderPriorityList([52], meta, { readonly: true });
   assert.ok(!ro.includes('data-prio-remove'), 'no remove in readonly');
+  assert.ok(!ro.includes('prio-handle'), 'no drag handle in readonly');
   assert.ok(!/draggable="true"/.test(ro), 'not draggable in readonly');
   assert.match(renderPriorityList([], new Map(), {}), /editor-none/);
 });

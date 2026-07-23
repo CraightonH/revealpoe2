@@ -32,9 +32,11 @@ export function renderPriorityList(order, metaByHash, opts = {}) {
     const kind = m.kind || 'notable';
     const name = m.name || String(h);
     const label = `${name} — ${KIND_LABEL[kind] || 'Notable'}`;
+    const handle = ro ? '' : '<span class="prio-handle" aria-hidden="true">⠿</span>';
     const remove = ro ? '' : `<button type="button" class="prio-remove" data-prio-remove="${h}" aria-label="Remove ${esc(name)} from priority">×</button>`;
     return `<li class="prio-tile is-${esc(kind)}" data-prio-row="${h}"${ro ? '' : ' draggable="true"'}` +
       ` title="${esc(label)}" aria-label="${esc(label)}">` +
+      `${handle}` +
       `<canvas class="prio-icon" data-prio-icon="${h}" width="44" height="44" aria-hidden="true"></canvas>` +
       `${remove}</li>`;
   }).join('');
