@@ -5,6 +5,8 @@
 // Default export: init(canvas, data) — sets up event listeners + draw loop.
 // Named exports: worldToScreen, screenToWorld — pure helpers (node-testable).
 
+import { treePanelsHtml } from './tree-panel.js';
+
 const ARTIFACT_URL = '/static/generated/passive-tree.json';
 
 // ---------------------------------------------------------------------------
@@ -163,8 +165,13 @@ function buildAdjacency(nodes, edges) {
  * @param {HTMLCanvasElement} canvas
  * @param {{ nodes: object[], edges: object[], meta: object }} data
  */
-export default function init(canvas, data) {
+export default function init(canvas, data, opts = {}) {
   const ctx = canvas.getContext('2d');
+  const root = opts.root || canvas.closest('.passive-tree-wrap') || canvas.parentElement || document;
+  if (root.querySelector && !root.querySelector('[data-tree-panel]') && root.insertAdjacentHTML) {
+    root.insertAdjacentHTML('beforeend', treePanelsHtml());
+  }
+  const q = (sel) => (root.querySelector ? root.querySelector(sel) : null);
   const { nodes, edges, meta } = data;
   // Mastery background patterns (TODO #6): non-selectable decorations anchored at
   // a cluster's mastery position. Each { h, x, y, e (effect path), t (trigger
@@ -384,6 +391,20 @@ export default function init(canvas, data) {
   const wsAlloc    = { 1: new Set(), 2: new Set() };
   let wsMode       = null;
   let decodedState = null;
+  let ready = false;                 // suppress change/emit during boot import
+  let lastEmitted = opts.initialCode || null;
+  let codeTimer = null;
+  function scheduleCodeChange() {
+    if (!opts.onCodeChange) return;
+    clearTimeout(codeTimer);
+    codeTimer = setTimeout(async () => {
+      try {
+        const cm = await codeMod();
+        const code = buildShareCode(cm);
+        if (code && code !== lastEmitted) { lastEmitted = code; opts.onCodeChange(code); }
+      } catch (err) { console.warn('[passive-tree] code emit failed:', err); }
+    }, 400);
+  }
   // attrChoice: Map<hash, 'str'|'int'|'dex'> — per generic-attribute node, which
   // attribute the user picked (the "+5 to any Attribute" choice). Defaults to
   // 'str' on allocation; changed by clicking an option in the node's card.
@@ -447,18 +468,18 @@ export default function init(canvas, data) {
   // Points DOM
   // ---------------------------------------------------------------------------
 
-  const pointsEl  = document.getElementById('tree-points');
-  const wsBtns    = Array.from(document.querySelectorAll('#tree-ws-sets .tree-ws-btn'));
+  const pointsEl  = q('[data-tree-points]');
+  const wsBtns    = Array.from(root.querySelectorAll('[data-ws-set]'));
   const wsCountEls = {
-    1: document.querySelector('#tree-ws-sets [data-ws-count="1"]'),
-    2: document.querySelector('#tree-ws-sets [data-ws-count="2"]'),
+    1: q('[data-ws-count="1"]'),
+    2: q('[data-ws-count="2"]'),
   };
 
   // Stat aggregation panel (left-docked). Totals are recomputed from the
   // allocated set on every alloc/dealloc via renderStats(), driven off the same
   // updatePoints() hook the point counter uses.
-  const statsPointsEl = document.getElementById('tree-stats-points');
-  const statsListEl   = document.getElementById('tree-stats-list');
+  const statsPointsEl = q('[data-tree-stats-points]');
+  const statsListEl   = q('[data-tree-stats-list]');
   // Raw per-node stat lines (markup-preserved) — a lazy static artifact, like
   // the hover cards. Loaded on first allocation.
   const STATS_URL = '/static/generated/passive-stats.json';
@@ -660,6 +681,7 @@ export default function init(canvas, data) {
       el.classList.toggle('is-full', used >= max);
     }
     renderStats();
+    if (ready) { scheduleCodeChange(); if (opts.onChange) opts.onChange(); }
   }
 
   // Escape + wrap numeric tokens so they render white against muted prose
@@ -1419,11 +1441,7 @@ export default function init(canvas, data) {
   // the first real-dimension fit (see the ResizeObserver) so it isn't clobbered
   // by the opening origin-centered view.
   // ---------------------------------------------------------------------------
-  const deepLinkHash = (() => {
-    const raw = new URLSearchParams(location.search).get('node');
-    const h = raw == null ? NaN : Number(raw);
-    return Number.isFinite(h) ? h : null;
-  })();
+  const deepLinkHash = (typeof opts.initialFocus === 'number' && Number.isFinite(opts.initialFocus)) ? opts.initialFocus : null;
   let didDeepLink = false;
   const FOCUS_ZOOM = 9;          // baseFit multiple — between the opening view (5) and the cap (13)
   const FOCUS_PULSE_MS = 2600;   // ring pulse + fade duration
@@ -1823,8 +1841,8 @@ export default function init(canvas, data) {
   // anchor (and resets the tree); ascendancy reveals that sub-tree centred on
   // the class start, swapping the central art to the ascendancy illustration.
 
-  const classSel = document.getElementById('tree-class');
-  const ascSel   = document.getElementById('tree-ascendancy');
+  const classSel = q('[data-tree-class]');
+  const ascSel   = q('[data-tree-asc]');
 
   // Fill the ascendancy <select> for the active class (plus a "none" option).
   function populateAscOptions() {
@@ -1898,21 +1916,19 @@ export default function init(canvas, data) {
   // Copy share code
   // ---------------------------------------------------------------------------
 
-  const copyBtn = document.getElementById('tree-copy-code');
+  const copyBtn = q('[data-tree-copy]');
   if (copyBtn) {
     copyBtn.addEventListener('click', async () => {
       try {
         const cm = await codeMod();
         const code = buildShareCode(cm);
         if (!code) { copyBtn.textContent = 'Error'; return; }
-        location.hash = code;
-        await navigator.clipboard.writeText(location.href);
+        const doCopy = opts.onCopy || ((c) => navigator.clipboard.writeText(c));
+        await doCopy(code);
         const prev = copyBtn.textContent;
         copyBtn.textContent = 'Copied!';
         setTimeout(() => { copyBtn.textContent = prev; }, 1500);
-      } catch (err) {
-        console.error('Copy share code failed:', err);
-      }
+      } catch (err) { console.error('Copy share code failed:', err); copyBtn.textContent = 'Error'; }
     });
   }
 
@@ -1920,7 +1936,7 @@ export default function init(canvas, data) {
   // Search — highlight matching nodes, dim the rest (name + stat substring).
   // ---------------------------------------------------------------------------
 
-  const searchInput = document.getElementById('tree-search');
+  const searchInput = q('[data-tree-search]');
   function runSearch(raw) {
     const q = (raw || '').trim().toLowerCase();
     if (!q) { searchHits = null; requestDraw(); return; }
@@ -1943,10 +1959,11 @@ export default function init(canvas, data) {
   // Reset tree — clear allocations back to the current class/ascendancy anchors.
   // ---------------------------------------------------------------------------
 
-  const resetBtn = document.getElementById('tree-reset');
+  const resetBtn = q('[data-tree-reset]');
   if (resetBtn) {
     resetBtn.addEventListener('click', () => {
-      if (allocated.size && !window.confirm('Reset the tree? This clears all allocated passives.')) return;
+      const confirmReset = opts.confirmReset || (() => window.confirm('Reset the tree? This clears all allocated passives.'));
+      if (allocated.size && !confirmReset()) return;
       allocated = new Set();
       attrChoice.clear();
       wsAlloc[1].clear();
@@ -1968,8 +1985,8 @@ export default function init(canvas, data) {
   // Fullscreen — expand the canvas wrapper; the ResizeObserver re-fits the canvas.
   // ---------------------------------------------------------------------------
 
-  const fsBtn = document.getElementById('tree-fullscreen');
-  const wrap = canvas.closest('.passive-tree-wrap');
+  const fsBtn = q('[data-tree-fullscreen]');
+  const wrap = root;
   function syncFsLabel() {
     if (fsBtn) fsBtn.textContent = document.fullscreenElement ? 'Exit Fullscreen' : 'Fullscreen';
   }
@@ -1985,8 +2002,8 @@ export default function init(canvas, data) {
   // Panel collapse — tuck the overlay out of the way (default collapsed on phones).
   // ---------------------------------------------------------------------------
 
-  const panel = document.getElementById('tree-panel');
-  const panelToggle = document.getElementById('tree-panel-toggle');
+  const panel = q('[data-tree-panel]');
+  const panelToggle = q('[data-tree-panel-toggle]');
   function syncPanelToggle() {
     if (!panel || !panelToggle) return;
     const collapsed = panel.classList.contains('collapsed');
@@ -2007,8 +2024,8 @@ export default function init(canvas, data) {
 
   // Stats panel collapse — mirror of #tree-panel but docked left, so the toggle
   // chevrons point the other way (‹ collapses it back into the left edge).
-  const statsPanel = document.getElementById('tree-stats-panel');
-  const statsToggle = document.getElementById('tree-stats-toggle');
+  const statsPanel = q('[data-tree-stats-panel]');
+  const statsToggle = q('[data-tree-stats-toggle]');
   function syncStatsToggle() {
     if (!statsPanel || !statsToggle) return;
     const collapsed = statsPanel.classList.contains('collapsed');
@@ -2066,14 +2083,11 @@ export default function init(canvas, data) {
   }
 
   // ---------------------------------------------------------------------------
-  // Hash import on load
+  // Code import on load
   // ---------------------------------------------------------------------------
 
-  async function importFromHash() {
-    const hash = location.hash;
-    if (!hash || hash.length <= 1) return;
-    const codeStr = hash.slice(1);
-
+  async function importCode(codeStr) {
+    if (!codeStr) return;
     const cm = await codeMod();
     const am = await allocMod();
 
@@ -2223,13 +2237,12 @@ export default function init(canvas, data) {
   // per-node icon preloading is needed.
 
   // Load alloc + code (+ path) modules eagerly so click handlers have them ready.
-  Promise.all([allocMod(), codeMod(), pathMod()]).then(() => {
-    // Show the (empty) point counter immediately — "0 / 122 · 0 / 8". A hash
-    // import below refreshes it once it decodes its allocations.
-    updatePoints();
-    // Attempt hash import after modules are ready.
-    importFromHash().catch((err) => console.warn('[passive-tree] importFromHash error:', err));
-    // Initial draw.
+  Promise.all([allocMod(), codeMod(), pathMod()]).then(async () => {
+    updatePoints();                                   // show "0 / 122 · 0 / 8"
+    try { await importCode(opts.initialCode || null); }
+    catch (err) { console.warn('[passive-tree] importCode error:', err); }
+    ready = true;                                      // now user actions emit
+    if (opts.onReady) opts.onReady(api);
     requestDraw();
   });
 
@@ -2248,9 +2261,9 @@ export default function init(canvas, data) {
  * @param {HTMLCanvasElement} canvas
  * @returns {Promise<ReturnType<typeof init>>}
  */
-export async function load(canvas) {
+export async function load(canvas, opts = {}) {
   const res  = await fetch(ARTIFACT_URL);
   if (!res.ok) throw new Error(`Failed to fetch passive tree: ${res.status}`);
   const data = await res.json();
-  return init(canvas, data);
+  return init(canvas, data, opts);
 }

@@ -571,7 +571,7 @@ body {
   .passive-tree-input { min-height: 40px; }
   /* iOS Safari only allows the Fullscreen API on <video>, so the button no-ops on
      iPhone — hide it on touch rather than present a dead control. */
-  #tree-fullscreen { display: none; }
+  .tree-fullscreen-btn { display: none; }
 }
 .passive-tree-wrap canvas {
   display: block;
