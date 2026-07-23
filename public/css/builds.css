@@ -501,17 +501,16 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
    read (order = reading order) instead of full-width stacked rows. */
 .prio-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
 .prio-tile { position: relative; flex: none; height: 46px;
-  display: flex; align-items: center; gap: 3px; cursor: grab;
-  transition: transform 120ms ease; }
-.prio-tile:hover { transform: translateY(-2px); z-index: 1; }
+  display: flex; align-items: center; gap: 3px; cursor: grab; border-radius: 8px;
+  box-shadow: 0 3px 10px rgb(0 0 0 / .38);
+  transition: transform 120ms ease, box-shadow 120ms ease; }
+.prio-tile:hover { transform: translateY(-2px); z-index: 1; box-shadow: 0 6px 16px rgb(0 0 0 / .45); }
 /* The frame/border lives on the icon itself; the grip sits outside it. */
 .prio-icon { width: 40px; height: 40px; display: block; flex: none; pointer-events: none;
   border: 1px solid var(--border); border-radius: 8px;
   background: color-mix(in srgb, var(--bg-surface) 88%, transparent);
-  box-shadow: 0 3px 10px rgb(0 0 0 / .38);
-  transition: border-color 120ms ease, box-shadow 120ms ease; }
-.prio-tile:hover .prio-icon { border-color: color-mix(in srgb, var(--color-gem) 60%, var(--border));
-  box-shadow: 0 6px 16px rgb(0 0 0 / .35); }
+  transition: border-color 120ms ease; }
+.prio-tile:hover .prio-icon { border-color: color-mix(in srgb, var(--color-gem) 60%, var(--border)); }
 .prio-tile.is-keystone .prio-icon { border-color: color-mix(in srgb, var(--color-keystone, var(--color-unique)) 55%, var(--border)); }
 .prio-tile.is-notable .prio-icon, .prio-tile.is-blighted .prio-icon { border-color: color-mix(in srgb, var(--color-notable) 45%, var(--border)); }
 .prio-tile.is-ascNotable .prio-icon { border-color: color-mix(in srgb, var(--color-crafted) 55%, var(--border)); }
