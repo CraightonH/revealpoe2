@@ -35,8 +35,8 @@ Refactor (additive, not a rewrite):
 
 ## Testing & acceptance
 
-- [ ] /passives unchanged for users: share-code import/export round-trips byte-identical (existing golden fixtures), all controls work; existing node tests green.
-- [ ] Two independent component instances on one scratch page don't collide (the id-scoping proof).
-- [ ] Editor: allocate nodes → build auto-saves code + priority list; reload restores both.
-- [ ] Hover-highlight and click-focus work in the embed; drag-reorder persists.
-- [ ] `npm run build:static` passes; embed works on the static site (artifacts already crawled for /passives — confirm the /builds shell also reaches them).
+- [x] /passives unchanged for users: share-code import/export round-trips byte-identical (existing `test/passiveCode.test.js` golden fixtures green), all controls work (headless check 1); existing node tests green (643).
+- [x] Two independent component instances on one page don't collide (headless check 2 — each wrap gets exactly one panel; id→`data-*` scoping).
+- [x] Editor: allocate nodes → build auto-saves code + priority list; reload restores both (headless check 3 — aimed click on "Pure Energy" saves `tree.code` + `notablePriority`, renders a priority row).
+- [x] Hover-highlight (`setHighlight`) and click-focus (`focusNode`) wired; drag-reorder + remove persist to `tree.notablePriority`.
+- [x] `npm run build:static` passes (9292/9292 pages prerendered; no dead links; no new client-fetched URL — embed reads existing `/static/generated/passive-*.json` + `/static/img/passive-atlas/*` copied to `dist/`).

@@ -353,6 +353,48 @@ name), each a nested tooltip resolving the emotion's detail card.
   and auto-fetched by `fetch-images.js` (`meta.instillIcons`, currency icons
   aren't in the browsable graph) — no changes needed in either.
 
+## Embeddable component (build editor)
+
+The renderer is **embeddable**: `init(canvas, data, opts)` scopes every control
+lookup to `opts.root` (default `canvas.closest('.passive-tree-wrap')`) instead of
+`document`, and **injects the control panels** from the shared pure module
+`public/js/tree-panel.js` (`treePanelsHtml()`) if `root` has none. The panels use
+`data-tree-*` hooks (not ids), so two embeds can coexist on one page without
+collisions. `load(canvas, opts)` forwards `opts`.
+
+**Page chrome is host-owned** — `init` no longer touches `location.*`,
+`navigator.clipboard`, or `window.confirm`:
+- `opts.initialCode` — share code imported on boot (replaces the old
+  `location.hash` read); `opts.initialFocus` — node hash to center (replaces the
+  `?node=` read).
+- `opts.onCopy(code)` — Copy handler (default: clipboard-write the code);
+  `opts.confirmReset()` — Reset confirmation (default `window.confirm`).
+- `opts.onChange()` — fired after any allocation/class/ascendancy change;
+  `opts.onCodeChange(code)` — the current share code, **debounced** (400 ms), for
+  persistence; `opts.onReady(api)` — after the boot import settles.
+
+**Extended API** (on the `init` return): `getState()`/`setState(code)`,
+`getCode()`/`setCode(code)`, `setHighlight(hashes)` (wraps the `hoverHits`
+layer), `focusNode(hash)`, `getAllocatedNotables()` → `[{h,kind,name,icon}]`,
+`getPoints()` → `{main,asc,ws1,ws2}` each `{spent,max}`, `paintNodeIcon(hash,
+canvasEl)` (blits the node's `skills`-atlas sprite into a canvas), `deallocate(h)`
+(main-tree), and `destroy()` (disconnect ResizeObserver + listeners + timers).
+
+**Hosts:**
+- `/passives` (`views/passives.njk`) is a thin host: bare `<canvas>` in the wrap,
+  an inline module script wiring `initialCode`/`initialFocus` from the URL and
+  `onCopy` back to `location.hash` + clipboard. Historic behavior unchanged.
+- The **build editor** (`public/js/build-editor.js`) mounts one embed into the
+  Dossier's Passive Tree chapter (`[data-tree-mount]`), **reparents** its DOM
+  across dossier re-renders (so allocation state survives gear/skill edits),
+  auto-saves `tree.code` on `onCodeChange` (with a `suppressRender` guard so the
+  save doesn't tear down the embed), and renders the **Notable Priority** list
+  (`public/js/tree-priority.js`: `reconcilePriority` + `renderPriorityList`) from
+  `getAllocatedNotables()`. Hovering a priority row → `setHighlight`; clicking →
+  `focusNode`; drag reorders; remove → `deallocate`. Order persists as
+  `tree.notablePriority: [hash]`. Read-only/import previews show a static summary
+  + deep link (no live canvas). Headless coverage: `scripts/verify-tree-embed.mjs`.
+
 ## Known gaps / deferrals
 
 - **Mastery backgrounds** — done (TODO #6): dim/lit cluster patterns (see
