@@ -1047,6 +1047,11 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
 .add-build:hover, .add-build:focus-visible { opacity: 1; }
 .add-build-icon { width: 1.05em; height: 1.05em; }
 
+/* Add-to-Theory-Craft pin sits beside Add-to-Build in .card-actions. */
+.add-pin { cursor: pointer; display: inline-flex; opacity: .75; }
+.add-pin:hover, .add-pin:focus-visible { opacity: 1; }
+.add-pin-icon { width: 1.05em; height: 1.05em; }
+
 .build-menu { position: absolute; z-index: 130; min-width: 12rem; display: flex; flex-direction: column;
   background: var(--card-bg, #14130f); border: 1px solid var(--card-border, #3a352a); border-radius: 6px;
   padding: .25rem; box-shadow: 0 8px 24px rgb(0 0 0 / .5); }
