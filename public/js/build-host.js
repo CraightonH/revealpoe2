@@ -6,6 +6,8 @@
 import { createStore, STORE_KEY, StoreWriteError } from '/static/js/build-store.js';
 
 let store = null;
+let itemMath = null;
+let itemMathLoading = null;
 export function getStore() {
   if (!store) {
     store = createStore(window.localStorage);
@@ -21,4 +23,13 @@ export function safeWrite(fn) {
     if (e instanceof StoreWriteError) { window.alert("Couldn't save — browser storage is full."); return null; }
     throw e;
   }
+}
+
+export function loadItemMath() {
+  if (itemMath) return Promise.resolve(itemMath);
+  itemMathLoading ??= fetch('/static/generated/item-math.json')
+    .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+    .then((data) => { itemMath = data; return data; })
+    .catch((e) => { itemMathLoading = null; throw e; });
+  return itemMathLoading;
 }

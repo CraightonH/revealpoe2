@@ -1,7 +1,7 @@
 // Controller for the /builds shell: routes location.hash to the pure renderers
 // and delegates all actions to the shared store. Rendering logic lives in
 // builds-render.js (node-tested); this file is DOM wiring only.
-import { getStore, safeWrite } from '/static/js/build-host.js';
+import { getStore, loadItemMath, safeWrite } from '/static/js/build-host.js';
 import { parseRoute, renderBuild, renderImport } from '/static/js/builds-render.js';
 import { baseRarity, modCardSections, renderEditor } from '/static/js/editor-render.js';
 import { decodeBuild } from '/static/js/build-code.js';
@@ -64,6 +64,7 @@ if (root && view) {
 
   let importState = null; // cached decode for the current #/import/<code>
   let activeUnmount = null;
+  let itemMath = null;
 
   // One build-aware tooltip for filled doll wells: the item's prerendered card
   // + this build's chosen mods. Registered once; reads live build state on show.
@@ -151,13 +152,14 @@ if (root && view) {
       const b = store.get(route.id);
       if (!b) { location.hash = ''; return; }
       view.innerHTML = renderBuild(b, resolveRef, pools);
-      Promise.all([loadDocs(), loadPlanner(), loadPools()]).then(() => {
+      Promise.all([loadDocs(), loadPlanner(), loadPools(), loadItemMath()]).then(([, , , math]) => {
+        itemMath = math;
         // Mount only if we're still looking at this same build (not a
         // different one, or list/import).
         const cur = parseRoute(location.hash);
         if (cur.view === 'build' && cur.id === route.id) {
           activeUnmount?.();
-          activeUnmount = mountEditor(view, route.id, { store, planner, docs: docsArray, resolveRef, pools });
+          activeUnmount = mountEditor(view, route.id, { store, planner, docs: docsArray, resolveRef, pools, itemMath });
         }
       }).catch(() => {
         const cur = parseRoute(location.hash);

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderGear, rankDocs, initials, modCardSections, baseRarity } from '../public/js/editor-render.js';
+import { renderGear, renderSummary, rankDocs, initials, modCardSections, baseRarity } from '../public/js/editor-render.js';
 import { emptyBuild } from '../public/js/build-store.js';
 
 const PLANNER = {
@@ -33,6 +33,20 @@ const MODPOOLS = {
       tiers: [{ id: 'ab1', name: 'of Ulaman', level: 1, gen: 'suffix', text: '(30-40)% increased Armour, +10 Life' }] },
   }, bases: {}, uniques: {},
 };
+
+test('renderSummary shows attributes, level requirement, aggregates and warnings', () => {
+  const ITEMMATH = {
+    classBase: { warrior: { str: 15, dex: 7, int: 7, life: 16, mana: 30 } },
+    gemLevel: {},
+    items: { 'iron-hat': { req: { level: 8, str: 40, dex: 0, int: 0 }, lines: ['+(30-40) to maximum Life'] } },
+  };
+  const b = fixed({ class: 'warrior', gear: { helmet: { item: { kind: 'base', slug: 'iron-hat' }, mods: [], corrupted: null } } });
+  const html = renderSummary(b, { planner: PLANNER, itemMath: ITEMMATH, pools: MODPOOLS, treeLines: [], resolveRef: () => ({}) });
+  assert.match(html, /editor-summary/);
+  assert.match(html, /Strength/);       // attribute row
+  assert.match(html, /Life/);           // aggregate row
+  assert.match(html, /Need 25 more Strength/); // req 40 vs available 15 -> deficit 25 warning
+});
 
 test('modCardSections: separate corrupted + mods Stats blocks, empty when nothing chosen', () => {
   assert.deepEqual(modCardSections({ mods: [], corrupted: null }, MODPOOLS), { corrupted: '', mods: '' });

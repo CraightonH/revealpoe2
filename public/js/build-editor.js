@@ -11,7 +11,7 @@ import { reconcilePriority, renderPriorityList } from '/static/js/tree-priority.
 
 const KIND_FOR_CATEGORY = { gem: 'gem', support: 'gem', spirit: 'gem', unique: 'unique', base: 'base' };
 
-export function mountEditor(container, buildId, { store, planner, docs, resolveRef, pools }) {
+export function mountEditor(container, buildId, { store, planner, docs, resolveRef, pools, itemMath }) {
   let weaponSet = 1;
   let switcherOpen = false;
   let classPicker = null;   // null | 'class' | 'asc'
@@ -20,6 +20,7 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
 
   // ---- embedded passive tree (Phase 5) --------------------------------
   let treeEmbed = null;       // the embed API (passive-tree.js init return)
+  let treeLines = [];
   let treeWrapEl = null;      // the live .passive-tree-wrap DOM, reparented across renders
   let notableMeta = new Map();// h -> {kind,name,icon}, sourced live from the embed
   let suppressRender = false; // true while persisting a tree-only change (skip our own re-render)
@@ -34,7 +35,7 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
     // allocation state survive a full dossier re-render (gear/skill edits, etc.).
     if (treeWrapEl && treeWrapEl.parentNode) treeWrapEl.remove();
     container.innerHTML = renderEditor(b, {
-      planner, resolveRef, pools, weaponSet, mode,
+      planner, resolveRef, pools, weaponSet, mode, itemMath, treeLines,
       builds: store.list(), currentId: buildId, switcherOpen, classPicker, renaming,
     });
     if (mode === 'edit') mountTree(b);
@@ -56,8 +57,18 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
       // The editor copies the raw tree code — it must NEVER touch location.hash
       // (that is the /builds router).
       onCopy: (code) => navigator.clipboard.writeText(code),
-      onReady: () => { syncTreeClass(); captureNotables(); refreshTreeUI(); },
-      onChange: () => { captureNotables(); refreshTreeUI(); },
+      onReady: (api) => {
+        treeEmbed = api;
+        syncTreeClass();
+        captureNotables();
+        treeLines = treeEmbed.getAllocatedStatLines?.() ?? [];
+        render();
+      },
+      onChange: () => {
+        captureNotables();
+        treeLines = treeEmbed?.getAllocatedStatLines?.() ?? [];
+        render();
+      },
       onCodeChange: (code) => persistTree(code),
     }).then((api) => { treeEmbed = api; }).catch((err) => console.warn('[builds] tree embed failed:', err));
   }

@@ -8,8 +8,44 @@ import { esc, classLine } from './builds-render.js';
 import { gearViolations } from './build-rules.js';
 import { modViolations, resolveMod } from './mod-core.js';
 import { decode as decodePassiveCode } from './passive-code.js';
+import { computeMath } from './build-math.js';
 
 export { esc };
+
+const ATTR_LABEL = { str: 'Strength', dex: 'Dexterity', int: 'Intelligence' };
+const AGG_ROWS = [
+  { key: 'life', label: 'Life' }, { key: 'mana', label: 'Mana' }, { key: 'spirit', label: 'Spirit' },
+  { key: 'fireRes', label: 'Fire Res', cap: 75 }, { key: 'coldRes', label: 'Cold Res', cap: 75 },
+  { key: 'lightRes', label: 'Lightning Res', cap: 75 }, { key: 'chaosRes', label: 'Chaos Res' },
+];
+const rangeText = (r) => (r.lo === r.hi ? `${r.lo}` : `${r.lo}–${r.hi}`);
+
+export function renderSummary(build, ctx) {
+  if (!ctx.itemMath) return '';
+  const m = computeMath(build, ctx);
+  const attrRows = ['str', 'dex', 'int'].map((k) => {
+    const a = m.attributes[k];
+    const cls = a.deficit > 0 ? ' editor-summary__row--deficit' : '';
+    return `<li class="editor-summary__row${cls}"><span>${ATTR_LABEL[k]}</span>` +
+      `<span>${rangeText(a.available)} / ${a.required}</span></li>`;
+  }).join('');
+  const aggRows = AGG_ROWS.map(({ key, label, cap }) => {
+    const v = m.aggregates[key];
+    const val = cap ? `${rangeText(v)}/${cap}` : rangeText(v) + (key.endsWith('Res') ? '%' : '');
+    return `<li class="editor-summary__row"><span>${label}</span><span>${val}</span></li>`;
+  }).join('');
+  const warns = m.warnings.length
+    ? `<ul class="editor-summary__warnings">${m.warnings.map((w) => `<li>${esc(w)}</li>`).join('')}</ul>`
+    : '<p class="editor-summary__ok">No warnings.</p>';
+  return `<section class="editor-summary editor-side-card" data-chapter="summary" aria-label="Character summary">
+    <h3>Summary <span class="editor-summary__level">Level ${m.level.required}+</span></h3>
+    <div class="editor-summary__cols">
+      <ul class="editor-summary__list editor-summary__attrs" aria-label="Attributes (available / required)">${attrRows}</ul>
+      <ul class="editor-summary__list editor-summary__aggs" aria-label="Stat totals">${aggRows}</ul>
+    </div>
+    ${warns}
+  </section>`;
+}
 
 /** "Lightning Arrow" -> "LA" — deterministic icon-fallback initials. */
 export function initials(name) {
@@ -432,6 +468,7 @@ export function renderEditor(build, ctx) {
         </div>
         <div class="dossier-actions">${actions}</div>
       </header>
+      ${isReadonly(ctx) ? '' : renderSummary(build, ctx)}
       ${renderGear(build, ctx)}
       ${renderSkills(build, ctx)}
       <section class="editor-chapter editor-tree" id="tree" aria-labelledby="tree-h">
