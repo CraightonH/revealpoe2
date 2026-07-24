@@ -25,7 +25,7 @@ TODO #3: pin items across theorycraft searches. Per owner direction, pins are **
 
 ## Testing & acceptance
 
-- [ ] Pin from a theorycraft result, change queries, reload — pin persists; unpin and clear-all work.
-- [ ] Pin from a non-theorycraft page (e.g. a unique card) appears on the board.
-- [ ] Promote pins to a build; they land in `unassigned` and open correctly in the editor.
-- [ ] Works on the static build; `npm test` green; TODO.md items 3 and 4 can be marked done after this phase.
+- [x] Pin from a theorycraft result, change queries, reload — pin persists; unpin and clear-all work. *(pin board, 4c41e00)*
+- [x] Pin from a non-theorycraft page (e.g. a unique card) appears on the board. *(site-wide `card-actions.njk` pin + `add-to-pins.js`, 2026-07-23; verified end-to-end on the static build via `scripts/verify-sitewide-pin.mjs`)*
+- [x] Promote pins to a build; they land in `unassigned` and open correctly in the editor. *(promote handler, 0d51c60/b66ce2d)*
+- [x] Works on the static build; `npm test` green (646); TODO.md items 3 and 4 marked done.
