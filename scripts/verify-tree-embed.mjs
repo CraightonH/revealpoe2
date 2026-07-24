@@ -78,12 +78,15 @@ try {
       bPanel: b.el.querySelectorAll('[data-tree-panel]').length,
       target: target.name, before, after: A.getPoints().main.spent,
       emitted: !!emitted, notables: A.getAllocatedNotables().length,
+      treeLines: A.getAllocatedStatLines(),
     };
   });
   ok('two embeds each get exactly one panel', comp.aPanel === 1 && comp.bPanel === 1, JSON.stringify({ a: comp.aPanel, b: comp.bPanel }));
   ok('aimed click allocates a route (points rise)', comp.after > comp.before, JSON.stringify({ target: comp.target, before: comp.before, after: comp.after }));
   ok('allocation fires onCodeChange (auto-save signal)', comp.emitted === true);
   ok('getAllocatedNotables surfaces the notable', comp.notables > 0, `notables=${comp.notables}`);
+  ok('getAllocatedStatLines returns lines after allocation', Array.isArray(comp.treeLines) && comp.treeLines.length > 0,
+    `got ${Array.isArray(comp.treeLines) ? comp.treeLines.length : comp.treeLines}`);
 
   // 3) Editor: mount, aimed click → auto-save to the store + Notable Priority row.
   const e = await browser.newPage();

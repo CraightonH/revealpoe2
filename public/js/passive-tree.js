@@ -765,6 +765,19 @@ export default function init(canvas, data, opts = {}) {
     return idx;
   }
 
+  function allocatedStatLines() {
+    if (!statLines) return [];
+    const lines = [];
+    for (const h of allocated) {
+      const n = nodeMap.get(h);
+      if (!n || n.hidden) continue;
+      if (n.attr) { lines.push(effectiveAttrLine(h)); continue; }
+      const ls = statLines[h];
+      if (ls) for (const l of ls) lines.push(l);
+    }
+    return lines;
+  }
+
   // Recompute and render the left stat panel from the allocated set. Lazily
   // pulls the stat-line artifact + agg module on first use, then re-renders.
   function renderStats() {
@@ -782,14 +795,7 @@ export default function init(canvas, data, opts = {}) {
       const { main } = _allocMod.pointsSpent(allocated, nodeKindOf);
       statsPointsEl.textContent = main ? `Passive Stats · ${main}` : 'Passive Stats';
     }
-    const lines = [];
-    for (const h of allocated) {
-      const n = nodeMap.get(h);
-      if (!n || n.hidden) continue;
-      if (n.attr) { lines.push(effectiveAttrLine(h)); continue; }
-      const ls = statLines[h];
-      if (ls) for (const l of ls) lines.push(l);
-    }
+    const lines = allocatedStatLines();
     const { categories, uniqueEffects } = _aggMod.aggregate(lines);
 
     hoverSets = [];
@@ -2287,6 +2293,7 @@ export default function init(canvas, data, opts = {}) {
     async getCode() { const cm = await codeMod(); return buildShareCode(cm); },
     async setState(code) { return api.setCode(code); },
     async getState() { return { code: await api.getCode() }; },
+    getAllocatedStatLines: () => { try { return allocatedStatLines(); } catch { return []; } },
     setHighlight, focusNode, getAllocatedNotables, getPoints, paintNodeIcon, deallocate, destroy,
     /** Current class (GGG name) + ascendancy id, for the host to mirror. */
     getClassAscendancy() { return { className: activeClass, ascId: activeAsc }; },
