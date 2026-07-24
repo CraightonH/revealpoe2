@@ -23,6 +23,7 @@ import { listKeystones, listNotables } from '../src/data/passiveTree.js';
 import { listAugments } from '../src/data/augments.js';
 import { plannerData } from '../src/data/planner.js';
 import { modPools } from '../src/data/modPools.js';
+import { itemMath } from '../src/data/itemMath.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
@@ -78,6 +79,8 @@ fs.writeFileSync(path.join(OUT, 'planner-data.json'), JSON.stringify(planner));
 
 const modpools = modPools();
 fs.writeFileSync(path.join(OUT, 'mod-pools.json'), JSON.stringify(modpools));
+
+fs.writeFileSync(path.join(OUT, 'item-math.json'), JSON.stringify(itemMath()));
 
 const count = Object.values(cards).reduce((n, m) => n + Object.keys(m).length, 0);
 console.log(
