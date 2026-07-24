@@ -12,38 +12,50 @@ import { computeMath } from './build-math.js';
 
 export { esc };
 
-const ATTR_LABEL = { str: 'Strength', dex: 'Dexterity', int: 'Intelligence' };
+const ATTR_SHORT = { str: 'Str', dex: 'Dex', int: 'Int' };
 const AGG_ROWS = [
   { key: 'life', label: 'Life' }, { key: 'mana', label: 'Mana' }, { key: 'spirit', label: 'Spirit' },
-  { key: 'fireRes', label: 'Fire Res', cap: 75 }, { key: 'coldRes', label: 'Cold Res', cap: 75 },
-  { key: 'lightRes', label: 'Lightning Res', cap: 75 }, { key: 'chaosRes', label: 'Chaos Res' },
+  { key: 'fireRes', label: 'Fire', cap: 75 }, { key: 'coldRes', label: 'Cold', cap: 75 },
+  { key: 'lightRes', label: 'Light', cap: 75 }, { key: 'chaosRes', label: 'Chaos' },
 ];
 const rangeText = (r) => (r.lo === r.hi ? `${r.lo}` : `${r.lo}–${r.hi}`);
 
+// Compact, collapsible "character sheet" pinned in the dossier rail beneath the
+// nav. Echoes the passive tree's stats panel (display-font title + a collapse
+// toggle) but shows the build-relevant rollup — attribute requirements, the
+// whitelist totals, and legality warnings — rather than raw allocated stat
+// lines. Collapse state (ctx.summaryCollapsed) is owned by build-editor.js.
 export function renderSummary(build, ctx) {
   if (!ctx.itemMath) return '';
   const m = computeMath(build, ctx);
+  const collapsed = !!ctx.summaryCollapsed;
   const attrRows = ['str', 'dex', 'int'].map((k) => {
     const a = m.attributes[k];
-    const cls = a.deficit > 0 ? ' editor-summary__row--deficit' : '';
-    return `<li class="editor-summary__row${cls}"><span>${ATTR_LABEL[k]}</span>` +
-      `<span>${rangeText(a.available)} / ${a.required}</span></li>`;
+    const cls = a.deficit > 0 ? ' rail-summary__row--deficit' : '';
+    return `<li class="rail-summary__row${cls}"><span class="rail-summary__k">${ATTR_SHORT[k]}</span>` +
+      `<span class="rail-summary__v">${rangeText(a.available)}<i>/${a.required}</i></span></li>`;
   }).join('');
   const aggRows = AGG_ROWS.map(({ key, label, cap }) => {
     const v = m.aggregates[key];
-    const val = cap ? `${rangeText(v)}/${cap}` : rangeText(v) + (key.endsWith('Res') ? '%' : '');
-    return `<li class="editor-summary__row"><span>${label}</span><span>${val}</span></li>`;
+    const val = cap ? `${rangeText(v)}<i>/${cap}</i>` : rangeText(v) + (key.endsWith('Res') ? '%' : '');
+    return `<li class="rail-summary__row"><span class="rail-summary__k">${label}</span>` +
+      `<span class="rail-summary__v">${val}</span></li>`;
   }).join('');
   const warns = m.warnings.length
-    ? `<ul class="editor-summary__warnings">${m.warnings.map((w) => `<li>${esc(w)}</li>`).join('')}</ul>`
-    : '<p class="editor-summary__ok">No warnings.</p>';
-  return `<section class="editor-summary editor-side-card" data-chapter="summary" aria-label="Character summary">
-    <h3>Summary <span class="editor-summary__level">Level ${m.level.required}+</span></h3>
-    <div class="editor-summary__cols">
-      <ul class="editor-summary__list editor-summary__attrs" aria-label="Attributes (available / required)">${attrRows}</ul>
-      <ul class="editor-summary__list editor-summary__aggs" aria-label="Stat totals">${aggRows}</ul>
+    ? `<ul class="rail-summary__warnings">${m.warnings.map((w) => `<li>${esc(w)}</li>`).join('')}</ul>` : '';
+  const badge = m.warnings.length
+    ? `<span class="rail-summary__badge" title="${m.warnings.length} warning${m.warnings.length === 1 ? '' : 's'}">${m.warnings.length}</span>` : '';
+  return `<section class="rail-summary${collapsed ? ' collapsed' : ''}" data-summary aria-label="Character summary">
+    <button type="button" class="rail-summary__toggle" data-summary-toggle aria-expanded="${collapsed ? 'false' : 'true'}">
+      <span class="rail-summary__title">Summary</span>
+      <span class="rail-summary__lvl">Lv ${m.level.required}+</span>${badge}
+      <span class="rail-summary__chev" aria-hidden="true"></span>
+    </button>
+    <div class="rail-summary__body">
+      <ul class="rail-summary__list">${attrRows}</ul>
+      <ul class="rail-summary__list rail-summary__list--agg">${aggRows}</ul>
+      ${warns}
     </div>
-    ${warns}
   </section>`;
 }
 
@@ -456,6 +468,7 @@ export function renderEditor(build, ctx) {
         <li><a href="#tree" data-rail-link>Passive Tree</a></li>
         <li><a href="#notes" data-rail-link>Notes</a></li>
       </ol>
+      ${isReadonly(ctx) ? '' : renderSummary(build, ctx)}
       <p class="dossier-rail__note">${railNote}</p>
     </nav>
     <div class="dossier-main">
@@ -468,7 +481,6 @@ export function renderEditor(build, ctx) {
         </div>
         <div class="dossier-actions">${actions}</div>
       </header>
-      ${isReadonly(ctx) ? '' : renderSummary(build, ctx)}
       ${renderGear(build, ctx)}
       ${renderSkills(build, ctx)}
       <section class="editor-chapter editor-tree" id="tree" aria-labelledby="tree-h">

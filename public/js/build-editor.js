@@ -17,6 +17,9 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
   let classPicker = null;   // null | 'class' | 'asc'
   let renaming = false;
   let mode = 'edit';        // 'edit' | 'view' (read-only shared preview)
+  // Rail Summary collapse is a view preference (not build data) — persisted per browser.
+  const SUMMARY_KEY = 'reveal.planner.summaryCollapsed';
+  let summaryCollapsed = (() => { try { return window.localStorage.getItem(SUMMARY_KEY) === '1'; } catch { return false; } })();
 
   // ---- embedded passive tree (Phase 5) --------------------------------
   let treeEmbed = null;       // the embed API (passive-tree.js init return)
@@ -35,7 +38,7 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
     // allocation state survive a full dossier re-render (gear/skill edits, etc.).
     if (treeWrapEl && treeWrapEl.parentNode) treeWrapEl.remove();
     container.innerHTML = renderEditor(b, {
-      planner, resolveRef, pools, weaponSet, mode, itemMath, treeLines,
+      planner, resolveRef, pools, weaponSet, mode, itemMath, treeLines, summaryCollapsed,
       builds: store.list(), currentId: buildId, switcherOpen, classPicker, renaming,
     });
     if (mode === 'edit') mountTree(b);
@@ -238,6 +241,16 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
   function onClick(e) {
     const attr = (n) => e.target.closest(`[${n}]`)?.getAttribute(n);
 
+    if (e.target.closest('[data-summary-toggle]')) {
+      e.preventDefault();
+      summaryCollapsed = !summaryCollapsed;
+      try { window.localStorage.setItem(SUMMARY_KEY, summaryCollapsed ? '1' : '0'); } catch { /* storage may be unavailable */ }
+      // Toggle in place — no full re-render (which would reparent the tree embed).
+      const panel = container.querySelector('[data-summary]');
+      panel?.classList.toggle('collapsed', summaryCollapsed);
+      panel?.querySelector('[data-summary-toggle]')?.setAttribute('aria-expanded', String(!summaryCollapsed));
+      return;
+    }
     if (e.target.closest('[data-view-published]')) {
       mode = 'view';
       switcherOpen = false; classPicker = null; renaming = false;

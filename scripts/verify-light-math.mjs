@@ -15,10 +15,10 @@ const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new'
 const page = await browser.newPage();
 // A fresh visit to /builds auto-creates + opens a build (the planner landing).
 await page.goto(`${BASE}/builds`, { waitUntil: 'networkidle0' });
-await page.waitForSelector('.editor-summary', { timeout: 10000 });
-const txt = await page.$eval('.editor-summary', (el) => el.textContent.replace(/\s+/g, ' ').trim());
+await page.waitForSelector('.rail-summary', { timeout: 10000 });
+const txt = await page.$eval('.rail-summary', (el) => el.textContent.replace(/\s+/g, ' ').trim());
 await browser.close();
 
-const ok = /Strength/.test(txt) && /Life/.test(txt) && /Level/.test(txt);
+const ok = /Summary/.test(txt) && /Str/.test(txt) && /Life/.test(txt) && /Lv/.test(txt);
 if (!ok) { console.error('FAIL: Summary card missing expected rows —', txt.slice(0, 200)); process.exit(1); }
 console.log('PASS: Summary card renders attributes + aggregates —', txt.slice(0, 120));

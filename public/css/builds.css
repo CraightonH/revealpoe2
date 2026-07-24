@@ -88,6 +88,40 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
 .dossier-rail__nav a.is-here { color: var(--color-gem); border-left-color: var(--color-gem); }
 .dossier-rail__note { margin-top: 20px; color: var(--color-default); font-size: 10px; line-height: 1.5; }
 
+/* ---- rail Summary panel (Phase 7 light math) ----------------------------
+   Compact, collapsible character sheet beneath the nav. Adapts the passive
+   tree's stats-panel idiom (display-font title + collapse toggle) to the
+   narrow rail; content is the build rollup, not raw stat lines. */
+.rail-summary { margin-top: 20px; border: 1px solid var(--border); border-radius: 7px;
+  background: color-mix(in srgb, var(--bg-surface) 88%, transparent); overflow: hidden; }
+.rail-summary__toggle { display: flex; align-items: center; gap: 6px; width: 100%;
+  padding: 7px 9px; background: none; border: 0; cursor: pointer; color: var(--color-normal);
+  text-align: left; }
+.rail-summary__toggle:focus-visible { outline: 2px solid var(--color-gem); outline-offset: -2px; }
+.rail-summary__title { font-family: var(--font-display); color: var(--color-gem);
+  font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+.rail-summary__lvl { margin-left: auto; color: var(--color-default); font-size: 10px;
+  font-variant-numeric: tabular-nums; }
+.rail-summary__badge { display: inline-flex; align-items: center; justify-content: center;
+  min-width: 15px; height: 15px; padding: 0 3px; border-radius: 8px; font-size: 10px; font-weight: 600;
+  background: color-mix(in srgb, var(--color-danger, #d9534f) 22%, transparent);
+  color: var(--color-danger, #e06c6c); }
+.rail-summary__chev::before { content: '▾'; color: var(--color-default); font-size: 9px; }
+.rail-summary.collapsed .rail-summary__chev::before { content: '▸'; }
+.rail-summary.collapsed .rail-summary__body { display: none; }
+.rail-summary__body { padding: 8px 9px 9px; border-top: 1px solid var(--border); }
+.rail-summary__list { list-style: none; margin: 0; padding: 0; }
+.rail-summary__list--agg { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border); }
+.rail-summary__row { display: flex; justify-content: space-between; gap: 6px; padding: 2px 0; font-size: 11px; }
+.rail-summary__k { color: var(--color-default); text-transform: uppercase; letter-spacing: .04em; font-size: 10px; }
+.rail-summary__v { color: var(--color-normal); font-variant-numeric: tabular-nums; }
+.rail-summary__v i { color: var(--color-default); font-style: normal; }
+.rail-summary__row--deficit .rail-summary__v { color: var(--color-danger, #e06c6c); font-weight: 600; }
+.rail-summary__row--deficit .rail-summary__k { color: var(--color-danger, #e06c6c); }
+.rail-summary__warnings { list-style: none; margin: 8px 0 0; padding: 8px 0 0;
+  border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px;
+  color: var(--color-danger, #e06c6c); font-size: 10px; line-height: 1.35; }
+
 .dossier-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between;
   gap: 12px 24px; padding-bottom: 16px; margin-bottom: 4px; border-bottom: 1px solid var(--border); }
 .dossier-head__copy { min-width: 0; flex: 1 1 24rem; }

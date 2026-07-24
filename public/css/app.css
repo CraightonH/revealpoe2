@@ -1071,15 +1071,6 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
   padding: .6rem 1rem; box-shadow: 0 8px 24px rgb(0 0 0 / .5); }
 .build-toast a { text-decoration: underline; }
 
-.editor-summary { margin-bottom: 1rem; }
-.editor-summary__level { float: right; font-size: .8em; opacity: .8; }
-.editor-summary__cols { display: flex; gap: 1.5rem; flex-wrap: wrap; }
-.editor-summary__list { list-style: none; margin: 0; padding: 0; min-width: 9rem; flex: 1; }
-.editor-summary__row { display: flex; justify-content: space-between; gap: 1rem; padding: .15rem 0; }
-.editor-summary__row--deficit { color: var(--color-danger, #e06c6c); font-weight: 600; }
-.editor-summary__warnings { margin: .5rem 0 0; padding-left: 1.1rem; color: var(--color-danger, #e06c6c); }
-.editor-summary__ok { margin: .5rem 0 0; opacity: .7; }
-
 /* ── Gem scaling table (Levels + Quality) ────────────────────────────────────
    Rendered inside the rec-group collapsible shell (see gem-level-table.njk).
    High-contrast numbers for at-a-glance scanning down a level / quality. */

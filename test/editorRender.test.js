@@ -42,10 +42,22 @@ test('renderSummary shows attributes, level requirement, aggregates and warnings
   };
   const b = fixed({ class: 'warrior', gear: { helmet: { item: { kind: 'base', slug: 'iron-hat' }, mods: [], corrupted: null } } });
   const html = renderSummary(b, { planner: PLANNER, itemMath: ITEMMATH, pools: MODPOOLS, treeLines: [], resolveRef: () => ({}) });
-  assert.match(html, /editor-summary/);
-  assert.match(html, /Strength/);       // attribute row
-  assert.match(html, /Life/);           // aggregate row
-  assert.match(html, /Need 25 more Strength/); // req 40 vs available 15 -> deficit 25 warning
+  assert.match(html, /rail-summary/);
+  assert.match(html, /data-summary-toggle/);           // collapsible
+  assert.match(html, /rail-summary__k">Str</);         // attribute row (short label)
+  assert.match(html, /rail-summary__k">Life</);        // aggregate row
+  assert.match(html, /Need 25 more Strength/);          // req 40 vs available 15 -> deficit 25 warning
+  assert.match(html, /rail-summary__row--deficit/);     // deficit row is flagged
+});
+
+test('renderSummary honors the collapsed flag', () => {
+  const ITEMMATH = { classBase: { warrior: { str: 15, dex: 7, int: 7, life: 16, mana: 30 } }, gemLevel: {}, items: {} };
+  const b = fixed({ class: 'warrior' });
+  const open = renderSummary(b, { planner: PLANNER, itemMath: ITEMMATH, pools: MODPOOLS, treeLines: [], resolveRef: () => ({}) });
+  const shut = renderSummary(b, { planner: PLANNER, itemMath: ITEMMATH, pools: MODPOOLS, treeLines: [], resolveRef: () => ({}), summaryCollapsed: true });
+  assert.ok(!/rail-summary collapsed/.test(open) && /aria-expanded="true"/.test(open));
+  assert.match(shut, /rail-summary collapsed/);
+  assert.match(shut, /aria-expanded="false"/);
 });
 
 test('modCardSections: separate corrupted + mods Stats blocks, empty when nothing chosen', () => {
