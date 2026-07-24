@@ -343,3 +343,39 @@ test('gem search docs exclude key-fallback grant names (no raw skill keys in ind
     }
   }
 });
+
+test('pin store recovers a coarse gem kind against a support doc and rewrites it', () => {
+  const values = new Map([['tcPins', JSON.stringify({ v: 1, pins: [{ category: 'gem', slug: 'added-arrows' }] })]]);
+  const storage = { getItem: (k) => values.get(k) ?? null, setItem: (k, v) => values.set(k, v) };
+  const previousWindow = globalThis.window;
+  globalThis.window = { addEventListener() {} };
+  try {
+    const store = createPinStore({ storage });
+    const result = store.resolve([{ category: 'support', slug: 'added-arrows', name: 'Added Arrows' }]);
+    assert.equal(result.removed, 0);
+    assert.equal(result.resolved.length, 1);
+    assert.equal(result.resolved[0].ref.category, 'support');
+    assert.deepEqual(JSON.parse(values.get('tcPins')).pins, [{ category: 'support', slug: 'added-arrows' }]);
+  } finally {
+    globalThis.window = previousWindow;
+  }
+});
+
+test('pin store dedups a coarse + canonical pin of the same gem without flagging a removal', () => {
+  const values = new Map([['tcPins', JSON.stringify({ v: 1, pins: [
+    { category: 'support', slug: 'added-arrows' },
+    { category: 'gem', slug: 'added-arrows' },
+  ] })]]);
+  const storage = { getItem: (k) => values.get(k) ?? null, setItem: (k, v) => values.set(k, v) };
+  const previousWindow = globalThis.window;
+  globalThis.window = { addEventListener() {} };
+  try {
+    const store = createPinStore({ storage });
+    const result = store.resolve([{ category: 'support', slug: 'added-arrows', name: 'Added Arrows' }]);
+    assert.equal(result.removed, 0);
+    assert.equal(result.resolved.length, 1);
+    assert.deepEqual(JSON.parse(values.get('tcPins')).pins, [{ category: 'support', slug: 'added-arrows' }]);
+  } finally {
+    globalThis.window = previousWindow;
+  }
+});
