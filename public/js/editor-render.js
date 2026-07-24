@@ -47,9 +47,11 @@ export function renderSummary(build, ctx) {
     ? `<span class="rail-summary__badge" title="${m.warnings.length} warning${m.warnings.length === 1 ? '' : 's'}">${m.warnings.length}</span>` : '';
   return `<section class="rail-summary${collapsed ? ' collapsed' : ''}" data-summary aria-label="Character summary">
     <button type="button" class="rail-summary__toggle" data-summary-toggle aria-expanded="${collapsed ? 'false' : 'true'}">
-      <span class="rail-summary__title">Summary</span>
-      <span class="rail-summary__lvl">Lv ${m.level.required}+</span>${badge}
-      <span class="rail-summary__chev" aria-hidden="true"></span>
+      <span class="rail-summary__titlerow">
+        <span class="rail-summary__title">Summary</span>
+        <span class="rail-summary__chev" aria-hidden="true"></span>
+      </span>
+      <span class="rail-summary__meta"><span class="rail-summary__lvl">Lv ${m.level.required}+</span>${badge}</span>
     </button>
     <div class="rail-summary__body">
       <ul class="rail-summary__list">${attrRows}</ul>

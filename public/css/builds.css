@@ -94,14 +94,15 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
    narrow rail; content is the build rollup, not raw stat lines. */
 .rail-summary { margin-top: 20px; border: 1px solid var(--border); border-radius: 7px;
   background: color-mix(in srgb, var(--bg-surface) 88%, transparent); overflow: hidden; }
-.rail-summary__toggle { display: flex; align-items: center; gap: 6px; width: 100%;
+.rail-summary__toggle { display: flex; flex-direction: column; align-items: stretch; gap: 3px; width: 100%;
   padding: 7px 9px; background: none; border: 0; cursor: pointer; color: var(--color-normal);
   text-align: left; }
 .rail-summary__toggle:focus-visible { outline: 2px solid var(--color-gem); outline-offset: -2px; }
+.rail-summary__titlerow { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
 .rail-summary__title { font-family: var(--font-display); color: var(--color-gem);
   font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
-.rail-summary__lvl { margin-left: auto; color: var(--color-default); font-size: 10px;
-  font-variant-numeric: tabular-nums; }
+.rail-summary__meta { display: flex; align-items: center; gap: 6px; }
+.rail-summary__lvl { color: var(--color-default); font-size: 10px; font-variant-numeric: tabular-nums; }
 .rail-summary__badge { display: inline-flex; align-items: center; justify-content: center;
   min-width: 15px; height: 15px; padding: 0 3px; border-radius: 8px; font-size: 10px; font-weight: 600;
   background: color-mix(in srgb, var(--color-danger, #d9534f) 22%, transparent);
