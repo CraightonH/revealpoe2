@@ -198,3 +198,15 @@ test('gem and base cards carry the Add-to-Build affordance', async () => {
   const bases = await request(app).get('/bases');
   assert.match(bases.text, /data-add-build-kind="base"/);
 });
+
+test('cards carry the Add-to-Theory-Craft pin affordance', async () => {
+  const app = createApp();
+  const detail = await request(app).get('/unique/astramentis');
+  assert.match(detail.text, /data-pin-kind="unique"/);
+  assert.match(detail.text, /data-pin-slug="astramentis"/);
+  const gems = await request(app).get('/gems');
+  assert.match(gems.text, /data-pin-kind="gem"/);
+  const bases = await request(app).get('/bases');
+  assert.match(bases.text, /data-pin-kind="base"/);
+  assert.match(bases.text, /data-pin-class="/);
+});
