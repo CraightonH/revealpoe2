@@ -997,6 +997,7 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
   right: 30px;
   z-index: 4;
   display: flex;
+  align-items: center;
   gap: 4px;
 }
 /* Popups get a bit more right inset than the condensed cards. The gem popup pins a
@@ -1042,15 +1043,21 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
   display: block;
 }
 
-/* Add-to-Build affordance sits beside the trade scale in .card-actions. */
-.add-build { cursor: pointer; display: inline-flex; opacity: .75; }
-.add-build:hover, .add-build:focus-visible { opacity: 1; }
-.add-build-icon { width: 1.05em; height: 1.05em; }
-
-/* Add-to-Theory-Craft pin sits beside Add-to-Build in .card-actions. */
-.add-pin { cursor: pointer; display: inline-flex; opacity: .75; }
+/* Add-to-Build and Add-to-Theory-Craft affordances sit beside the trade scale in
+   .card-actions. They share the trade-link's 22px box (minus its background) so
+   all three controls are the same size and line up on one row. */
+.add-build, .add-pin {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  opacity: .75;
+}
+.add-build:hover, .add-build:focus-visible,
 .add-pin:hover, .add-pin:focus-visible { opacity: 1; }
-.add-pin-icon { width: 1.05em; height: 1.05em; }
+.add-build-icon, .add-pin-icon { width: 1.05em; height: 1.05em; }
 
 .build-menu { position: absolute; z-index: 130; min-width: 12rem; display: flex; flex-direction: column;
   background: var(--card-bg, #14130f); border: 1px solid var(--card-border, #3a352a); border-radius: 6px;
