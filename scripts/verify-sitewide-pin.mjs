@@ -18,8 +18,13 @@ const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new'
 // Loads /uniques, clicks the first Add-to-Theory-Craft pin, then loads
 // /theorycraft and asserts the pinned chip appears in the tray.
 const page = await browser.newPage();
-await page.goto(`${BASE}/uniques`, { waitUntil: 'networkidle0' });
-await page.click('[data-pin-kind]');
+// Use a dedicated detail page: it renders the item popup inline and visibly,
+// so the pin control is a real clickable target (on the browse indexes the same
+// pin lives inside a display:none hover tooltip — reachable in-app by hovering,
+// but not a stable puppeteer click target).
+await page.goto(`${BASE}/unique/astramentis`, { waitUntil: 'networkidle0' });
+await page.waitForSelector('[data-pin-kind]');
+await page.click('[data-pin-kind="unique"]');
 await page.waitForSelector('.build-toast');
 await page.goto(`${BASE}/theorycraft`, { waitUntil: 'networkidle0' });
 await page.waitForSelector('.tc-pin-chip', { timeout: 5000 });
