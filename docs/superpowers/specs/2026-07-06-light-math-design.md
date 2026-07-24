@@ -24,8 +24,10 @@ All functions pure `(build, plannerData) → results`, node-tested with fixture 
 
 ## Testing & acceptance
 
-- [ ] Parser unit tests against real source stat lines for every whitelist stat, incl. ranges, "all attributes", and negated/odd phrasings found in source (enumerate at plan time).
-- [ ] Fixture-build tests: known gear+gems+tree → exact expected totals and deficits.
-- [ ] Editor shows the summary card + warnings; totals update live on any build edit.
-- [ ] A stat outside the whitelist demonstrably does not enter totals (test).
-- [ ] `npm test` green; static build verified.
+- [x] Parser unit tests against real source stat lines for every whitelist stat, incl. ranges, "all attributes", and negated/odd phrasings (aura "Allies in your Presence", "Critical Hits ignore … Resistance", "% increased Life", "reduced Life") — `test/build-math.test.js`; the `itemMath` projector additionally runs `parseStat` over every source stat line at build time.
+- [x] Fixture-build tests: known gear+gems+tree → exact expected totals and deficits — `test/build-math.test.js` `computeMath` cases.
+- [x] Editor shows the summary card + warnings; totals update live on any build edit and on tree change (`renderSummary` + `getAllocatedStatLines()` re-render).
+- [x] A stat outside the whitelist demonstrably does not enter totals — `test/build-math.test.js` (non-whitelist line stays zero).
+- [x] `npm test` green (661); static build verified (9292/9292) + headless `scripts/verify-light-math.mjs`.
+
+**Computation #3 note (Spirit):** Spirit **reservation** vs available was **cut** — the plan-time check found no structured reservation numbers in source (only 6 free-text gem mentions; `skills.json` has no reservation/cost fields). Spirit still appears as an aggregate ("+N to Spirit" summed). Gem *attribute* requirements were likewise cut (source has only proportional `requirement_weights`); the character-**level** requirement uses gem `crafting_level` + item level reqs.
