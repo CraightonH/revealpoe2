@@ -5,7 +5,7 @@ import { openPicker, closePicker } from '/static/js/entity-picker.js';
 import { openModPicker, closeModPicker } from '/static/js/mod-picker.js';
 import { legalSlots, equipViolations } from '/static/js/build-rules.js';
 import { safeWrite } from '/static/js/build-host.js';
-import { encodeBuild } from '/static/js/build-code.js';
+import { encodeGroup } from '/static/js/build-code.js';
 import { load as loadTree } from '/static/js/passive-tree.js';
 import { reconcilePriority, renderPriorityList } from '/static/js/tree-priority.js';
 
@@ -314,7 +314,7 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
     if (e.target.closest('[data-share]')) {
       const btn = e.target.closest('[data-share]');
       btn.disabled = true;
-      encodeBuild(build())
+      encodeGroup(store.group(buildId) ?? { parent: build(), variants: [] })
         .then((code) => {
           const url = `${location.origin}/builds#/import/${code}`;
           return navigator.clipboard.writeText(url).then(

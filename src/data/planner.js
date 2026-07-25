@@ -110,7 +110,7 @@ export function plannerData() {
     const cls = a.props.charClass;
     if (!cls) continue;
     if (!byClass.has(cls)) byClass.set(cls, []);
-    byClass.get(cls).push({ slug: slugify(a.name), name: a.name });
+    byClass.get(cls).push({ slug: slugify(a.name), name: a.name, gggId: a.slug });
   }
   const classes = [...byClass.entries()]
     .map(([name, ascendancies]) => ({

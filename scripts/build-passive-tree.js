@@ -27,6 +27,7 @@ const CARDS_OUT = path.join(GEN_DIR, 'passive-cards.json');
 const SEARCH_OUT = path.join(GEN_DIR, 'passive-search.json');
 const STATS_OUT = path.join(GEN_DIR, 'passive-stats.json');
 const EMOTIONS_OUT = path.join(GEN_DIR, 'instill-emotions.json');
+const BUILD_IDS_OUT = path.join(GEN_DIR, 'passive-build-ids.json');
 const ATLAS_SRC = path.join(getDataDir(), 'ggg-poe2', 'atlas');
 const ATLAS_OUT = path.join(GEN_DIR, 'passive-atlas');
 
@@ -265,6 +266,18 @@ function main() {
   const art = buildArtifact();
   fs.mkdirSync(GEN_DIR, { recursive: true });
 
+  // Tree hash -> PassiveSkills string id, the id space GGG's in-game `.build`
+  // file uses for `passives[].id` (NOT the node hash). Its own artifact,
+  // lazily fetched only when a user exports: folding ~36 KB gz into
+  // passive-tree.json would tax every /passives visitor for a click-time need.
+  const repoePassives = JSON.parse(fs.readFileSync(
+    path.join(getDataDir(), REPOE, 'passive_skill_trees', 'Default.json'), 'utf8')).passives;
+  const passiveIds = {};
+  for (const p of Object.values(repoePassives)) {
+    if (p.hash !== undefined && p.id) passiveIds[String(p.hash)] = p.id;
+  }
+  fs.writeFileSync(BUILD_IDS_OUT, JSON.stringify({ passiveIds }));
+
   // Distilled Emotion detail cards + the icon URLs they reference. Stamp the
   // icons into the tree artifact's meta so fetch-images self-hosts them (they're
   // currency items, absent from build/graph.json's browsable set).
@@ -273,7 +286,7 @@ function main() {
 
   fs.writeFileSync(OUT, JSON.stringify(art));
   const kb = (fs.statSync(OUT).size / 1024).toFixed(0);
-  console.log(`build-passive-tree: ${art.nodes.length} nodes, ${art.edges.length} edges -> ${OUT} (${kb} KB)`);
+  console.log(`build-passive-tree: ${art.nodes.length} nodes, ${art.edges.length} edges + ${Object.keys(passiveIds).length} build ids -> ${OUT} (${kb} KB)`);
 
   fs.writeFileSync(EMOTIONS_OUT, JSON.stringify(emotions.cards));
   console.log(`build-passive-tree: ${Object.keys(emotions.cards).length} instill emotions -> ${EMOTIONS_OUT}`);

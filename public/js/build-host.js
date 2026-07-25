@@ -8,6 +8,8 @@ import { createStore, STORE_KEY, StoreWriteError } from '/static/js/build-store.
 let store = null;
 let itemMath = null;
 let itemMathLoading = null;
+let buildExport = null;
+let buildExportLoading = null;
 export function getStore() {
   if (!store) {
     store = createStore(window.localStorage);
@@ -32,4 +34,20 @@ export function loadItemMath() {
     .then((data) => { itemMath = data; return data; })
     .catch((e) => { itemMathLoading = null; throw e; });
   return itemMathLoading;
+}
+
+/**
+ * The `.build` export id maps, fetched only when a user actually exports.
+ * Two artifacts (graph-sourced gem/ascendancy ids + source-sourced passive
+ * ids), merged into one object.
+ */
+export function loadBuildExport() {
+  if (buildExport) return Promise.resolve(buildExport);
+  buildExportLoading ??= Promise.all([
+    fetch('/static/generated/build-export.json').then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }),
+    fetch('/static/generated/passive-build-ids.json').then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }),
+  ])
+    .then(([ids, passives]) => { buildExport = { ...ids, ...passives }; return buildExport; })
+    .catch((e) => { buildExportLoading = null; throw e; });
+  return buildExportLoading;
 }

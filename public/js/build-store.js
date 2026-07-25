@@ -6,13 +6,13 @@
 
 export const STORE_KEY = 'reveal.builds.v1';
 export const CORRUPT_KEY = 'reveal.builds.corrupt';
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 const defaultNow = () => Date.now();
 const defaultUuid = () => globalThis.crypto.randomUUID();
 
 /**
- * A fresh v2 build. `now`/`uuid` are injectable for tests; remaining keys
+ * A fresh v3 build. `now`/`uuid` are injectable for tests; remaining keys
  * are field overrides.
  */
 export function emptyBuild({ now = defaultNow, uuid = defaultUuid, ...overrides } = {}) {
@@ -31,6 +31,9 @@ export function emptyBuild({ now = defaultNow, uuid = defaultUuid, ...overrides 
     unassigned: [],
     skills: [],
     tree: { code: null, notablePriority: [] },
+    // Ordered variant siblings (Amendment 2). A variant is a full standalone
+    // build; this list is the ONLY grouping structure and is one level deep.
+    variants: [],
     ...overrides,
   };
 }
@@ -112,6 +115,15 @@ export function validateBuild(b) {
     });
   }
 
+  if (b.variants !== undefined) {
+    if (!Array.isArray(b.variants)) errors.push('variants: expected array');
+    else b.variants.forEach((v, i) => {
+      if (!isObj(v)) { errors.push(`variants[${i}]: expected {label, buildId}`); return; }
+      if (!isStr(v.label)) errors.push(`variants[${i}].label: expected string`);
+      if (!isStr(v.buildId)) errors.push(`variants[${i}].buildId: expected string`);
+    });
+  }
+
   if (b.grantedSupports !== undefined) {
     if (!isObj(b.grantedSupports)) errors.push('grantedSupports: expected object');
     else {
@@ -141,6 +153,8 @@ const MIGRATIONS = {
       return [slot, { item: rest.item ?? null, mods: rest.mods ?? [], corrupted: rest.corrupted ?? null }];
     })),
   }),
+  // v2->v3: builds gained an ordered `variants` list (Amendment 2).
+  2: (build) => ({ ...build, schema: 3, variants: build.variants ?? [] }),
 };
 
 function migrate(build) {
@@ -226,6 +240,14 @@ export function createStore(storage, { now = defaultNow, uuid = defaultUuid } = 
       if (!s.builds[id]) return false;
       delete s.builds[id];
       s.order = s.order.filter((x) => x !== id);
+      // A deleted build must never linger as a variant reference. Deleting a
+      // PARENT is the other direction: its variants are orphaned, not deleted.
+      for (const bid of s.order) {
+        const b = s.builds[bid];
+        if (b?.variants?.some((v) => v.buildId === id)) {
+          s.builds[bid] = { ...b, variants: b.variants.filter((v) => v.buildId !== id) };
+        }
+      }
       write(s);
       emit('remove', id);
       return true;
@@ -235,12 +257,105 @@ export function createStore(storage, { now = defaultNow, uuid = defaultUuid } = 
       const cur = s.builds[id];
       if (!cur) return null;
       const t = now();
-      const copy = { ...deepCopy(cur), id: uuid(), name: `${cur.name} (copy)`, createdAt: t, updatedAt: t };
+      // A duplicate is standalone: inheriting the variant list would leave two
+      // parents pointing at one variant build.
+      const copy = { ...deepCopy(cur), id: uuid(), name: `${cur.name} (copy)`,
+                     variants: [], createdAt: t, updatedAt: t };
       s.order.push(copy.id);
       s.builds[copy.id] = copy;
       write(s);
       emit('create', copy.id);
       return copy;
+    },
+    /** Duplicate `parentId` into a labeled sibling and append it to its list. */
+    addVariant(parentId, label) {
+      const s = read();
+      const parent = s.builds[parentId];
+      if (!parent) return null;
+      const t = now();
+      const child = { ...deepCopy(parent), id: uuid(), name: label,
+                      variants: [], createdAt: t, updatedAt: t };
+      s.order.push(child.id);
+      s.builds[child.id] = child;
+      s.builds[parentId] = { ...parent,
+        variants: [...(parent.variants ?? []), { label, buildId: child.id }], updatedAt: t };
+      write(s);
+      emit('create', child.id);
+      return child;
+    },
+    /** Retitle a variant entry; the variant build's name tracks its label. */
+    renameVariant(parentId, buildId, label) {
+      const s = read();
+      const parent = s.builds[parentId];
+      if (!parent?.variants?.some((v) => v.buildId === buildId)) return null;
+      const t = now();
+      s.builds[parentId] = { ...parent, updatedAt: t,
+        variants: parent.variants.map((v) => (v.buildId === buildId ? { ...v, label } : v)) };
+      const child = s.builds[buildId];
+      if (child) s.builds[buildId] = { ...child, name: label, updatedAt: t };
+      write(s);
+      emit('update', parentId);
+      return s.builds[parentId];
+    },
+    /** Drop a variant entry. The variant build itself survives as standalone. */
+    removeVariant(parentId, buildId) {
+      const s = read();
+      const parent = s.builds[parentId];
+      if (!parent?.variants?.length) return null;
+      s.builds[parentId] = { ...parent, updatedAt: now(),
+        variants: parent.variants.filter((v) => v.buildId !== buildId) };
+      write(s);
+      emit('update', parentId);
+      return s.builds[parentId];
+    },
+    /** The build whose variant list contains `buildId`, or null. */
+    parentOf(buildId) {
+      const s = read();
+      for (const id of s.order) {
+        if (s.builds[id]?.variants?.some((v) => v.buildId === buildId)) return s.builds[id];
+      }
+      return null;
+    },
+    /**
+     * The share group rooted at `buildId` — its parent if it is a variant, plus
+     * every LIVE variant in list order. Dangling references are skipped so a
+     * half-written store still shares cleanly.
+     */
+    group(buildId) {
+      const s = read();
+      const self = s.builds[buildId];
+      if (!self) return null;
+      let parent = self;
+      for (const id of s.order) {
+        if (s.builds[id]?.variants?.some((v) => v.buildId === buildId)) { parent = s.builds[id]; break; }
+      }
+      const variants = (parent.variants ?? [])
+        .map((v) => ({ label: v.label, build: s.builds[v.buildId] }))
+        .filter((v) => v.build);
+      return { parent, variants };
+    },
+    /**
+     * Materialize a decoded group locally: every build gets a fresh id and the
+     * parent's list is relinked to them. Old-schema decoded builds are migrated.
+     */
+    importGroup(group) {
+      const s = read();
+      const fresh = (b, over) => {
+        const { id: _i, createdAt: _c, updatedAt: _u, ...rest } = migrate(deepCopy(b));
+        return emptyBuild({ now, uuid, ...rest, ...over });
+      };
+      const variants = (group.variants ?? []).map(({ label, build }) => {
+        const child = fresh(build, { variants: [] });
+        s.order.push(child.id);
+        s.builds[child.id] = child;
+        return { label, buildId: child.id };
+      });
+      const parent = fresh(group.parent, { variants });
+      s.order.push(parent.id);
+      s.builds[parent.id] = parent;
+      write(s);
+      emit('create', parent.id);
+      return parent;
     },
     subscribe(fn) {
       subscribers.add(fn);

@@ -24,6 +24,7 @@ import { listAugments } from '../src/data/augments.js';
 import { plannerData } from '../src/data/planner.js';
 import { modPools } from '../src/data/modPools.js';
 import { itemMath } from '../src/data/itemMath.js';
+import { buildExportIds } from '../src/data/buildExport.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
@@ -82,10 +83,14 @@ fs.writeFileSync(path.join(OUT, 'mod-pools.json'), JSON.stringify(modpools));
 
 fs.writeFileSync(path.join(OUT, 'item-math.json'), JSON.stringify(itemMath()));
 
+const exportIds = buildExportIds();
+fs.writeFileSync(path.join(OUT, 'build-export.json'), JSON.stringify(exportIds));
+
 const count = Object.values(cards).reduce((n, m) => n + Object.keys(m).length, 0);
 console.log(
   `build-index: ${docs.length} docs, ${count} browse cards, ` +
   `${planner.slots.length} slots / ${Object.keys(planner.items).length} items / ${Object.keys(planner.gems).length} gems ` +
   `/ ${Object.keys(modpools.families).length} affix families ` +
+  `/ ${Object.keys(exportIds.gemIds).length} gem export ids ` +
   `-> public/generated/`,
 );

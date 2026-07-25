@@ -8,13 +8,14 @@ import {
 const fixedNow = () => 1000;
 const fixedUuid = () => 'id-1';
 
-test('emptyBuild fills v2 defaults', () => {
+test('emptyBuild fills v3 defaults', () => {
   const b = emptyBuild({ now: fixedNow, uuid: fixedUuid });
   assert.deepEqual(b, {
     id: 'id-1', schema: SCHEMA_VERSION, name: 'Untitled Build', notes: '', description: '',
     createdAt: 1000, updatedAt: 1000, class: null, ascendancy: null,
     gear: {}, unassigned: [], skills: [],
     tree: { code: null, notablePriority: [] },
+    variants: [],
   });
 });
 
@@ -94,8 +95,8 @@ function seqStore(storage = memStorage()) {
   };
 }
 
-test('SCHEMA_VERSION is 2', () => {
-  assert.equal(SCHEMA_VERSION, 2);
+test('SCHEMA_VERSION is 3', () => {
+  assert.equal(SCHEMA_VERSION, 3);
 });
 
 test('validateBuild: v2 gear cell with mods + corrupted', () => {
@@ -120,7 +121,7 @@ test('validateBuild: rejects malformed mods / corrupted', () => {
   assert.equal(validateBuild(b2).ok, false);
 });
 
-test('migrate v1->v2: wishlist cells become mods/corrupted cells on read', () => {
+test('migrate v1 through v3: wishlist cells become mods/corrupted cells on read', () => {
   const v1 = {
     ...emptyBuild({ now: () => 1, uuid: () => 'x' }),
     schema: 1,
@@ -130,7 +131,7 @@ test('migrate v1->v2: wishlist cells become mods/corrupted cells on read', () =>
   const store = createStore(storage, { now: () => 2, uuid: () => 'y' });
   storage.setItem(STORE_KEY, JSON.stringify({ order: ['b'], builds: { b: { ...v1, id: 'b' } } }));
   const got = store.get('b');
-  assert.equal(got.schema, 2);
+  assert.equal(got.schema, 3);
   assert.deepEqual(got.gear.helmet.mods, []);
   assert.equal(got.gear.helmet.corrupted, null);
   assert.ok(!('wishlist' in got.gear.helmet));
@@ -274,4 +275,170 @@ test('validateBuild: description optional but must be a string', () => {
   const { description, ...legacy } = base;
   assert.equal(validateBuild(legacy).ok, true, 'pre-description builds still validate');
   assert.equal(validateBuild({ ...base, description: 5 }).ok, false);
+});
+
+// ---- Phase 8: variants + group API ---------------------------------------
+
+const seqUuid = () => { let n = 0; return () => `id-${++n}`; };
+
+test('emptyBuild carries an empty variants list at schema 3', () => {
+  const b = emptyBuild({ now: fixedNow, uuid: fixedUuid });
+  assert.equal(b.schema, 3);
+  assert.deepEqual(b.variants, []);
+});
+
+test('validateBuild accepts and rejects variant lists', () => {
+  const b = emptyBuild({ now: fixedNow, uuid: fixedUuid });
+  b.variants = [{ label: 'Lv 1-30', buildId: 'abc' }];
+  assert.deepEqual(validateBuild(b), { ok: true, errors: [] });
+  b.variants = [{ label: 'Lv 1-30' }];
+  assert.equal(validateBuild(b).ok, false);
+  b.variants = 'nope';
+  assert.equal(validateBuild(b).ok, false);
+});
+
+test('a v2 build migrates to v3 by gaining an empty variants list', () => {
+  const storage = memStorage();
+  const legacy = { ...emptyBuild({ now: fixedNow, uuid: () => 'old' }), schema: 2 };
+  delete legacy.variants;
+  storage.setItem(STORE_KEY, JSON.stringify({ order: ['old'], builds: { old: legacy } }));
+  const store = createStore(storage, { now: fixedNow, uuid: fixedUuid });
+  const got = store.get('old');
+  assert.equal(got.schema, 3);
+  assert.deepEqual(got.variants, []);
+});
+
+test('addVariant duplicates the parent and appends an ordered entry', () => {
+  const ids = seqUuid();
+  const store = createStore(memStorage(), { now: fixedNow, uuid: ids });
+  const parent = store.create({ name: 'Lightning Sorc' });
+  parent.gear = {};
+  store.update(parent.id, { skills: [{ gem: { slug: 'spark' }, level: null, supports: [] }] });
+
+  const v1 = store.addVariant(parent.id, 'Lv 1-30');
+  const v2 = store.addVariant(parent.id, 'Lv 30-60');
+
+  assert.equal(v1.name, 'Lv 1-30');
+  assert.deepEqual(v1.variants, [], 'variants are flat — a variant has no list of its own');
+  assert.deepEqual(v1.skills, [{ gem: { slug: 'spark' }, level: null, supports: [] }],
+    'a variant starts as a copy of its parent');
+  assert.deepEqual(store.get(parent.id).variants,
+    [{ label: 'Lv 1-30', buildId: v1.id }, { label: 'Lv 30-60', buildId: v2.id }]);
+  assert.equal(store.list().length, 3, 'variants are ordinary builds in the store');
+});
+
+test('renameVariant retitles both the entry and the variant build', () => {
+  const store = createStore(memStorage(), { now: fixedNow, uuid: seqUuid() });
+  const parent = store.create({ name: 'Parent' });
+  const v = store.addVariant(parent.id, 'Early');
+  store.renameVariant(parent.id, v.id, 'Lv 1-30');
+  assert.deepEqual(store.get(parent.id).variants, [{ label: 'Lv 1-30', buildId: v.id }]);
+  assert.equal(store.get(v.id).name, 'Lv 1-30');
+  assert.equal(store.renameVariant(parent.id, 'not-a-variant', 'X'), null);
+});
+
+test('removeVariant unlinks without deleting the build', () => {
+  const store = createStore(memStorage(), { now: fixedNow, uuid: seqUuid() });
+  const parent = store.create({ name: 'Parent' });
+  const v = store.addVariant(parent.id, 'Early');
+  store.removeVariant(parent.id, v.id);
+  assert.deepEqual(store.get(parent.id).variants, []);
+  assert.ok(store.get(v.id), 'the variant build survives an unlink');
+});
+
+test('deleting a variant build prunes it from its parent list', () => {
+  const store = createStore(memStorage(), { now: fixedNow, uuid: seqUuid() });
+  const parent = store.create({ name: 'Parent' });
+  const v1 = store.addVariant(parent.id, 'A');
+  const v2 = store.addVariant(parent.id, 'B');
+  store.remove(v1.id);
+  assert.deepEqual(store.get(parent.id).variants, [{ label: 'B', buildId: v2.id }]);
+});
+
+test('deleting a parent orphans its variants, never deletes them', () => {
+  const store = createStore(memStorage(), { now: fixedNow, uuid: seqUuid() });
+  const parent = store.create({ name: 'Parent' });
+  const v = store.addVariant(parent.id, 'A');
+  store.remove(parent.id);
+  assert.ok(store.get(v.id), 'the variant survives its parent');
+  assert.equal(store.parentOf(v.id), null);
+});
+
+test('duplicate never inherits the variant list', () => {
+  const store = createStore(memStorage(), { now: fixedNow, uuid: seqUuid() });
+  const parent = store.create({ name: 'Parent' });
+  store.addVariant(parent.id, 'A');
+  const copy = store.duplicate(parent.id);
+  assert.deepEqual(copy.variants, [],
+    'two parents must never point at the same variant build');
+});
+
+test('parentOf finds the owning parent, or null for a standalone build', () => {
+  const store = createStore(memStorage(), { now: fixedNow, uuid: seqUuid() });
+  const parent = store.create({ name: 'Parent' });
+  const v = store.addVariant(parent.id, 'A');
+  assert.equal(store.parentOf(v.id)?.id, parent.id);
+  assert.equal(store.parentOf(parent.id), null);
+});
+
+test('group is parent-rooted from either a parent or a variant id', () => {
+  const store = createStore(memStorage(), { now: fixedNow, uuid: seqUuid() });
+  const parent = store.create({ name: 'Parent' });
+  const v1 = store.addVariant(parent.id, 'A');
+  const v2 = store.addVariant(parent.id, 'B');
+
+  for (const from of [parent.id, v1.id, v2.id]) {
+    const g = store.group(from);
+    assert.equal(g.parent.id, parent.id, `group(${from}) roots at the parent`);
+    assert.deepEqual(g.variants.map((x) => x.label), ['A', 'B']);
+    assert.deepEqual(g.variants.map((x) => x.build.id), [v1.id, v2.id]);
+  }
+  assert.equal(store.group('nope'), null);
+});
+
+test('group skips dangling variant references', () => {
+  const storage = memStorage();
+  const store = createStore(storage, { now: fixedNow, uuid: seqUuid() });
+  const parent = store.create({ name: 'Parent' });
+  const v = store.addVariant(parent.id, 'A');
+  // Simulate a half-written store: the entry survives, the build does not.
+  const raw = JSON.parse(storage.getItem(STORE_KEY));
+  delete raw.builds[v.id];
+  raw.order = raw.order.filter((x) => x !== v.id);
+  storage.setItem(STORE_KEY, JSON.stringify(raw));
+  assert.deepEqual(createStore(storage, { now: fixedNow, uuid: seqUuid() }).group(parent.id).variants, []);
+});
+
+test('importGroup creates parent + variants with fresh relinked ids', () => {
+  const store = createStore(memStorage(), { now: fixedNow, uuid: seqUuid() });
+  const decoded = {
+    parent: { schema: 3, name: 'Shared', notes: '', description: '', class: null, ascendancy: null,
+      gear: {}, unassigned: [], skills: [], tree: { code: null, notablePriority: [] }, variants: [] },
+    variants: [
+      { label: 'Lv 1-30', build: { schema: 3, name: 'x', notes: '', description: '', class: null,
+        ascendancy: null, gear: {}, unassigned: [], skills: [], tree: { code: null, notablePriority: [] } } },
+    ],
+  };
+  const parent = store.importGroup(decoded);
+  assert.equal(parent.name, 'Shared');
+  assert.equal(store.list().length, 2);
+  assert.equal(parent.variants.length, 1);
+  assert.equal(parent.variants[0].label, 'Lv 1-30');
+  const child = store.get(parent.variants[0].buildId);
+  assert.ok(child, 'the parent list points at a real local build');
+  assert.notEqual(child.id, parent.id);
+  assert.deepEqual(child.variants, []);
+});
+
+test('importGroup migrates an old-schema decoded build', () => {
+  const store = createStore(memStorage(), { now: fixedNow, uuid: seqUuid() });
+  const parent = store.importGroup({
+    parent: { schema: 1, name: 'From v1', notes: '', class: null, ascendancy: null,
+      gear: { body: { item: { kind: 'unique', slug: 'tabula-rasa' }, wishlist: ['maximum-life'] } },
+      unassigned: [], skills: [], tree: { code: null, notablePriority: [] } },
+    variants: [],
+  });
+  assert.equal(parent.schema, 3);
+  assert.deepEqual(parent.variants, []);
+  assert.deepEqual(parent.gear.body, { item: { kind: 'unique', slug: 'tabula-rasa' }, mods: [], corrupted: null });
 });

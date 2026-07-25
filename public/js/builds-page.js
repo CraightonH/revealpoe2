@@ -4,7 +4,7 @@
 import { getStore, loadItemMath, safeWrite } from '/static/js/build-host.js';
 import { parseRoute, renderBuild, renderImport } from '/static/js/builds-render.js';
 import { baseRarity, modCardSections, renderEditor } from '/static/js/editor-render.js';
-import { decodeBuild } from '/static/js/build-code.js';
+import { decodeGroup } from '/static/js/build-code.js';
 import { mountEditor } from '/static/js/build-editor.js';
 
 const root = document.querySelector('[data-builds-root]');
@@ -176,8 +176,8 @@ if (root && view) {
       // Guard every write with `importState === st` so a stale decode (from a
       // hash that has since moved to a different import code) can't clobber
       // the current importState after this chain settles.
-      Promise.all([decodeBuild(route.code), loadDocs().catch(() => null), loadPlanner().catch(() => null), loadPools().catch(() => null)])
-        .then(([build]) => { if (importState === st) st.state = { status: 'ready', build }; })
+      Promise.all([decodeGroup(route.code), loadDocs().catch(() => null), loadPlanner().catch(() => null), loadPools().catch(() => null)])
+        .then(([group]) => { if (importState === st) st.state = { status: 'ready', build: group.parent, group }; })
         .catch((e) => {
           if (importState === st) st.state = { status: 'error', message: e?.code === 'bad-version'
             ? 'This code was made by a newer version of the site.'
