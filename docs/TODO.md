@@ -1,4 +1,4 @@
-1. Make a Build Planner (save groups of items, skills, supports, etc.)
+1. ~~Make a Build Planner (save groups of items, skills, supports, etc.)~~ ✅ done (Build Planner roadmap, Phases 1–8)
 2. Make an Item Crafter
 3. ~~Expand Theory Craft page to allow pinning items across searches~~ ✅ done (Build Planner roadmap Phase 6)
 4. ~~All tooltips/cards get clickable icons for: 1. Add to Theory Craft~~ ✅ done (Build Planner roadmap Phase 6)
