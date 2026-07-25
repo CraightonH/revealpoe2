@@ -1,11 +1,12 @@
 // Browser controller for the /builds editor view. Pure rendering lives in
 // editor-render.js; this file owns event wiring and store mutations.
-import { renderEditor } from '/static/js/editor-render.js';
+import { grantedRows, renderEditor } from '/static/js/editor-render.js';
 import { openPicker, closePicker } from '/static/js/entity-picker.js';
 import { openModPicker, closeModPicker } from '/static/js/mod-picker.js';
 import { legalSlots, equipViolations } from '/static/js/build-rules.js';
-import { safeWrite } from '/static/js/build-host.js';
+import { safeWrite, loadBuildExport } from '/static/js/build-host.js';
 import { encodeGroup } from '/static/js/build-code.js';
+import { buildToBuildFile, buildFileName } from '/static/js/build-file.js';
 import { load as loadTree } from '/static/js/passive-tree.js';
 import { reconcilePriority, renderPriorityList } from '/static/js/tree-priority.js';
 
@@ -16,6 +17,7 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
   let switcherOpen = false;
   let classPicker = null;   // null | 'class' | 'asc'
   let renaming = false;
+  let variantRenaming = null;   // buildId of the variant label being edited
   let mode = 'edit';        // 'edit' | 'view' (read-only shared preview)
   // Rail Summary collapse is a view preference (not build data) — persisted per browser.
   const SUMMARY_KEY = 'reveal.planner.summaryCollapsed';
@@ -40,6 +42,7 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
     container.innerHTML = renderEditor(b, {
       planner, resolveRef, pools, weaponSet, mode, itemMath, treeLines, summaryCollapsed,
       builds: store.list(), currentId: buildId, switcherOpen, classPicker, renaming,
+      group: store.group(buildId), variantRenaming,
     });
     if (mode === 'edit') mountTree(b);
   };
@@ -311,14 +314,46 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
       return;
     }
 
+    if (e.target.closest('[data-variant-add]')) {
+      const g = store.group(buildId);
+      const parentId = g?.parent?.id ?? buildId;
+      const label = `Variant ${(g?.variants?.length ?? 0) + 1}`;
+      const child = safeWrite(() => store.addVariant(parentId, label));
+      if (child) location.hash = `#/b/${encodeURIComponent(child.id)}`;
+      return;
+    }
+    const vtab = attr('data-variant-tab');
+    if (vtab) {
+      if (vtab !== buildId) location.hash = `#/b/${encodeURIComponent(vtab)}`;
+      return;
+    }
+    const vrename = attr('data-variant-rename');
+    if (vrename) {
+      variantRenaming = vrename;
+      render();
+      const inp = container.querySelector('[data-variant-label-input]');
+      inp?.focus();
+      inp?.select();
+      return;
+    }
+    const vunlink = attr('data-variant-unlink');
+    if (vunlink) {
+      const g = store.group(buildId);
+      if (g?.parent && window.confirm('Detach this variant from the group? The build itself is kept.')) {
+        safeWrite(() => store.removeVariant(g.parent.id, vunlink));
+      }
+      return;
+    }
+
     if (e.target.closest('[data-share]')) {
       const btn = e.target.closest('[data-share]');
       btn.disabled = true;
       encodeGroup(store.group(buildId) ?? { parent: build(), variants: [] })
         .then((code) => {
           const url = `${location.origin}/builds#/import/${code}`;
+          const n = (store.group(buildId)?.variants ?? []).length;
           return navigator.clipboard.writeText(url).then(
-            () => { btn.textContent = 'Link copied ✓'; },
+            () => { btn.textContent = n ? `Link copied ✓ (${n + 1} builds)` : 'Link copied ✓'; },
             () => { window.prompt('Copy this share link:', url); });
         })
         .finally(() => {
@@ -327,6 +362,44 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
             const b2 = container.querySelector('[data-share]');
             if (b2) b2.textContent = 'Copy share link';
           }, 1800);
+        });
+      return;
+    }
+
+    if (e.target.closest('[data-export-build]')) {
+      const btn = e.target.closest('[data-export-build]');
+      const note = container.querySelector('[data-export-note]');
+      btn.disabled = true;
+      btn.textContent = 'Preparing…';
+      loadBuildExport()
+        .then((ids) => {
+          const b = build();
+          const file = buildToBuildFile(b, {
+            ids, pools, resolveRef,
+            grantedRows: (bb) => grantedRows(bb, planner),
+          });
+          const blob = new Blob([JSON.stringify(file, null, 1)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = buildFileName(b.name);
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          // Revoke on the next turn so the download has started.
+          setTimeout(() => URL.revokeObjectURL(url), 0);
+          if (note) {
+            note.hidden = false;
+            note.textContent = 'Saved. Put the file in Documents\\My Games\\Path of Exile 2\\BuildPlanner\\ '
+              + 'to open it in the in-game Build Planner (PC only — consoles cannot import files).';
+          }
+        })
+        .catch(() => {
+          if (note) { note.hidden = false; note.textContent = 'Export data could not be loaded — try again.'; }
+        })
+        .finally(() => {
+          btn.disabled = false;
+          btn.textContent = 'Export for game';
         });
       return;
     }
@@ -489,10 +562,26 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
     if (v && v !== build().name) patch({ name: v });
     else render();
   }
+  function commitVariantLabel(input) {
+    if (!variantRenaming) return;
+    const id = variantRenaming;
+    variantRenaming = null;
+    const v = input.value.trim();
+    const g = store.group(buildId);
+    const cur = g?.variants.find((x) => x.buildId === id)?.label;
+    if (v && v !== cur && g?.parent) safeWrite(() => store.renameVariant(g.parent.id, id, v));
+    else render();
+  }
   function onFocusOut(e) {
-    if (e.target.closest?.('[data-build-name-input]')) commitRename(e.target);
+    if (e.target.closest?.('[data-build-name-input]')) { commitRename(e.target); return; }
+    if (e.target.closest?.('[data-variant-label-input]')) commitVariantLabel(e.target);
   }
   function onKeyDown(e) {
+    if (e.target.closest?.('[data-variant-label-input]')) {
+      if (e.key === 'Enter') { e.preventDefault(); commitVariantLabel(e.target); }
+      if (e.key === 'Escape') { variantRenaming = null; render(); }
+      return;
+    }
     if (!e.target.closest?.('[data-build-name-input]')) return;
     if (e.key === 'Enter') { e.preventDefault(); commitRename(e.target); }
     if (e.key === 'Escape') { renaming = false; render(); }

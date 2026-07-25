@@ -565,3 +565,49 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
 @media (prefers-reduced-motion: reduce) {
   .prio-tile { transition: none; }
 }
+
+/* ---- Phase 8: variant strip ------------------------------------------- */
+.variant-strip {
+  display: flex; align-items: center; gap: .75rem;
+  margin: 0 0 1.25rem; padding-bottom: .5rem;
+  border-bottom: 1px solid var(--rule, rgba(255,255,255,.08));
+  flex-wrap: wrap;
+}
+.variant-strip__label {
+  font-size: .7rem; letter-spacing: .12em; text-transform: uppercase;
+  opacity: .55; flex: 0 0 auto;
+}
+.variant-strip__tabs {
+  display: flex; align-items: center; gap: .35rem;
+  list-style: none; margin: 0; padding: 0; flex-wrap: wrap;
+}
+.variant-strip__tabs > li { display: flex; align-items: center; }
+.variant-tab {
+  appearance: none; background: transparent; cursor: pointer;
+  border: 1px solid var(--rule, rgba(255,255,255,.12)); border-radius: 999px;
+  padding: .3rem .7rem; font: inherit; font-size: .82rem;
+  color: inherit; opacity: .72;
+}
+.variant-tab:hover { opacity: 1; }
+.variant-tab.is-current {
+  opacity: 1; font-weight: 600;
+  border-color: var(--accent, #c8aa6e); color: var(--accent, #c8aa6e);
+}
+.variant-tab--add { opacity: .55; border-style: dashed; }
+.variant-tab--add:hover { opacity: .95; }
+.variant-tab__edit, .variant-tab__drop {
+  appearance: none; background: none; border: 0; cursor: pointer;
+  color: inherit; opacity: .4; padding: .15rem .25rem; font-size: .8rem; line-height: 1;
+}
+.variant-tab__edit:hover { opacity: .9; }
+.variant-tab__drop:hover { opacity: .9; color: var(--danger, #d06a6a); }
+.variant-tab__input {
+  font: inherit; font-size: .82rem; padding: .3rem .7rem;
+  border-radius: 999px; border: 1px solid var(--accent, #c8aa6e);
+  background: rgba(0,0,0,.25); color: inherit; max-width: 12rem;
+}
+
+.dossier-export-note {
+  flex-basis: 100%; margin: .5rem 0 0;
+  font-size: .78rem; opacity: .7; line-height: 1.45;
+}

@@ -339,9 +339,10 @@ function renderSwitcher(build, ctx) {
   const rows = builds.map((b) => {
     const items = Object.values(b.gear).filter((g) => g.item).length + b.unassigned.length;
     const current = b.id === ctx.currentId;
+    const kids = (b.variants ?? []).length;
     return `<li><a class="build-switcher__row${current ? ' is-current' : ''}" href="#/b/${encodeURIComponent(b.id)}">
       <b>${esc(b.name)}</b>
-      <span>${esc(classLine(b))} · ${items} items · ${b.skills.length} setups</span></a></li>`;
+      <span>${esc(classLine(b))} · ${items} items · ${b.skills.length} setups${kids ? ` · ${kids} variant${kids > 1 ? 's' : ''}` : ''}</span></a></li>`;
   }).join('');
   const pop = open
     ? `<div class="build-switcher__pop">
@@ -396,6 +397,45 @@ function renderClassPicker(build, ctx) {
   </div>`;
 }
 
+/**
+ * Variant strip: the parent build plus its ordered labeled siblings as tabs
+ * (Amendment 2). Rendered on the editor and on a shared group view, where the
+ * tabs switch the decoded snapshot instead of navigating.
+ */
+export function renderVariantStrip(build, ctx) {
+  const group = ctx.group;
+  const ro = (ctx.mode ?? 'edit') !== 'edit';
+  const variants = group?.variants ?? [];
+  if (ro && !variants.length) return '';
+
+  const tab = (id, label, current) => {
+    if (!ro && ctx.variantRenaming === id) {
+      return `<li><input class="variant-tab__input" data-variant-label-input type="text" maxlength="40"
+        value="${esc(label)}" aria-label="Variant label" spellcheck="false"></li>`;
+    }
+    const controls = ro || !current || id === group?.parent?.id ? '' :
+      `<button class="variant-tab__edit" type="button" data-variant-rename="${esc(id)}"
+         title="Rename variant" aria-label="Rename variant">✎</button>
+       <button class="variant-tab__drop" type="button" data-variant-unlink="${esc(id)}"
+         title="Detach from this group" aria-label="Detach variant from group">×</button>`;
+    return `<li><button data-variant-tab="${esc(id)}" class="variant-tab${current ? ' is-current' : ''}" type="button"
+      aria-current="${current ? 'true' : 'false'}">${esc(label)}</button>${controls}</li>`;
+  };
+
+  const parentTab = group && variants.length
+    ? tab(group.parent.id, group.parent.name, group.parent.id === ctx.currentId)
+    : '';
+  const rows = variants.map((v) => tab(v.build.id, v.label, v.build.id === ctx.currentId)).join('');
+  const add = ro ? '' :
+    `<li><button class="variant-tab variant-tab--add" type="button" data-variant-add
+       title="Duplicate this build as the next variant">＋ Variant</button></li>`;
+
+  return `<div class="variant-strip" data-variant-strip>
+    <span class="variant-strip__label">Variants</span>
+    <ul class="variant-strip__tabs">${parentTab}${rows}${add}</ul>
+  </div>`;
+}
+
 export function renderEditor(build, ctx) {
   const mode = ctx.mode ?? 'edit';
   const ro = mode !== 'edit';
@@ -423,18 +463,22 @@ export function renderEditor(build, ctx) {
 
   const actions = {
     edit: `<button class="dossier-share" type="button" data-share>Copy share link</button>
+      <button class="dossier-action" type="button" data-export-build>Export for game</button>
       <button class="dossier-action" type="button" data-view-published>View as shared</button>
       <button class="dossier-action" type="button" data-build-duplicate="${esc(build.id)}">Duplicate</button>
       <button class="dossier-action dossier-action--danger" type="button" data-build-delete="${esc(build.id)}">Delete</button>`,
     view: `<button class="dossier-share" type="button" data-edit-build>← Back to editing</button>
-      <button class="dossier-action" type="button" data-share>Copy share link</button>`,
+      <button class="dossier-action" type="button" data-share>Copy share link</button>
+      <button class="dossier-action" type="button" data-export-build>Export for game</button>`,
     import: `<button class="dossier-share" type="button" data-import-save>Save a copy</button>`,
   }[mode];
 
+  const sharedCount = (ctx.group?.variants ?? []).length;
   const banner = mode === 'view'
     ? '<p class="dossier-banner">Shared preview — this is exactly what someone opening your link sees.</p>'
     : mode === 'import'
-      ? '<p class="dossier-banner">Shared build preview — not saved in this browser yet.</p>'
+      ? `<p class="dossier-banner">Shared build preview — not saved in this browser yet.${
+          sharedCount ? ` This link carries ${sharedCount} variant${sharedCount > 1 ? 's' : ''}; “Save a copy” keeps the whole group.` : ''}</p>`
       : '';
 
   const railTop = mode === 'import'
@@ -482,7 +526,9 @@ export function renderEditor(build, ctx) {
           ${descHtml}
         </div>
         <div class="dossier-actions">${actions}</div>
+        <p class="dossier-export-note" data-export-note hidden></p>
       </header>
+      ${renderVariantStrip(build, ctx)}
       ${renderGear(build, ctx)}
       ${renderSkills(build, ctx)}
       <section class="editor-chapter editor-tree" id="tree" aria-labelledby="tree-h">

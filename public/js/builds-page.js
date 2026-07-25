@@ -66,6 +66,22 @@ if (root && view) {
   let activeUnmount = null;
   let itemMath = null;
 
+  // A decoded group has no local ids (the codec strips them), so give each
+  // snapshot a stable synthetic id for the variant strip to key on. These never
+  // reach storage — importGroup mints real ids on "Save a copy".
+  function sharedSnapshot(st) {
+    const { parent, variants } = st.state.group;
+    const tagged = {
+      parent: { ...parent, id: 'shared:parent' },
+      variants: variants.map((v, i) => ({ label: v.label, build: { ...v.build, id: `shared:${i}` } })),
+    };
+    const id = st.activeId ?? 'shared:parent';
+    const found = id === 'shared:parent'
+      ? tagged.parent
+      : tagged.variants.find((v) => v.build.id === id)?.build ?? tagged.parent;
+    return { build: found, group: tagged, id: found.id };
+  }
+
   // One build-aware tooltip for filled doll wells: the item's prerendered card
   // + this build's chosen mods. Registered once; reads live build state on show.
   if (window.poe2Tooltips) {
@@ -169,15 +185,16 @@ if (root && view) {
       });
       return;
     }
-    // import view
+    // import view — decoded straight from the fragment. NOTHING is written to
+    // this visitor's storage until "Save a copy" (Amendment 3: view first).
     if (importState?.code !== route.code) {
-      const st = { code: route.code, state: { status: 'loading' }, weaponSet: 1 };
+      const st = { code: route.code, state: { status: 'loading' }, weaponSet: 1, activeId: null };
       importState = st;
       // Guard every write with `importState === st` so a stale decode (from a
       // hash that has since moved to a different import code) can't clobber
       // the current importState after this chain settles.
       Promise.all([decodeGroup(route.code), loadDocs().catch(() => null), loadPlanner().catch(() => null), loadPools().catch(() => null)])
-        .then(([group]) => { if (importState === st) st.state = { status: 'ready', build: group.parent, group }; })
+        .then(([group]) => { if (importState === st) st.state = { status: 'ready', group }; })
         .catch((e) => {
           if (importState === st) st.state = { status: 'error', message: e?.code === 'bad-version'
             ? 'This code was made by a newer version of the site.'
@@ -188,9 +205,13 @@ if (root && view) {
     // Same dossier page, read-only: planner data present renders the real
     // thing; without it (fetch failed) fall back to the plain preview.
     if (importState.state.status === 'ready' && planner) {
-      view.innerHTML = renderEditor(importState.state.build, {
-        planner, resolveRef, weaponSet: importState.weaponSet, mode: 'import',
+      const shown = sharedSnapshot(importState);
+      view.innerHTML = renderEditor(shown.build, {
+        planner, resolveRef, pools, weaponSet: importState.weaponSet, mode: 'import',
+        group: shown.group, currentId: shown.id,
       });
+    } else if (importState.state.status === 'ready') {
+      view.innerHTML = renderImport({ status: 'ready', build: importState.state.group.parent }, resolveRef);
     } else {
       view.innerHTML = renderImport(importState.state, resolveRef);
     }
@@ -214,6 +235,12 @@ if (root && view) {
       render();
       return;
     }
+    const vtab = attr('data-variant-tab');
+    if (vtab && parseRoute(location.hash).view === 'import' && importState?.state.status === 'ready') {
+      importState.activeId = vtab;
+      render();
+      return;
+    }
     if (e.target.closest('[data-builds-new]')) {
       const b = safeWrite(() => store.create());
       if (b) location.hash = `#/b/${encodeURIComponent(b.id)}`;
@@ -233,7 +260,7 @@ if (root && view) {
       return;
     }
     if (e.target.closest('[data-import-save]') && importState?.state.status === 'ready') {
-      const saved = safeWrite(() => store.create({ ...importState.state.build }));
+      const saved = safeWrite(() => store.importGroup(importState.state.group));
       if (saved) location.hash = `#/b/${encodeURIComponent(saved.id)}`;
     }
   });
