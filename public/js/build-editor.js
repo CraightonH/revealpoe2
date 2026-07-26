@@ -10,6 +10,7 @@ import { encodeGroup } from '/static/js/build-code.js';
 import { buildToBuildFile, buildFileName } from '/static/js/build-file.js';
 import { load as loadTree } from '/static/js/passive-tree.js';
 import { reconcilePriority, renderPriorityList } from '/static/js/tree-priority.js';
+import { mountTreePreview, destroyTreePreview } from '/static/js/tree-preview.js';
 
 const KIND_FOR_CATEGORY = { gem: 'gem', support: 'gem', spirit: 'gem', unique: 'unique', base: 'base' };
 
@@ -42,6 +43,9 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
     // Detach the live embed before innerHTML wipes the old mount, so its canvas +
     // allocation state survive a full dossier re-render (gear/skill edits, etc.).
     if (treeWrapEl && treeWrapEl.parentNode) treeWrapEl.remove();
+    // A read-only preview belongs to the rendering that created it.
+    const oldPreview = container.querySelector('[data-tree-preview-mount]');
+    if (oldPreview) destroyTreePreview(oldPreview);
     container.innerHTML = renderEditor(b, {
       planner, resolveRef, pools, weaponSet, mode, itemMath, treeLines, summaryCollapsed,
       builds: store.list(), currentId: buildId, switcherOpen, classPicker, renaming,
@@ -257,6 +261,14 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
       const panel = container.querySelector('[data-summary]');
       panel?.classList.toggle('collapsed', summaryCollapsed);
       panel?.querySelector('[data-summary-toggle]')?.setAttribute('aria-expanded', String(!summaryCollapsed));
+      return;
+    }
+    if (e.target.closest('[data-tree-show]')) {
+      const btn = e.target.closest('[data-tree-show]');
+      const mount = container.querySelector('[data-tree-preview-mount]');
+      btn.hidden = true;
+      container.querySelector('.editor-tree-weight')?.remove();
+      mountTreePreview(mount, build()?.tree?.code ?? null, { onError: () => { btn.hidden = false; } });
       return;
     }
     if (e.target.closest('[data-view-published]')) {

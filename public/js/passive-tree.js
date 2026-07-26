@@ -168,6 +168,10 @@ function buildAdjacency(nodes, edges) {
 export default function init(canvas, data, opts = {}) {
   const ctx = canvas.getContext('2d');
   const root = opts.root || canvas.closest('.passive-tree-wrap') || canvas.parentElement || document;
+  // Read-only embed (shared build previews): pan, zoom, hover cards and the
+  // stats panel all work; only ALLOCATION is suppressed. Gated at commitTap,
+  // the single entry point both the mouse and touch paths funnel through.
+  const readonly = !!opts.readonly;
   if (root.querySelector && !root.querySelector('[data-tree-panel]') && root.insertAdjacentHTML) {
     root.insertAdjacentHTML('beforeend', treePanelsHtml());
   }
@@ -1641,6 +1645,7 @@ export default function init(canvas, data, opts = {}) {
   // Allocate/deallocate the node under a committed tap/click. Mirrors the desktop
   // click semantics exactly (weapon-set mode, path collapse, attr picker).
   function commitTap(hit) {
+    if (readonly) return;   // preview: inspection is fine, mutation is not
     // Moving the commit to another node cancels a pending re-choice without
     // changing the original node.
     if (attrChoosing != null && attrChoosing !== hit.h) {
@@ -2023,7 +2028,8 @@ export default function init(canvas, data, opts = {}) {
   // ---------------------------------------------------------------------------
 
   const resetBtn = q('[data-tree-reset]');
-  if (resetBtn) {
+  if (resetBtn && readonly) resetBtn.remove();   // nothing to reset in a preview
+  else if (resetBtn) {
     resetBtn.addEventListener('click', () => {
       const confirmReset = opts.confirmReset || (() => window.confirm('Reset the tree? This clears all allocated passives.'));
       if (allocated.size && !confirmReset()) return;

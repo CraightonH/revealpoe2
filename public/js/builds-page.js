@@ -6,6 +6,7 @@ import { parseRoute, renderBuild, renderImport } from '/static/js/builds-render.
 import { baseRarity, modCardSections, renderEditor } from '/static/js/editor-render.js';
 import { decodeGroup } from '/static/js/build-code.js';
 import { clampBuild } from '/static/js/build-store.js';
+import { mountTreePreview } from '/static/js/tree-preview.js';
 import { mountEditor } from '/static/js/build-editor.js';
 
 const root = document.querySelector('[data-builds-root]');
@@ -245,6 +246,15 @@ if (root && view) {
     if (ws && parseRoute(location.hash).view === 'import' && importState?.state.status === 'ready') {
       importState.weaponSet = Number(ws);
       render();
+      return;
+    }
+    if (e.target.closest('[data-tree-show]')) {
+      const btn = e.target.closest('[data-tree-show]');
+      const mount = view.querySelector('[data-tree-preview-mount]');
+      const shown = importState?.state.status === 'ready' ? sharedSnapshot(importState) : null;
+      btn.hidden = true;
+      view.querySelector('.editor-tree-weight')?.remove();
+      mountTreePreview(mount, shown?.build?.tree?.code ?? null, { onError: () => { btn.hidden = false; } });
       return;
     }
     const vtab = attr('data-variant-tab');

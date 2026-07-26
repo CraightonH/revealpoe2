@@ -534,6 +534,11 @@ export function renderEditor(build, ctx) {
 
   const treeBody = ro
     ? `<p class="editor-tree-stat">${esc(stat)}${prio ? ` · ${prio} notables prioritized` : ''}</p>
+       ${build.tree.code ? `<div class="editor-tree-preview">
+         <button class="editor-tree-show" type="button" data-tree-show>Show the passive tree</button>
+         <span class="editor-tree-weight">loads ~3 MB</span>
+         <div class="editor-tree-mount" data-tree-preview-mount></div>
+       </div>` : ''}
        <a class="editor-tree-open" href="/passives${build.tree.code ? '#' + esc(build.tree.code) : ''}">Open the passive tree →</a>`
     : `<div class="editor-tree-points" data-tree-points-summary></div>
        <div class="editor-tree-embed"><div class="passive-tree-wrap passive-tree-wrap--embed" data-tree-mount></div></div>
