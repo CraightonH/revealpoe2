@@ -704,13 +704,45 @@ test('nextVariantLabel counts the parent as Variant 1', () => {
   assert.equal(store.nextVariantLabel(v2.id), 'Variant 4');
 });
 
-test('nextVariantLabel skips a number already taken', () => {
+test('nextVariantLabel is POSITIONAL, not gap-filling', () => {
+  // The number is the build's place in the group, so renaming tabs must not
+  // reset it. An earlier gap-filling version returned the lowest unused number,
+  // which collapsed to 'Variant 2' forever once any tab was renamed — and this
+  // test previously asserted that bug.
+  const store = createStore(memStorage(), { now: fixedNow, uuid: seqUuid() });
+  const parent = store.create({ name: 'Stormweaver CoC' });
+
+  const a = store.addVariant(parent.id, store.nextVariantLabel(parent.id));
+  store.setLabel(parent.id, 'Leveling');
+  store.setLabel(a.id, 'Early mapping');
+  assert.equal(store.nextVariantLabel(parent.id), 'Variant 3', '3rd in the group');
+
+  const b = store.addVariant(parent.id, store.nextVariantLabel(parent.id));
+  store.setLabel(b.id, 'Endgame');
+  assert.equal(store.nextVariantLabel(parent.id), 'Variant 4', '4th, not back to 2');
+
+  store.addVariant(parent.id, store.nextVariantLabel(parent.id));
+  assert.equal(store.nextVariantLabel(parent.id), 'Variant 5', '5th');
+});
+
+test('nextVariantLabel bumps past an exact duplicate only', () => {
   const store = createStore(memStorage(), { now: fixedNow, uuid: seqUuid() });
   const parent = store.create({ name: 'P' });
-  const v = store.addVariant(parent.id, 'Variant 3');   // hand-picked, out of sequence
-  assert.equal(store.nextVariantLabel(parent.id), 'Variant 2');
-  store.addVariant(parent.id, 'Variant 2');
-  assert.equal(store.nextVariantLabel(parent.id), 'Variant 4', 'skips both 2 and 3');
+  store.addVariant(parent.id, 'Variant 3');   // hand-picked, out of sequence
+  // Positionally the newcomer is 3rd, but that label is taken, so step to 4.
+  assert.equal(store.nextVariantLabel(parent.id), 'Variant 4');
+  store.addVariant(parent.id, 'Variant 4');
+  assert.equal(store.nextVariantLabel(parent.id), 'Variant 5', 'never reuses 2');
+});
+
+test('deleting a variant does not make the next one reuse its number', () => {
+  const store = createStore(memStorage(), { now: fixedNow, uuid: seqUuid() });
+  const parent = store.create({ name: 'P' });
+  const a = store.addVariant(parent.id, store.nextVariantLabel(parent.id));   // Variant 2
+  const b = store.addVariant(parent.id, store.nextVariantLabel(parent.id));   // Variant 3
+  store.remove(a.id);                                                          // drop Variant 2
+  // One variant left (Variant 3), so the newcomer is positionally 3rd -> taken -> 4.
+  assert.equal(store.nextVariantLabel(parent.id), 'Variant 4');
 });
 
 test('setLabel writes a parent label onto the build itself', () => {

@@ -509,11 +509,14 @@ export function createStore(storage, { now = defaultNow, uuid = defaultUuid } = 
       const owner = s.order.find((id) => s.builds[id]?.variants?.some((v) => v.buildId === buildId));
       const parent = owner ? s.builds[owner] : self;
       const list = parent.variants ?? [];
+      // POSITIONAL: the new build's place in the group. The root is 1, so with N
+      // existing variants the newcomer is N+2. Deliberately NOT gap-filling —
+      // an earlier version preferred the lowest unused number, which silently
+      // collapsed to 'Variant 2' forever as soon as any tab was renamed (once
+      // 'Leveling' replaces 'Variant 2', that slot reads as free).
       const taken = new Set([parent.label || 'Variant 1', ...list.map((v) => v.label)]);
       let n = list.length + 2;                     // +1 for the root, +1 for the new one
-      while (taken.has(`Variant ${n}`)) n++;
-      // Prefer the lowest free slot so deleting the middle one reuses its number.
-      for (let i = 2; i < n; i++) if (!taken.has(`Variant ${i}`)) return `Variant ${i}`;
+      while (taken.has(`Variant ${n}`)) n++;       // only to avoid an exact duplicate
       return `Variant ${n}`;
     },
     /** The build whose variant list contains `buildId`, or null. */
