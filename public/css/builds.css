@@ -41,7 +41,13 @@ html[data-card-size="xl"] .builds-import,
 html[data-card-size="xl"] .picker-panel { zoom: 1.5; }
 html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: flex-end; }
 .dossier { display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: 28px; }
-.dossier-rail { position: sticky; top: 24px; align-self: start; }
+/* z-index is load-bearing: `position: sticky` ALWAYS creates a stacking context,
+   which traps the build-switcher popover's own z-index inside this element. The
+   rail then competes as z-index:auto against .class-pick (also auto, positioned,
+   and LATER in DOM), so the class picker and the chapter content painted over the
+   open dropdown. Raising the popover cannot fix that — the rail itself has to sit
+   above the main column. Stays below the modal picker (140/141). */
+.dossier-rail { position: sticky; top: 24px; align-self: start; z-index: 130; }
 .dossier-eyebrow { display: block; color: var(--accent-ui); font-size: 10px; font-weight: 650;
   letter-spacing: .16em; text-transform: uppercase; }
 .dossier-rail__mark { margin: 0 0 16px; }
