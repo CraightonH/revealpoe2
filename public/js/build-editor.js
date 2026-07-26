@@ -14,6 +14,16 @@ import { mountTreePreview, destroyTreePreview } from '/static/js/tree-preview.js
 
 const KIND_FOR_CATEGORY = { gem: 'gem', support: 'gem', spirit: 'gem', unique: 'unique', base: 'base' };
 
+/**
+ * The GGG class name + ascendancy id for a build, which is what the tree embed
+ * speaks. Our slugs are not interchangeable with them.
+ */
+function treeIdentity(build, planner) {
+  const cls = (planner?.classes ?? []).find((c) => c.slug === build.class) ?? null;
+  const asc = cls?.ascendancies.find((a) => a.slug === build.ascendancy) ?? null;
+  return { className: cls?.name ?? null, ascId: asc?.gggId ?? null };
+}
+
 export function mountEditor(container, buildId, { store, planner, docs, resolveRef, pools, itemMath }) {
   let weaponSet = 1;
   let switcherOpen = false;
@@ -54,7 +64,8 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
     if (mode === 'edit') mountTree(b);
     // Read-only modes get the preview embed automatically (dynamic import, so it
     // does not hold up this render).
-    else mountTreePreview(container.querySelector('[data-tree-preview-mount]'), b.tree?.code ?? null);
+    else mountTreePreview(container.querySelector('[data-tree-preview-mount]'), b.tree?.code ?? null,
+      treeIdentity(b, planner));
   };
 
   // ---- passive-tree embed: mount / reparent / persist / refresh -------

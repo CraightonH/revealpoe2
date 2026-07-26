@@ -10,6 +10,13 @@
 // After mount the view is framed to the ALLOCATION rather than the whole disc:
 // a build uses one region of the tree, and nobody reading a preview wants to
 // hunt for it.
+//
+// The class MUST be driven in explicitly. A v7 code carries a charClass byte but
+// passive-tree.js never reads it, so an imported code alone leaves the embed on
+// whatever class it defaulted to — which is why a Warrior build's tree showed the
+// wrong centrepiece while every other surface was correct. Order matters:
+// selecting a class RESETS allocations (in-game behaviour) and importing a code
+// clears the ascendancy, so it goes class -> code -> ascendancy.
 
 const mounted = new WeakMap();   // mount element -> embed api
 
@@ -19,7 +26,9 @@ const mounted = new WeakMap();   // mount element -> embed api
  * than building another canvas.
  * @param {HTMLElement} mountEl
  * @param {string|null} code v7 passive share code
- * @param {{onReady?: (api: object) => void, onError?: (e: Error) => void}} [opts]
+ * @param {{className?: string|null, ascId?: string|null,
+ *          onReady?: (api: object) => void, onError?: (e: Error) => void}} [opts]
+ *        className/ascId are the GGG names/ids ("Warrior", "Warrior2"), not our slugs.
  */
 export async function mountTreePreview(mountEl, code, opts = {}) {
   if (!mountEl) return null;
@@ -36,17 +45,30 @@ export async function mountTreePreview(mountEl, code, opts = {}) {
     wrap.appendChild(canvas);
     mountEl.appendChild(wrap);
 
+    // NOTE: no initialCode here. The class has to be established first (see the
+    // header note), and selecting a class wipes the allocation — so loading the
+    // code up front would just get it thrown away.
     const api = await load(canvas, {
       root: wrap,
       readonly: true,
-      initialCode: code || null,
-      // Frame the allocation once the code is in and the canvas has its real
-      // size. onReady fires after the initial fit, so this supersedes it.
-      onReady: (a) => { try { a.fitAllocated?.(); } catch { /* fall back to the default fit */ } },
       // A preview must never write anywhere: no onCodeChange, and copying the
       // code is the host's business, not ours.
       onCopy: (c) => navigator.clipboard?.writeText(c),
     });
+    // Class BEFORE the code (selecting a class resets allocations), ascendancy
+    // AFTER it (importing the code clears the ascendancy selection, and
+    // selectAscendancy only drops nodes belonging to a *different* ascendancy,
+    // so the main-tree allocation survives).
+    if (opts.className) {
+      try { api.setClassAscendancy(opts.className, null); } catch { /* keep the default */ }
+    }
+    if (code) {
+      try { await api.setCode(code); } catch { /* an unreadable code leaves an empty tree */ }
+    }
+    if (opts.className && opts.ascId) {
+      try { api.setClassAscendancy(opts.className, opts.ascId); } catch { /* class alone is still right */ }
+    }
+    try { api.fitAllocated?.(); } catch { /* fall back to the default fit */ }
     mounted.set(mountEl, api);
     mountEl.classList.remove('is-loading');
     opts.onReady?.(api);

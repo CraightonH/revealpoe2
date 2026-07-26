@@ -225,7 +225,13 @@ if (root && view) {
       });
       // The tree is pivotal to a build, so a shared link shows it without asking.
       // Dynamic import: the rest of the preview has already painted by now.
-      mountTreePreview(view.querySelector('[data-tree-preview-mount]'), shown.build?.tree?.code ?? null);
+      // Same identity plumbing as the editor: the embed needs the GGG class name
+      // and ascendancy id, which our slugs are not.
+      const shownCls = (planner?.classes ?? []).find((c) => c.slug === shown.build?.class) ?? null;
+      mountTreePreview(view.querySelector('[data-tree-preview-mount]'), shown.build?.tree?.code ?? null, {
+        className: shownCls?.name ?? null,
+        ascId: shownCls?.ascendancies.find((a) => a.slug === shown.build?.ascendancy)?.gggId ?? null,
+      });
     } else if (importState.state.status === 'ready') {
       view.innerHTML = renderImport({ status: 'ready', build: importState.state.group.parent }, resolveRef);
     } else {
