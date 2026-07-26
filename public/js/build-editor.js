@@ -5,6 +5,7 @@ import { openPicker, closePicker } from '/static/js/entity-picker.js';
 import { openModPicker, closeModPicker } from '/static/js/mod-picker.js';
 import { legalSlots, equipViolations } from '/static/js/build-rules.js';
 import { safeWrite, loadBuildExport } from '/static/js/build-host.js';
+import { LIMITS } from '/static/js/build-store.js';
 import { encodeGroup } from '/static/js/build-code.js';
 import { buildToBuildFile, buildFileName } from '/static/js/build-file.js';
 import { load as loadTree } from '/static/js/passive-tree.js';
@@ -438,6 +439,10 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
       const ref = b.unassigned[Number(equipIdx)];
       if (!ref) return;
       if (ref.kind === 'gem') {   // gems become skill setups, not gear
+        if (b.skills.length >= LIMITS.setups) {
+          window.alert(`This build already has the maximum of ${LIMITS.setups} skill setups.`);
+          return;
+        }
         patch({ skills: [...b.skills, { gem: { slug: ref.slug }, level: null, supports: [] }],
                 unassigned: b.unassigned.filter((_, i) => i !== Number(equipIdx)) });
         return;
@@ -458,7 +463,12 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
     }
 
     if (e.target.closest('[data-setup-add]')) {
-      pickGem((doc) => patch({ skills: [...build().skills, { gem: { slug: doc.slug }, level: null, supports: [] }] }));
+      if (build().skills.length >= LIMITS.setups) return;   // button is disabled; keyboard/dup-click guard
+      pickGem((doc) => {
+        const cur = build().skills;
+        if (cur.length >= LIMITS.setups) return;
+        patch({ skills: [...cur, { gem: { slug: doc.slug }, level: null, supports: [] }] });
+      });
       return;
     }
     const gw = attr('data-gem-well');

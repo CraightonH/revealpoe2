@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   emptyBuild, validateBuild, SCHEMA_VERSION, STORE_KEY, CORRUPT_KEY,
-  MAX_BUILDS, StoreLimitError,
+  MAX_BUILDS, StoreLimitError, LIMITS, clampBuild,
 } from '../public/js/build-store.js';
 
 const fixedNow = () => 1000;
@@ -544,4 +544,126 @@ test('the corrupt-payload rescue survives a storage that rejects writes', () => 
   const store = createStore(hostile, { now: fixedNow, uuid: seqUuid() });
   assert.deepEqual(store.list(), [], 'recovers to an empty store rather than throwing');
   assert.equal(store.get('anything'), null);
+});
+
+// ---- clampBuild: untrusted input hardening (2026-07-26) -------------------
+// Authoring is bounded by the DOM (maxlength, fixed slot grid, socket counts).
+// DECODED SHARE CODES ARE NOT — the codec validates shape, never size. So a
+// hostile or accidentally-huge code could previously blow storage, break the
+// layout with a megabyte-long title, or hang the page with 10k skill setups.
+// clampBuild truncates rather than rejects: a shared build should still open.
+
+const huge = (n) => 'x'.repeat(n);
+
+test('clampBuild leaves an ordinary build completely untouched', () => {
+  const b = emptyBuild({ now: fixedNow, uuid: fixedUuid, name: 'Stormweaver CoC' });
+  b.description = 'Arc into Spark.';
+  b.notes = 'Swap to CI at 80.';
+  b.gear.helmet = { item: { kind: 'base', slug: 'iron-hat' }, mods: [{ affix: 'life', tier: 'l1' }], corrupted: null };
+  b.skills = [{ gem: { slug: 'spark' }, level: null, supports: [{ slug: 'martial-tempo' }] }];
+  b.unassigned = [{ kind: 'gem', slug: 'arc' }];
+  b.tree = { code: 'AAAA', notablePriority: [1, 2, 3] };
+  const { build, trimmed } = clampBuild(b);
+  assert.deepEqual(trimmed, [], 'nothing reported for a normal build');
+  assert.deepEqual(build, b, 'and nothing altered');
+});
+
+test('clampBuild truncates the display strings', () => {
+  const b = emptyBuild({ now: fixedNow, uuid: fixedUuid });
+  b.name = huge(50000); b.description = huge(50000); b.notes = huge(500000);
+  const { build, trimmed } = clampBuild(b);
+  assert.equal(build.name.length, LIMITS.name);
+  assert.equal(build.description.length, LIMITS.description);
+  assert.equal(build.notes.length, LIMITS.notes);
+  for (const f of ['name', 'description', 'notes']) {
+    assert.ok(trimmed.some((t) => t.includes(f)), `${f} reported: ${JSON.stringify(trimmed)}`);
+  }
+});
+
+test('clampBuild bounds skill setups and supports per setup', () => {
+  const b = emptyBuild({ now: fixedNow, uuid: fixedUuid });
+  b.skills = Array.from({ length: 10000 }, (_, i) => ({
+    gem: { slug: `g${i}` }, level: null,
+    supports: Array.from({ length: 500 }, (_, j) => ({ slug: `s${j}` })),
+  }));
+  const { build, trimmed } = clampBuild(b);
+  assert.equal(build.skills.length, LIMITS.setups);
+  for (const s of build.skills) assert.equal(s.supports.length, LIMITS.supportsPerSetup);
+  assert.ok(trimmed.some((t) => /setup/i.test(t)), JSON.stringify(trimmed));
+});
+
+test('clampBuild bounds the unassigned tray', () => {
+  const b = emptyBuild({ now: fixedNow, uuid: fixedUuid });
+  b.unassigned = Array.from({ length: 5000 }, (_, i) => ({ kind: 'gem', slug: `g${i}` }));
+  const { build, trimmed } = clampBuild(b);
+  assert.equal(build.unassigned.length, LIMITS.unassigned);
+  assert.ok(trimmed.some((t) => /unassigned|tray/i.test(t)));
+});
+
+test('clampBuild bounds gear keys AND mods per cell', () => {
+  // builds-render.js sections() iterates RAW gear keys, so unbounded fake slots
+  // render unbounded rows in the fallback share preview.
+  const b = emptyBuild({ now: fixedNow, uuid: fixedUuid });
+  for (let i = 0; i < 10000; i++) {
+    b.gear[`fake${i}`] = { item: { kind: 'base', slug: 'x' },
+      mods: Array.from({ length: 200 }, (_, j) => ({ affix: `a${j}`, tier: 't' })), corrupted: null };
+  }
+  const { build, trimmed } = clampBuild(b);
+  assert.equal(Object.keys(build.gear).length, LIMITS.gearSlots);
+  for (const g of Object.values(build.gear)) assert.ok(g.mods.length <= LIMITS.mods);
+  assert.ok(trimmed.some((t) => /gear|slot/i.test(t)));
+  assert.ok(trimmed.some((t) => /mod/i.test(t)));
+});
+
+test('clampBuild bounds the notable priority list', () => {
+  const b = emptyBuild({ now: fixedNow, uuid: fixedUuid });
+  b.tree = { code: 'AAAA', notablePriority: Array.from({ length: 100000 }, (_, i) => i) };
+  const { build, trimmed } = clampBuild(b);
+  assert.equal(build.tree.notablePriority.length, LIMITS.notablePriority);
+  assert.ok(trimmed.some((t) => /notable|priorit/i.test(t)));
+});
+
+test('clampBuild bounds an oversized tree code and grantedSupports', () => {
+  const b = emptyBuild({ now: fixedNow, uuid: fixedUuid });
+  b.tree = { code: huge(200000), notablePriority: [] };
+  b.grantedSupports = Object.fromEntries(
+    Array.from({ length: 500 }, (_, i) => [`item${i}:skill`, Array.from({ length: 90 }, (_, j) => ({ slug: `s${j}` }))]));
+  const { build, trimmed } = clampBuild(b);
+  // An over-long code is DROPPED, not truncated: a sliced v7 code is garbage
+  // that would fail to decode, so null is the honest outcome.
+  assert.equal(build.tree.code, null, 'an impossible tree code is dropped outright');
+  assert.ok(trimmed.some((t) => /tree code/i.test(t)), JSON.stringify(trimmed));
+  assert.ok(Object.keys(build.grantedSupports).length <= LIMITS.grantedKeys);
+  for (const l of Object.values(build.grantedSupports)) assert.ok(l.length <= LIMITS.supportsPerSetup);
+
+  // A legitimate code is left completely alone.
+  const good = emptyBuild({ now: fixedNow, uuid: fixedUuid });
+  good.tree = { code: 'A'.repeat(900), notablePriority: [1, 2] };
+  assert.equal(clampBuild(good).build.tree.code, 'A'.repeat(900), 'real codes untouched');
+});
+
+test('clampBuild survives structurally broken input without throwing', () => {
+  for (const bad of [{}, { gear: null, skills: null, unassigned: null, tree: null },
+                     { name: 42, notes: [], gear: 'nope', skills: 'nope' }]) {
+    const { build } = clampBuild(bad);
+    assert.equal(typeof build, 'object', 'always returns an object');
+  }
+  assert.equal(typeof clampBuild(null).build, 'object');
+});
+
+test('importGroup clamps every build in the group', () => {
+  const store = createStore(memStorage(), { now: fixedNow, uuid: seqUuid() });
+  const nasty = (name) => ({
+    schema: 3, name: huge(9000), notes: huge(90000), description: huge(9000),
+    class: null, ascendancy: null, gear: {}, unassigned: [],
+    skills: Array.from({ length: 900 }, (_, i) => ({ gem: { slug: `g${i}` }, level: null, supports: [] })),
+    tree: { code: null, notablePriority: [] }, variants: [],
+  });
+  const parent = store.importGroup({ parent: nasty('p'), variants: [{ label: huge(500), build: nasty('v') }] });
+  assert.equal(parent.name.length, LIMITS.name, 'parent name clamped on import');
+  assert.equal(parent.notes.length, LIMITS.notes);
+  assert.equal(parent.skills.length, LIMITS.setups);
+  assert.equal(parent.variants[0].label.length, LIMITS.label, 'variant LABEL clamped too');
+  const child = store.get(parent.variants[0].buildId);
+  assert.equal(child.skills.length, LIMITS.setups, 'variant build clamped as well');
 });

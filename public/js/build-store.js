@@ -27,6 +27,122 @@ export const SCHEMA_VERSION = 3;
  */
 export const MAX_BUILDS = 300;
 
+/**
+ * Structural bounds for an UNTRUSTED build (see {@link clampBuild}).
+ *
+ * Authoring is already bounded by the DOM — `maxlength` on the text fields, a
+ * fixed 15-well gear grid, a fixed socket count per setup. Decoded share codes
+ * are not: the codec validates *shape*, never *size*. Without these, a hostile
+ * or accidentally-huge code could exhaust storage, break the layout with a
+ * megabyte-long title, or hang the page with tens of thousands of skill rows.
+ *
+ * Each value is comfortably above any real build, so clamping is invisible in
+ * normal use. The string limits mirror the inputs' own maxlength attributes.
+ */
+export const LIMITS = {
+  name: 60,               // = the rename input's maxlength
+  label: 40,              // = the variant label input's maxlength
+  description: 1000,
+  notes: 10000,
+  setups: 24,             // real guides run ~8-12
+  supportsPerSetup: 8,    // 5 sockets + headroom for over-socketed warnings
+  unassigned: 100,        // the site-wide "add to build" tray
+  gearSlots: 24,          // 15 real slots + headroom; builds-render iterates RAW keys
+  mods: 8,                // 6 legal (3 prefix + 3 suffix) + headroom
+  notablePriority: 200,
+  treeCode: 4000,         // a full v7 code is well under 1 KB
+  grantedKeys: 60,        // one per equipped item that grants a skill
+};
+
+const clampStr = (v, max) => (typeof v === 'string' ? v.slice(0, max) : v);
+
+/**
+ * Clamp an untrusted build to {@link LIMITS}. TRUNCATES rather than rejects — a
+ * shared build should still open, just trimmed — and reports what it trimmed so
+ * the caller can say so instead of silently altering someone's build.
+ * Tolerates structurally broken input; never throws.
+ * @param {object} b
+ * @returns {{ build: object, trimmed: string[] }}
+ */
+export function clampBuild(b) {
+  const trimmed = [];
+  const src = isObj(b) ? b : {};
+  const out = { ...src };
+  const note = (msg) => { if (!trimmed.includes(msg)) trimmed.push(msg); };
+
+  for (const [field, max] of [['name', LIMITS.name], ['description', LIMITS.description], ['notes', LIMITS.notes]]) {
+    if (typeof src[field] === 'string' && src[field].length > max) {
+      out[field] = src[field].slice(0, max);
+      note(`${field} shortened to ${max} characters`);
+    }
+  }
+
+  if (isObj(src.gear)) {
+    const entries = Object.entries(src.gear);
+    const kept = entries.slice(0, LIMITS.gearSlots);
+    if (entries.length > kept.length) note(`gear reduced to ${LIMITS.gearSlots} slots`);
+    out.gear = {};
+    for (const [slot, cell] of kept) {
+      if (!isObj(cell)) { out.gear[slot] = cell; continue; }
+      const g = { ...cell };
+      if (Array.isArray(cell.mods) && cell.mods.length > LIMITS.mods) {
+        g.mods = cell.mods.slice(0, LIMITS.mods);
+        note(`chosen mods reduced to ${LIMITS.mods} per item`);
+      }
+      out.gear[slot] = g;
+    }
+  }
+
+  if (Array.isArray(src.skills)) {
+    let cut = src.skills.length > LIMITS.setups;
+    out.skills = src.skills.slice(0, LIMITS.setups).map((setup) => {
+      if (!isObj(setup)) return setup;
+      if (Array.isArray(setup.supports) && setup.supports.length > LIMITS.supportsPerSetup) {
+        cut = true;
+        return { ...setup, supports: setup.supports.slice(0, LIMITS.supportsPerSetup) };
+      }
+      return setup;
+    });
+    if (cut) note(`skill setups reduced to ${LIMITS.setups}, with ${LIMITS.supportsPerSetup} supports each`);
+  }
+
+  if (Array.isArray(src.unassigned) && src.unassigned.length > LIMITS.unassigned) {
+    out.unassigned = src.unassigned.slice(0, LIMITS.unassigned);
+    note(`unassigned items reduced to ${LIMITS.unassigned}`);
+  }
+
+  if (isObj(src.tree)) {
+    const tree = { ...src.tree };
+    if (typeof tree.code === 'string' && tree.code.length > LIMITS.treeCode) {
+      tree.code = null;   // a code this long is not a v7 code; drop, do not truncate
+      note('an invalid passive tree code was dropped');
+    }
+    if (Array.isArray(tree.notablePriority) && tree.notablePriority.length > LIMITS.notablePriority) {
+      tree.notablePriority = tree.notablePriority.slice(0, LIMITS.notablePriority);
+      note(`notable priority reduced to ${LIMITS.notablePriority} entries`);
+    }
+    out.tree = tree;
+  }
+
+  if (isObj(src.grantedSupports)) {
+    const entries = Object.entries(src.grantedSupports).slice(0, LIMITS.grantedKeys);
+    if (entries.length < Object.keys(src.grantedSupports).length) note('item-granted skill data reduced');
+    out.grantedSupports = Object.fromEntries(entries.map(([k, list]) => [
+      k, Array.isArray(list) ? list.slice(0, LIMITS.supportsPerSetup) : list,
+    ]));
+  }
+
+  if (Array.isArray(src.variants)) {
+    out.variants = src.variants.map((v) => {
+      if (!isObj(v) || typeof v.label !== 'string' || v.label.length <= LIMITS.label) return v;
+      note(`variant labels shortened to ${LIMITS.label} characters`);
+      return { ...v, label: v.label.slice(0, LIMITS.label) };
+    });
+  }
+
+  return { build: out, trimmed };
+}
+
 const defaultNow = () => Date.now();
 const defaultUuid = () => globalThis.crypto.randomUUID();
 
@@ -388,15 +504,16 @@ export function createStore(storage, { now = defaultNow, uuid = defaultUuid } = 
       // All-or-nothing: a half-imported group would leave the visitor with a
       // parent whose variants silently vanished.
       if (s.order.length + incoming > MAX_BUILDS) throw new StoreLimitError(MAX_BUILDS);
+      // Everything here came off a share code, so clamp before it lands.
       const fresh = (b, over) => {
-        const { id: _i, createdAt: _c, updatedAt: _u, ...rest } = migrate(deepCopy(b));
+        const { id: _i, createdAt: _c, updatedAt: _u, ...rest } = clampBuild(migrate(deepCopy(b))).build;
         return emptyBuild({ now, uuid, ...rest, ...over });
       };
       const variants = (group.variants ?? []).map(({ label, build }) => {
         const child = fresh(build, { variants: [] });
         s.order.push(child.id);
         s.builds[child.id] = child;
-        return { label, buildId: child.id };
+        return { label: clampStr(label, LIMITS.label), buildId: child.id };
       });
       const parent = fresh(group.parent, { variants });
       s.order.push(parent.id);

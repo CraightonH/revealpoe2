@@ -343,8 +343,8 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
 
 /* ---- skills: constellation chains ---- */
 .editor-chains { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
-.editor-chain { position: relative; display: flex; align-items: flex-start; padding: 22px 18px 16px;
-  border: 1px solid var(--border); border-radius: 8px; overflow-x: auto;
+.editor-chain { position: relative; display: flex; flex-wrap: wrap; align-items: flex-start; padding: 22px 18px 16px;
+  border: 1px solid var(--border); border-radius: 8px; overflow-x: auto; min-width: 0;
   background: color-mix(in srgb, var(--bg-surface) 88%, transparent);
   box-shadow: 0 12px 32px rgb(0 0 0 / .14);
   transition: border-color 120ms ease, transform 120ms ease; }
@@ -648,3 +648,20 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
 .variant-tab--add[disabled], .build-switcher__new[disabled], .dossier-action[disabled] {
   opacity: .38; cursor: not-allowed;
 }
+
+.dossier-banner--warn { border-color: color-mix(in srgb, var(--color-notable) 45%, var(--border));
+  background: color-mix(in srgb, var(--color-notable) 8%, transparent); color: var(--color-notable); }
+
+/* ---- overflow containment for untrusted / pathological content -----------
+   A shared build's strings are clamped by length, but length is not width: one
+   60-character unbroken word still has to be allowed to break, and the grid
+   column has to be allowed to shrink. Without these, an imported build could
+   push the whole page sideways. */
+.dossier-name, .dossier-name--static, .dossier-name-input {
+  max-width: 100%; overflow-wrap: anywhere;
+}
+.dossier-head, .dossier-head__copy, .dossier-main, .editor-chains, .editor-chains > li { min-width: 0; }
+.dossier-desc, .dossier-desc--static, .editor-notes-static { overflow-wrap: anywhere; }
+.variant-tab { max-width: 16rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.build-switcher__row b { overflow-wrap: anywhere; }
+.editor-item__name, .editor-node__name { overflow-wrap: anywhere; }

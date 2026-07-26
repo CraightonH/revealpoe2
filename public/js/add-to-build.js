@@ -4,7 +4,7 @@
 // a target build. Also exports openBuildMenu for programmatic callers
 // (theorycraft pin-tray promote).
 import { getStore } from '/static/js/build-host.js';
-import { StoreWriteError } from '/static/js/build-store.js';
+import { StoreWriteError, LIMITS } from '/static/js/build-store.js';
 
 let menu = null;
 function closeMenu() { menu?.remove(); menu = null; }
@@ -29,7 +29,16 @@ function addRefs(buildId, refs) {
   const have = new Set([...b.unassigned, ...Object.values(b.gear).map((g) => g.item).filter(Boolean)]
     .map((r) => `${r.kind}:${r.slug}`));
   const fresh = refs.filter((r) => !have.has(`${r.kind}:${r.slug}`));
-  if (fresh.length) store.update(buildId, { unassigned: [...b.unassigned, ...fresh] });
+  if (!fresh.length) return;
+  // The tray is a staging area, not a collection: bound it so a run of
+  // "add to build" clicks across the site can't grow one build without limit.
+  const room = LIMITS.unassigned - b.unassigned.length;
+  if (room <= 0) {
+    window.alert(`This build's unassigned tray is full (${LIMITS.unassigned} items). `
+      + 'Equip or remove some before adding more.');
+    return;
+  }
+  store.update(buildId, { unassigned: [...b.unassigned, ...fresh.slice(0, room)] });
   const openLink = `<a href="/builds#/b/${encodeURIComponent(buildId)}">open</a>`;
   toast(fresh.length
     ? `Added ${fresh.length === 1 ? '' : fresh.length + ' items '}to <strong>${esc(b.name)}</strong> — ${openLink}`

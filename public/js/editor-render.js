@@ -9,7 +9,7 @@ import { gearViolations } from './build-rules.js';
 import { modViolations, resolveMod } from './mod-core.js';
 import { decode as decodePassiveCode } from './passive-code.js';
 import { computeMath } from './build-math.js';
-import { MAX_BUILDS } from './build-store.js';
+import { MAX_BUILDS, LIMITS } from './build-store.js';
 
 // The only unbounded per-build fields. Generous for real use (notes ~1500 words)
 // while stopping a single paste from consuming the whole storage budget.
@@ -325,7 +325,12 @@ export function renderSkills(build, ctx) {
     ${rows.length || grantedHtml.length
       ? `<ul class="editor-chains">${grantedHtml.join('')}${rows.join('')}</ul>`
       : '<p class="editor-none">No skill setups yet.</p>'}
-    ${isReadonly(ctx) ? '' : '<button class="editor-setup-add" type="button" data-setup-add>＋ Add skill setup</button>'}
+    ${isReadonly(ctx) ? '' : (() => {
+      const full = build.skills.length >= LIMITS.setups;
+      return `<button class="editor-setup-add" type="button" data-setup-add${full ? ' disabled' : ''}
+        title="${full ? `At the limit of ${LIMITS.setups} skill setups — remove one to add another`
+                      : 'Add another skill setup'}">＋ Add skill setup</button>`;
+    })()}
   </section>`;
 }
 
@@ -506,6 +511,10 @@ export function renderEditor(build, ctx) {
     : mode === 'import'
       ? `<p class="dossier-banner">Shared build preview — not saved in this browser yet.${
           sharedCount ? ` This link carries ${sharedCount} variant${sharedCount > 1 ? 's' : ''}; “Save a copy” keeps the whole group.` : ''}</p>`
+        + ((ctx.trimmed ?? []).length
+          ? `<p class="dossier-banner dossier-banner--warn">This shared build exceeded some limits and was trimmed to fit: ${
+              esc(ctx.trimmed.join('; '))}.</p>`
+          : '')
       : '';
 
   const railTop = mode === 'import'

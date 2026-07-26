@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { parseRoute, renderBuild, renderImport, esc } from '../public/js/builds-render.js';
 import { emptyBuild } from '../public/js/build-store.js';
 import { renderEditor, renderVariantStrip, MAX_DESCRIPTION, MAX_NOTES } from '../public/js/editor-render.js';
-import { MAX_BUILDS } from '../public/js/build-store.js';
+import { MAX_BUILDS, LIMITS } from '../public/js/build-store.js';
 
 const fixedBuild = (over = {}) => emptyBuild({ now: () => 1750000000000, uuid: () => 'b-1', ...over });
 
@@ -231,4 +231,33 @@ test('below the ceiling nothing is disabled', () => {
   assert.ok(!/data-builds-new[^>]*disabled/.test(html));
   assert.ok(!/data-variant-add[^>]*disabled/.test(html));
   assert.ok(!/data-build-duplicate="a"[^>]*disabled/.test(html));
+});
+
+test('a trimmed shared build says so in the preview', () => {
+  const b = vb('p', 'Shared');
+  const html = renderEditor(b, stripCtx({
+    mode: 'import', builds: [b], currentId: 'p', group: { parent: b, variants: [] },
+    trimmed: ['notes shortened to 10000 characters', 'skill setups reduced to 24'],
+  }));
+  assert.match(html, /dossier-banner--warn/);
+  assert.match(html, /trimmed to fit/);
+  assert.match(html, /notes shortened to 10000 characters/);
+});
+
+test('an untrimmed shared build shows no warning banner', () => {
+  const b = vb('p', 'Shared');
+  const html = renderEditor(b, stripCtx({
+    mode: 'import', builds: [b], currentId: 'p', group: { parent: b, variants: [] }, trimmed: [],
+  }));
+  assert.ok(!html.includes('dossier-banner--warn'));
+});
+
+test('the add-skill-setup button locks at the setup ceiling', () => {
+  const full = vb('p', 'Full');
+  full.skills = Array.from({ length: LIMITS.setups }, (_, i) => ({ gem: { slug: `g${i}` }, level: null, supports: [] }));
+  const html = renderEditor(full, stripCtx({ builds: [full], currentId: 'p' }));
+  assert.match(html, /data-setup-add[^>]*disabled/);
+  const room = vb('q', 'Room');
+  room.skills = [{ gem: { slug: 'spark' }, level: null, supports: [] }];
+  assert.ok(!/data-setup-add[^>]*disabled/.test(renderEditor(room, stripCtx({ builds: [room], currentId: 'q' }))));
 });

@@ -5,6 +5,7 @@ import { getStore, loadItemMath, safeWrite } from '/static/js/build-host.js';
 import { parseRoute, renderBuild, renderImport } from '/static/js/builds-render.js';
 import { baseRarity, modCardSections, renderEditor } from '/static/js/editor-render.js';
 import { decodeGroup } from '/static/js/build-code.js';
+import { clampBuild } from '/static/js/build-store.js';
 import { mountEditor } from '/static/js/build-editor.js';
 
 const root = document.querySelector('[data-builds-root]');
@@ -194,7 +195,18 @@ if (root && view) {
       // hash that has since moved to a different import code) can't clobber
       // the current importState after this chain settles.
       Promise.all([decodeGroup(route.code), loadDocs().catch(() => null), loadPlanner().catch(() => null), loadPools().catch(() => null)])
-        .then(([group]) => { if (importState === st) st.state = { status: 'ready', group }; })
+        .then(([group]) => {
+          if (importState !== st) return;
+          // Clamp for DISPLAY too: the preview renders straight from the
+          // fragment, so an oversized code must not break the page before the
+          // visitor ever reaches "Save a copy" (which clamps again in the store).
+          const trimmed = [];
+          const clampOne = (b) => { const r = clampBuild(b); trimmed.push(...r.trimmed); return r.build; };
+          st.state = { status: 'ready', trimmed, group: {
+            parent: clampOne(group.parent),
+            variants: group.variants.map((v) => ({ label: v.label, build: clampOne(v.build) })),
+          } };
+        })
         .catch((e) => {
           if (importState === st) st.state = { status: 'error', message: e?.code === 'bad-version'
             ? 'This code was made by a newer version of the site.'
@@ -208,7 +220,7 @@ if (root && view) {
       const shown = sharedSnapshot(importState);
       view.innerHTML = renderEditor(shown.build, {
         planner, resolveRef, pools, weaponSet: importState.weaponSet, mode: 'import',
-        group: shown.group, currentId: shown.id,
+        group: shown.group, currentId: shown.id, trimmed: importState.state.trimmed,
       });
     } else if (importState.state.status === 'ready') {
       view.innerHTML = renderImport({ status: 'ready', build: importState.state.group.parent }, resolveRef);
