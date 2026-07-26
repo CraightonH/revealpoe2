@@ -436,7 +436,11 @@ export function createStore(storage, { now = defaultNow, uuid = defaultUuid } = 
       if (!parent) return null;
       if (s.order.length >= MAX_BUILDS) throw new StoreLimitError(MAX_BUILDS);
       const t = now();
-      const child = { ...deepCopy(parent), id: uuid(),
+      // `label` is deliberately cleared: a variant's label lives on the parent's
+      // ENTRY, so a copied one is stale data that would resurface as the child's
+      // own label if it were ever promoted to a root. `variants` likewise — groups
+      // are one level deep.
+      const child = { ...deepCopy(parent), id: uuid(), label: null,
                       variants: [], createdAt: t, updatedAt: t };
       s.order.push(child.id);
       s.builds[child.id] = child;

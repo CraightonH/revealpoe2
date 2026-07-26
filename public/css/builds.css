@@ -641,9 +641,6 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
   font-size: .78rem; opacity: .7; line-height: 1.45;
 }
 
-/* A group shares one title across its phases; the label qualifies the row. */
-.build-switcher__variant { font-weight: 400; opacity: .6; }
-
 .build-switcher__limit { margin: 5px 2px 0; color: var(--color-default); font-size: 10px; line-height: 1.4; }
 .variant-tab--add[disabled], .build-switcher__new[disabled], .dossier-action[disabled] {
   opacity: .38; cursor: not-allowed;

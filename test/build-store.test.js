@@ -796,3 +796,15 @@ test('validateBuild accepts an absent or string label, rejects other types', () 
   b.label = 42;
   assert.equal(validateBuild(b).ok, false);
 });
+
+test('addVariant does not copy the parent label onto the child', () => {
+  // A variant's label lives on the parent's ENTRY, so a copied `label` on the
+  // build is stale data — it would resurface as the child's own label if the
+  // child were ever promoted to a root.
+  const store = createStore(memStorage(), { now: fixedNow, uuid: seqUuid() });
+  const parent = store.create({ name: 'Stormweaver CoC' });
+  store.setLabel(parent.id, 'Leveling');
+  const v = store.addVariant(parent.id, 'Endgame');
+  assert.equal(store.get(v.id).label ?? null, null, 'the child carries no inherited label');
+  assert.equal(store.get(parent.id).label, 'Leveling', 'the root keeps its own');
+});

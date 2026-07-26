@@ -203,28 +203,8 @@ test('renderVariantStrip in import mode marks the active decoded snapshot', () =
   assert.ok(!html.includes('data-variant-add'), 'a visitor cannot add variants to your group');
 });
 
-test('the switcher qualifies a variant row with its label, standalone rows plain', () => {
-  const parent = { ...vb('p', 'Stormweaver CoC'), variants: [{ label: 'Leveling', buildId: 'v1' }] };
-  const child = vb('v1', 'Stormweaver CoC');
-  const solo = vb('s', 'Some Other Build');
-  const html = renderEditor(parent, stripCtx({
-    group: { parent, variants: [{ label: 'Leveling', build: child }] },
-    currentId: 'p', builds: [parent, child, solo], switcherOpen: true,
-  }));
-  // Isolate each switcher row rather than slicing by character offset.
-  const rows = html.split('<li>').filter((r) => r.includes('build-switcher__row'));
-  const row = (name) => rows.find((r) => r.includes(name));
-
-  // The child row carries the label so two identically-titled rows differ.
-  assert.match(row('Stormweaver CoC') && rows.filter((r) => r.includes('Stormweaver CoC')).join(''),
-    /build-switcher__variant"> · Leveling</);
-  // The standalone build gets no qualifier.
-  assert.ok(!row('Some Other Build').includes('build-switcher__variant'),
-    'standalone rows are not qualified');
-  // Exactly one row is qualified — the parent must not be.
-  assert.equal(rows.filter((r) => r.includes('build-switcher__variant')).length, 1,
-    'only the variant row is qualified; the parent is identified by its name');
-});
+// (Removed 2026-07-26: the switcher no longer lists variants at all, so there is
+// no shared-title ambiguity left to qualify — see 'lists only root builds'.)
 
 test('the unbounded text fields carry a maxlength', () => {
   const b = vb('p', 'Capped');
@@ -304,4 +284,47 @@ test('the parent tab never offers a delete-variant control', () => {
   const html = renderVariantStrip(parent, stripCtx({ group, currentId: 'p' }));
   assert.ok(!html.includes('data-variant-delete'),
     'the parent is deleted from the header, not the strip');
+});
+
+test('the switcher lists only root builds — variants stay behind their parent', () => {
+  const parent = { ...vb('p', 'Stormweaver CoC'), variants: [
+    { label: 'Early mapping', buildId: 'v1' }, { label: 'Endgame', buildId: 'v2' }] };
+  const v1 = vb('v1', 'Stormweaver CoC');
+  const v2 = vb('v2', 'Stormweaver CoC');
+  const solo = vb('s', 'Some Other Build');
+  const html = renderEditor(parent, stripCtx({
+    builds: [parent, v1, v2, solo], currentId: 'p', switcherOpen: true,
+    group: { parent, variants: [{ label: 'Early mapping', buildId: 'v1', build: v1 },
+                                { label: 'Endgame', buildId: 'v2', build: v2 }] },
+  }));
+  const rows = html.split('<li>').filter((r) => r.includes('build-switcher__row'));
+  assert.equal(rows.length, 2, 'only the root and the standalone build are listed');
+  assert.ok(rows.some((r) => r.includes('href="#/b/p"')), 'root is selectable');
+  assert.ok(rows.some((r) => r.includes('href="#/b/s"')), 'standalone is selectable');
+  assert.ok(!rows.some((r) => r.includes('href="#/b/v1"')), 'variants are NOT selectable here');
+  assert.ok(!rows.some((r) => r.includes('href="#/b/v2"')));
+  assert.match(html, /2 variants/, 'the root advertises how many it holds');
+});
+
+test('viewing a variant highlights its parent row in the switcher', () => {
+  const parent = { ...vb('p', 'Stormweaver CoC'), variants: [{ label: 'Endgame', buildId: 'v1' }] };
+  const v1 = vb('v1', 'Stormweaver CoC');
+  const html = renderEditor(v1, stripCtx({
+    builds: [parent, v1], currentId: 'v1', switcherOpen: true,
+    group: { parent, variants: [{ label: 'Endgame', buildId: 'v1', build: v1 }] },
+  }));
+  const rows = html.split('<li>').filter((r) => r.includes('build-switcher__row'));
+  assert.equal(rows.length, 1);
+  assert.match(rows[0], /is-current/, 'the group you are inside is marked current');
+});
+
+test('an orphaned variant becomes selectable again', () => {
+  // Deleting a parent orphans its variants; with nobody referencing them they are
+  // roots, so they must reappear in the switcher rather than being unreachable.
+  const orphan = vb('v1', 'Stormweaver CoC');
+  const html = renderEditor(orphan, stripCtx({
+    builds: [orphan], currentId: 'v1', switcherOpen: true,
+    group: { parent: orphan, variants: [] },
+  }));
+  assert.match(html, /href="#\/b\/v1"/);
 });

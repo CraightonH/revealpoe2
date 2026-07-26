@@ -347,18 +347,21 @@ export function treeSummary(build) {
 function renderSwitcher(build, ctx) {
   const open = !!ctx.switcherOpen;
   const builds = [...(ctx.builds ?? [])].sort((a, b) => b.updatedAt - a.updatedAt);
-  // A group normally shares ONE title across every phase (build name and variant
-  // label are independent since 2026-07-26), so the name alone can't tell four
-  // rows apart. Qualify each variant row with its label.
-  const labelFor = new Map();
-  for (const p of builds) for (const v of p.variants ?? []) labelFor.set(v.buildId, v.label);
-  const rows = builds.map((b) => {
+  // Only ROOT builds are listed. A variant is reached through its parent's strip,
+  // not chosen here — otherwise a group of four appeared as four identical
+  // top-level builds and every variant looked like an independent build. An
+  // orphaned variant (its parent deleted) references nobody, so it is a root and
+  // reappears here automatically.
+  const isVariant = new Set(builds.flatMap((b) => (b.variants ?? []).map((v) => v.buildId)));
+  const parentOfCurrent = builds.find((b) => (b.variants ?? []).some((v) => v.buildId === ctx.currentId));
+  const roots = builds.filter((b) => !isVariant.has(b.id));
+  const rows = roots.map((b) => {
     const items = Object.values(b.gear).filter((g) => g.item).length + b.unassigned.length;
-    const current = b.id === ctx.currentId;
+    // Viewing a variant marks its PARENT row, so you can see which group you are in.
+    const current = b.id === ctx.currentId || b.id === parentOfCurrent?.id;
     const kids = (b.variants ?? []).length;
-    const label = labelFor.get(b.id);
     return `<li><a class="build-switcher__row${current ? ' is-current' : ''}" href="#/b/${encodeURIComponent(b.id)}">
-      <b>${esc(b.name)}${label ? `<span class="build-switcher__variant"> · ${esc(label)}</span>` : ''}</b>
+      <b>${esc(b.name)}</b>
       <span>${esc(classLine(b))} · ${items} items · ${b.skills.length} setups${kids ? ` · ${kids} variant${kids > 1 ? 's' : ''}` : ''}</span></a></li>`;
   }).join('');
   const atLimit = builds.length >= MAX_BUILDS;
