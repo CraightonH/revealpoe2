@@ -69,7 +69,7 @@ if (root && view) {
 
   // A decoded group has no local ids (the codec strips them), so give each
   // snapshot a stable synthetic id for the variant strip to key on. These never
-  // reach storage — importGroup mints real ids on "Save a copy".
+  // reach storage — importGroup mints real ids on "Copy".
   function sharedSnapshot(st) {
     const { parent, variants } = st.state.group;
     const tagged = {
@@ -187,7 +187,7 @@ if (root && view) {
       return;
     }
     // import view — decoded straight from the fragment. NOTHING is written to
-    // this visitor's storage until "Save a copy" (Amendment 3: view first).
+    // this visitor's storage until "Copy" (Amendment 3: view first).
     if (importState?.code !== route.code) {
       const st = { code: route.code, state: { status: 'loading' }, weaponSet: 1, activeId: null };
       importState = st;
@@ -199,7 +199,7 @@ if (root && view) {
           if (importState !== st) return;
           // Clamp for DISPLAY too: the preview renders straight from the
           // fragment, so an oversized code must not break the page before the
-          // visitor ever reaches "Save a copy" (which clamps again in the store).
+          // visitor ever reaches "Copy" (which clamps again in the store).
           const trimmed = [];
           const clampOne = (b) => { const r = clampBuild(b); trimmed.push(...r.trimmed); return r.build; };
           st.state = { status: 'ready', trimmed, group: {

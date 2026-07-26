@@ -95,6 +95,6 @@ export function renderImport(state, resolveRef) {
   const b = state.build;
   return `<div class="builds-import">
     <p class="builds-import__banner">Shared build preview — not saved to your browser yet.
-      <button type="button" data-import-save>Save a copy</button></p>
+      <button type="button" data-import-save>Copy</button></p>
     ${renderBuild(b, resolveRef)}</div>`;
 }

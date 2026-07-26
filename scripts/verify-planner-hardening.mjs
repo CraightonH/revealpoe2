@@ -67,7 +67,7 @@ ok('variant label is clamped', view.tabLabelLen <= 42, String(view.tabLabelLen))
 ok('no horizontal page overflow', view.bodyWide === false, `scrollWidth ${view.scrollW} vs viewport ${view.vw}`);
 ok('view-first still holds (nothing stored)', view.stored === null);
 
-// Save a copy: the store must clamp independently of the display clamp.
+// Copy: the store must clamp independently of the display clamp.
 await q.click('[data-import-save]');
 await new Promise(r=>setTimeout(r,3000));
 const saved = await q.evaluate(() => {

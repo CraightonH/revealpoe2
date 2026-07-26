@@ -414,7 +414,7 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
         })
         .finally(() => {
           btn.disabled = false;
-          btn.textContent = 'Export for game';
+          btn.textContent = 'Export .build';
         });
       return;
     }

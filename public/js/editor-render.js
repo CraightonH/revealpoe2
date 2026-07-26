@@ -502,15 +502,15 @@ export function renderEditor(build, ctx) {
 
   const actions = {
     edit: `<button class="dossier-share" type="button" data-share>Share</button>
-      <button class="dossier-action" type="button" data-export-build>Export for game</button>
-      <button class="dossier-action" type="button" data-view-published>View as shared</button>
+      <button class="dossier-action" type="button" data-export-build>Export .build</button>
+      <button class="dossier-action" type="button" data-view-published>View</button>
       <button class="dossier-action" type="button" data-build-duplicate="${esc(build.id)}"${
         (ctx.builds?.length ?? 0) >= MAX_BUILDS ? ` disabled title="Build limit reached (${MAX_BUILDS})"` : ''}>Duplicate</button>
       <button class="dossier-action dossier-action--danger" type="button" data-build-delete="${esc(build.id)}">Delete</button>`,
     view: `<button class="dossier-share" type="button" data-edit-build>← Back to editing</button>
       <button class="dossier-action" type="button" data-share>Share</button>
-      <button class="dossier-action" type="button" data-export-build>Export for game</button>`,
-    import: `<button class="dossier-share" type="button" data-import-save>Save a copy</button>`,
+      <button class="dossier-action" type="button" data-export-build>Export .build</button>`,
+    import: `<button class="dossier-share" type="button" data-import-save>Copy</button>`,
   }[mode];
 
   const sharedCount = (ctx.group?.variants ?? []).length;
@@ -518,7 +518,7 @@ export function renderEditor(build, ctx) {
     ? '<p class="dossier-banner">Shared preview — this is exactly what someone opening your link sees.</p>'
     : mode === 'import'
       ? `<p class="dossier-banner">Shared build preview — not saved in this browser yet.${
-          sharedCount ? ` This link carries ${sharedCount} variant${sharedCount > 1 ? 's' : ''}; “Save a copy” keeps the whole group.` : ''}</p>`
+          sharedCount ? ` This link carries ${sharedCount} variant${sharedCount > 1 ? 's' : ''}; “Copy” keeps the whole group.` : ''}</p>`
         + ((ctx.trimmed ?? []).length
           ? `<p class="dossier-banner dossier-banner--warn">This shared build exceeded some limits and was trimmed to fit: ${
               esc(ctx.trimmed.join('; '))}.</p>`
@@ -529,7 +529,7 @@ export function renderEditor(build, ctx) {
     ? `<span class="build-switcher__name build-switcher__name--static">${esc(build.name)}</span>`
     : renderSwitcher(build, ctx);
   const railNote = mode === 'import'
-    ? 'Someone shared this build with you. Save a copy to make it yours.'
+    ? 'Someone shared this build with you. Copy it to make it yours.'
     : 'Saved in this browser only. The share link makes this build portable.';
 
   const treeBody = ro

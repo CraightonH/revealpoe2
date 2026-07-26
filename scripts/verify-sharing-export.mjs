@@ -141,7 +141,7 @@ try {
   ok('shared group renders read-only with tabs', shared.tabs.length === 3, JSON.stringify(shared.tabs));
   ok('banner announces the variants', /variant/i.test(shared.banner ?? ''), shared.banner);
   ok('a visitor cannot add variants', shared.canAdd === false);
-  ok('a visitor is offered Save a copy', shared.canSave === true);
+  ok('a visitor is offered Copy', shared.canSave === true);
   ok('view-first: nothing was written to storage', shared.stored === null, String(shared.stored));
 
   // switching tabs must not persist anything either
@@ -199,7 +199,7 @@ try {
   ok('exported filename ends in .build', /\.build$/.test(file.name), file.name);
 
   const btn = await p.$('[data-export-build]');
-  ok('the editor exposes an Export for game action', btn !== null);
+  ok('the editor exposes an Export .build action', btn !== null);
   if (btn) {
     await btn.click();
     await sleep(1800);
