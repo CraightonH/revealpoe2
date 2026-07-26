@@ -80,11 +80,34 @@ const stripCtx = (over = {}) => ({
 });
 const vb = (id, name) => ({ ...emptyBuild({ now: () => 1, uuid: () => id }), name });
 
-test('renderVariantStrip renders nothing for a standalone build in edit mode', () => {
+test('a standalone build already shows itself as Variant 1', () => {
+  // Regression (2026-07-26): the root used to be hidden until a variant existed,
+  // so it popped into the strip out of nowhere on the first add — and that first
+  // addition claimed the name "Variant 1" while the root was really the first.
   const b = vb('p', 'Solo');
   const html = renderVariantStrip(b, stripCtx({ group: { parent: b, variants: [] }, currentId: 'p' }));
-  assert.match(html, /data-variant-add/, 'a standalone build still offers "add variant"');
-  assert.ok(!html.includes('data-variant-tab'), 'no tabs without variants');
+  assert.match(html, /data-variant-tab="p"/, 'the root is always a tab');
+  assert.match(html, />Variant 1</, 'labelled Variant 1 by default');
+  assert.match(html, /data-variant-add/, 'and still offers "add variant"');
+  assert.ok(!html.includes('data-variant-delete'), 'the root is not deletable from the strip');
+  assert.match(html, /data-variant-rename="p"/, 'but its label IS renamable');
+});
+
+test('a renamed root label replaces the Variant 1 default', () => {
+  const b = { ...vb('p', 'Stormweaver CoC'), label: 'Leveling' };
+  const html = renderVariantStrip(b, stripCtx({ group: { parent: b, variants: [] }, currentId: 'p' }));
+  assert.match(html, />Leveling</);
+  assert.ok(!html.includes('>Variant 1<'));
+  assert.ok(!html.includes('Stormweaver CoC'), 'the strip shows the LABEL, never the title');
+});
+
+test('the root keeps its Variant 1 tab once variants exist', () => {
+  const parent = vb('p', 'Stormweaver CoC');
+  const group = { parent, variants: [
+    { label: 'Variant 2', buildId: 'v1', build: vb('v1', 'Stormweaver CoC') },
+  ] };
+  const html = renderVariantStrip(parent, stripCtx({ group, currentId: 'p' }));
+  assert.ok(html.indexOf('>Variant 1<') < html.indexOf('>Variant 2<'), 'root first, in order');
 });
 
 test('renderVariantStrip renders nothing at all in read-only mode without variants', () => {

@@ -680,3 +680,87 @@ test('group() variants carry BOTH buildId and the resolved build', () => {
   assert.equal(entry.buildId, v.id, 'buildId is present');
   assert.equal(entry.build.id, v.id, 'and matches the resolved build');
 });
+
+// ---- the parent is Variant 1 (2026-07-26) --------------------------------
+// A group reads as an ordered list of phases, so the parent must present as
+// "Variant 1" from the start. Otherwise it silently becomes a tab the moment you
+// add a variant, and that addition claims the name "Variant 1" while the parent
+// is really the first.
+//
+// A variant's label is a property of the RELATIONSHIP, so it lives on the
+// parent's entry. The parent has no incoming entry, so its own label lives on the
+// build. setLabel() hides that split from callers.
+
+test('nextVariantLabel counts the parent as Variant 1', () => {
+  const store = createStore(memStorage(), { now: fixedNow, uuid: seqUuid() });
+  const parent = store.create({ name: 'Stormweaver CoC' });
+  assert.equal(store.nextVariantLabel(parent.id), 'Variant 2', 'the first ADDED variant is #2');
+  const v2 = store.addVariant(parent.id, store.nextVariantLabel(parent.id));
+  assert.equal(v2.label ?? null, null, 'the label lives on the parent entry, not the build');
+  assert.equal(store.nextVariantLabel(parent.id), 'Variant 3');
+  store.addVariant(parent.id, store.nextVariantLabel(parent.id));
+  assert.equal(store.nextVariantLabel(parent.id), 'Variant 4');
+  // Asking from a variant resolves the same group.
+  assert.equal(store.nextVariantLabel(v2.id), 'Variant 4');
+});
+
+test('nextVariantLabel skips a number already taken', () => {
+  const store = createStore(memStorage(), { now: fixedNow, uuid: seqUuid() });
+  const parent = store.create({ name: 'P' });
+  const v = store.addVariant(parent.id, 'Variant 3');   // hand-picked, out of sequence
+  assert.equal(store.nextVariantLabel(parent.id), 'Variant 2');
+  store.addVariant(parent.id, 'Variant 2');
+  assert.equal(store.nextVariantLabel(parent.id), 'Variant 4', 'skips both 2 and 3');
+});
+
+test('setLabel writes a parent label onto the build itself', () => {
+  const store = createStore(memStorage(), { now: fixedNow, uuid: seqUuid() });
+  const parent = store.create({ name: 'Stormweaver CoC' });
+  assert.equal(store.get(parent.id).label ?? null, null, 'unset by default');
+  store.setLabel(parent.id, 'Leveling');
+  assert.equal(store.get(parent.id).label, 'Leveling');
+  assert.equal(store.get(parent.id).name, 'Stormweaver CoC', 'the TITLE is untouched');
+});
+
+test('setLabel on a variant writes the parent entry, not the variant build', () => {
+  const store = createStore(memStorage(), { now: fixedNow, uuid: seqUuid() });
+  const parent = store.create({ name: 'Stormweaver CoC' });
+  const v = store.addVariant(parent.id, 'Variant 2');
+  store.setLabel(v.id, 'Endgame');
+  assert.deepEqual(store.get(parent.id).variants, [{ label: 'Endgame', buildId: v.id }]);
+  assert.equal(store.get(v.id).label ?? null, null, 'no duplicate label on the variant build');
+  assert.equal(store.get(v.id).name, 'Stormweaver CoC', 'title still untouched');
+});
+
+test('setLabel is a no-op for an unknown id', () => {
+  const store = createStore(memStorage(), { now: fixedNow, uuid: seqUuid() });
+  assert.equal(store.setLabel('nope', 'X'), null);
+});
+
+test('a renamed parent label survives the share codec', async () => {
+  const { encodeGroup, decodeGroup } = await import('../public/js/build-code.js');
+  const store = createStore(memStorage(), { now: fixedNow, uuid: seqUuid() });
+  const parent = store.create({ name: 'Stormweaver CoC' });
+  store.setLabel(parent.id, 'Leveling');
+  store.addVariant(parent.id, 'Endgame');
+  const out = await decodeGroup(await encodeGroup(store.group(parent.id)));
+  assert.equal(out.parent.label, 'Leveling', 'the parent label travels inside the build');
+  assert.equal(out.variants[0].label, 'Endgame');
+});
+
+test('clampBuild bounds a parent label too', () => {
+  const b = emptyBuild({ now: fixedNow, uuid: fixedUuid });
+  b.label = 'x'.repeat(5000);
+  const { build, trimmed } = clampBuild(b);
+  assert.equal(build.label.length, LIMITS.label);
+  assert.ok(trimmed.some((t) => /label/i.test(t)), JSON.stringify(trimmed));
+});
+
+test('validateBuild accepts an absent or string label, rejects other types', () => {
+  const b = emptyBuild({ now: fixedNow, uuid: fixedUuid });
+  assert.equal(validateBuild(b).ok, true, 'absent is fine');
+  b.label = 'Leveling';
+  assert.equal(validateBuild(b).ok, true);
+  b.label = 42;
+  assert.equal(validateBuild(b).ok, false);
+});

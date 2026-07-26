@@ -435,24 +435,29 @@ export function renderVariantStrip(build, ctx) {
   const variants = group?.variants ?? [];
   if (ro && !variants.length) return '';
 
-  const tab = (id, label, current) => {
+  // The ROOT is always Variant 1 and is always shown. Previously it only appeared
+  // once a variant existed, so it popped into the strip out of nowhere — and the
+  // first addition took the name "Variant 1" while the root was really the first.
+  const tab = (id, label, current, { root = false } = {}) => {
     if (!ro && ctx.variantRenaming === id) {
-      return `<li><input class="variant-tab__input" data-variant-label-input type="text" maxlength="40"
+      return `<li><input class="variant-tab__input" data-variant-label-input type="text" maxlength="${LIMITS.label}"
         value="${esc(label)}" aria-label="Variant label" spellcheck="false"></li>`;
     }
-    const controls = ro || !current || id === group?.parent?.id ? '' :
+    // Every tab can be relabelled, including the root. Only the root cannot be
+    // deleted from here — that is the header's Delete, which removes the build.
+    const controls = ro || !current ? '' :
       `<span class="variant-tab__tools">
         <button class="variant-tab__edit" type="button" data-variant-rename="${esc(id)}"
           title="Rename this variant’s label" aria-label="Rename variant label">${PENCIL_SVG}</button>
-        <button class="variant-tab__drop" type="button" data-variant-delete="${esc(id)}"
-          title="Delete this variant" aria-label="Delete this variant">×</button>
+        ${root ? '' : `<button class="variant-tab__drop" type="button" data-variant-delete="${esc(id)}"
+          title="Delete this variant" aria-label="Delete this variant">×</button>`}
       </span>`;
     return `<li><button data-variant-tab="${esc(id)}" class="variant-tab${current ? ' is-current' : ''}" type="button"
       aria-current="${current ? 'true' : 'false'}">${esc(label)}</button>${controls}</li>`;
   };
 
-  const parentTab = group && variants.length
-    ? tab(group.parent.id, group.parent.name, group.parent.id === ctx.currentId)
+  const parentTab = group
+    ? tab(group.parent.id, group.parent.label || 'Variant 1', group.parent.id === ctx.currentId, { root: true })
     : '';
   const rows = variants.map((v) => tab(v.build.id, v.label, v.build.id === ctx.currentId)).join('');
   const full = (ctx.builds?.length ?? 0) >= MAX_BUILDS;

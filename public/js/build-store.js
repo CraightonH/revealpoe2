@@ -70,7 +70,8 @@ export function clampBuild(b) {
   const out = { ...src };
   const note = (msg) => { if (!trimmed.includes(msg)) trimmed.push(msg); };
 
-  for (const [field, max] of [['name', LIMITS.name], ['description', LIMITS.description], ['notes', LIMITS.notes]]) {
+  for (const [field, max] of [['name', LIMITS.name], ['label', LIMITS.label],
+                              ['description', LIMITS.description], ['notes', LIMITS.notes]]) {
     if (typeof src[field] === 'string' && src[field].length > max) {
       out[field] = src[field].slice(0, max);
       note(`${field} shortened to ${max} characters`);
@@ -249,6 +250,11 @@ export function validateBuild(b) {
       if (!isNum(h)) errors.push(`tree.notablePriority[${i}]: expected number`);
     });
   }
+
+  // A build's own label — its role in its group. Only meaningful for a group's
+  // ROOT: a variant's label lives on its parent's entry (a property of the
+  // relationship), and the root has no such entry.
+  if (b.label !== undefined && b.label !== null && !isStr(b.label)) errors.push('label: expected string or null');
 
   if (b.variants !== undefined) {
     if (!Array.isArray(b.variants)) errors.push('variants: expected array');
@@ -467,6 +473,48 @@ export function createStore(storage, { now = defaultNow, uuid = defaultUuid } = 
       write(s);
       emit('update', parentId);
       return s.builds[parentId];
+    },
+    /**
+     * Set a build's label — its role in its group — regardless of whether it is
+     * the root or a variant. Callers should not have to know that a variant's
+     * label lives on its parent's entry while a root's lives on the build.
+     * Never touches `name` (the build's own title).
+     */
+    setLabel(buildId, label) {
+      const s = read();
+      const self = s.builds[buildId];
+      if (!self) return null;
+      const t = now();
+      const owner = s.order.find((id) => s.builds[id]?.variants?.some((v) => v.buildId === buildId));
+      if (owner) {
+        const p = s.builds[owner];
+        s.builds[owner] = { ...p, updatedAt: t,
+          variants: p.variants.map((v) => (v.buildId === buildId ? { ...v, label } : v)) };
+      } else {
+        s.builds[buildId] = { ...self, label, updatedAt: t };
+      }
+      write(s);
+      emit('update', buildId);
+      return s.builds[owner ?? buildId];
+    },
+    /**
+     * Default label for the next variant added to this build's group. The ROOT
+     * is Variant 1, so the first addition is Variant 2. Skips numbers already
+     * taken so a hand-picked label can't be duplicated.
+     */
+    nextVariantLabel(buildId) {
+      const s = read();
+      const self = s.builds[buildId];
+      if (!self) return 'Variant 2';
+      const owner = s.order.find((id) => s.builds[id]?.variants?.some((v) => v.buildId === buildId));
+      const parent = owner ? s.builds[owner] : self;
+      const list = parent.variants ?? [];
+      const taken = new Set([parent.label || 'Variant 1', ...list.map((v) => v.label)]);
+      let n = list.length + 2;                     // +1 for the root, +1 for the new one
+      while (taken.has(`Variant ${n}`)) n++;
+      // Prefer the lowest free slot so deleting the middle one reuses its number.
+      for (let i = 2; i < n; i++) if (!taken.has(`Variant ${i}`)) return `Variant ${i}`;
+      return `Variant ${n}`;
     },
     /** The build whose variant list contains `buildId`, or null. */
     parentOf(buildId) {

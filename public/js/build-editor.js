@@ -318,8 +318,7 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
     if (e.target.closest('[data-variant-add]')) {
       const g = store.group(buildId);
       const parentId = g?.parent?.id ?? buildId;
-      const label = `Variant ${(g?.variants?.length ?? 0) + 1}`;
-      const child = safeWrite(() => store.addVariant(parentId, label));
+      const child = safeWrite(() => store.addVariant(parentId, store.nextVariantLabel(buildId)));
       if (child) location.hash = `#/b/${encodeURIComponent(child.id)}`;
       return;
     }
@@ -588,8 +587,12 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
     variantRenaming = null;
     const v = input.value.trim();
     const g = store.group(buildId);
-    const cur = g?.variants.find((x) => x.buildId === id)?.label;
-    if (v && v !== cur && g?.parent) safeWrite(() => store.renameVariant(g.parent.id, id, v));
+    // setLabel handles the root and a variant alike (their labels live in
+    // different places); the root's current label defaults to "Variant 1".
+    const cur = id === g?.parent?.id
+      ? (g.parent.label || 'Variant 1')
+      : g?.variants.find((x) => x.buildId === id)?.label;
+    if (v && v !== cur) safeWrite(() => store.setLabel(id, v));
     else render();
   }
   function onFocusOut(e) {
