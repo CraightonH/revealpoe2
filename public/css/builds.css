@@ -611,3 +611,6 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
   flex-basis: 100%; margin: .5rem 0 0;
   font-size: .78rem; opacity: .7; line-height: 1.45;
 }
+
+/* A group shares one title across its phases; the label qualifies the row. */
+.build-switcher__variant { font-weight: 400; opacity: .6; }

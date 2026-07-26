@@ -50,6 +50,65 @@ try {
   ok('parent lists both labels in order', JSON.stringify(stored.labels) === '["Variant 1","Variant 2"]', JSON.stringify(stored.labels));
   ok('every variant entry points at a real build', stored.linked === true);
 
+  // ---- 1b) label and build name are INDEPENDENT strings (2026-07-26) ----
+  // A group shares one title; the label carries the phase. Editing one must
+  // never move the other.
+  const named = await p.evaluate(() => {
+    const raw = JSON.parse(window.localStorage.getItem('reveal.builds.v1'));
+    const parent = Object.values(raw.builds).find((b) => (b.variants ?? []).length);
+    return { parentName: parent.name, childNames: parent.variants.map((v) => raw.builds[v.buildId].name) };
+  });
+  ok('a new variant inherits the parent title verbatim',
+    named.childNames.every((n) => n === named.parentName), JSON.stringify(named));
+
+  // Relabel the active variant tab -> only the label moves.
+  await p.evaluate(() => document.querySelector('[data-variant-rename]')?.click());
+  await sleep(700);
+  await p.evaluate(() => {
+    const i = document.querySelector('[data-variant-label-input]');
+    i.value = 'Endgame';
+    i.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  });
+  await sleep(1200);
+  const afterRelabel = await p.evaluate(() => {
+    const raw = JSON.parse(window.localStorage.getItem('reveal.builds.v1'));
+    const parent = Object.values(raw.builds).find((b) => (b.variants ?? []).length);
+    const entry = parent.variants.find((v) => v.label === 'Endgame');
+    return {
+      label: entry?.label ?? null,
+      buildName: entry ? raw.builds[entry.buildId].name : null,
+      headTitle: document.querySelector('[data-build-rename]')?.textContent.replace(/✎/g, '').trim() ?? null,
+      tabText: document.querySelector('[data-variant-tab].is-current')?.textContent.trim() ?? null,
+    };
+  });
+  ok('relabelling a variant sets the label', afterRelabel.label === 'Endgame', JSON.stringify(afterRelabel));
+  ok('relabelling leaves the build title untouched', afterRelabel.buildName === named.parentName,
+    `title is now ${afterRelabel.buildName}, expected ${named.parentName}`);
+  ok('the tab shows the label, the head shows the title',
+    afterRelabel.tabText === 'Endgame' && afterRelabel.headTitle === named.parentName,
+    `tab=${afterRelabel.tabText} head=${afterRelabel.headTitle}`);
+
+  // Rename the BUILD -> only the title moves, label stays 'Endgame'.
+  await p.evaluate(() => document.querySelector('[data-build-rename]').click());
+  await sleep(700);
+  await p.evaluate(() => {
+    const i = document.querySelector('[data-build-name-input]');
+    i.value = 'Stormweaver CoC';
+    i.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  });
+  await sleep(1200);
+  const afterRename = await p.evaluate(() => {
+    const raw = JSON.parse(window.localStorage.getItem('reveal.builds.v1'));
+    const parent = Object.values(raw.builds).find((b) => (b.variants ?? []).length);
+    const entry = parent.variants.find((v) => v.label === 'Endgame');
+    return { label: entry?.label ?? null, buildName: entry ? raw.builds[entry.buildId].name : null,
+             tabText: document.querySelector('[data-variant-tab].is-current')?.textContent.trim() ?? null };
+  });
+  ok('renaming the build sets its title', afterRename.buildName === 'Stormweaver CoC', JSON.stringify(afterRename));
+  ok('renaming the build leaves the label untouched', afterRename.label === 'Endgame',
+    `label is now ${afterRename.label}`);
+  ok('the tab still shows the label after a rename', afterRename.tabText === 'Endgame', String(afterRename.tabText));
+
   // switch back to the parent by clicking its tab
   await p.evaluate(() => document.querySelector('[data-variant-tab]').click());
   await sleep(1400);
@@ -90,7 +149,9 @@ try {
     current: document.querySelector('[data-variant-tab].is-current')?.textContent.trim() ?? null,
     stored: window.localStorage.getItem('reveal.builds.v1'),
   }));
-  ok('shared tabs switch the previewed snapshot', afterSwitch.current === 'Variant 2', String(afterSwitch.current));
+  // 'Endgame' — the third tab was relabelled in step 1b, and that label travels
+  // in the share code, which is itself proof the label round-trips.
+  ok('shared tabs switch the previewed snapshot', afterSwitch.current === 'Endgame', String(afterSwitch.current));
   ok('switching still writes nothing', afterSwitch.stored === null);
 
   // save a copy imports the WHOLE group

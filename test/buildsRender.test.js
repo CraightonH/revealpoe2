@@ -108,6 +108,29 @@ test('renderVariantStrip renders parent + ordered variant tabs, current marked',
   assert.match(html, /Lv 1-30/);
 });
 
+test('the tab shows the variant LABEL while the head shows the build NAME', () => {
+  // The whole point of the 2026-07-26 decoupling: one group, one shared title,
+  // labels carrying the phase.
+  const parent = vb('p', 'Stormweaver CoC');
+  const child = vb('v1', 'Stormweaver CoC');
+  const group = { parent, variants: [{ label: 'Leveling', build: child }] };
+  const html = renderEditor(child, stripCtx({ group, currentId: 'v1', builds: [parent, child] }));
+
+  assert.match(html, /data-variant-tab="v1"[^>]*>Leveling</, 'the tab renders the label');
+  assert.match(html, /data-build-rename="v1"[^>]*>Stormweaver CoC/,
+    'the dossier head renders the build name, not the label');
+});
+
+test('a variant tab label and its build name stay independent strings', () => {
+  const parent = vb('p', 'Stormweaver CoC');
+  const child = vb('v1', 'Totally Different Title');
+  const group = { parent, variants: [{ label: 'Endgame', build: child }] };
+  const html = renderVariantStrip(child, stripCtx({ group, currentId: 'v1' }));
+  assert.match(html, />Endgame</, 'label on the tab');
+  assert.ok(!html.includes('Totally Different Title'),
+    'the strip must not leak the build name into the tab');
+});
+
 test('renderVariantStrip escapes labels', () => {
   const parent = vb('p', 'Guide');
   const group = { parent, variants: [{ label: '<script>x</script>', build: vb('v1', 'x') }] };
@@ -154,4 +177,27 @@ test('renderVariantStrip in import mode marks the active decoded snapshot', () =
     stripCtx({ mode: 'import', group, currentId: 'shared-v1' }));
   assert.match(html, /data-variant-tab="shared-v1"[^>]*class="[^"]*is-current/);
   assert.ok(!html.includes('data-variant-add'), 'a visitor cannot add variants to your group');
+});
+
+test('the switcher qualifies a variant row with its label, standalone rows plain', () => {
+  const parent = { ...vb('p', 'Stormweaver CoC'), variants: [{ label: 'Leveling', buildId: 'v1' }] };
+  const child = vb('v1', 'Stormweaver CoC');
+  const solo = vb('s', 'Some Other Build');
+  const html = renderEditor(parent, stripCtx({
+    group: { parent, variants: [{ label: 'Leveling', build: child }] },
+    currentId: 'p', builds: [parent, child, solo], switcherOpen: true,
+  }));
+  // Isolate each switcher row rather than slicing by character offset.
+  const rows = html.split('<li>').filter((r) => r.includes('build-switcher__row'));
+  const row = (name) => rows.find((r) => r.includes(name));
+
+  // The child row carries the label so two identically-titled rows differ.
+  assert.match(row('Stormweaver CoC') && rows.filter((r) => r.includes('Stormweaver CoC')).join(''),
+    /build-switcher__variant"> · Leveling</);
+  // The standalone build gets no qualifier.
+  assert.ok(!row('Some Other Build').includes('build-switcher__variant'),
+    'standalone rows are not qualified');
+  // Exactly one row is qualified — the parent must not be.
+  assert.equal(rows.filter((r) => r.includes('build-switcher__variant')).length, 1,
+    'only the variant row is qualified; the parent is identified by its name');
 });

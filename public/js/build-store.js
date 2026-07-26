@@ -267,13 +267,20 @@ export function createStore(storage, { now = defaultNow, uuid = defaultUuid } = 
       emit('create', copy.id);
       return copy;
     },
-    /** Duplicate `parentId` into a labeled sibling and append it to its list. */
+    /**
+     * Duplicate `parentId` into a labeled sibling and append it to its list.
+     *
+     * The label is the child's ROLE IN THE GROUP ("Leveling"); the child's
+     * `name` is its own identity and is inherited verbatim from the parent. They
+     * are two independent strings — a group is normally one title ("Stormweaver
+     * CoC") across every phase, told apart by label. Do NOT re-couple them.
+     */
     addVariant(parentId, label) {
       const s = read();
       const parent = s.builds[parentId];
       if (!parent) return null;
       const t = now();
-      const child = { ...deepCopy(parent), id: uuid(), name: label,
+      const child = { ...deepCopy(parent), id: uuid(),
                       variants: [], createdAt: t, updatedAt: t };
       s.order.push(child.id);
       s.builds[child.id] = child;
@@ -283,16 +290,19 @@ export function createStore(storage, { now = defaultNow, uuid = defaultUuid } = 
       emit('create', child.id);
       return child;
     },
-    /** Retitle a variant entry; the variant build's name tracks its label. */
+    /**
+     * Relabel a variant entry. Touches ONLY the parent's entry — the variant
+     * build's own `name` is a separate string the user edits from the dossier
+     * head. (Before 2026-07-26 this also wrote `child.name`, which made the two
+     * look like one field and left no way to title a build independently of its
+     * role in the group.)
+     */
     renameVariant(parentId, buildId, label) {
       const s = read();
       const parent = s.builds[parentId];
       if (!parent?.variants?.some((v) => v.buildId === buildId)) return null;
-      const t = now();
-      s.builds[parentId] = { ...parent, updatedAt: t,
+      s.builds[parentId] = { ...parent, updatedAt: now(),
         variants: parent.variants.map((v) => (v.buildId === buildId ? { ...v, label } : v)) };
-      const child = s.builds[buildId];
-      if (child) s.builds[buildId] = { ...child, name: label, updatedAt: t };
       write(s);
       emit('update', parentId);
       return s.builds[parentId];

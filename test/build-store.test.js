@@ -318,7 +318,10 @@ test('addVariant duplicates the parent and appends an ordered entry', () => {
   const v1 = store.addVariant(parent.id, 'Lv 1-30');
   const v2 = store.addVariant(parent.id, 'Lv 30-60');
 
-  assert.equal(v1.name, 'Lv 1-30');
+  // A variant's own NAME is the build's identity and is inherited verbatim from
+  // the parent; its LABEL is only its role in the group. Two independent strings.
+  assert.equal(v1.name, 'Lightning Sorc', 'the variant build keeps the parent title');
+  assert.equal(v2.name, 'Lightning Sorc');
   assert.deepEqual(v1.variants, [], 'variants are flat — a variant has no list of its own');
   assert.deepEqual(v1.skills, [{ gem: { slug: 'spark' }, level: null, supports: [] }],
     'a variant starts as a copy of its parent');
@@ -327,14 +330,48 @@ test('addVariant duplicates the parent and appends an ordered entry', () => {
   assert.equal(store.list().length, 3, 'variants are ordinary builds in the store');
 });
 
-test('renameVariant retitles both the entry and the variant build', () => {
+test('renameVariant retitles ONLY the entry label, never the build name', () => {
   const store = createStore(memStorage(), { now: fixedNow, uuid: seqUuid() });
-  const parent = store.create({ name: 'Parent' });
+  const parent = store.create({ name: 'Stormweaver CoC' });
   const v = store.addVariant(parent.id, 'Early');
-  store.renameVariant(parent.id, v.id, 'Lv 1-30');
-  assert.deepEqual(store.get(parent.id).variants, [{ label: 'Lv 1-30', buildId: v.id }]);
-  assert.equal(store.get(v.id).name, 'Lv 1-30');
+  store.renameVariant(parent.id, v.id, 'Leveling');
+  assert.deepEqual(store.get(parent.id).variants, [{ label: 'Leveling', buildId: v.id }]);
+  assert.equal(store.get(v.id).name, 'Stormweaver CoC',
+    'relabelling a variant must not touch the build title');
   assert.equal(store.renameVariant(parent.id, 'not-a-variant', 'X'), null);
+});
+
+test('renaming a variant build leaves its group label alone', () => {
+  const store = createStore(memStorage(), { now: fixedNow, uuid: seqUuid() });
+  const parent = store.create({ name: 'Stormweaver CoC' });
+  const v = store.addVariant(parent.id, 'Leveling');
+  store.update(v.id, { name: 'Stormweaver CoC (test rig)' });
+  assert.deepEqual(store.get(parent.id).variants, [{ label: 'Leveling', buildId: v.id }],
+    'renaming the build must not touch its label');
+  assert.equal(store.get(v.id).name, 'Stormweaver CoC (test rig)');
+});
+
+test('a whole group can share one title and differ only by label', () => {
+  const store = createStore(memStorage(), { now: fixedNow, uuid: seqUuid() });
+  const parent = store.create({ name: 'Stormweaver CoC' });
+  for (const l of ['Leveling', 'Early mapping', 'Endgame']) store.addVariant(parent.id, l);
+  const g = store.group(parent.id);
+  assert.deepEqual(g.variants.map((v) => v.label), ['Leveling', 'Early mapping', 'Endgame']);
+  assert.deepEqual(g.variants.map((v) => v.build.name),
+    ['Stormweaver CoC', 'Stormweaver CoC', 'Stormweaver CoC']);
+  assert.equal(g.parent.name, 'Stormweaver CoC');
+});
+
+test('a group round-trips both strings through the share codec', async () => {
+  const { encodeGroup, decodeGroup } = await import('../public/js/build-code.js');
+  const store = createStore(memStorage(), { now: fixedNow, uuid: seqUuid() });
+  const parent = store.create({ name: 'Stormweaver CoC' });
+  store.addVariant(parent.id, 'Leveling');
+  // NB: group() yields {label, build}; the STORED entry is {label, buildId}.
+  store.update(store.group(parent.id).variants[0].build.id, { name: 'Renamed Child' });
+  const out = await decodeGroup(await encodeGroup(store.group(parent.id)));
+  assert.equal(out.variants[0].label, 'Leveling', 'label survives');
+  assert.equal(out.variants[0].build.name, 'Renamed Child', 'independent build name survives');
 });
 
 test('removeVariant unlinks without deleting the build', () => {

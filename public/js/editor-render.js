@@ -336,12 +336,18 @@ export function treeSummary(build) {
 function renderSwitcher(build, ctx) {
   const open = !!ctx.switcherOpen;
   const builds = [...(ctx.builds ?? [])].sort((a, b) => b.updatedAt - a.updatedAt);
+  // A group normally shares ONE title across every phase (build name and variant
+  // label are independent since 2026-07-26), so the name alone can't tell four
+  // rows apart. Qualify each variant row with its label.
+  const labelFor = new Map();
+  for (const p of builds) for (const v of p.variants ?? []) labelFor.set(v.buildId, v.label);
   const rows = builds.map((b) => {
     const items = Object.values(b.gear).filter((g) => g.item).length + b.unassigned.length;
     const current = b.id === ctx.currentId;
     const kids = (b.variants ?? []).length;
+    const label = labelFor.get(b.id);
     return `<li><a class="build-switcher__row${current ? ' is-current' : ''}" href="#/b/${encodeURIComponent(b.id)}">
-      <b>${esc(b.name)}</b>
+      <b>${esc(b.name)}${label ? `<span class="build-switcher__variant"> · ${esc(label)}</span>` : ''}</b>
       <span>${esc(classLine(b))} · ${items} items · ${b.skills.length} setups${kids ? ` · ${kids} variant${kids > 1 ? 's' : ''}` : ''}</span></a></li>`;
   }).join('');
   const pop = open
