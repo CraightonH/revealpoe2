@@ -1515,6 +1515,40 @@ export default function init(canvas, data, opts = {}) {
   let focusHash = null;
   let focusStart = 0;
 
+  /**
+   * Frame the ALLOCATED nodes as tightly as the viewport allows.
+   *
+   * fitView() centres on the origin at a fixed zoom, which is right for an empty
+   * tree but wastes most of the canvas on a real build — the allocation is a
+   * path through one region, not the whole disc. Used by read-only previews,
+   * where nobody is going to pan around looking for their own passives.
+   * Falls back to fitView() when nothing is allocated.
+   * @returns {boolean} true when it framed an allocation
+   */
+  function fitAllocated({ padding = 0.86 } = {}) {
+    // Main tree + weapon sets only. Ascendancy clusters sit far off to the side,
+    // so including them would zoom back out and defeat the point.
+    const hashes = [...allocated, ...wsAlloc[1], ...wsAlloc[2]];
+    const pts = hashes.map((h) => nodeMap.get(h)).filter(Boolean);
+    if (pts.length < 2) { fitView(); requestDraw(); return false; }
+
+    let x0 = Infinity; let y0 = Infinity; let x1 = -Infinity; let y1 = -Infinity;
+    for (const n of pts) {
+      if (n.x < x0) x0 = n.x; if (n.x > x1) x1 = n.x;
+      if (n.y < y0) y0 = n.y; if (n.y > y1) y1 = n.y;
+    }
+    // A node is drawn around its centre, so leave room for its own footprint.
+    const NODE_PAD = 120;
+    const w = (x1 - x0) + NODE_PAD * 2;
+    const h = (y1 - y0) + NODE_PAD * 2;
+    const want = Math.min((canvas.width * padding) / (w || 1), (canvas.height * padding) / (h || 1));
+    view.scale = Math.min(maxScale, Math.max(minScale, want));
+    view.ox = canvas.width / 2 - ((x0 + x1) / 2) * view.scale;
+    view.oy = canvas.height / 2 - ((y0 + y1) / 2) * view.scale;
+    requestDraw();
+    return true;
+  }
+
   function focusNode(hash) {
     const n = nodeMap.get(hash);
     if (!n) return;
@@ -2300,7 +2334,7 @@ export default function init(canvas, data, opts = {}) {
     async setState(code) { return api.setCode(code); },
     async getState() { return { code: await api.getCode() }; },
     getAllocatedStatLines: () => { try { return allocatedStatLines(); } catch { return []; } },
-    setHighlight, focusNode, getAllocatedNotables, getPoints, paintNodeIcon, deallocate, destroy,
+    setHighlight, focusNode, fitAllocated, getAllocatedNotables, getPoints, paintNodeIcon, deallocate, destroy,
     /** Current class (GGG name) + ascendancy id, for the host to mirror. */
     getClassAscendancy() { return { className: activeClass, ascId: activeAsc }; },
     /**

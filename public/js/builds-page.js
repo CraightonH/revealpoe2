@@ -223,6 +223,9 @@ if (root && view) {
         planner, resolveRef, pools, weaponSet: importState.weaponSet, mode: 'import',
         group: shown.group, currentId: shown.id, trimmed: importState.state.trimmed,
       });
+      // The tree is pivotal to a build, so a shared link shows it without asking.
+      // Dynamic import: the rest of the preview has already painted by now.
+      mountTreePreview(view.querySelector('[data-tree-preview-mount]'), shown.build?.tree?.code ?? null);
     } else if (importState.state.status === 'ready') {
       view.innerHTML = renderImport({ status: 'ready', build: importState.state.group.parent }, resolveRef);
     } else {
@@ -246,15 +249,6 @@ if (root && view) {
     if (ws && parseRoute(location.hash).view === 'import' && importState?.state.status === 'ready') {
       importState.weaponSet = Number(ws);
       render();
-      return;
-    }
-    if (e.target.closest('[data-tree-show]')) {
-      const btn = e.target.closest('[data-tree-show]');
-      const mount = view.querySelector('[data-tree-preview-mount]');
-      const shown = importState?.state.status === 'ready' ? sharedSnapshot(importState) : null;
-      btn.hidden = true;
-      view.querySelector('.editor-tree-weight')?.remove();
-      mountTreePreview(mount, shown?.build?.tree?.code ?? null, { onError: () => { btn.hidden = false; } });
       return;
     }
     const vtab = attr('data-variant-tab');

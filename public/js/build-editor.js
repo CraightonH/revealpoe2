@@ -52,6 +52,9 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
       group: store.group(buildId), variantRenaming,
     });
     if (mode === 'edit') mountTree(b);
+    // Read-only modes get the preview embed automatically (dynamic import, so it
+    // does not hold up this render).
+    else mountTreePreview(container.querySelector('[data-tree-preview-mount]'), b.tree?.code ?? null);
   };
 
   // ---- passive-tree embed: mount / reparent / persist / refresh -------
@@ -261,14 +264,6 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
       const panel = container.querySelector('[data-summary]');
       panel?.classList.toggle('collapsed', summaryCollapsed);
       panel?.querySelector('[data-summary-toggle]')?.setAttribute('aria-expanded', String(!summaryCollapsed));
-      return;
-    }
-    if (e.target.closest('[data-tree-show]')) {
-      const btn = e.target.closest('[data-tree-show]');
-      const mount = container.querySelector('[data-tree-preview-mount]');
-      btn.hidden = true;
-      container.querySelector('.editor-tree-weight')?.remove();
-      mountTreePreview(mount, build()?.tree?.code ?? null, { onError: () => { btn.hidden = false; } });
       return;
     }
     if (e.target.closest('[data-view-published]')) {

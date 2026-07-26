@@ -2,14 +2,14 @@
 // Mounts a READ-ONLY passive tree into a build preview — the "View" mode inside
 // the editor and the shared-link (#/import/<code>) page.
 //
-// Deliberately opt-in rather than eager. The embed pulls ~3 MB (the 230 KB gz
-// tree artifact plus the sprite atlases it paints from) and takes several
-// seconds; a shared link is something a stranger opens cold, and "view first"
-// has to stay fast. So the preview shows the cheap summary until someone asks
-// for the tree, then loads it once.
+// Mounted automatically: the tree is pivotal to a build, so making people ask
+// for it was pure friction (2026-07-26). The embed is ~3 MB, so the import stays
+// DYNAMIC — the page paints its summary, gear and skills first and the tree
+// fills in after, rather than blocking first paint on it.
 //
-// Browser-only glue: passive-tree.js is imported dynamically so none of that
-// payload is fetched — or even parsed — unless the button is pressed.
+// After mount the view is framed to the ALLOCATION rather than the whole disc:
+// a build uses one region of the tree, and nobody reading a preview wants to
+// hunt for it.
 
 const mounted = new WeakMap();   // mount element -> embed api
 
@@ -40,6 +40,9 @@ export async function mountTreePreview(mountEl, code, opts = {}) {
       root: wrap,
       readonly: true,
       initialCode: code || null,
+      // Frame the allocation once the code is in and the canvas has its real
+      // size. onReady fires after the initial fit, so this supersedes it.
+      onReady: (a) => { try { a.fitAllocated?.(); } catch { /* fall back to the default fit */ } },
       // A preview must never write anywhere: no onCodeChange, and copying the
       // code is the host's business, not ours.
       onCopy: (c) => navigator.clipboard?.writeText(c),

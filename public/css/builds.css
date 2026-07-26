@@ -730,20 +730,9 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
 @media (prefers-reduced-motion: reduce) { .dossier-hero { transition: none; } }
 
 /* ---- read-only tree preview (shared view / import) ----------------------
-   Opt-in: the embed costs ~3 MB, and a shared link is opened cold by someone
-   who has not asked for the tree yet. The weight is stated on the button so
-   the choice is informed rather than a surprise. */
+   Mounted automatically — the tree is pivotal to a build. The embed is ~3 MB but
+   loads dynamically, so it fills in after the rest of the preview has painted. */
 .editor-tree-preview { margin: 10px 0 12px; }
-.editor-tree-show { padding: 7px 15px; border-radius: 999px; cursor: pointer;
-  border: 1px solid color-mix(in srgb, var(--accent-ui) 40%, var(--border));
-  background: color-mix(in srgb, var(--accent-ui) 8%, transparent);
-  color: var(--color-normal); font: 12.5px/1.2 var(--font-smallcaps);
-  transition: border-color 120ms ease, background-color 120ms ease; }
-.editor-tree-show:hover { background: color-mix(in srgb, var(--accent-ui) 15%, transparent);
-  border-color: color-mix(in srgb, var(--accent-ui) 60%, var(--border)); }
-.editor-tree-show:focus-visible { outline: 2px solid var(--accent-ui); outline-offset: 2px; }
-.editor-tree-show[hidden] { display: none; }
-.editor-tree-weight { margin-left: 9px; color: var(--color-default); font-size: 11px; }
 .editor-tree-mount:empty { display: none; }
 .editor-tree-mount { margin-top: 12px; }
 .editor-tree-mount.is-loading { padding: 18px 0; color: var(--color-default); font-size: 12.5px; }
