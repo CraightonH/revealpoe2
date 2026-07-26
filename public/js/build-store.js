@@ -8,6 +8,25 @@ export const STORE_KEY = 'reveal.builds.v1';
 export const CORRUPT_KEY = 'reveal.builds.corrupt';
 export const SCHEMA_VERSION = 3;
 
+/**
+ * Ceiling on total stored builds. Variants are ordinary builds, so a group of
+ * four counts as four — 300 is roughly 75 four-build groups.
+ *
+ * Sized from measurement, not taste: a build serializes to ~6 KB typical and
+ * ~11 KB heavy (15 slots x 6 mods, 8 setups x 5 supports, a 900-char tree code),
+ * against a ~5 M-char localStorage budget shared with every other key on the
+ * origin. 300 lands at ~36% (typical) to ~65% (heavy). It also keeps the store
+ * parseable at interactive speed: every mutation re-serializes the WHOLE store
+ * and the editor re-reads it per render, which is ~12 ms of JSON work at this
+ * size and grows linearly.
+ *
+ * This bounds accumulation; `maxlength` on the notes/description textareas
+ * bounds any single build. Neither alone is sufficient — a full store of
+ * max-length notes can still exceed the budget, which is why a rejected write
+ * must degrade gracefully rather than lose the edit (see StoreWriteError).
+ */
+export const MAX_BUILDS = 300;
+
 const defaultNow = () => Date.now();
 const defaultUuid = () => globalThis.crypto.randomUUID();
 
@@ -163,6 +182,15 @@ function migrate(build) {
   return b;
 }
 
+/** Thrown when a create would exceed {@link MAX_BUILDS}. */
+export class StoreLimitError extends Error {
+  constructor(limit) {
+    super(`build limit reached (${limit})`);
+    this.name = 'StoreLimitError';
+    this.limit = limit;
+  }
+}
+
 /** Thrown when the backing storage rejects a write (quota). */
 export class StoreWriteError extends Error {
   constructor(cause) {
@@ -192,8 +220,11 @@ export function createStore(storage, { now = defaultNow, uuid = defaultUuid } = 
       return state;
     } catch {
       // Never silently destroy user data: park the corrupt payload, start empty.
-      storage.setItem(CORRUPT_KEY, raw);
-      storage.removeItem(STORE_KEY);
+      // The park is best-effort — if storage is also full this setItem throws,
+      // and read() backs EVERY method, so letting it escape would fail the whole
+      // planner instead of recovering. Losing the backup beats not loading.
+      try { storage.setItem(CORRUPT_KEY, raw); } catch { /* no room for the backup */ }
+      try { storage.removeItem(STORE_KEY); } catch { /* nothing else to try */ }
       return { order: [], builds: {} };
     }
   }
@@ -216,6 +247,7 @@ export function createStore(storage, { now = defaultNow, uuid = defaultUuid } = 
     },
     create(partial = {}) {
       const s = read();
+      if (s.order.length >= MAX_BUILDS) throw new StoreLimitError(MAX_BUILDS);
       const build = emptyBuild({ now, uuid, ...partial });
       s.order.push(build.id);
       s.builds[build.id] = build;
@@ -256,6 +288,7 @@ export function createStore(storage, { now = defaultNow, uuid = defaultUuid } = 
       const s = read();
       const cur = s.builds[id];
       if (!cur) return null;
+      if (s.order.length >= MAX_BUILDS) throw new StoreLimitError(MAX_BUILDS);
       const t = now();
       // A duplicate is standalone: inheriting the variant list would leave two
       // parents pointing at one variant build.
@@ -279,6 +312,7 @@ export function createStore(storage, { now = defaultNow, uuid = defaultUuid } = 
       const s = read();
       const parent = s.builds[parentId];
       if (!parent) return null;
+      if (s.order.length >= MAX_BUILDS) throw new StoreLimitError(MAX_BUILDS);
       const t = now();
       const child = { ...deepCopy(parent), id: uuid(),
                       variants: [], createdAt: t, updatedAt: t };
@@ -350,6 +384,10 @@ export function createStore(storage, { now = defaultNow, uuid = defaultUuid } = 
      */
     importGroup(group) {
       const s = read();
+      const incoming = 1 + (group.variants ?? []).length;
+      // All-or-nothing: a half-imported group would leave the visitor with a
+      // parent whose variants silently vanished.
+      if (s.order.length + incoming > MAX_BUILDS) throw new StoreLimitError(MAX_BUILDS);
       const fresh = (b, over) => {
         const { id: _i, createdAt: _c, updatedAt: _u, ...rest } = migrate(deepCopy(b));
         return emptyBuild({ now, uuid, ...rest, ...over });

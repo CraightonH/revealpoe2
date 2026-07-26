@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   emptyBuild, validateBuild, SCHEMA_VERSION, STORE_KEY, CORRUPT_KEY,
+  MAX_BUILDS, StoreLimitError,
 } from '../public/js/build-store.js';
 
 const fixedNow = () => 1000;
@@ -478,4 +479,69 @@ test('importGroup migrates an old-schema decoded build', () => {
   assert.equal(parent.schema, 3);
   assert.deepEqual(parent.variants, []);
   assert.deepEqual(parent.gear.body, { item: { kind: 'unique', slug: 'tabula-rasa' }, mods: [], corrupted: null });
+});
+
+// ---- storage caps (2026-07-26) -------------------------------------------
+// Measured: ~6 KB typical / ~11 KB heavy per build against a ~5 M-char
+// localStorage budget. MAX_BUILDS keeps a full store at ~36% (typical) to ~65%
+// (heavy) of that, and leaves headroom for the other keys on the origin.
+
+test('MAX_BUILDS is exported and create() refuses past it', () => {
+  const store = createStore(memStorage(), { now: fixedNow, uuid: seqUuid() });
+  for (let i = 0; i < MAX_BUILDS; i++) store.create({ name: `b${i}` });
+  assert.equal(store.list().length, MAX_BUILDS);
+  assert.throws(() => store.create({ name: 'one too many' }),
+    (e) => e instanceof StoreLimitError && e.limit === MAX_BUILDS);
+  assert.equal(store.list().length, MAX_BUILDS, 'the refused create wrote nothing');
+});
+
+test('duplicate and addVariant also respect the cap', () => {
+  const store = createStore(memStorage(), { now: fixedNow, uuid: seqUuid() });
+  const first = store.create({ name: 'seed' });
+  for (let i = 1; i < MAX_BUILDS; i++) store.create({ name: `b${i}` });
+  assert.throws(() => store.duplicate(first.id), (e) => e instanceof StoreLimitError);
+  assert.throws(() => store.addVariant(first.id, 'Leveling'), (e) => e instanceof StoreLimitError);
+  assert.equal(store.list().length, MAX_BUILDS);
+  assert.deepEqual(store.get(first.id).variants, [], 'a refused addVariant leaves no dangling entry');
+});
+
+test('importGroup refuses atomically when the whole group will not fit', () => {
+  const store = createStore(memStorage(), { now: fixedNow, uuid: seqUuid() });
+  for (let i = 0; i < MAX_BUILDS - 2; i++) store.create({ name: `b${i}` });
+  const mk = (name) => ({ schema: 3, name, notes: '', description: '', class: null, ascendancy: null,
+    gear: {}, unassigned: [], skills: [], tree: { code: null, notablePriority: [] }, variants: [] });
+  // parent + 3 variants = 4 builds, but only 2 slots remain.
+  assert.throws(() => store.importGroup({
+    parent: mk('Shared'),
+    variants: ['Leveling', 'Early mapping', 'Endgame'].map((l) => ({ label: l, build: mk(l) })),
+  }), (e) => e instanceof StoreLimitError);
+  assert.equal(store.list().length, MAX_BUILDS - 2,
+    'a refused group import writes NOTHING — no half-imported parent');
+});
+
+test('importGroup succeeds when the group exactly fits', () => {
+  const store = createStore(memStorage(), { now: fixedNow, uuid: seqUuid() });
+  for (let i = 0; i < MAX_BUILDS - 2; i++) store.create({ name: `b${i}` });
+  const mk = (name) => ({ schema: 3, name, notes: '', description: '', class: null, ascendancy: null,
+    gear: {}, unassigned: [], skills: [], tree: { code: null, notablePriority: [] }, variants: [] });
+  const parent = store.importGroup({ parent: mk('Shared'), variants: [{ label: 'Leveling', build: mk('x') }] });
+  assert.ok(parent);
+  assert.equal(store.list().length, MAX_BUILDS);
+});
+
+test('the corrupt-payload rescue survives a storage that rejects writes', () => {
+  // read() parks a corrupt payload before starting empty. That setItem used to
+  // be unguarded, so a near-quota + corrupt store threw from inside read() —
+  // and read() backs EVERY method, so the whole planner failed instead of
+  // recovering. Losing the backup is acceptable; failing to load is not.
+  const m = new Map();
+  m.set(STORE_KEY, '{ this is not json');
+  const hostile = {
+    getItem: (k) => (m.has(k) ? m.get(k) : null),
+    setItem: (k) => { throw new DOMException('QuotaExceededError'); },
+    removeItem: (k) => { m.delete(k); },
+  };
+  const store = createStore(hostile, { now: fixedNow, uuid: seqUuid() });
+  assert.deepEqual(store.list(), [], 'recovers to an empty store rather than throwing');
+  assert.equal(store.get('anything'), null);
 });

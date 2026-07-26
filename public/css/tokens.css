@@ -3,7 +3,13 @@
   --color-magic: #8888ff;
   --color-rare: #ffff77;
   --color-unique: #ef6916;
-  --color-gem: #1ba29b;
+  --color-gem: #1ba29b;          /* in-game GEM ITEM colour — fidelity, do not mellow */
+  /* Interface accent (selected/hover/focus chrome). Split from --color-gem
+     2026-07-26: that token is an item-rarity colour (see the --gem-color alias
+     below) and doubling it as the UI highlight both read too strong and dragged
+     gem tooltips off the in-game palette whenever the UI was tuned. Same hue,
+     saturation 71% -> 30%. */
+  --accent-ui: #569f9b;
   --color-gem-r: #c44040;
   --color-gem-g: #4aad4a;
   --color-gem-b: #6666aa;

@@ -42,7 +42,7 @@ html[data-card-size="xl"] .picker-panel { zoom: 1.5; }
 html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: flex-end; }
 .dossier { display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: 28px; }
 .dossier-rail { position: sticky; top: 24px; align-self: start; }
-.dossier-eyebrow { display: block; color: var(--color-gem); font-size: 10px; font-weight: 650;
+.dossier-eyebrow { display: block; color: var(--accent-ui); font-size: 10px; font-weight: 650;
   letter-spacing: .16em; text-transform: uppercase; }
 .dossier-rail__mark { margin: 0 0 16px; }
 
@@ -55,8 +55,8 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
   color: var(--color-normal); font: 12px/1.3 var(--font-smallcaps); text-align: left; cursor: pointer;
   transition: border-color 120ms ease; }
 .build-switcher__btn:hover, .build-switcher__btn[aria-expanded="true"] {
-  border-color: color-mix(in srgb, var(--color-gem) 50%, var(--border)); }
-.build-switcher__btn:focus-visible { outline: 2px solid var(--color-gem); outline-offset: 2px; }
+  border-color: color-mix(in srgb, var(--accent-ui) 50%, var(--border)); }
+.build-switcher__btn:focus-visible { outline: 2px solid var(--accent-ui); outline-offset: 2px; }
 .build-switcher__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .build-switcher__chev { color: var(--color-default); font-size: 10px; }
 .build-switcher__pop { position: absolute; z-index: 120; top: calc(100% + 6px); left: 0;
@@ -73,19 +73,19 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .build-switcher__row span { display: block; margin-top: 1px; color: var(--color-default); font-size: 10px; }
 .build-switcher__row:hover { border-color: var(--border); background: rgb(255 255 255 / .04); }
-.build-switcher__row.is-current { border-color: color-mix(in srgb, var(--color-gem) 30%, transparent);
-  background: color-mix(in srgb, var(--color-gem) 9%, transparent); }
+.build-switcher__row.is-current { border-color: color-mix(in srgb, var(--accent-ui) 30%, transparent);
+  background: color-mix(in srgb, var(--accent-ui) 9%, transparent); }
 .build-switcher__new { width: 100%; padding: 6px; border: 1px dashed var(--border); border-radius: 5px;
   background: none; color: var(--color-default); font: 11.5px/1.3 var(--font-smallcaps); cursor: pointer; }
-.build-switcher__new:hover { color: var(--color-gem);
-  border-color: color-mix(in srgb, var(--color-gem) 45%, var(--border)); }
+.build-switcher__new:hover { color: var(--accent-ui);
+  border-color: color-mix(in srgb, var(--accent-ui) 45%, var(--border)); }
 .dossier-rail__nav { list-style: none; margin: 0; padding: 0; border-left: 1px solid var(--border); }
 .dossier-rail__nav a { display: block; padding: 7px 0 7px 14px; margin-left: -1px;
   border-left: 2px solid transparent; color: var(--color-default);
   font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; text-decoration: none;
   transition: color 120ms ease, border-color 120ms ease; }
 .dossier-rail__nav a:hover { color: var(--color-normal); }
-.dossier-rail__nav a.is-here { color: var(--color-gem); border-left-color: var(--color-gem); }
+.dossier-rail__nav a.is-here { color: var(--accent-ui); border-left-color: var(--accent-ui); }
 .dossier-rail__note { margin-top: 20px; color: var(--color-default); font-size: 10px; line-height: 1.5; }
 
 /* ---- rail Summary panel (Phase 7 light math) ----------------------------
@@ -97,9 +97,9 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
 .rail-summary__toggle { display: flex; flex-direction: column; align-items: stretch; gap: 3px; width: 100%;
   padding: 7px 9px; background: none; border: 0; cursor: pointer; color: var(--color-normal);
   text-align: left; }
-.rail-summary__toggle:focus-visible { outline: 2px solid var(--color-gem); outline-offset: -2px; }
+.rail-summary__toggle:focus-visible { outline: 2px solid var(--accent-ui); outline-offset: -2px; }
 .rail-summary__titlerow { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
-.rail-summary__title { font-family: var(--font-display); color: var(--color-gem);
+.rail-summary__title { font-family: var(--font-display); color: var(--accent-ui);
   font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
 .rail-summary__meta { display: flex; align-items: center; gap: 6px; }
 .rail-summary__lvl { color: var(--color-default); font-size: 10px; font-variant-numeric: tabular-nums; }
@@ -134,14 +134,14 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
    Quiet by default, lit on hover — discoverable without shouting. */
 .dossier-name__pen { display: inline-flex; align-items: center; justify-content: center;
   width: 1.9rem; height: 1.9rem; margin-left: 11px; border-radius: 50%;
-  border: 1px solid color-mix(in srgb, var(--color-gem) 26%, transparent);
-  background: color-mix(in srgb, var(--color-gem) 8%, transparent);
-  color: var(--color-gem); font-size: .34em; vertical-align: middle; opacity: .75;
+  border: 1px solid color-mix(in srgb, var(--accent-ui) 26%, transparent);
+  background: color-mix(in srgb, var(--accent-ui) 8%, transparent);
+  color: var(--accent-ui); font-size: .34em; vertical-align: middle; opacity: .75;
   transition: opacity 120ms ease, background-color 120ms ease, border-color 120ms ease; }
 .dossier-name:hover .dossier-name__pen, .dossier-name:focus-visible .dossier-name__pen {
-  opacity: 1; background: color-mix(in srgb, var(--color-gem) 20%, transparent);
-  border-color: color-mix(in srgb, var(--color-gem) 52%, transparent); }
-.dossier-name:focus-visible { outline: 2px solid var(--color-gem); outline-offset: 3px; }
+  opacity: 1; background: color-mix(in srgb, var(--accent-ui) 20%, transparent);
+  border-color: color-mix(in srgb, var(--accent-ui) 52%, transparent); }
+.dossier-name:focus-visible { outline: 2px solid var(--accent-ui); outline-offset: 3px; }
 .dossier-class { margin: 0 0 8px; display: flex; align-items: center; gap: 7px; font-size: 12.5px; }
 .dossier-class__sep { color: var(--color-default); }
 .class-pick { position: relative; display: inline-flex; }
@@ -153,7 +153,7 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
   background: color-mix(in srgb, var(--color-notable) 7%, transparent); }
 .class-pick__btn:disabled { color: var(--color-default); cursor: default; opacity: .55; }
 .class-pick__btn:disabled:hover { border-color: transparent; background: none; }
-.class-pick__btn:focus-visible { outline: 2px solid var(--color-gem); outline-offset: 2px; }
+.class-pick__btn:focus-visible { outline: 2px solid var(--accent-ui); outline-offset: 2px; }
 .class-pick__pop { position: absolute; z-index: 120; top: calc(100% + 6px); left: 0;
   min-width: 170px; max-height: 300px; overflow-y: auto;
   margin: 0; padding: 6px; list-style: none;
@@ -166,37 +166,37 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
   background: none; color: var(--color-normal); font: 12px/1.3 var(--font-smallcaps);
   text-align: left; cursor: pointer; }
 .class-pick__row:hover { border-color: var(--border); background: rgb(255 255 255 / .04); }
-.class-pick__row.is-current { border-color: color-mix(in srgb, var(--color-gem) 30%, transparent);
-  background: color-mix(in srgb, var(--color-gem) 9%, transparent); }
+.class-pick__row.is-current { border-color: color-mix(in srgb, var(--accent-ui) 30%, transparent);
+  background: color-mix(in srgb, var(--accent-ui) 9%, transparent); }
 .dossier-name-input { width: min(24ch, 100%); padding: 0; border: 0; border-bottom: 1px solid
-  color-mix(in srgb, var(--color-gem) 58%, var(--border));
+  color-mix(in srgb, var(--accent-ui) 58%, var(--border));
   background: none; color: var(--color-normal); font-family: var(--font-display);
   font-size: inherit; font-weight: 500; letter-spacing: .015em; line-height: 1.15; }
 .dossier-name-input:focus-visible { outline: none;
-  box-shadow: 0 2px 0 0 color-mix(in srgb, var(--color-gem) 25%, transparent); }
+  box-shadow: 0 2px 0 0 color-mix(in srgb, var(--accent-ui) 25%, transparent); }
 .dossier-desc { width: 100%; max-width: 44rem; resize: vertical; padding: 6px 9px;
   border: 1px solid color-mix(in srgb, var(--border) 70%, transparent); border-radius: 6px;
   background: rgb(0 0 0 / .25); color: var(--text); font: 13px/1.5 var(--font-regular); }
 .dossier-share { display: inline-flex; align-items: center; gap: 7px; padding: 6px 14px;
-  border: 1px solid color-mix(in srgb, var(--color-gem) 40%, var(--border)); border-radius: 999px;
-  background: color-mix(in srgb, var(--color-gem) 8%, transparent); color: var(--color-normal);
+  border: 1px solid color-mix(in srgb, var(--accent-ui) 40%, var(--border)); border-radius: 999px;
+  background: color-mix(in srgb, var(--accent-ui) 8%, transparent); color: var(--color-normal);
   font: 12px/1.2 var(--font-smallcaps); cursor: pointer;
   transition: border-color 120ms ease, background-color 120ms ease, transform 120ms ease; }
-.dossier-share:hover { background: color-mix(in srgb, var(--color-gem) 14%, transparent); transform: translateY(-1px); }
-.dossier-share:focus-visible { outline: 2px solid var(--color-gem); outline-offset: 2px; }
+.dossier-share:hover { background: color-mix(in srgb, var(--accent-ui) 14%, transparent); transform: translateY(-1px); }
+.dossier-share:focus-visible { outline: 2px solid var(--accent-ui); outline-offset: 2px; }
 .dossier-actions { display: flex; align-items: center; gap: 7px; flex: none; }
 .dossier-action { padding: 6px 13px; border: 1px solid var(--border); border-radius: 999px;
   background: none; color: var(--color-default); font: 12px/1.2 var(--font-smallcaps); cursor: pointer;
   transition: border-color 120ms ease, color 120ms ease; }
 .dossier-action:hover { color: var(--color-normal);
-  border-color: color-mix(in srgb, var(--color-gem) 50%, var(--border)); }
+  border-color: color-mix(in srgb, var(--accent-ui) 50%, var(--border)); }
 .dossier-action--danger:hover { color: var(--color-corrupted);
   border-color: color-mix(in srgb, var(--color-corrupted) 55%, var(--border)); }
 
 /* ---- read-only (shared preview / import) ---- */
 .dossier-banner { margin: 0 0 12px; padding: 8px 12px;
-  border: 1px solid color-mix(in srgb, var(--color-gem) 30%, var(--border)); border-radius: 6px;
-  background: color-mix(in srgb, var(--color-gem) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-ui) 30%, var(--border)); border-radius: 6px;
+  background: color-mix(in srgb, var(--accent-ui) 6%, transparent);
   color: var(--color-normal); font-size: 12px; }
 .dossier-name--static { color: var(--color-normal); font-family: var(--font-display);
   font-weight: 500; letter-spacing: .015em; line-height: 1.15; }
@@ -259,11 +259,11 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
   background: color-mix(in srgb, var(--bg-base) 55%, transparent);
   transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease; }
 .editor-slot:hover { transform: translateY(-1px);
-  border-color: color-mix(in srgb, var(--color-gem) 45%, var(--border));
+  border-color: color-mix(in srgb, var(--accent-ui) 45%, var(--border));
   box-shadow: 0 6px 18px rgb(0 0 0 / .35); }
-.editor-slot:focus-visible { outline: 2px solid var(--color-gem); outline-offset: 2px; }
+.editor-slot:focus-visible { outline: 2px solid var(--accent-ui); outline-offset: 2px; }
 .editor-slot.is-empty { border-style: dashed; }
-.editor-slot.is-empty:hover .editor-slot__hint { color: var(--color-gem); }
+.editor-slot.is-empty:hover .editor-slot__hint { color: var(--accent-ui); }
 .editor-slot.is-unique { border-color: color-mix(in srgb, var(--color-unique) 50%, var(--border));
   box-shadow: inset 0 0 18px rgb(239 105 22 / .07); }
 .editor-slot.is-unique:hover { border-color: color-mix(in srgb, var(--color-unique) 75%, var(--border)); }
@@ -332,12 +332,12 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
 .editor-tray__actions button { padding: 2px 9px; border: 1px solid var(--border); border-radius: 999px;
   background: none; color: var(--color-default); font: 10.5px/1.3 var(--font-smallcaps); cursor: pointer; }
 .editor-tray__actions button:hover { color: var(--color-normal);
-  border-color: color-mix(in srgb, var(--color-gem) 50%, var(--border)); }
+  border-color: color-mix(in srgb, var(--accent-ui) 50%, var(--border)); }
 .editor-none { margin: 0; opacity: .55; font-size: 13px; }
 .editor-set-toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
 .editor-set-btn { padding: 3px 12px; border: 0; background: transparent; color: var(--color-default);
   font: 11px/1.4 var(--font-smallcaps); letter-spacing: .08em; cursor: pointer; }
-.editor-set-btn.is-active { background: color-mix(in srgb, var(--color-gem) 14%, transparent);
+.editor-set-btn.is-active { background: color-mix(in srgb, var(--accent-ui) 14%, transparent);
   color: var(--color-normal); }
 .editor-set-btn:not(.is-active):hover { color: var(--color-normal); }
 
@@ -349,7 +349,7 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
   box-shadow: 0 12px 32px rgb(0 0 0 / .14);
   transition: border-color 120ms ease, transform 120ms ease; }
 .editor-chain:hover { transform: translateY(-1px);
-  border-color: color-mix(in srgb, var(--color-gem) 30%, var(--border)); }
+  border-color: color-mix(in srgb, var(--accent-ui) 30%, var(--border)); }
 .chain-meta { position: absolute; top: 7px; right: 10px; display: flex; align-items: center; gap: 10px; }
 .chain-spirit { color: var(--color-crafted); font-size: 10.5px; letter-spacing: .15em; text-transform: uppercase; }
 .editor-setup__controls { display: flex; gap: 2px; }
@@ -412,8 +412,8 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
   border: 1px dashed var(--border); border-radius: 8px;
   background: none; color: var(--color-default); font: 13.5px/1.4 var(--font-smallcaps);
   letter-spacing: .06em; cursor: pointer; }
-.editor-setup-add:hover { color: var(--color-gem);
-  border-color: color-mix(in srgb, var(--color-gem) 45%, var(--border)); }
+.editor-setup-add:hover { color: var(--accent-ui);
+  border-color: color-mix(in srgb, var(--accent-ui) 45%, var(--border)); }
 
 /* ---- tree + notes ---- */
 .editor-tree-band { display: flex; flex-direction: column; gap: 12px; padding: 20px;
@@ -428,24 +428,24 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
   letter-spacing: normal; text-transform: none; }
 .editor-tree-code input.is-invalid { border-color: var(--color-corrupted); }
 .editor-tree-open { align-self: flex-start; padding: 8px 17px; border-radius: 6px; text-decoration: none;
-  border: 1px solid color-mix(in srgb, var(--color-gem) 40%, var(--border));
-  background: color-mix(in srgb, var(--color-gem) 8%, transparent); color: var(--color-normal);
+  border: 1px solid color-mix(in srgb, var(--accent-ui) 40%, var(--border));
+  background: color-mix(in srgb, var(--accent-ui) 8%, transparent); color: var(--color-normal);
   font: 13.5px/1.4 var(--font-smallcaps); letter-spacing: .06em; }
-.editor-tree-open:hover { background: color-mix(in srgb, var(--color-gem) 14%, transparent); }
+.editor-tree-open:hover { background: color-mix(in srgb, var(--accent-ui) 14%, transparent); }
 .editor-tree-hint { margin: 0; color: var(--color-default); font-size: 12px; }
 .editor-notes textarea { width: 100%; min-height: 10rem; padding: 13px 15px; resize: vertical;
   border: 1px solid var(--border); border-radius: 8px; background: rgb(0 0 0 / .25);
   color: var(--text); font: 15px/1.6 var(--font-regular); }
 .editor-notes textarea:focus-visible, .dossier-desc:focus-visible, .editor-tree-code input:focus-visible {
-  outline: none; border-color: color-mix(in srgb, var(--color-gem) 58%, var(--border));
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-gem) 10%, transparent); }
+  outline: none; border-color: color-mix(in srgb, var(--accent-ui) 58%, var(--border));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-ui) 10%, transparent); }
 
 @media (max-width: 980px) {
   .dossier { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .dossier-rail { position: static; }
   .dossier-rail__nav { display: flex; border-left: 0; border-bottom: 1px solid var(--border); }
   .dossier-rail__nav a { border-left: 0; border-bottom: 2px solid transparent; padding: 6px 10px; }
-  .dossier-rail__nav a.is-here { border-bottom-color: var(--color-gem); }
+  .dossier-rail__nav a.is-here { border-bottom-color: var(--accent-ui); }
   .dossier-rail__note { display: none; }
   .dossier-head { flex-direction: column; }
   .editor-gear-side { grid-template-columns: 1fr; }
@@ -553,7 +553,7 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
   border: 1px solid var(--border); border-radius: 8px;
   background: color-mix(in srgb, var(--bg-surface) 88%, transparent);
   transition: border-color 120ms ease; }
-.prio-tile:hover .prio-icon { border-color: color-mix(in srgb, var(--color-gem) 60%, var(--border)); }
+.prio-tile:hover .prio-icon { border-color: color-mix(in srgb, var(--accent-ui) 60%, var(--border)); }
 .prio-tile.is-keystone .prio-icon { border-color: color-mix(in srgb, var(--color-keystone, var(--color-unique)) 55%, var(--border)); }
 .prio-tile.is-notable .prio-icon, .prio-tile.is-blighted .prio-icon { border-color: color-mix(in srgb, var(--color-notable) 45%, var(--border)); }
 .prio-tile.is-ascNotable .prio-icon { border-color: color-mix(in srgb, var(--color-crafted) 55%, var(--border)); }
@@ -599,7 +599,7 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
 .variant-tab:hover { opacity: 1; }
 .variant-tab.is-current {
   opacity: 1; font-weight: 600;
-  border-color: var(--color-gem); color: var(--color-gem);
+  border-color: var(--accent-ui); color: var(--accent-ui);
 }
 .variant-tab--add { opacity: .55; border-style: dashed; }
 .variant-tab--add:hover { opacity: .95; }
@@ -610,16 +610,16 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
   appearance: none; cursor: pointer; display: inline-flex;
   align-items: center; justify-content: center;
   width: 24px; height: 24px; padding: 0; border-radius: 50%;
-  border: 1px solid color-mix(in srgb, var(--color-gem) 30%, transparent);
-  background: color-mix(in srgb, var(--color-gem) 10%, transparent);
-  color: var(--color-gem); opacity: .8;
+  border: 1px solid color-mix(in srgb, var(--accent-ui) 30%, transparent);
+  background: color-mix(in srgb, var(--accent-ui) 10%, transparent);
+  color: var(--accent-ui); opacity: .8;
   font-size: 14px; line-height: 1;
   transition: opacity 120ms ease, background-color 120ms ease, border-color 120ms ease;
 }
 .variant-tab__edit:hover, .variant-tab__drop:hover {
   opacity: 1;
-  background: color-mix(in srgb, var(--color-gem) 22%, transparent);
-  border-color: color-mix(in srgb, var(--color-gem) 55%, transparent);
+  background: color-mix(in srgb, var(--accent-ui) 22%, transparent);
+  border-color: color-mix(in srgb, var(--accent-ui) 55%, transparent);
 }
 .variant-tab__drop:hover {
   color: var(--color-corrupted);
@@ -627,12 +627,12 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
   border-color: color-mix(in srgb, var(--color-corrupted) 50%, transparent);
 }
 .variant-tab__edit:focus-visible, .variant-tab__drop:focus-visible {
-  outline: 2px solid var(--color-gem); outline-offset: 2px;
+  outline: 2px solid var(--accent-ui); outline-offset: 2px;
 }
 .icon-pencil { width: 1em; height: 1em; display: block; }
 .variant-tab__input {
   font: inherit; font-size: .82rem; padding: .3rem .7rem;
-  border-radius: 999px; border: 1px solid var(--color-gem);
+  border-radius: 999px; border: 1px solid var(--accent-ui);
   background: rgba(0,0,0,.25); color: inherit; max-width: 12rem;
 }
 
@@ -643,3 +643,8 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
 
 /* A group shares one title across its phases; the label qualifies the row. */
 .build-switcher__variant { font-weight: 400; opacity: .6; }
+
+.build-switcher__limit { margin: 5px 2px 0; color: var(--color-default); font-size: 10px; line-height: 1.4; }
+.variant-tab--add[disabled], .build-switcher__new[disabled], .dossier-action[disabled] {
+  opacity: .38; cursor: not-allowed;
+}

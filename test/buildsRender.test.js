@@ -2,7 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseRoute, renderBuild, renderImport, esc } from '../public/js/builds-render.js';
 import { emptyBuild } from '../public/js/build-store.js';
-import { renderEditor, renderVariantStrip } from '../public/js/editor-render.js';
+import { renderEditor, renderVariantStrip, MAX_DESCRIPTION, MAX_NOTES } from '../public/js/editor-render.js';
+import { MAX_BUILDS } from '../public/js/build-store.js';
 
 const fixedBuild = (over = {}) => emptyBuild({ now: () => 1750000000000, uuid: () => 'b-1', ...over });
 
@@ -200,4 +201,34 @@ test('the switcher qualifies a variant row with its label, standalone rows plain
   // Exactly one row is qualified — the parent must not be.
   assert.equal(rows.filter((r) => r.includes('build-switcher__variant')).length, 1,
     'only the variant row is qualified; the parent is identified by its name');
+});
+
+test('the unbounded text fields carry a maxlength', () => {
+  const b = vb('p', 'Capped');
+  const html = renderEditor(b, stripCtx({ builds: [b], currentId: 'p' }));
+  assert.match(html, new RegExp(`data-description[^>]*maxlength="${MAX_DESCRIPTION}"`),
+    'description is capped');
+  assert.match(html, new RegExp(`data-notes[^>]*maxlength="${MAX_NOTES}"`), 'notes is capped');
+});
+
+test('at the build ceiling the create affordances are disabled', () => {
+  const many = Array.from({ length: MAX_BUILDS }, (_, i) => vb(`b${i}`, `b${i}`));
+  const html = renderEditor(many[0], stripCtx({
+    builds: many, currentId: 'b0', switcherOpen: true,
+    group: { parent: many[0], variants: [] },
+  }));
+  assert.match(html, /data-builds-new[^>]*disabled/, 'new build disabled');
+  assert.match(html, /data-variant-add[^>]*disabled/, 'add variant disabled');
+  assert.match(html, /data-build-duplicate="b0"[^>]*disabled/, 'duplicate disabled');
+  assert.match(html, new RegExp(`${MAX_BUILDS} / ${MAX_BUILDS} builds`), 'the count is shown');
+});
+
+test('below the ceiling nothing is disabled', () => {
+  const few = [vb('a', 'A'), vb('b', 'B')];
+  const html = renderEditor(few[0], stripCtx({
+    builds: few, currentId: 'a', switcherOpen: true, group: { parent: few[0], variants: [] },
+  }));
+  assert.ok(!/data-builds-new[^>]*disabled/.test(html));
+  assert.ok(!/data-variant-add[^>]*disabled/.test(html));
+  assert.ok(!/data-build-duplicate="a"[^>]*disabled/.test(html));
 });

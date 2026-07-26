@@ -3,7 +3,7 @@
 // every importer on a page (builds-page.js, add-to-build.js), wired to the
 // cross-tab 'storage' event. Pure modules stay environment-free; this is the
 // one place the real localStorage is bound.
-import { createStore, STORE_KEY, StoreWriteError } from '/static/js/build-store.js';
+import { createStore, STORE_KEY, StoreWriteError, StoreLimitError, MAX_BUILDS } from '/static/js/build-store.js';
 
 let store = null;
 let itemMath = null;
@@ -18,11 +18,24 @@ export function getStore() {
   return store;
 }
 
-/** Run a store mutation; alert (instead of throwing) on quota failure. */
+/**
+ * Run a store mutation; report (instead of throwing) the two expected refusals.
+ * The buttons that create builds are disabled at the ceiling, so StoreLimitError
+ * is the belt-and-braces path (cross-tab additions, keyboard activation).
+ */
 export function safeWrite(fn) {
   try { return fn(); }
   catch (e) {
-    if (e instanceof StoreWriteError) { window.alert("Couldn't save — browser storage is full."); return null; }
+    if (e instanceof StoreLimitError) {
+      window.alert(`You've reached the limit of ${MAX_BUILDS} saved builds `
+        + '(variants count too). Delete a build to make room.');
+      return null;
+    }
+    if (e instanceof StoreWriteError) {
+      window.alert("Couldn't save — browser storage is full. "
+        + 'Try deleting a build, or shortening very long notes.');
+      return null;
+    }
     throw e;
   }
 }

@@ -9,6 +9,12 @@ import { gearViolations } from './build-rules.js';
 import { modViolations, resolveMod } from './mod-core.js';
 import { decode as decodePassiveCode } from './passive-code.js';
 import { computeMath } from './build-math.js';
+import { MAX_BUILDS } from './build-store.js';
+
+// The only unbounded per-build fields. Generous for real use (notes ~1500 words)
+// while stopping a single paste from consuming the whole storage budget.
+export const MAX_DESCRIPTION = 1000;
+export const MAX_NOTES = 10000;
 
 export { esc };
 
@@ -350,10 +356,13 @@ function renderSwitcher(build, ctx) {
       <b>${esc(b.name)}${label ? `<span class="build-switcher__variant"> · ${esc(label)}</span>` : ''}</b>
       <span>${esc(classLine(b))} · ${items} items · ${b.skills.length} setups${kids ? ` · ${kids} variant${kids > 1 ? 's' : ''}` : ''}</span></a></li>`;
   }).join('');
+  const atLimit = builds.length >= MAX_BUILDS;
   const pop = open
     ? `<div class="build-switcher__pop">
         <ul class="build-switcher__list">${rows}</ul>
-        <button class="build-switcher__new" type="button" data-builds-new>＋ New build</button>
+        <button class="build-switcher__new" type="button" data-builds-new${atLimit ? ' disabled' : ''}
+          title="${atLimit ? `Build limit reached (${MAX_BUILDS}) — delete a build to add another` : 'Create a new build'}">＋ New build</button>
+        ${atLimit ? `<p class="build-switcher__limit">${builds.length} / ${MAX_BUILDS} builds — delete one to add another.</p>` : ''}
       </div>`
     : '';
   return `<div class="build-switcher" data-switcher>
@@ -441,9 +450,11 @@ export function renderVariantStrip(build, ctx) {
     ? tab(group.parent.id, group.parent.name, group.parent.id === ctx.currentId)
     : '';
   const rows = variants.map((v) => tab(v.build.id, v.label, v.build.id === ctx.currentId)).join('');
+  const full = (ctx.builds?.length ?? 0) >= MAX_BUILDS;
   const add = ro ? '' :
-    `<li><button class="variant-tab variant-tab--add" type="button" data-variant-add
-       title="Duplicate this build as the next variant">＋ Variant</button></li>`;
+    `<li><button class="variant-tab variant-tab--add" type="button" data-variant-add${full ? ' disabled' : ''}
+       title="${full ? `Build limit reached (${MAX_BUILDS}) — delete a build to add another`
+                     : 'Duplicate this build as the next variant'}">＋ Variant</button></li>`;
 
   return `<div class="variant-strip" data-variant-strip>
     <span class="variant-strip__label">Variants</span>
@@ -473,14 +484,15 @@ export function renderEditor(build, ctx) {
 
   const descHtml = ro
     ? (build.description ? `<p class="dossier-desc dossier-desc--static">${esc(build.description)}</p>` : '')
-    : `<textarea class="dossier-desc" data-description rows="2"
+    : `<textarea class="dossier-desc" data-description rows="2" maxlength="${MAX_DESCRIPTION}"
         placeholder="Add a short description — what this build is and how it plays…">${esc(build.description ?? '')}</textarea>`;
 
   const actions = {
     edit: `<button class="dossier-share" type="button" data-share>Copy share link</button>
       <button class="dossier-action" type="button" data-export-build>Export for game</button>
       <button class="dossier-action" type="button" data-view-published>View as shared</button>
-      <button class="dossier-action" type="button" data-build-duplicate="${esc(build.id)}">Duplicate</button>
+      <button class="dossier-action" type="button" data-build-duplicate="${esc(build.id)}"${
+        (ctx.builds?.length ?? 0) >= MAX_BUILDS ? ` disabled title="Build limit reached (${MAX_BUILDS})"` : ''}>Duplicate</button>
       <button class="dossier-action dossier-action--danger" type="button" data-build-delete="${esc(build.id)}">Delete</button>`,
     view: `<button class="dossier-share" type="button" data-edit-build>← Back to editing</button>
       <button class="dossier-action" type="button" data-share>Copy share link</button>
@@ -517,7 +529,8 @@ export function renderEditor(build, ctx) {
   const notesBody = ro
     ? (build.notes ? `<div class="editor-notes-static">${esc(build.notes)}</div>`
                    : '<p class="editor-none">No notes.</p>')
-    : `<textarea data-notes rows="6" placeholder="Build notes — leveling route, upgrade order, reminders…">${esc(build.notes)}</textarea>`;
+    : `<textarea data-notes rows="6" maxlength="${MAX_NOTES}"
+        placeholder="Build notes — leveling route, upgrade order, reminders…">${esc(build.notes)}</textarea>`;
 
   return `<article class="editor dossier${ro ? ' dossier--readonly' : ''}" data-editor>
     <nav class="dossier-rail" aria-label="Build sections">
