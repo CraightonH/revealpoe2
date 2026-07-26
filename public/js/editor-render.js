@@ -403,6 +403,13 @@ function renderClassPicker(build, ctx) {
   </div>`;
 }
 
+// Rename affordance icon. An inline SVG rather than the ✎ glyph: at the sizes
+// these buttons use, ✎ renders as an ambiguous speck (it reads as a paperclip),
+// and it varies by font. This scales with font-size and stays legible.
+const PENCIL_SVG = '<svg class="icon-pencil" viewBox="0 0 16 16" fill="none" stroke="currentColor" '
+  + 'stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'
+  + '<path d="M10.6 2.4l3 3"/><path d="M2.6 13.4l.6-2.7 7.4-7.4 2.1 2.1-7.4 7.4-2.7.6z"/></svg>';
+
 /**
  * Variant strip: the parent build plus its ordered labeled siblings as tabs
  * (Amendment 2). Rendered on the editor and on a shared group view, where the
@@ -420,10 +427,12 @@ export function renderVariantStrip(build, ctx) {
         value="${esc(label)}" aria-label="Variant label" spellcheck="false"></li>`;
     }
     const controls = ro || !current || id === group?.parent?.id ? '' :
-      `<button class="variant-tab__edit" type="button" data-variant-rename="${esc(id)}"
-         title="Rename variant" aria-label="Rename variant">✎</button>
-       <button class="variant-tab__drop" type="button" data-variant-unlink="${esc(id)}"
-         title="Detach from this group" aria-label="Detach variant from group">×</button>`;
+      `<span class="variant-tab__tools">
+        <button class="variant-tab__edit" type="button" data-variant-rename="${esc(id)}"
+          title="Rename this variant’s label" aria-label="Rename variant label">${PENCIL_SVG}</button>
+        <button class="variant-tab__drop" type="button" data-variant-unlink="${esc(id)}"
+          title="Detach from this group" aria-label="Detach variant from group">×</button>
+      </span>`;
     return `<li><button data-variant-tab="${esc(id)}" class="variant-tab${current ? ' is-current' : ''}" type="button"
       aria-current="${current ? 'true' : 'false'}">${esc(label)}</button>${controls}</li>`;
   };
@@ -456,7 +465,7 @@ export function renderEditor(build, ctx) {
       ? `<input class="dossier-name-input" data-build-name-input type="text" maxlength="60"
           value="${esc(build.name)}" aria-label="Build name" spellcheck="false">`
       : `<button class="dossier-name" type="button" data-build-rename="${esc(build.id)}"
-          title="Rename build">${esc(build.name)}<span class="dossier-name__pen" aria-hidden="true">✎</span></button>`;
+          title="Rename build">${esc(build.name)}<span class="dossier-name__pen">${PENCIL_SVG}</span></button>`;
 
   const classHtml = ro
     ? `<p class="dossier-class">${esc(classLine(build))}</p>`

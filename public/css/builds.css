@@ -130,9 +130,17 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
 .dossier-name { padding: 0; border: 0; background: none; cursor: pointer; text-align: left;
   color: var(--color-normal); font-family: var(--font-display);
   font-size: inherit; font-weight: 500; letter-spacing: .015em; line-height: 1.15; }
-.dossier-name__pen { margin-left: 10px; color: var(--color-default); font-size: .45em;
-  vertical-align: middle; opacity: 0; transition: opacity 120ms ease; }
-.dossier-name:hover .dossier-name__pen, .dossier-name:focus-visible .dossier-name__pen { opacity: 1; }
+/* Always visible: at opacity 0 nothing signalled the title was editable at all.
+   Quiet by default, lit on hover — discoverable without shouting. */
+.dossier-name__pen { display: inline-flex; align-items: center; justify-content: center;
+  width: 1.9rem; height: 1.9rem; margin-left: 11px; border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--color-gem) 26%, transparent);
+  background: color-mix(in srgb, var(--color-gem) 8%, transparent);
+  color: var(--color-gem); font-size: .34em; vertical-align: middle; opacity: .75;
+  transition: opacity 120ms ease, background-color 120ms ease, border-color 120ms ease; }
+.dossier-name:hover .dossier-name__pen, .dossier-name:focus-visible .dossier-name__pen {
+  opacity: 1; background: color-mix(in srgb, var(--color-gem) 20%, transparent);
+  border-color: color-mix(in srgb, var(--color-gem) 52%, transparent); }
 .dossier-name:focus-visible { outline: 2px solid var(--color-gem); outline-offset: 3px; }
 .dossier-class { margin: 0 0 8px; display: flex; align-items: center; gap: 7px; font-size: 12.5px; }
 .dossier-class__sep { color: var(--color-default); }
@@ -570,7 +578,7 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
 .variant-strip {
   display: flex; align-items: center; gap: .75rem;
   margin: 0 0 1.25rem; padding-bottom: .5rem;
-  border-bottom: 1px solid var(--rule, rgba(255,255,255,.08));
+  border-bottom: 1px solid var(--border);
   flex-wrap: wrap;
 }
 .variant-strip__label {
@@ -584,26 +592,47 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
 .variant-strip__tabs > li { display: flex; align-items: center; }
 .variant-tab {
   appearance: none; background: transparent; cursor: pointer;
-  border: 1px solid var(--rule, rgba(255,255,255,.12)); border-radius: 999px;
+  border: 1px solid var(--border); border-radius: 999px;
   padding: .3rem .7rem; font: inherit; font-size: .82rem;
   color: inherit; opacity: .72;
 }
 .variant-tab:hover { opacity: 1; }
 .variant-tab.is-current {
   opacity: 1; font-weight: 600;
-  border-color: var(--accent, #c8aa6e); color: var(--accent, #c8aa6e);
+  border-color: var(--color-gem); color: var(--color-gem);
 }
 .variant-tab--add { opacity: .55; border-style: dashed; }
 .variant-tab--add:hover { opacity: .95; }
+/* Rename/detach for the active variant. Framed as real buttons: as bare glyphs
+   at .8rem/.4 opacity they read as specks floating between pills. */
+.variant-tab__tools { display: inline-flex; align-items: center; gap: 2px; margin-left: 5px; }
 .variant-tab__edit, .variant-tab__drop {
-  appearance: none; background: none; border: 0; cursor: pointer;
-  color: inherit; opacity: .4; padding: .15rem .25rem; font-size: .8rem; line-height: 1;
+  appearance: none; cursor: pointer; display: inline-flex;
+  align-items: center; justify-content: center;
+  width: 24px; height: 24px; padding: 0; border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--color-gem) 30%, transparent);
+  background: color-mix(in srgb, var(--color-gem) 10%, transparent);
+  color: var(--color-gem); opacity: .8;
+  font-size: 14px; line-height: 1;
+  transition: opacity 120ms ease, background-color 120ms ease, border-color 120ms ease;
 }
-.variant-tab__edit:hover { opacity: .9; }
-.variant-tab__drop:hover { opacity: .9; color: var(--danger, #d06a6a); }
+.variant-tab__edit:hover, .variant-tab__drop:hover {
+  opacity: 1;
+  background: color-mix(in srgb, var(--color-gem) 22%, transparent);
+  border-color: color-mix(in srgb, var(--color-gem) 55%, transparent);
+}
+.variant-tab__drop:hover {
+  color: var(--color-corrupted);
+  background: color-mix(in srgb, var(--color-corrupted) 18%, transparent);
+  border-color: color-mix(in srgb, var(--color-corrupted) 50%, transparent);
+}
+.variant-tab__edit:focus-visible, .variant-tab__drop:focus-visible {
+  outline: 2px solid var(--color-gem); outline-offset: 2px;
+}
+.icon-pencil { width: 1em; height: 1em; display: block; }
 .variant-tab__input {
   font: inherit; font-size: .82rem; padding: .3rem .7rem;
-  border-radius: 999px; border: 1px solid var(--accent, #c8aa6e);
+  border-radius: 999px; border: 1px solid var(--color-gem);
   background: rgba(0,0,0,.25); color: inherit; max-width: 12rem;
 }
 
