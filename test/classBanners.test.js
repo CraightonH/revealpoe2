@@ -18,9 +18,10 @@ const tree = () => JSON.parse(fs.readFileSync(path.join(ROOT, 'public', 'generat
 const rules = () => {
   if (!fs.existsSync(CSS)) return null;
   return [...fs.readFileSync(CSS, 'utf8')
-    .matchAll(/\.dossier-hero\[data-asc="([^"]+)"\]\{background-image:url\("([^"]+)"\)\}/g)]
-    .map((m) => ({ slug: m[1], url: m[2] }));
+    .matchAll(/\.dossier-hero\[data-(asc|class)="([^"]+)"\]\{background-image:url\("([^"]+)"\)\}/g)]
+    .map((m, i) => ({ kind: m[1] === 'asc' ? 'ascendancy' : 'class', slug: m[2], url: m[3], order: i }));
 };
+const ascRules = () => rules()?.filter((r) => r.kind === 'ascendancy') ?? null;
 
 test('the generated stylesheet exists (predev/build:static produce it)', () => {
   assert.ok(fs.existsSync(CSS), 'run `npm run build:banners`');
@@ -31,19 +32,44 @@ test('every rule points at a banner file that is actually on disk', () => {
   if (!r?.length) return; // fresh checkout without build:images — nothing to check
   for (const { slug, url } of r) {
     assert.match(url, /^\/static\/img\/class-banners\/[a-z0-9-]+\.webp$/, `${slug}: ${url}`);
-    assert.ok(fs.existsSync(path.join(DIR, `${slug}.webp`)), `${slug}.webp missing on disk`);
+    assert.ok(fs.existsSync(path.join(ROOT, 'public', url.replace('/static/', ''))), `${url} missing on disk`);
   }
 });
 
-test('every rule slug is a real ascendancy slug', () => {
+test('every rule slug is a real class or ascendancy slug', () => {
   const r = rules();
   if (!r?.length) return;
-  const known = new Set(planner().classes.flatMap((c) => c.ascendancies.map((a) => a.slug)));
-  for (const { slug } of r) assert.ok(known.has(slug), `${slug} is not an ascendancy slug`);
+  const asc = new Set(planner().classes.flatMap((c) => c.ascendancies.map((a) => a.slug)));
+  const cls = new Set(planner().classes.map((c) => c.slug));
+  for (const { slug, kind } of r) {
+    const known = kind === 'class' ? cls : asc;
+    assert.ok(known.has(slug), `${slug} is not a known ${kind} slug`);
+  }
 });
 
-test('an ascendancy with no source art gets no rule, rather than a broken one', () => {
+test('every class has a banner — that is the floor the fallback relies on', () => {
   const r = rules();
+  if (!r?.length) return;
+  const have = new Set(r.filter((x) => x.kind === 'class').map((x) => x.slug));
+  for (const c of planner().classes) {
+    assert.ok(have.has(c.slug), `${c.name} has no class banner; its ascendancies have nothing to fall back to`);
+  }
+});
+
+test('CLASS rules precede ASCENDANCY rules — the cascade IS the fallback', () => {
+  // Equal specificity, so source order decides. Class first means an ascendancy
+  // overrides its class, and an ascendancy with no art of its own inherits the
+  // class banner rather than rendering nothing.
+  const r = rules();
+  if (!r?.length) return;
+  const lastClass = Math.max(...r.filter((x) => x.kind === 'class').map((x) => x.order));
+  const firstAsc = Math.min(...r.filter((x) => x.kind === 'ascendancy').map((x) => x.order));
+  assert.ok(lastClass < firstAsc,
+    `class rules must come first (last class ${lastClass}, first ascendancy ${firstAsc})`);
+});
+
+test('an ascendancy with no source art gets no rule, so it inherits its class', () => {
+  const r = ascRules();
   if (!r?.length) return;
   const art = tree().meta?.ascendancyArt ?? {};
   const withRule = new Set(r.map((x) => x.slug));
@@ -73,7 +99,7 @@ test('the mapping is keyed by GGG id, not by guessing the filename', () => {
     assert.match(img, new RegExp(fileStem, 'i'),
       `${slug} should resolve to ${fileStem}* art via ${gggId}, got ${img}`);
     // …and the banner must still be written under OUR slug, not the art's name.
-    const r = rules();
+    const r = ascRules();
     if (r?.length) assert.ok(r.some((x) => x.slug === slug), `no banner rule for ${slug}`);
   }
 });

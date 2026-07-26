@@ -1,8 +1,13 @@
 // scripts/build-class-banners.js — derive the dossier hero banners from the
 // ascendancy illustrations.
 //
-// The source art (Art/2DArt/BaseClassIllustrations/*.webp, mirrored locally by
-// build:images) is a 1500x1500 CIRCULAR vignette at ~2.3 MB apiece. Cropping in
+// Two sources, both 1500x1500 CIRCULAR vignettes:
+//   ascendancy — Art/2DArt/BaseClassIllustrations/*.webp, a plain file per art
+//   class      — a 1500px tile inside the passive tree's sprite ATLAS, located
+//                via that atlas's frame map (the tree renders it on canvas; here
+//                we just extract the tile)
+// The class figures sit higher in frame than the ascendancy ones, so each source
+// gets its own band — measured across all 8 / all 22, not guessed. Cropping in
 // CSS would still download the full 2.3 MB, so the crop has to happen here: one
 // fixed band lands on the character's face and upper body across every
 // illustration, so no per-ascendancy tuning — and therefore no hand-authored
@@ -31,8 +36,9 @@ const OUT_CSS = path.join(GEN, 'class-banners.css');
 
 // Crop geometry, expressed against the source's own height so art that is not
 // 1500px still crops proportionally.
-const BAND_TOP = 380 / 1500;      // skip the vignette's empty upper curve
-const BAND_HEIGHT = 320 / 1500;   // face + upper body
+const ASC_BAND_TOP = 380 / 1500;    // ascendancy art: skips the empty upper curve
+const CLASS_BAND_TOP = 300 / 1500;  // class art: figures sit higher; 380 decapitates Warrior
+const BAND_HEIGHT = 320 / 1500;     // face + upper body
 // Crop inside the circle's chord rather than fading its edges away: at this band
 // the vignette spans x 115..1385, so 150..1350 contains no curved edge at all.
 // Fading it in the IMAGE instead left semi-transparent dark pixels that read as
@@ -66,7 +72,17 @@ function edgeMask(w, h) {
   </svg>`);
 }
 
-/** ascendancy slug -> local source illustration, via the GGG id (NOT the filename). */
+/** A class's art is a tile inside the tree's sprite atlas; resolve it to a rect. */
+function classTile(entry) {
+  if (!entry?.atlas || !entry?.map || !entry?.frame) return null;
+  const atlas = path.join(IMG, entry.atlas.replace(/^\/static\/img\//, ''));
+  const mapPath = path.join(GEN, entry.map.replace(/^\/static\/generated\//, ''));
+  if (!fs.existsSync(atlas) || !fs.existsSync(mapPath)) return null;
+  const rect = readJson(mapPath)?.frames?.[entry.frame]?.frame;
+  return rect ? { src: atlas, rect } : null;
+}
+
+/** Everything to build, both kinds, keyed by the CSS attribute it will match. */
 function sources() {
   const treePath = path.join(GEN, 'passive-tree.json');
   const plannerPath = path.join(GEN, 'planner-data.json');
@@ -80,12 +96,25 @@ function sources() {
   // slug — GGG renamed several ascendancies but kept the original art name
   // (stormweaver -> Stormcaller, ritualist -> Primalist, spirit-walker ->
   // Wildspeaker). Guessing from the slug would silently mis-assign art.
-  const art = readJson(treePath).meta?.ascendancyArt ?? {};
+  const meta = readJson(treePath).meta ?? {};
+  const art = meta.ascendancyArt ?? {};
+  const classArt = meta.classArt ?? {};
   const out = [];
   for (const cls of readJson(plannerPath).classes ?? []) {
+    // Class banner first — it is the fallback for an ascendancy with no art, and
+    // for a build that has picked a class but no ascendancy yet.
+    const tile = classTile(classArt[cls.name]);
+    out.push({
+      kind: 'class', attr: 'data-class', slug: cls.slug, out: `class-${cls.slug}`,
+      name: cls.name, className: cls.name, bandTop: CLASS_BAND_TOP,
+      src: tile?.src ?? null, rect: tile?.rect ?? null,
+    });
     for (const a of cls.ascendancies ?? []) {
-      const src = localPath(art[a.gggId]?.img);
-      out.push({ slug: a.slug, name: a.name, className: cls.name, gggId: a.gggId, src });
+      out.push({
+        kind: 'ascendancy', attr: 'data-asc', slug: a.slug, out: a.slug,
+        name: a.name, className: cls.name, bandTop: ASC_BAND_TOP,
+        src: localPath(art[a.gggId]?.img), rect: null,
+      });
     }
   }
   return out;
@@ -101,55 +130,69 @@ async function main() {
   let built = 0; let cached = 0; const missing = [];
 
   for (const a of list) {
-    if (!a.src || !fs.existsSync(a.src)) { missing.push(`${a.className}/${a.name}`); continue; }
-    const out = path.join(OUT_DIR, `${a.slug}.webp`);
+    if (!a.src || !fs.existsSync(a.src)) {
+      missing.push(a.kind === 'class' ? `${a.name} (class)` : `${a.className}/${a.name}`);
+      continue;
+    }
+    const out = path.join(OUT_DIR, `${a.out}.webp`);
     const srcStat = fs.statSync(a.src);
     const fresh = fs.existsSync(out) && fs.statSync(out).mtimeMs >= srcStat.mtimeMs;
-    if (fresh && !force) { made.push(a.slug); cached++; continue; }
+    if (fresh && !force) { made.push(a); cached++; continue; }
 
     const meta = await sharp(a.src).metadata();
-    const H = meta.height ?? 1500;
+    // A class tile is a sub-rect of a big atlas; an ascendancy file is the whole
+    // image. Normalise to one rect so the band maths is identical for both.
+    const box = a.rect ?? { x: 0, y: 0, w: meta.width ?? 1500, h: meta.height ?? 1500 };
     await sharp(a.src)
       .extract({
-        left: Math.round((meta.width ?? 1500) * BAND_LEFT),
-        top: Math.round(H * BAND_TOP),
-        width: Math.round((meta.width ?? 1500) * BAND_WIDTH),
-        height: Math.round(H * BAND_HEIGHT),
+        left: box.x + Math.round(box.w * BAND_LEFT),
+        top: box.y + Math.round(box.h * a.bandTop),
+        width: Math.round(box.w * BAND_WIDTH),
+        height: Math.round(box.h * BAND_HEIGHT),
       })
       .resize(OUT_W, OUT_H)
       .composite([{ input: mask, blend: 'dest-in' }])
       .webp({ quality: 72, effort: 5 })
       .toFile(out);
-    made.push(a.slug);
+    made.push(a);
     built++;
   }
 
-  // Prune banners whose ascendancy no longer exists (a rename upstream).
-  const keep = new Set(made.map((s) => `${s}.webp`));
+  // Prune banners whose class/ascendancy no longer exists (a rename upstream).
+  const keep = new Set(made.map((m) => `${m.out}.webp`));
   let pruned = 0;
   for (const f of fs.existsSync(OUT_DIR) ? fs.readdirSync(OUT_DIR) : []) {
     if (f.endsWith('.webp') && !keep.has(f)) { fs.unlinkSync(path.join(OUT_DIR, f)); pruned++; }
   }
 
+  // ORDER IS LOAD-BEARING. Both selectors have the same specificity, so the
+  // later rule wins: class first, ascendancy second. That gives, for free, the
+  // two behaviours we want — an ascendancy overrides its class's banner, and an
+  // ascendancy with NO art (Witch/Abyssal Lich) falls back to the class banner
+  // rather than showing nothing.
+  const rule = (m) =>
+    `.dossier-hero[${m.attr}="${m.slug}"]{background-image:url("/static/img/class-banners/${m.out}.webp")}`;
+  const byKind = (k) => made.filter((m) => m.kind === k).sort((x, y) => x.slug.localeCompare(y.slug)).map(rule);
   fs.mkdirSync(GEN, { recursive: true });
   fs.writeFileSync(OUT_CSS,
     '/* GENERATED by scripts/build-class-banners.js — do not edit.\n'
-    + '   One rule per ascendancy that HAS art; an uncovered ascendancy matches\n'
-    + '   nothing and simply renders no banner. */\n'
-    + made.sort().map((slug) =>
-      `.dossier-hero[data-asc="${slug}"]{background-image:url("/static/img/class-banners/${slug}.webp")}`).join('\n')
-    + '\n');
+    + '   One rule per class / ascendancy that HAS art. Class rules come FIRST so\n'
+    + '   an ascendancy of equal specificity overrides them, and an ascendancy with\n'
+    + '   no art of its own falls back to its class banner. */\n'
+    + byKind('class').join('\n') + '\n'
+    + byKind('ascendancy').join('\n') + '\n');
 
-  const bytes = made.reduce((n, s) => {
-    const p = path.join(OUT_DIR, `${s}.webp`);
+  const bytes = made.reduce((n, m) => {
+    const p = path.join(OUT_DIR, `${m.out}.webp`);
     return n + (fs.existsSync(p) ? fs.statSync(p).size : 0);
   }, 0);
-  console.log(`build-class-banners: ${made.length} banners (${built} built, ${cached} cached`
+  const nClass = made.filter((m) => m.kind === 'class').length;
+  console.log(`build-class-banners: ${made.length} banners (${nClass} class, ${made.length - nClass} ascendancy; `
+    + `${built} built, ${cached} cached`
     + `${pruned ? `, ${pruned} pruned` : ''}), ${(bytes / 1024).toFixed(0)} KB total -> ${OUT_CSS.replace(ROOT + '/', '')}`);
   if (missing.length) {
-    console.log(`build-class-banners: no source art for ${missing.length} ascendanc`
-      + `${missing.length === 1 ? 'y' : 'ies'} — ${missing.join(', ')}`
-      + ' (renders without a banner; run build:images if this is a fresh checkout)');
+    console.log(`build-class-banners: no source art for ${missing.length} — ${missing.join(', ')}`
+      + ' (an ascendancy falls back to its class banner; run build:images if this is a fresh checkout)');
   }
 }
 
