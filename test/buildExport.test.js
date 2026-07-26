@@ -96,11 +96,11 @@ test('every id in both real .build fixtures round-trips through our maps', () =>
     for (const p of j.passives) {
       assert.ok(knownPassives.has(p.id), `${f}: passive id ${p.id} unknown to us`);
     }
-    // Gem coverage is asserted as a high-water mark, not 100%: the fixtures
-    // include ascendancy/meta gems whose ids the game accepts but which our
-    // gem node set may legitimately not carry.
+    // Full coverage since the gem slug-collision fix (scripts/graph/gems.js):
+    // every gem id the game itself wrote must be exportable by us. A regression
+    // here means a real gem lost its slug to a lookalike again.
     const gems = j.skills.flatMap((s) => [s.id, ...(s.support_skills ?? []).map((x) => x.id)]);
-    const hit = gems.filter((id) => knownGems.has(id)).length;
-    assert.ok(hit / gems.length > 0.8, `${f}: only ${hit}/${gems.length} gem ids known`);
+    const missing = [...new Set(gems.filter((id) => !knownGems.has(id)))];
+    assert.deepEqual(missing, [], `${f}: gem ids the game uses but we cannot emit`);
   }
 });

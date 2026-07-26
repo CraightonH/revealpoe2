@@ -14,6 +14,54 @@ test('selectGemRecords reproduces the current gem slug set', () => {
   for (const s of appSlugs) assert.ok(graphSlugs.has(s), `graph missing slug ${s}`);
 });
 
+// When two source gems share a display name AND gem_type they collide on one
+// slug and only one can survive. Resolving that by source key order silently
+// dropped REAL obtainable gems in favour of item-triggered lookalikes (Spark
+// lost to SkillGemUniqueEarthboundTriggeredSpark). `crafting_types` is the
+// signal: it is non-null exactly for gems you can obtain and level.
+test('a slug collision keeps the craftable gem, not an item-triggered lookalike', () => {
+  const byId = new Map(selectGemRecords().map((r) => [r.id, r]));
+  const winner = (slug) => selectGemRecords().find((r) => r.slug === slug);
+
+  assert.equal(winner('spark')?.id, 'Metadata/Items/Gems/SkillGemSpark',
+    'the real Spark skill gem must win its slug');
+  assert.ok(!byId.has('Metadata/Items/Gem/SkillGemUniqueEarthboundTriggeredSpark'),
+    'the Earthbound triggered lookalike must not take the slug');
+
+  assert.equal(winner('ember-fusillade')?.id, 'Metadata/Items/Gems/SkillGemEmberFusillade',
+    'the real Ember Fusillade gem must win its slug');
+
+  // Already-correct collisions must stay correct.
+  assert.equal(winner('blink')?.id, 'Metadata/Items/Gem/SkillGemBlink');
+  assert.equal(winner('withering-presence')?.id, 'Metadata/Items/Gem/SkillGemWitheringPresence');
+  for (const el of ['ash', 'ice', 'thunder']) {
+    const cap = el[0].toUpperCase() + el.slice(1);
+    assert.equal(winner(`herald-of-${el}`)?.id, `Metadata/Items/Gems/SkillGemHeraldOf${cap}`);
+  }
+});
+
+test('collision winners keep every id the manual overlays reference', () => {
+  // data/manual/weapon-default-skills.json keys on metadata id and the build
+  // enforces referential integrity, so deduping one of these away FAILS the
+  // build. They are all collision winners (1HAxe vs 2HAxe vs AxeAxe, etc.).
+  const ids = new Set(selectGemRecords().map((r) => r.id));
+  for (const id of [
+    'Metadata/Items/Gem/SkillGemPlayerDefault1HAxe',
+    'Metadata/Items/Gem/SkillGemPlayerDefault1HMace',
+    'Metadata/Items/Gem/SkillGemPlayerDefault1HSword',
+    'Metadata/Items/Gem/SkillGemPlayerDefaultClaw',
+    'Metadata/Items/Gem/SkillGemPlayerDefaultDagger',
+    'Metadata/Items/Gem/SkillGemPlayerDefaultSpear',
+  ]) {
+    assert.ok(ids.has(id), `manual overlay reference ${id} was deduped away`);
+  }
+});
+
+test('every gem slug is unique — one record per slug', () => {
+  const slugs = selectGemRecords().map((r) => r.slug);
+  assert.equal(new Set(slugs).size, slugs.length, 'duplicate slugs would break nodeBySlug');
+});
+
 test('selectGemRecords keys nodes by source id and excludes DNT/garbage', () => {
   const recs = selectGemRecords();
   assert.ok(recs.every((r) => r.id.startsWith('Metadata/')), 'ids are source Metadata keys');

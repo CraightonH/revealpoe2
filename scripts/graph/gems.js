@@ -48,7 +48,18 @@ export function selectGemRecords() {
     if (GARBAGE_RE.test(name)) continue;
     const baseSlug = slugify(name);
     const combo = `${baseSlug}|${rec.gem_type}`;
-    if (byCombo.has(combo)) continue;
+    // Two source gems can share a display name AND gem_type — the real Spark
+    // skill gem vs Unique Earthbound's triggered Spark, Ember Fusillade vs Dusk
+    // Vigil's triggered cluster — but only one can hold the slug. Resolving that
+    // by source key order silently dropped the REAL gem whenever the lookalike
+    // happened to be keyed first. `crafting_types` is the discriminator: it is
+    // non-null exactly for gems you can obtain and level, null for skills that
+    // only exist as an item/ascendancy trigger. Ties keep the first seen, which
+    // is stable for a given source file (and is what the PlayerDefault weapon
+    // attacks rely on — `data/manual/weapon-default-skills.json` references
+    // those winners by metadata id and the build checks referential integrity).
+    const prev = byCombo.get(combo);
+    if (prev && !(prev.raw.crafting_types == null && rec.crafting_types != null)) continue;
     const origin = classifyOrigin(rec, baseItems[rec.base_item.id]?.tags);
     byCombo.set(combo, { id, origin, baseSlug, raw: rec });
     if (!typesBySlug.has(baseSlug)) typesBySlug.set(baseSlug, new Set());
