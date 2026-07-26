@@ -146,7 +146,7 @@ test('renderVariantStrip read-only hides add/rename/unlink controls', () => {
   const html = renderVariantStrip(parent, stripCtx({ mode: 'import', group, currentId: 'p' }));
   assert.match(html, /data-variant-tab="v1"/, 'tabs still switch in a shared view');
   assert.ok(!html.includes('data-variant-add'));
-  assert.ok(!html.includes('data-variant-unlink'));
+  assert.ok(!html.includes('data-variant-delete'));
   assert.ok(!html.includes('data-variant-rename'));
 });
 
@@ -260,4 +260,25 @@ test('the add-skill-setup button locks at the setup ceiling', () => {
   const room = vb('q', 'Room');
   room.skills = [{ gem: { slug: 'spark' }, level: null, supports: [] }];
   assert.ok(!/data-setup-add[^>]*disabled/.test(renderEditor(room, stripCtx({ builds: [room], currentId: 'q' }))));
+});
+
+test('the X on the active variant tab is a DELETE affordance, not a detach', () => {
+  // Regression: it used to only detach, and because the editor stayed on the
+  // orphaned build (whose own group is itself, with no variants) the whole group
+  // appeared to vanish. The label/hook must read as deletion.
+  const parent = vb('p', 'Stormweaver CoC');
+  const child = vb('v1', 'Stormweaver CoC');
+  const group = { parent, variants: [{ label: 'Leveling', build: child }] };
+  const html = renderVariantStrip(child, stripCtx({ group, currentId: 'v1' }));
+  assert.match(html, /data-variant-delete="v1"/, 'the hook is a delete');
+  assert.match(html, /aria-label="Delete this variant"/);
+  assert.ok(!html.includes('Detach'), 'no lingering detach wording');
+});
+
+test('the parent tab never offers a delete-variant control', () => {
+  const parent = vb('p', 'Stormweaver CoC');
+  const group = { parent, variants: [{ label: 'Leveling', build: vb('v1', 'x') }] };
+  const html = renderVariantStrip(parent, stripCtx({ group, currentId: 'p' }));
+  assert.ok(!html.includes('data-variant-delete'),
+    'the parent is deleted from the header, not the strip');
 });

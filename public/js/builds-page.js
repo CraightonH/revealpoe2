@@ -268,7 +268,17 @@ if (root && view) {
     const del = attr('data-build-delete');
     if (del) {
       const cur = store.get(del);
-      if (cur && window.confirm(`Delete “${cur.name}”? This cannot be undone.`)) safeWrite(() => store.remove(del));
+      if (!cur) return;
+      // Deleting a PARENT keeps its variants (they are standalone builds). Say so:
+      // they all share the parent's title, so they would otherwise resurface in the
+      // switcher as unexplained duplicates of the thing you just deleted.
+      const kids = (cur.variants ?? []).length;
+      const extra = kids
+        ? `\n\nIts ${kids} variant${kids > 1 ? 's' : ''} will be kept as separate builds.`
+        : '';
+      if (window.confirm(`Delete “${cur.name}”? This cannot be undone.${extra}`)) {
+        safeWrite(() => store.remove(del));
+      }
       return;
     }
     if (e.target.closest('[data-import-save]') && importState?.state.status === 'ready') {

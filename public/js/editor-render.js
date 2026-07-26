@@ -444,8 +444,8 @@ export function renderVariantStrip(build, ctx) {
       `<span class="variant-tab__tools">
         <button class="variant-tab__edit" type="button" data-variant-rename="${esc(id)}"
           title="Rename this variant’s label" aria-label="Rename variant label">${PENCIL_SVG}</button>
-        <button class="variant-tab__drop" type="button" data-variant-unlink="${esc(id)}"
-          title="Detach from this group" aria-label="Detach variant from group">×</button>
+        <button class="variant-tab__drop" type="button" data-variant-delete="${esc(id)}"
+          title="Delete this variant" aria-label="Delete this variant">×</button>
       </span>`;
     return `<li><button data-variant-tab="${esc(id)}" class="variant-tab${current ? ' is-current' : ''}" type="button"
       aria-current="${current ? 'true' : 'false'}">${esc(label)}</button>${controls}</li>`;

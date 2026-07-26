@@ -489,8 +489,10 @@ export function createStore(storage, { now = defaultNow, uuid = defaultUuid } = 
       for (const id of s.order) {
         if (s.builds[id]?.variants?.some((v) => v.buildId === buildId)) { parent = s.builds[id]; break; }
       }
+      // Carries BOTH `buildId` (as stored) and the resolved `build`. Returning
+      // only one spelling repeatedly tripped callers who reached for the other.
       const variants = (parent.variants ?? [])
-        .map((v) => ({ label: v.label, build: s.builds[v.buildId] }))
+        .map((v) => ({ label: v.label, buildId: v.buildId, build: s.builds[v.buildId] }))
         .filter((v) => v.build);
       return { parent, variants };
     },

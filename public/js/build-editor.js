@@ -337,12 +337,22 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
       inp?.select();
       return;
     }
-    const vunlink = attr('data-variant-unlink');
-    if (vunlink) {
+    const vdelete = attr('data-variant-delete');
+    if (vdelete) {
+      // X on a variant tab DELETES that variant, which is what the affordance
+      // reads as. It used to only *detach* it, and because the editor stayed on
+      // the now-orphaned build — whose own group is itself with no variants —
+      // the entire group appeared to vanish. Nothing had been deleted; it just
+      // wasn't reachable from where you were standing. Navigate to the parent so
+      // the rest of the group stays in view either way.
       const g = store.group(buildId);
-      if (g?.parent && window.confirm('Detach this variant from the group? The build itself is kept.')) {
-        safeWrite(() => store.removeVariant(g.parent.id, vunlink));
-      }
+      const parentId = g?.parent?.id;
+      const label = g?.variants.find((v) => v.buildId === vdelete)?.label ?? 'this variant';
+      if (!parentId || parentId === vdelete) return;   // never fires on the parent tab
+      if (!window.confirm(`Delete the variant “${label}”? This cannot be undone. `
+        + 'The rest of the group is kept.')) return;
+      safeWrite(() => store.remove(vdelete));          // remove() prunes the parent's entry
+      location.hash = `#/b/${encodeURIComponent(parentId)}`;
       return;
     }
 

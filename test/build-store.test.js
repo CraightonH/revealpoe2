@@ -667,3 +667,16 @@ test('importGroup clamps every build in the group', () => {
   const child = store.get(parent.variants[0].buildId);
   assert.equal(child.skills.length, LIMITS.setups, 'variant build clamped as well');
 });
+
+test('group() variants carry BOTH buildId and the resolved build', () => {
+  // Guards a footgun: the stored entry is {label, buildId} while group() used to
+  // return {label, build}. Callers reaching for the other spelling got undefined
+  // — silently, three separate times.
+  const store = createStore(memStorage(), { now: fixedNow, uuid: seqUuid() });
+  const parent = store.create({ name: 'Stormweaver CoC' });
+  const v = store.addVariant(parent.id, 'Leveling');
+  const [entry] = store.group(parent.id).variants;
+  assert.equal(entry.label, 'Leveling');
+  assert.equal(entry.buildId, v.id, 'buildId is present');
+  assert.equal(entry.build.id, v.id, 'and matches the resolved build');
+});
