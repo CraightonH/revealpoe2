@@ -564,7 +564,8 @@ export function renderEditor(build, ctx) {
     </nav>
     <div class="dossier-main">
       ${banner}
-      <header class="dossier-head">
+      <header class="dossier-head${build.ascendancy ? ' has-hero' : ''}">
+        ${build.ascendancy ? `<div class="dossier-hero" data-asc="${esc(build.ascendancy)}" aria-hidden="true"></div>` : ''}
         <div class="dossier-head__copy">
           <h2>${nameHtml}</h2>
           ${classHtml}

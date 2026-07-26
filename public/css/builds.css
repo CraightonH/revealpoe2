@@ -668,3 +668,55 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
 .variant-tab { max-width: 16rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .build-switcher__row b { overflow-wrap: anywhere; }
 .editor-item__name, .editor-node__name { overflow-wrap: anywhere; }
+
+/* ---- ascendancy hero banner ---------------------------------------------
+   Art occupies the right of the header — the region the copy column does not
+   use — and fades out leftward so it never sits under the title or the class
+   pills. The background-image itself comes from the GENERATED
+   class-banners.css (one rule per ascendancy that has art), so an ascendancy
+   with no illustration simply matches nothing and renders no banner.
+   Built by scripts/build-class-banners.js; see it for the crop rationale. */
+.dossier-head { position: relative; }
+.dossier-head.has-hero { overflow: hidden; border-radius: 10px 10px 0 0; }
+.dossier-hero {
+  position: absolute; inset: 0 0 0 42%; z-index: 0; pointer-events: none;
+  background-repeat: no-repeat; background-size: cover; background-position: center 30%;
+  /* Fade leftward into the copy, and downward off the bottom rule. The vertical
+     stop also keeps the art faint behind .dossier-actions, whose grey pill
+     buttons would otherwise lose contrast against busy artwork. */
+  mask-image:
+    linear-gradient(90deg, transparent 0%, rgb(0 0 0 / .45) 38%, #000 78%),
+    linear-gradient(180deg, rgb(0 0 0 / .5) 0%, #000 46%, rgb(0 0 0 / .25) 100%);
+  mask-composite: intersect;
+  -webkit-mask-composite: source-in;
+  opacity: .78;
+}
+/* The copy and the actions ride above the art. */
+.dossier-head__copy, .dossier-actions, .dossier-export-note { position: relative; z-index: 1; }
+/* Keep the action pills crisp where they overlap the art. The plate has to be
+   near-opaque, not a light wash: these are 12px small-caps in muted grey, and
+   over busy artwork a translucent backdrop leaves them unreadable. */
+.has-hero .dossier-action, .has-hero .dossier-share {
+  backdrop-filter: blur(4px);
+  background-color: color-mix(in srgb, var(--bg-base) 82%, transparent);
+  border-color: color-mix(in srgb, var(--border) 85%, var(--color-normal));
+}
+.has-hero .dossier-share {
+  background-color: color-mix(in srgb, var(--accent-ui) 12%, color-mix(in srgb, var(--bg-base) 84%, transparent));
+}
+/* Light theme needs MORE of the art, not less. The illustrations are uniformly
+   dark, so fading them over a pale ground turns them to grey mush rather than
+   reading as a deliberate image; keep them close to full strength and let the
+   horizontal mask do the blending. */
+:root[data-theme="light"] .dossier-hero { opacity: .92; }
+/* Pre-existing light-theme contrast bug, surfaced by putting art behind these:
+   .dossier-share paints --color-normal (#c8c8c8), and tokens.css overrides only
+   the bg / border / text tokens for light, so the label sat light-grey on
+   near-white. */
+:root[data-theme="light"] .dossier-share,
+:root[data-theme="light"] .dossier-action:hover { color: var(--text); }
+:root[data-theme="light"] .has-hero .dossier-action,
+:root[data-theme="light"] .has-hero .dossier-share {
+  background-color: color-mix(in srgb, var(--bg-base) 90%, transparent);
+}
+@media (prefers-reduced-motion: reduce) { .dossier-hero { transition: none; } }
