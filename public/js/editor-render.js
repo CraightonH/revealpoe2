@@ -570,10 +570,10 @@ export function renderEditor(build, ctx) {
           build.ascendancy ? ` data-asc="${esc(build.ascendancy)}"` : ''} aria-hidden="true"></div>` : ''}
         <div class="dossier-head__copy">
           <h2>${nameHtml}</h2>
+          <div class="dossier-actions">${actions}</div>
           ${classHtml}
           ${descHtml}
         </div>
-        <div class="dossier-actions">${actions}</div>
         <p class="dossier-export-note" data-export-note hidden></p>
       </header>
       ${renderVariantStrip(build, ctx)}

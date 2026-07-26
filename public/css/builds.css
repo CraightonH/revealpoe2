@@ -148,17 +148,23 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
   opacity: 1; background: color-mix(in srgb, var(--accent-ui) 20%, transparent);
   border-color: color-mix(in srgb, var(--accent-ui) 52%, transparent); }
 .dossier-name:focus-visible { outline: 2px solid var(--accent-ui); outline-offset: 3px; }
-.dossier-class { margin: 0 0 8px; display: flex; align-items: center; gap: 7px; font-size: 12.5px; }
-.dossier-class__sep { color: var(--color-default); }
+/* Elevated pills (chosen 2026-07-26): the class is a primary lever, not a byline.
+   Real bordered/filled buttons at 14px instead of 12.5px bare text. */
+.dossier-class { margin: 4px 0 10px; display: flex; align-items: center; gap: 9px;
+  flex-wrap: wrap; font-size: 15px; }
+.dossier-class__sep { display: none; }
 .class-pick { position: relative; display: inline-flex; }
-.class-pick__btn { padding: 2px 8px; border: 1px solid transparent; border-radius: 999px;
-  background: none; color: var(--color-notable); font: 12.5px/1.4 var(--font-smallcaps); cursor: pointer;
+.class-pick__btn { padding: 6px 14px; border-radius: 999px; cursor: pointer;
+  border: 1px solid color-mix(in srgb, var(--color-notable) 40%, var(--border));
+  background: color-mix(in srgb, var(--color-notable) 9%, transparent);
+  color: var(--color-notable); font: 14px/1.3 var(--font-smallcaps);
   transition: border-color 120ms ease, background-color 120ms ease; }
 .class-pick__btn:hover, .class-pick__btn[aria-expanded="true"] {
   border-color: color-mix(in srgb, var(--color-notable) 45%, var(--border));
   background: color-mix(in srgb, var(--color-notable) 7%, transparent); }
-.class-pick__btn:disabled { color: var(--color-default); cursor: default; opacity: .55; }
-.class-pick__btn:disabled:hover { border-color: transparent; background: none; }
+.class-pick__btn:disabled { color: var(--color-default); cursor: default; opacity: .5;
+  border-color: var(--border); background: none; }
+.class-pick__btn:disabled:hover { border-color: var(--border); background: none; }
 .class-pick__btn:focus-visible { outline: 2px solid var(--accent-ui); outline-offset: 2px; }
 .class-pick__pop { position: absolute; z-index: 120; top: calc(100% + 6px); left: 0;
   min-width: 170px; max-height: 300px; overflow-y: auto;
@@ -183,16 +189,17 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
 .dossier-desc { width: 100%; max-width: 44rem; resize: vertical; padding: 6px 9px;
   border: 1px solid color-mix(in srgb, var(--border) 70%, transparent); border-radius: 6px;
   background: rgb(0 0 0 / .25); color: var(--text); font: 13px/1.5 var(--font-regular); }
-.dossier-share { display: inline-flex; align-items: center; gap: 7px; padding: 6px 14px;
+.dossier-share { display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px;
   border: 1px solid color-mix(in srgb, var(--accent-ui) 40%, var(--border)); border-radius: 999px;
   background: color-mix(in srgb, var(--accent-ui) 8%, transparent); color: var(--color-normal);
   font: 12px/1.2 var(--font-smallcaps); cursor: pointer;
   transition: border-color 120ms ease, background-color 120ms ease, transform 120ms ease; }
 .dossier-share:hover { background: color-mix(in srgb, var(--accent-ui) 14%, transparent); transform: translateY(-1px); }
 .dossier-share:focus-visible { outline: 2px solid var(--accent-ui); outline-offset: 2px; }
-.dossier-actions { display: flex; align-items: center; gap: 7px; flex: none; }
-.dossier-action { padding: 6px 13px; border: 1px solid var(--border); border-radius: 999px;
-  background: none; color: var(--color-default); font: 12px/1.2 var(--font-smallcaps); cursor: pointer;
+.dossier-actions { display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+  margin: 0 0 10px; }
+.dossier-action { padding: 5px 11px; border: 1px solid var(--border); border-radius: 999px;
+  background: none; color: var(--color-default); font: 11.5px/1.2 var(--font-smallcaps); cursor: pointer;
   transition: border-color 120ms ease, color 120ms ease; }
 .dossier-action:hover { color: var(--color-normal);
   border-color: color-mix(in srgb, var(--accent-ui) 50%, var(--border)); }
@@ -677,9 +684,13 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
    with no illustration simply matches nothing and renders no banner.
    Built by scripts/build-class-banners.js; see it for the crop rationale. */
 .dossier-head { position: relative; }
-.dossier-head.has-hero { overflow: hidden; border-radius: 10px 10px 0 0; }
+/* NO overflow:hidden here. The header is the containing block for the class and
+   ascendancy popovers, so clipping it hid all but the top two rows of the
+   dropdown. The hero is absolutely positioned with background-size:cover, so it
+   cannot escape its own box anyway — it clips itself. */
 .dossier-hero {
-  position: absolute; inset: 0 0 0 42%; z-index: 0; pointer-events: none;
+  position: absolute; inset: 0 0 0 63%; z-index: 0; pointer-events: none;
+  border-radius: 0 10px 0 0; overflow: hidden;
   background-repeat: no-repeat; background-size: cover; background-position: center 30%;
   /* Fade leftward into the copy, and downward off the bottom rule. The vertical
      stop also keeps the art faint behind .dossier-actions, whose grey pill
@@ -691,18 +702,15 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
   -webkit-mask-composite: source-in;
   opacity: .78;
 }
-/* The copy and the actions ride above the art. */
-.dossier-head__copy, .dossier-actions, .dossier-export-note { position: relative; z-index: 1; }
-/* Keep the action pills crisp where they overlap the art. The plate has to be
-   near-opaque, not a light wash: these are 12px small-caps in muted grey, and
-   over busy artwork a translucent backdrop leaves them unreadable. */
-.has-hero .dossier-action, .has-hero .dossier-share {
-  backdrop-filter: blur(4px);
-  background-color: color-mix(in srgb, var(--bg-base) 82%, transparent);
-  border-color: color-mix(in srgb, var(--border) 85%, var(--color-normal));
-}
-.has-hero .dossier-share {
-  background-color: color-mix(in srgb, var(--accent-ui) 12%, color-mix(in srgb, var(--bg-base) 84%, transparent));
+/* The copy rides above the art. The actions now sit INSIDE the copy column
+   (between the title and the class row) rather than opposite it, so nothing
+   overlaps the artwork and the pills need no backdrop plate to stay readable. */
+.dossier-head__copy, .dossier-export-note { position: relative; z-index: 1; }
+.has-hero .dossier-head__copy { max-width: 61%; }
+@media (max-width: 900px) {
+  /* Too narrow to share the row: art becomes a faint backdrop behind full-width copy. */
+  .has-hero .dossier-head__copy { max-width: 100%; }
+  .dossier-hero { inset: 0; opacity: .22; }
 }
 /* Light theme needs MORE of the art, not less. The illustrations are uniformly
    dark, so fading them over a pale ground turns them to grey mush rather than
