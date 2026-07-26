@@ -34,6 +34,8 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
 
   const build = () => store.get(buildId);
   const patch = (p) => safeWrite(() => store.update(buildId, p));
+  // Class/ascendancy belong to the GROUP, not to whichever variant is open.
+  const setGroupClass = (cls, asc) => safeWrite(() => store.setGroupClass(buildId, cls, asc));
   const render = () => {
     const b = build();
     if (!b) { location.hash = ''; return; }
@@ -148,7 +150,9 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
     const ascSlug = ascName ? (cls.ascendancies.find((a) => a.name === ascName)?.slug ?? null) : null;
     const b = build();
     if (b.class === cls.slug && b.ascendancy === ascSlug) return; // already matches
-    patch({ class: cls.slug, ascendancy: ascSlug });              // re-renders → picker updates
+    // Group-wide, like the picker: an imported tree's class defines the whole
+    // group, not just the variant that happened to be open when it loaded.
+    setGroupClass(cls.slug, ascSlug);                             // re-renders → picker updates
   }
 
   function equip(slotId, ref) {
@@ -286,14 +290,15 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
       const b = build();
       // Changing class drops an ascendancy that no longer belongs.
       const keepAsc = cls?.ascendancies.some((a) => a.slug === b.ascendancy);
-      patch({ class: setClass || null, ascendancy: keepAsc ? b.ascendancy : null });
+      // Group-wide: variants are phases of ONE character.
+      setGroupClass(setClass || null, keepAsc ? b.ascendancy : null);
       syncTreeClass({ force: true });   // drive the embed to the picked class
       return;
     }
     const setAsc = attr('data-set-asc');
     if (setAsc !== null && setAsc !== undefined) {
       classPicker = null;
-      patch({ ascendancy: setAsc || null });
+      setGroupClass(build().class, setAsc || null);
       syncTreeClass({ force: true });   // drive the embed to the picked ascendancy
       return;
     }
@@ -370,7 +375,7 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
           btn.disabled = false;
           setTimeout(() => {
             const b2 = container.querySelector('[data-share]');
-            if (b2) b2.textContent = 'Copy share link';
+            if (b2) b2.textContent = 'Share';
           }, 1800);
         });
       return;

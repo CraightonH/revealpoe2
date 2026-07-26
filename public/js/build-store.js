@@ -523,6 +523,31 @@ export function createStore(storage, { now = defaultNow, uuid = defaultUuid } = 
       while (taken.has(`Variant ${n}`)) n++;       // only to avoid an exact duplicate
       return `Variant ${n}`;
     },
+    /**
+     * Set class + ascendancy across the WHOLE group (root and every variant).
+     *
+     * Variants are phases of one character — they differ in gear, skills and
+     * passive tree, never in class — so this is group-wide config rather than
+     * per-build. Setting it on only the open build left a group internally
+     * inconsistent (a Witch variant inside a Sorceress guide).
+     */
+    setGroupClass(buildId, cls, ascendancy) {
+      const s = read();
+      const self = s.builds[buildId];
+      if (!self) return null;
+      const owner = s.order.find((id) => s.builds[id]?.variants?.some((v) => v.buildId === buildId));
+      const rootId = owner ?? buildId;
+      const root = s.builds[rootId];
+      const t = now();
+      const ids = [rootId, ...(root.variants ?? []).map((v) => v.buildId)];
+      for (const id of ids) {
+        const b = s.builds[id];
+        if (b) s.builds[id] = { ...b, class: cls, ascendancy, updatedAt: t };
+      }
+      write(s);
+      emit('update', buildId);
+      return s.builds[buildId];
+    },
     /** The build whose variant list contains `buildId`, or null. */
     parentOf(buildId) {
       const s = read();

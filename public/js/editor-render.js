@@ -501,14 +501,14 @@ export function renderEditor(build, ctx) {
         placeholder="Add a short description — what this build is and how it plays…">${esc(build.description ?? '')}</textarea>`;
 
   const actions = {
-    edit: `<button class="dossier-share" type="button" data-share>Copy share link</button>
+    edit: `<button class="dossier-share" type="button" data-share>Share</button>
       <button class="dossier-action" type="button" data-export-build>Export for game</button>
       <button class="dossier-action" type="button" data-view-published>View as shared</button>
       <button class="dossier-action" type="button" data-build-duplicate="${esc(build.id)}"${
         (ctx.builds?.length ?? 0) >= MAX_BUILDS ? ` disabled title="Build limit reached (${MAX_BUILDS})"` : ''}>Duplicate</button>
       <button class="dossier-action dossier-action--danger" type="button" data-build-delete="${esc(build.id)}">Delete</button>`,
     view: `<button class="dossier-share" type="button" data-edit-build>← Back to editing</button>
-      <button class="dossier-action" type="button" data-share>Copy share link</button>
+      <button class="dossier-action" type="button" data-share>Share</button>
       <button class="dossier-action" type="button" data-export-build>Export for game</button>`,
     import: `<button class="dossier-share" type="button" data-import-save>Save a copy</button>`,
   }[mode];

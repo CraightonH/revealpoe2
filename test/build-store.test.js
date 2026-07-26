@@ -808,3 +808,64 @@ test('addVariant does not copy the parent label onto the child', () => {
   assert.equal(store.get(v.id).label ?? null, null, 'the child carries no inherited label');
   assert.equal(store.get(parent.id).label, 'Leveling', 'the root keeps its own');
 });
+
+// ---- class/ascendancy is GROUP-wide (2026-07-26) --------------------------
+// Variants are phases of one character: they differ in gear, skills and tree,
+// never in class. A variant with a different class is a different build, so the
+// choice belongs to the group, not to whichever build happens to be open.
+
+test('setGroupClass applies to the root and every variant', () => {
+  const store = createStore(memStorage(), { now: fixedNow, uuid: seqUuid() });
+  const parent = store.create({ name: 'Stormweaver CoC', class: 'sorceress', ascendancy: 'stormweaver' });
+  const a = store.addVariant(parent.id, 'Leveling');
+  const b = store.addVariant(parent.id, 'Endgame');
+
+  store.setGroupClass(a.id, 'witch', 'infernalist');   // changed from a VARIANT
+
+  for (const id of [parent.id, a.id, b.id]) {
+    assert.equal(store.get(id).class, 'witch', `${id} class`);
+    assert.equal(store.get(id).ascendancy, 'infernalist', `${id} ascendancy`);
+  }
+});
+
+test('setGroupClass from the root reaches the variants too', () => {
+  const store = createStore(memStorage(), { now: fixedNow, uuid: seqUuid() });
+  const parent = store.create({ name: 'P', class: 'sorceress', ascendancy: 'stormweaver' });
+  const a = store.addVariant(parent.id, 'Leveling');
+  store.setGroupClass(parent.id, 'monk', 'invoker');
+  assert.equal(store.get(a.id).class, 'monk');
+  assert.equal(store.get(a.id).ascendancy, 'invoker');
+});
+
+test('setGroupClass leaves everything else in each variant alone', () => {
+  const store = createStore(memStorage(), { now: fixedNow, uuid: seqUuid() });
+  const parent = store.create({ name: 'P', class: 'sorceress', ascendancy: 'stormweaver' });
+  const a = store.addVariant(parent.id, 'Leveling');
+  store.update(a.id, {
+    skills: [{ gem: { slug: 'spark' }, level: null, supports: [] }],
+    tree: { code: 'AAAA', notablePriority: [1, 2] },
+    notes: 'variant-only notes',
+  });
+  store.setGroupClass(parent.id, 'witch', null);
+  const v = store.get(a.id);
+  assert.equal(v.class, 'witch');
+  assert.equal(v.ascendancy, null);
+  assert.deepEqual(v.skills, [{ gem: { slug: 'spark' }, level: null, supports: [] }], 'skills untouched');
+  assert.deepEqual(v.tree, { code: 'AAAA', notablePriority: [1, 2] }, 'tree untouched');
+  assert.equal(v.notes, 'variant-only notes', 'notes untouched');
+  assert.deepEqual(store.get(parent.id).variants.map((x) => x.label), ['Leveling'], 'grouping untouched');
+});
+
+test('setGroupClass on a standalone build just sets that build', () => {
+  const store = createStore(memStorage(), { now: fixedNow, uuid: seqUuid() });
+  const solo = store.create({ name: 'Solo' });
+  const other = store.create({ name: 'Other', class: 'monk' });
+  store.setGroupClass(solo.id, 'ranger', 'deadeye');
+  assert.equal(store.get(solo.id).class, 'ranger');
+  assert.equal(store.get(other.id).class, 'monk', 'an unrelated build is not touched');
+});
+
+test('setGroupClass is a no-op for an unknown id', () => {
+  const store = createStore(memStorage(), { now: fixedNow, uuid: seqUuid() });
+  assert.equal(store.setGroupClass('nope', 'witch', null), null);
+});
