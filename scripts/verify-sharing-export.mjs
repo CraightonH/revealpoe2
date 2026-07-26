@@ -37,7 +37,7 @@ try {
     current: document.querySelector('[data-variant-tab].is-current')?.textContent.trim() ?? null,
   }));
   ok('strip shows parent + 2 variants', strip.tabs.length === 3, JSON.stringify(strip.tabs));
-  ok('the newest variant is the current tab', strip.current === 'Variant 2', String(strip.current));
+  ok('the newest variant is the current tab', strip.current === 'Variant 3', String(strip.current));
 
   const stored = await p.evaluate(() => {
     const raw = JSON.parse(window.localStorage.getItem('reveal.builds.v1'));
@@ -47,7 +47,9 @@ try {
              linked: (parent?.variants ?? []).every((v) => !!raw.builds[v.buildId]) };
   });
   ok('store holds 3 builds at schema 3', stored.builds === 3 && stored.schema === 3, JSON.stringify(stored));
-  ok('parent lists both labels in order', JSON.stringify(stored.labels) === '["Variant 1","Variant 2"]', JSON.stringify(stored.labels));
+  // The ROOT is Variant 1 and holds no entry of its own, so the parent's stored
+  // list is the ADDED variants: 2 and 3.
+  ok('parent lists both labels in order', JSON.stringify(stored.labels) === '["Variant 2","Variant 3"]', JSON.stringify(stored.labels));
   ok('every variant entry points at a real build', stored.linked === true);
 
   // ---- 1b) label and build name are INDEPENDENT strings (2026-07-26) ----
