@@ -145,20 +145,27 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
     const classes = planner.classes || [];
     const buildCls = b.class ? classes.find((c) => c.slug === b.class) : null;
     const cur = treeEmbed.getClassAscendancy();
+    // Adopting only ever makes sense when the embed's identity came from the tree
+    // code itself. An allocation-free code (a build that picked a class but has
+    // spent no points) proves nothing, and the embed then reports its own default —
+    // adopting that turned "Druid / Oracle" into "Warrior / none" on every reload.
+    const embedKnows = !!cur.fromCode;
     if (!buildCls) {
       // No class picked: on load, reflect an imported tree's class so the picker
       // matches; on an explicit "No class" pick, leave the tree untouched.
-      if (!force && b.tree.code) adoptEmbedClassIntoBuild(meta, classes);
+      if (!force && embedKnows) adoptEmbedClassIntoBuild(meta, classes);
       return;
     }
     const targetClassName = buildCls.name;
     const ascName = b.ascendancy ? buildCls.ascendancies.find((a) => a.slug === b.ascendancy)?.name : null;
     const targetAscId = ascName ? (meta.ascByClass?.[targetClassName] || []).find((a) => a.name === ascName)?.id ?? null : null;
-    if (!force && b.tree.code && (cur.className !== targetClassName || (!b.ascendancy && cur.ascId))) {
+    if (!force && embedKnows && (cur.className !== targetClassName || (!b.ascendancy && cur.ascId))) {
       adoptEmbedClassIntoBuild(meta, classes);
       return;
     }
-    treeEmbed.setClassAscendancy(targetClassName, targetAscId);
+    // The build's picker wins. keepAllocation: a disagreement here is metadata-only
+    // (the embed just hasn't been told yet) — it must never wipe allocated points.
+    treeEmbed.setClassAscendancy(targetClassName, targetAscId, { keepAllocation: !force });
   }
   function adoptEmbedClassIntoBuild(meta, classes) {
     const cur = treeEmbed.getClassAscendancy();

@@ -143,7 +143,7 @@ const MASTERY_SCALE = 1.5;
  * @param {object[]} edges
  * @returns {Map<number, number[]>}
  */
-function buildAdjacency(nodes, edges) {
+export function buildAdjacency(nodes, edges) {
   const nodeSet = new Set(nodes.map((n) => n.h));
   const adj = new Map();
   for (const n of nodes) adj.set(n.h, []);
@@ -154,6 +154,93 @@ function buildAdjacency(nodes, edges) {
     }
   }
   return adj;
+}
+
+/**
+ * Count how many nodes in `targetSet` are reachable from `root` via `adjacency`,
+ * only traversing edges that stay within `targetSet`.
+ * Used to identify which class root "owns" a decoded allocation.
+ */
+function countReachableDecoded(root, targetSet, adjacency) {
+  const seen = new Set();
+  const q = [root];
+  while (q.length) {
+    const cur = q.shift();
+    if (seen.has(cur)) continue;
+    seen.add(cur);
+    for (const nb of adjacency.get(cur) ?? []) {
+      if ((targetSet.has(nb) || nb === root) && !seen.has(nb)) q.push(nb);
+    }
+  }
+  return seen.size - 1; // exclude root itself
+}
+
+/**
+ * Recover the class + ascendancy a decoded share code belongs to.
+ *
+ * The v7 header's class byte is NOT usable — we always write 10 (see
+ * passive-code.js synthesizeState), so the owning class is inferred by BFS: the
+ * class start from which the most decoded nodes are reachable. That inference
+ * needs an allocation to chew on.
+ *
+ * ⚠️ A code with ZERO allocated nodes therefore carries NO identity evidence, and
+ * this must say so (`fromCode: false`) instead of guessing. A planner build that
+ * has only picked a class emits exactly such a code; the old inference answered
+ * "Warrior / no ascendancy" for it (the first entry in meta.classStarts), and the
+ * editor adopted that guess over the user's real pick — "Druid / Oracle" silently
+ * became "Warrior / none" on reload. The host owns identity in that case.
+ *
+ * @param {ReturnType<import('./passive-code.js').decode>} decoded
+ * @param {{classStarts:object, ascStarts:object, ascByClass:object,
+ *          ascendancyArt:object, selectableClasses:string[], adj:Map<number,number[]>}} ctx
+ * @returns {{fromCode:boolean, classRoot:number|null, className:string|null, ascId:string|null}}
+ */
+export function identityFromDecoded(decoded, {
+  classStarts = {}, ascStarts = {}, ascByClass = {}, ascendancyArt = {},
+  selectableClasses = [], adj = new Map(),
+} = {}) {
+  const alloc = new Set([...(decoded.nodes ?? []), ...(decoded.ascNodes ?? []), ...(decoded.weaponSet ?? [])]);
+  if (alloc.size === 0) return { fromCode: false, classRoot: null, className: null, ascId: null };
+
+  let classRoot = null;
+  let bestCount = -1;
+  for (const rootHash of Object.values(classStarts)) {
+    const count = countReachableDecoded(rootHash, alloc, adj);
+    if (count > bestCount) { bestCount = count; classRoot = rootHash; }
+  }
+
+  // Ascendancy start, preferred from the allocated ascendancy nodes: that also
+  // disambiguates the classes sharing a start hexagon (Witch/Sorceress,
+  // Ranger/Huntress). Matched against the ASCENDANCY records only — an ascendancy
+  // island is reachable solely from its own start, whereas matching against the
+  // whole allocation lets a main-tree node sitting next to some other class's
+  // ascendancy start claim the ascendancy (that read a Druid tree as Templar1).
+  let ascId = null;
+  if (decoded.ascendancy > 0) {
+    const ascAlloc = new Set(decoded.ascNodes ?? []);
+    for (const [id, startHash] of Object.entries(ascStarts)) {
+      if (ascAlloc.has(startHash) || countReachableDecoded(startHash, ascAlloc, adj) > 0) { ascId = id; break; }
+    }
+  }
+
+  let className = ascId ? ascendancyArt[ascId]?.class ?? null : null;
+  if (!className) {
+    // Two classes share each start hexagon (a PoE1 name + its PoE2 name); prefer
+    // the selectable (PoE2) one.
+    className = Object.keys(classStarts).find((nm) => classStarts[nm] === classRoot && selectableClasses.includes(nm))
+      ?? Object.keys(classStarts).find((nm) => classStarts[nm] === classRoot)
+      ?? null;
+  }
+
+  // Ascendancy chosen but not yet allocated: reachability found nothing, so the
+  // header's 1-based ascendancy byte is the only evidence left. Ids are not dense
+  // per class (Ranger has Ranger1 + Ranger3), so match on the id's own suffix.
+  if (!ascId && decoded.ascendancy > 0 && className) {
+    ascId = (ascByClass[className] ?? [])
+      .find((a) => Number(String(a.id).match(/\d+$/)?.[0]) === decoded.ascendancy)?.id ?? null;
+  }
+
+  return { fromCode: true, classRoot, className, ascId };
 }
 
 // ---------------------------------------------------------------------------
@@ -202,6 +289,11 @@ export default function init(canvas, data, opts = {}) {
   const selectableClasses = Object.keys(ascByClass);
   let activeClass = selectableClasses[0] ?? 'Monk';
   let activeAsc = null; // ascId when an ascendancy is selected, else null
+  // Did the class/ascendancy above come from a decoded share code that actually
+  // proved it (an allocation to infer from), or is it just our default? Hosts that
+  // keep their own class (the build planner) need to tell those apart before
+  // adopting ours — see identityFromDecoded and getClassAscendancy().
+  let identityFromCode = false;
 
   const atlasCache = new Map(); // name -> {img, frames, scale} | 'loading' | 'error'
   // Plain-image cache for ascendancy illustrations (no GGG atlas; ggpk webp).
@@ -2230,35 +2322,17 @@ export default function init(canvas, data, opts = {}) {
       return;
     }
 
-    // Derive the active class root from the decoded allocation.
-    // Strategy: for each classStarts entry, BFS through adjacency to count how many
-    // decoded nodes are reachable from that root. The root with the highest reachable
-    // count is the active class.
+    // Who does this allocation belong to? See identityFromDecoded — an
+    // allocation-free code answers "no evidence", and then we KEEP the identity we
+    // already have (the host's picker owns it) instead of adopting a guess.
     const decodedNodeSet = new Set([...decoded.nodes, ...decoded.ascNodes, ...decoded.weaponSet]);
-    const classStartEntries = Object.entries(meta.classStarts ?? {});
-    let bestRoot = classStartValues[0] ?? null;
-    let bestCount = -1;
-
-    for (const [, rootHash] of classStartEntries) {
-      const count = countReachableDecoded(rootHash, decodedNodeSet, adj);
-      if (count > bestCount) { bestCount = count; bestRoot = rootHash; }
-    }
-
-    classRoot = bestRoot;
-
-    // Ascendancy start (if any).
-    const ascStarts = meta.ascStarts ?? {};
-    let ascRoot = null;
-    if (decoded.ascendancy > 0) {
-      // ascStarts is ascendancy-id → hash; ascendancy byte is 1-based index.
-      // Find the ascendancy start whose start node is reachable in the decoded set.
-      for (const [, startHash] of Object.entries(ascStarts)) {
-        if (decodedNodeSet.has(startHash) || countReachableDecoded(startHash, decodedNodeSet, adj) > 0) {
-          ascRoot = startHash;
-          break;
-        }
-      }
-    }
+    const identity = identityFromDecoded(decoded, {
+      classStarts: meta.classStarts ?? {}, ascStarts, ascByClass, ascendancyArt, selectableClasses, adj,
+    });
+    identityFromCode = identity.fromCode;
+    if (identity.fromCode && identity.classRoot != null) classRoot = identity.classRoot;
+    const ascId = identity.fromCode ? identity.ascId : activeAsc;
+    const ascRoot = ascId ? ascStarts[ascId] ?? null : null;
 
     starts = classRoot != null ? [classRoot] : [];
     if (ascRoot != null && !starts.includes(ascRoot)) starts.push(ascRoot);
@@ -2298,44 +2372,18 @@ export default function init(canvas, data, opts = {}) {
     // Keep decoded state for round-trip encode.
     decodedState = decoded;
 
-    // Sync the selector + central art to the imported build. Map the ascendancy
-    // start back to its id, then resolve the class (prefer the ascendancy's
-    // owner; two classes can share a hexagon start, so the asc disambiguates).
-    const ascId = ascRoot != null
-      ? Object.keys(ascStarts).find((id) => ascStarts[id] === ascRoot) ?? null
-      : null;
-    activeAsc = ascId;
-    let className = ascId ? ascendancyArt[ascId]?.class : null;
-    if (!className) {
-      const starts2 = meta.classStarts ?? {};
-      className = Object.keys(starts2).find((nm) => starts2[nm] === classRoot && selectableClasses.includes(nm))
-        ?? Object.keys(starts2).find((nm) => starts2[nm] === classRoot);
+    // Sync the selector + central art to the imported build — only when the code
+    // actually told us whose allocation this is.
+    if (identity.fromCode) {
+      activeAsc = identity.ascId;
+      const className = identity.className;
+      if (className && (ascByClass[className] || classArt?.[className])) activeClass = className;
     }
-    if (className && (ascByClass[className] || classArt?.[className])) activeClass = className;
     if (classSel) classSel.value = activeClass;
     populateAscOptions();
 
     updatePoints();
     requestDraw();
-  }
-
-  /**
-   * Count how many nodes in `targetSet` are reachable from `root` via `adj`,
-   * only traversing edges that stay within `targetSet`.
-   * Used to identify which class root "owns" a decoded allocation.
-   */
-  function countReachableDecoded(root, targetSet, adjacency) {
-    const seen = new Set();
-    const q = [root];
-    while (q.length) {
-      const cur = q.shift();
-      if (seen.has(cur)) continue;
-      seen.add(cur);
-      for (const nb of adjacency.get(cur) ?? []) {
-        if ((targetSet.has(nb) || nb === root) && !seen.has(nb)) q.push(nb);
-      }
-    }
-    return seen.size - 1; // exclude root itself
   }
 
   // ---------------------------------------------------------------------------
@@ -2363,8 +2411,12 @@ export default function init(canvas, data, opts = {}) {
     async getState() { return { code: await api.getCode() }; },
     getAllocatedStatLines: () => { try { return allocatedStatLines(); } catch { return []; } },
     setHighlight, focusNode, fitAllocated, getAllocatedNotables, getPoints, paintNodeIcon, deallocate, destroy,
-    /** Current class (GGG name) + ascendancy id, for the host to mirror. */
-    getClassAscendancy() { return { className: activeClass, ascId: activeAsc }; },
+    /**
+     * Current class (GGG name) + ascendancy id, for the host to mirror.
+     * `fromCode` = an imported share code proved this identity; when false it is
+     * only our default and a host with its own class picker must NOT adopt it.
+     */
+    getClassAscendancy() { return { className: activeClass, ascId: activeAsc, fromCode: identityFromCode }; },
     /**
      * Point the tree at a class + ascendancy (host-driven, e.g. the build's own
      * class picker). Switching class resets the tree (in-game behavior); a same-

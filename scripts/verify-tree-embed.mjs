@@ -167,6 +167,49 @@ try {
   }));
   ok('embed class follows the build class on mount', got.cls === want.className, `embed=${got.cls} build=${want.className}`);
   ok('embed ascendancy follows the build ascendancy', !want.ascName || got.asc === want.ascName, `embed=${got.asc} build=${want.ascName}`);
+
+  // 5) Regression: a build that picked a class but spent NO points persists an
+  //    allocation-FREE share code. Its class cannot be inferred from an empty
+  //    allocation, so the embed must not hand the editor a guess to adopt —
+  //    reloading such a build used to rewrite "Druid / Oracle" as "Warrior / none".
+  const r = await browser.newPage();
+  await r.goto(`${BASE}/builds`, { waitUntil: 'networkidle2', timeout: 60000 });
+  const seeded = await r.evaluate(async () => {
+    const [planner, tree, code] = await Promise.all([
+      fetch('/static/generated/planner-data.json').then((x) => x.json()),
+      fetch('/static/generated/passive-tree.json').then((x) => x.json()),
+      import('/static/js/passive-code.js'),
+    ]);
+    // Any class whose start hexagon is NOT the artifact's first (the old
+    // fallback), paired with an ascendancy the tree artifact actually ships
+    // (planner-only ids like Witch3b have no counterpart there).
+    const known = (name, asc) => (tree.meta.ascByClass[name] || []).some((a) => a.name === asc.name);
+    const cls = planner.classes.filter((x) => (x.ascendancies || []).some((a) => known(x.name, a))).pop();
+    const asc = cls.ascendancies.find((a) => known(cls.name, a));
+    const ascByte = Number(String(asc.gggId).match(/\d+$/)?.[0]) || 0;
+    const emptyCode = code.encode(code.synthesizeState({
+      allocated: [], ascByte, ascOf: () => null, isAttr: () => false, attrOf: () => 'str',
+    }));
+    const now = 1700000000000;
+    const b = { id: 'empty1', schema: 2, name: 'Empty', notes: '', description: '', createdAt: now, updatedAt: now,
+      class: cls.slug, ascendancy: asc.slug, gear: {}, unassigned: [], skills: [],
+      tree: { code: emptyCode, notablePriority: [] } };
+    localStorage.setItem('reveal.builds.v1', JSON.stringify({ order: [b.id], builds: { [b.id]: b } }));
+    return { slug: cls.slug, ascSlug: asc.slug, className: cls.name, ascName: asc.name };
+  });
+  await r.goto(`${BASE}/builds#/b/empty1`, { waitUntil: 'networkidle2', timeout: 60000 });
+  await r.waitForSelector('[data-tree-mount] [data-tree-class]', { timeout: 20000 }).catch(() => {});
+  await sleep(2000);
+  const kept = await r.evaluate(() => {
+    const b = JSON.parse(localStorage.getItem('reveal.builds.v1')).builds.empty1;
+    return { cls: b.class, asc: b.ascendancy,
+      embedCls: document.querySelector('[data-tree-mount] [data-tree-class]')?.value || null,
+      embedAsc: document.querySelector('[data-tree-mount] [data-tree-asc]')?.selectedOptions?.[0]?.textContent || null };
+  });
+  ok('empty tree code does not overwrite the build class', kept.cls === seeded.slug && kept.asc === seeded.ascSlug,
+    `store=${kept.cls}/${kept.asc} picked=${seeded.slug}/${seeded.ascSlug}`);
+  ok('empty tree code still points the embed at the build class', kept.embedCls === seeded.className && kept.embedAsc === seeded.ascName,
+    `embed=${kept.embedCls}/${kept.embedAsc} picked=${seeded.className}/${seeded.ascName}`);
 } finally {
   await browser.close();
 }

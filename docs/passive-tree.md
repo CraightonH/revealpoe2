@@ -380,6 +380,22 @@ layer), `focusNode(hash)`, `getAllocatedNotables()` → `[{h,kind,name,icon}]`,
 canvasEl)` (blits the node's `skills`-atlas sprite into a canvas), `deallocate(h)`
 (main-tree), and `destroy()` (disconnect ResizeObserver + listeners + timers).
 
+**Class/ascendancy mirroring** — `getClassAscendancy()` → `{className, ascId,
+fromCode}` and `setClassAscendancy(className, ascId, {keepAllocation})`. A share
+code cannot state its own class: the v7 header's class byte is always written as
+10 (see `passive-code.js synthesizeState`), so `importCode` *infers* the owner by
+BFS-ing each class start over the decoded allocation (`identityFromDecoded`, a
+pure export). **An allocation-free code therefore proves nothing** — it reports
+`fromCode: false`, the import keeps the identity it already had, and a host with
+its own class picker must NOT adopt the embed's answer. Ignoring that is how a
+freshly-picked "Druid / Oracle" build (class chosen, zero points spent, so an
+8-byte header-only code) came back as "Warrior / none" after a reload: the
+inference fell through to the artifact's first class start and the build editor
+adopted the guess group-wide. An ascendancy that is chosen but has no allocated
+nodes is recovered from the header's 1-based ascendancy byte. Regression cover:
+`test/passiveTreeIdentity.test.js` + the last two checks in
+`scripts/verify-tree-embed.mjs`.
+
 **Hosts:**
 - `/passives` (`views/passives.njk`) is a thin host: bare `<canvas>` in the wrap,
   an inline module script wiring `initialCode`/`initialFocus` from the URL and
