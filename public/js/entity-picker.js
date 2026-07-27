@@ -12,7 +12,7 @@ function onKey(e) { if (e.key === 'Escape') closePicker(); }
 
 const CAP = 40;
 
-function rowHtml(doc) {
+function rowHtml(doc, noteFor) {
   const icon = doc.iconUrl
     ? `<img class="picker-row__icon" src="${esc(doc.iconUrl)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`
     : '<span class="picker-row__icon"></span>';
@@ -22,15 +22,17 @@ function rowHtml(doc) {
   // in-game popup the rest of the site uses — no wiring, and it works for rows
   // rendered long after page load.
   const card = doc.cardUrl ? ` data-card-url="${esc(doc.cardUrl)}"` : '';
+  const note = typeof noteFor === 'function' ? noteFor(doc) : '';
+  const tag = note ? `<span class="picker-row__tag">${esc(note)}</span>` : '';
   return `<button type="button" class="picker-row" data-pick-slug="${esc(doc.slug)}" data-pick-category="${esc(doc.category)}"${card}>` +
-    `${icon}<span class="picker-row__name">${esc(doc.name)}</span><span class="picker-row__hint">${esc(hint)}</span></button>`;
+    `${icon}<span class="picker-row__name">${esc(doc.name)}</span>${tag}<span class="picker-row__hint">${esc(hint)}</span></button>`;
 }
 
-function groupHtml(label, docs) {
+function groupHtml(label, docs, noteFor) {
   const shown = docs.slice(0, CAP);
   const more = docs.length > shown.length
     ? `<p class="picker-more">+${docs.length - shown.length} more — type to narrow</p>` : '';
-  return `<section class="picker-group"><h3>${esc(label)} <span>${docs.length}</span></h3>${shown.map(rowHtml).join('')}${more}</section>`;
+  return `<section class="picker-group"><h3>${esc(label)} <span>${docs.length}</span></h3>${shown.map((d) => rowHtml(d, noteFor)).join('')}${more}</section>`;
 }
 
 /**
@@ -44,7 +46,7 @@ function groupHtml(label, docs) {
 const TIER_ROMAN = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V' };
 const TIER_ORDER = [1, 2, 3, 4, 5, 0];
 
-function recommendedHtml(docs, label, tierOf) {
+function recommendedHtml(docs, label, tierOf, noteFor) {
   if (!docs.length) return '';
   const tiered = typeof tierOf === 'function';
   let body;
@@ -56,7 +58,7 @@ function recommendedHtml(docs, label, tierOf) {
       buckets.get(t).push(d);
     }
     body = TIER_ORDER.filter((t) => buckets.has(t)).map((t) => {
-      const rows = buckets.get(t).map(rowHtml).join('');
+      const rows = buckets.get(t).map((d) => rowHtml(d, noteFor)).join('');
       // The tier IS the uncut-support level you need to craft it, which is the
       // useful bit at a glance — so say so rather than just numbering.
       const head = t
@@ -67,7 +69,7 @@ function recommendedHtml(docs, label, tierOf) {
         <span class="picker-tier__count">${buckets.get(t).length}</span></h4>${rows}</div>`;
     }).join('');
   } else {
-    body = docs.map(rowHtml).join('');
+    body = docs.map((d) => rowHtml(d, noteFor)).join('');
   }
   return `<section class="picker-group picker-group--rec">
     <h3>${esc(label)} <span>${docs.length}</span></h3>
@@ -76,7 +78,7 @@ function recommendedHtml(docs, label, tierOf) {
     ${body}</section>`;
 }
 
-export function openPicker({ title, docs, categories, rank = [], rankLabel = '', tierOf = null, onPick }) {
+export function openPicker({ title, docs, categories, rank = [], rankLabel = '', tierOf = null, noteFor = null, onPick }) {
   closePicker();
   const pool = rankDocs(docs.filter((d) => categories.includes(d.category)), rank);
   const byKey = new Map(pool.map((d) => [`${d.category}:${d.slug}`, d]));
@@ -109,15 +111,15 @@ export function openPicker({ title, docs, categories, rank = [], rankLabel = '',
       const rest = recommended.length ? pool.filter((d) => !rankSet.has(d.slug)) : pool;
       const groups = new Map();
       for (const d of rest) { if (!groups.has(d.category)) groups.set(d.category, []); groups.get(d.category).push(d); }
-      const body = recommendedHtml(recommended, rankLabel, tierOf)
+      const body = recommendedHtml(recommended, rankLabel, tierOf, noteFor)
         + [...groups].map(([cat, ds]) => groupHtml(
-            recommended.length ? `All ${LABEL_FOR.get(cat) || cat}` : (LABEL_FOR.get(cat) || cat), ds)).join('');
+            recommended.length ? `All ${LABEL_FOR.get(cat) || cat}` : (LABEL_FOR.get(cat) || cat), ds, noteFor)).join('');
       results.innerHTML = body || '<p class="picker-more">Nothing available.</p>';
       return;
     }
     const r = groupQuery(query, { docs: pool });
     results.innerHTML = r.groups.length
-      ? r.groups.map((g) => groupHtml(g.label, rankDocs(g.items, rank))).join('')
+      ? r.groups.map((g) => groupHtml(g.label, rankDocs(g.items, rank), noteFor)).join('')
       : `<p class="picker-more">No matches for <code>${esc(query)}</code>.</p>`;
   }
 

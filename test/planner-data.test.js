@@ -109,3 +109,24 @@ test('planner gems carry the support tier, matching the detail page rule', async
   assert.ok(supports.length > 500, `${supports.length} supports`);
   for (const g of supports) assert.ok(g.tier >= 0 && g.tier <= 5, `bad tier ${g.tier}`);
 });
+
+test('gems are classified by how a player obtains them', async () => {
+  const { plannerData } = await import('../src/data/planner.js');
+  const { gems, granted } = plannerData();
+  const skills = Object.entries(gems).filter(([, g]) => ['active', 'spirit'].includes(g.gemType));
+  for (const [slug, g] of skills) {
+    assert.ok(['craft', 'item', 'passive', 'none'].includes(g.source), `${slug}: ${g.source}`);
+  }
+  // Every skill a unique grants must be 'item' — those are auto-added when the
+  // item is equipped, so the picker must NOT also offer them.
+  const byUnique = new Set(Object.values(granted).flat());
+  for (const slug of byUnique) {
+    const g = gems[slug];
+    if (!g || g.source === 'craft') continue;   // craftable AND granted: still pickable
+    assert.equal(g.source, 'item', `${slug} is granted by a unique but marked ${g.source}`);
+  }
+  // Supports are all craftable, so the support picker needs no filtering.
+  const supports = Object.values(gems).filter((g) => g.gemType === 'support');
+  assert.ok(supports.every((g) => g.source === 'craft'),
+    'a non-craftable support would silently vanish from the picker');
+});

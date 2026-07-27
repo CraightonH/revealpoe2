@@ -772,3 +772,11 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
   color: var(--accent-ui); font-size: 11px; letter-spacing: .04em; }
 .picker-tier__label { flex: 1 1 auto; }
 .picker-tier__count { color: var(--color-default); opacity: .8; }
+
+/* "from a passive" — a skill you get by allocating a passive rather than by
+   crafting a gem. Worth marking, because it is the one pickable kind you cannot
+   simply buy. */
+.picker-row__tag { flex: none; padding: 1px 6px; border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--color-notable) 32%, var(--border));
+  color: var(--color-notable); font: 10px/1.5 var(--font-smallcaps);
+  letter-spacing: .06em; white-space: nowrap; }

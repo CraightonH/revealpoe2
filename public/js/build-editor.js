@@ -220,15 +220,33 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
     });
   }
 
+  // Only skills a player can actually put in a socket. Excluded:
+  //   source 'item' — granted by a unique; the editor adds those rows itself
+  //                   when the item is equipped, so offering them here would
+  //                   invite a duplicate the build cannot really have
+  //   source 'none' — not obtainable by a player at all
+  // Passive/ascendancy-granted skills STAY: nothing else surfaces them (unlike
+  // unique grants there is no auto-add), so hiding them would make ~47 usable
+  // skills unplannable.
+  const PICKABLE = new Set(['craft', 'passive']);
+  const pickableDocs = () => docs.filter((d) => {
+    const rec = planner.gems?.[d.slug];
+    return !rec || PICKABLE.has(rec.source ?? 'craft');
+  });
+
   function pickGem(onPick) {
-    openPicker({ title: 'Choose a skill', docs, categories: ['gem', 'spirit'], onPick });
+    openPicker({
+      title: 'Choose a skill', docs: pickableDocs(), categories: ['gem', 'spirit'],
+      noteFor: (d) => (planner.gems?.[d.slug]?.source === 'passive' ? 'from a passive' : ''),
+      onPick,
+    });
   }
 
   function pickSupport(forGemSlug, onPick) {
     const rec = planner.recommends?.[forGemSlug] ?? [];
     const gemName = docs.find((d) => d.slug === forGemSlug)?.name || 'this skill';
     openPicker({
-      title: 'Choose a support', docs, categories: ['support'],
+      title: 'Choose a support', docs: pickableDocs(), categories: ['support'],
       rank: rec,
       rankLabel: rec.length ? `Recommended for ${gemName}` : '',
       tierOf: (slug) => planner.gems?.[slug]?.tier ?? 0,

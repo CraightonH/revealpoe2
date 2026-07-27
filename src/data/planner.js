@@ -100,6 +100,23 @@ export function plannerData() {
     if (skills.length) granted[u.slug] = skills;
   }
 
+  // How a player actually OBTAINS each skill — what the picker may offer.
+  //   craft   buy/craft the gem yourself            -> pickable
+  //   passive granted by a passive or ascendancy    -> pickable (nothing else
+  //           surfaces it; unlike uniques, the planner does not auto-add these)
+  //   item    granted by a unique                   -> NOT pickable; the editor
+  //           adds it automatically when the item is equipped
+  //   none    not obtainable by a player at all     -> NOT pickable
+  const grantedByUnique = new Set(Object.values(granted).flat());
+  for (const g of nodesByKind('gem')) {
+    const rec = gems[g.slug];
+    if (!rec) continue;
+    if (g.props.origin === 'gem') { rec.source = 'craft'; continue; }
+    if (grantedByUnique.has(g.slug)) { rec.source = 'item'; continue; }
+    const from = edgesTo(g.id, 'grants').map((e) => getNode(e.from)).filter(Boolean);
+    rec.source = from.some((n) => n.kind === 'passive' || n.kind === 'ascendancy') ? 'passive' : 'none';
+  }
+
   // Recommended supports, source edge order -- the picker ranks these first.
   const recommends = {};
   for (const g of nodesByKind('gem')) {
