@@ -780,3 +780,5 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
   border: 1px solid color-mix(in srgb, var(--color-notable) 32%, var(--border));
   color: var(--color-notable); font: 10px/1.5 var(--font-smallcaps);
   letter-spacing: .06em; white-space: nowrap; }
+
+.editor-setup__source--passive b { color: var(--color-notable); font-weight: 500; }

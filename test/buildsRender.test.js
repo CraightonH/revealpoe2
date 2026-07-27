@@ -328,3 +328,59 @@ test('an orphaned variant becomes selectable again', () => {
   }));
   assert.match(html, /href="#\/b\/v1"/);
 });
+
+// ---- passive-granted setup rows (2026-07-26) -----------------------------
+
+const withTree = (hash) => {
+  // A build whose tree code allocates one ascendancy notable.
+  const b = vb('p', 'T');
+  b.tree = { code: TREE_CODE_FOR(hash), notablePriority: [] };
+  return b;
+};
+let TREE_CODE_FOR;
+test('setup: build a real one-node ascendancy code', async () => {
+  const { synthesizeState, encode } = await import('../public/js/passive-code.js');
+  TREE_CODE_FOR = (h) => encode(synthesizeState({
+    allocated: [h], ascByte: 1, ascOf: () => 'X', isAttr: () => false, attrOf: () => 'str',
+  }));
+  assert.equal(typeof TREE_CODE_FOR(1739), 'string');
+});
+
+test('an allocated skill-granting passive produces a setup row', async () => {
+  const { grantedRows } = await import('../public/js/editor-render.js');
+  const planner = { granted: {}, grantedByPassive: { 1739: { name: 'Hollow Form Technique', skills: ['hollow-form'] } } };
+  const rows = grantedRows(withTree(1739), planner);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].skill, 'hollow-form');
+  assert.equal(rows[0].passive, 'Hollow Form Technique');
+  assert.equal(rows[0].item, undefined, 'a passive row carries no item');
+  assert.match(rows[0].key, /^passive:1739:hollow-form$/);
+});
+
+test('no row when that passive is not allocated', async () => {
+  const { grantedRows } = await import('../public/js/editor-render.js');
+  const planner = { granted: {}, grantedByPassive: { 1739: { name: 'X', skills: ['hollow-form'] } } };
+  assert.deepEqual(grantedRows(withTree(9999), planner), []);
+  const noTree = vb('p', 'T');
+  assert.deepEqual(grantedRows(noTree, planner), []);
+});
+
+test('support choices survive unallocating and re-allocating the passive', async () => {
+  const { grantedRows } = await import('../public/js/editor-render.js');
+  const planner = { granted: {}, grantedByPassive: { 1739: { name: 'X', skills: ['hollow-form'] } } };
+  const b = withTree(1739);
+  // The key is derived from the HASH, not from row order, so a stored choice
+  // reattaches after the passive is dropped and taken again.
+  b.grantedSupports = { 'passive:1739:hollow-form': [{ slug: 'martial-tempo' }] };
+  assert.deepEqual(grantedRows(b, planner)[0].supports, [{ slug: 'martial-tempo' }]);
+  const dropped = { ...b, tree: { code: null, notablePriority: [] } };
+  assert.deepEqual(grantedRows(dropped, planner), [], 'row gone while unallocated');
+  assert.deepEqual(grantedRows(b, planner)[0].supports, [{ slug: 'martial-tempo' }], 'and restored on re-allocate');
+});
+
+test('a garbage tree code cannot break the skills section', async () => {
+  const { grantedRows } = await import('../public/js/editor-render.js');
+  const b = vb('p', 'T');
+  b.tree = { code: 'not-a-code', notablePriority: [] };
+  assert.deepEqual(grantedRows(b, { granted: {}, grantedByPassive: { 1: { name: 'X', skills: ['y'] } } }), []);
+});

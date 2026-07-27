@@ -245,6 +245,23 @@ export function renderGear(build, ctx) {
 import { setupViolations } from './build-rules.js';
 
 /** Granted-skill rows derived from equipped items (amendments §4). */
+/** Passive hashes this build has allocated, from its own tree code. */
+function allocatedHashes(build) {
+  const code = build.tree?.code;
+  if (!code) return [];
+  try {
+    const st = decodePassiveCode(code);
+    // All skill-granting passives are ascendancy notables today, but read the
+    // main section too so a future non-ascendancy grant is not silently missed.
+    return [...(st.nodes ?? []), ...(st.ascNodes ?? [])];
+  } catch { return []; }
+}
+
+/**
+ * Setup rows the build gets automatically, from equipped uniques AND from
+ * allocated skill-granting passives. Neither is pickable — the planner adds
+ * them, and each row says where it came from.
+ */
 export function grantedRows(build, planner) {
   const rows = [];
   for (const g of Object.values(build.gear)) {
@@ -254,6 +271,17 @@ export function grantedRows(build, planner) {
     for (const skill of skills) {
       const key = `${g.item.slug}:${skill}`;
       rows.push({ key, item: g.item, skill, supports: build.grantedSupports?.[key] ?? [] });
+    }
+  }
+  const byPassive = planner.grantedByPassive ?? {};
+  for (const hash of allocatedHashes(build)) {
+    const entry = byPassive[hash];
+    if (!entry) continue;
+    for (const skill of entry.skills) {
+      // Keyed by hash, so support choices survive unallocating and re-allocating
+      // the passive — the same round-trip guarantee the item rows have.
+      const key = `passive:${hash}:${skill}`;
+      rows.push({ key, passive: entry.name, skill, supports: build.grantedSupports?.[key] ?? [] });
     }
   }
   return rows;
@@ -317,7 +345,10 @@ export function renderSkills(build, ctx) {
   }));
   const grantedHtml = grantedRows(build, ctx.planner).map((r) => chainRow({
     idPrefix: `g:${r.key}`, gemRef: { kind: 'gem', slug: r.skill }, supports: r.supports,
-    label: `<span class="editor-setup__source">from ${sourceChip(r.item, ctx.resolveRef)}</span>`,
+    label: r.item
+      ? `<span class="editor-setup__source">from ${sourceChip(r.item, ctx.resolveRef)}</span>`
+      : `<span class="editor-setup__source editor-setup__source--passive">from the passive
+          <b>${esc(r.passive)}</b></span>`,
     removable: false, index: -1, warnings: [], ctx,
   }));
   return `<section class="editor-chapter editor-skills" id="skills" aria-labelledby="skills-h">

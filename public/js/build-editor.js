@@ -221,14 +221,13 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
   }
 
   // Only skills a player can actually put in a socket. Excluded:
-  //   source 'item' — granted by a unique; the editor adds those rows itself
-  //                   when the item is equipped, so offering them here would
-  //                   invite a duplicate the build cannot really have
-  //   source 'none' — not obtainable by a player at all
-  // Passive/ascendancy-granted skills STAY: nothing else surfaces them (unlike
-  // unique grants there is no auto-add), so hiding them would make ~47 usable
-  // skills unplannable.
-  const PICKABLE = new Set(['craft', 'passive']);
+  //   source 'item'    granted by a unique  — the editor adds the row on equip
+  //   source 'passive' granted by a passive — the editor adds the row when that
+  //                    passive is allocated in the tree (2026-07-26; these used
+  //                    to be pickable because nothing else surfaced them)
+  //   source 'none'    not obtainable by a player at all
+  // Only what you can actually put in a socket yourself remains.
+  const PICKABLE = new Set(['craft']);
   const pickableDocs = () => docs.filter((d) => {
     const rec = planner.gems?.[d.slug];
     return !rec || PICKABLE.has(rec.source ?? 'craft');
@@ -237,7 +236,6 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
   function pickGem(onPick) {
     openPicker({
       title: 'Choose a skill', docs: pickableDocs(), categories: ['gem', 'spirit'],
-      noteFor: (d) => (planner.gems?.[d.slug]?.source === 'passive' ? 'from a passive' : ''),
       onPick,
     });
   }

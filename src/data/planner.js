@@ -100,6 +100,20 @@ export function plannerData() {
     if (skills.length) granted[u.slug] = skills;
   }
 
+  // Passive-granted skills, keyed by the passive's TREE HASH so the editor can
+  // match them against a decoded tree code. All 48 are ascendancy notables
+  // today, so they arrive in the code's ascendancy section. Same idea as
+  // `granted` for uniques: the planner adds the setup row itself rather than
+  // letting the player pick a skill they cannot socket.
+  const grantedByPassive = {};
+  for (const p of nodesByKind('passive')) {
+    const hash = p.props?.hash;
+    if (hash == null) continue;
+    const skills = edgesFrom(p.id, 'grants').map((e) => getNode(e.to))
+      .filter((n) => n?.kind === 'gem').map((n) => n.slug);
+    if (skills.length) grantedByPassive[hash] = { name: p.name, skills };
+  }
+
   // How a player actually OBTAINS each skill — what the picker may offer.
   //   craft   buy/craft the gem yourself            -> pickable
   //   passive granted by a passive or ascendancy    -> pickable (nothing else
@@ -141,5 +155,5 @@ export function plannerData() {
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  return { slots, items, gems, granted, recommends, classes };
+  return { slots, items, gems, granted, grantedByPassive, recommends, classes };
 }
