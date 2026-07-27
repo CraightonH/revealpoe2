@@ -17,7 +17,12 @@ function rowHtml(doc) {
     ? `<img class="picker-row__icon" src="${esc(doc.iconUrl)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`
     : '<span class="picker-row__icon"></span>';
   const hint = String(doc.hint || doc.subtitle || '').replace(/<[^>]*>/g, ' ');
-  return `<button type="button" class="picker-row" data-pick-slug="${esc(doc.slug)}" data-pick-category="${esc(doc.category)}">` +
+  // The site-wide card tooltip is delegated on <body> (card-tooltip.js →
+  // tippy.delegate), so simply carrying data-card-url gives every row the same
+  // in-game popup the rest of the site uses — no wiring, and it works for rows
+  // rendered long after page load.
+  const card = doc.cardUrl ? ` data-card-url="${esc(doc.cardUrl)}"` : '';
+  return `<button type="button" class="picker-row" data-pick-slug="${esc(doc.slug)}" data-pick-category="${esc(doc.category)}"${card}>` +
     `${icon}<span class="picker-row__name">${esc(doc.name)}</span><span class="picker-row__hint">${esc(hint)}</span></button>`;
 }
 
