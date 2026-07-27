@@ -1,8 +1,7 @@
 {% from "macros/card-actions.njk" import scaleIcon, buildIcon, pinIcon %}
 
-{% macro itemActionBar(name, kind, slug, tradeUrl, classSlug='') %}
+{% macro itemActionBar(kind, slug, tradeUrl, classSlug='') %}
 <header class="item-action-bar">
-  <span class="item-action-bar__name">{{ name }}</span>
   <span class="item-action-bar__actions">
     {% if tradeUrl %}
     <a class="item-action" href="{{ tradeUrl }}" target="_blank" rel="noopener nofollow"

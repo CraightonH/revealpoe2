@@ -1,4 +1,5 @@
 {% from "macros/card-actions.njk" import tradeButton %}
+{% from "macros/item-actions.njk" import itemActionBar %}
 
 {% macro modLine(stat) %}
 <div class="explicitMod">
@@ -75,6 +76,7 @@
       <div class="itemName"><span class="lc unique-name">{{ vm.name }}</span></div>
       <div class="itemName typeLine">{% if vm.baseSlug %}<a class="lc unique-type" href="/bases#{{ vm.classSlug }}" data-card-url="/base/{{ vm.baseSlug }}/card">{{ vm.base }}</a>{% elif vm.baseLabel %}<span class="lc unique-type unique-type--any">{{ vm.baseLabel }}</span>{% else %}<span class="lc unique-type">{{ vm.base }}</span>{% endif %}</div>
     </div>
+    {{ itemActionBar('unique', vm.slug, vm.tradeUrl) }}
     <div class="content">
       <div class="Stats">
         <div class="property">{{ vm.className }}{% if vm.origin %} <span class="unique-origin unique-origin--{{ vm.origin | lower }}">{{ vm.origin }}</span>{% endif %}</div>

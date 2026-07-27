@@ -100,7 +100,7 @@ Two mechanisms now cover this — do not remove either:
 
 Item and gem tooltips should imitate the in-game look and feel as closely as possible. The reference implementation is **poe2db.tw** — inspect its HTML/CSS for layout patterns before building new popup styles.
 
-Site action affordances never sit on game art. When the item *is* the view, they live in a sticky action bar above the card. When the item is one of many, they are a hover-revealed cluster on the card's border-box corner.
+Site action affordances attach to the card itself as a control strip directly below the header banner, so they are available everywhere the card renders — including hover tooltips — and never sit on top of the game art. Condensed grid cards additionally get a hover-revealed cluster on their border-box corner.
 
 Key layout patterns already established (do not drift from these):
 - `.newItemPopup` — outer popup wrapper; `--card-border` / `--card-glow` CSS variables set per rarity

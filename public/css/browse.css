@@ -478,9 +478,6 @@ html[data-card-size="xl"] .gem-index { --gem-index-content-scale: 1.5; }
   font-size: 11px;
   text-align: center;
 }
-.gem-index-pane:has(.item-action-bar) > .gem-index-pane__status {
-  top: calc(43px * var(--gem-index-content-scale, 1));
-}
 .gem-index-pane .gem-detail { max-width: none; }
 .gem-index-pane .rec-tier { grid-template-columns: 1.8rem minmax(0, 1fr); gap: 7px; }
 .gem-index-pane .rec-tier .gem-browse-grid { grid-template-columns: repeat(auto-fit, minmax(210px, 250px)); }
@@ -746,34 +743,17 @@ html[data-card-size="xl"] .gem-index { --gem-index-content-scale: 1.5; }
   font: 500 calc(13px * var(--gem-index-content-scale))/1.2 var(--font-display);
 }
 .tc-detail-header > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* The display:flex above outranks the UA [hidden] rule, so hiding the header
-   from JS needs this explicitly — same reason .tc-detail-pin[hidden] exists. */
-.tc-detail-header[hidden] { display: none; }
 .theorycraft-index .tc-detail-header + .gem-index-pane__status { top: calc(43px * var(--gem-index-content-scale)); }
 .item-action-bar {
-  position: sticky;
-  top: 0;
-  z-index: 12;
-  /* The detail wrapper (.gem-detail) is a centering flex column, so a plain
-     block child shrink-wraps to its content. Stretch so space-between can push
-     the name and the action cluster to opposite ends of the bar. */
-  align-self: stretch;
-  min-height: calc(43px * var(--gem-index-content-scale, 1));
-  padding: calc(7px * var(--gem-index-content-scale, 1)) calc(12px * var(--gem-index-content-scale, 1));
+  min-height: calc(35px * var(--gem-index-content-scale, 1));
+  padding: calc(4px * var(--gem-index-content-scale, 1)) calc(8px * var(--gem-index-content-scale, 1));
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: calc(10px * var(--gem-index-content-scale, 1));
-  border-bottom: 1px solid var(--border);
-  background: color-mix(in srgb, var(--bg-surface) 96%, var(--bg-base));
+  justify-content: center;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-default) 20%, transparent);
+  background: color-mix(in srgb, var(--bg-surface) 82%, transparent);
   color: var(--color-normal);
-  font: 500 calc(13px * var(--gem-index-content-scale, 1))/1.2 var(--font-display);
-}
-.item-action-bar__name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font: 500 calc(11px * var(--gem-index-content-scale, 1))/1.2 var(--font-display);
 }
 .item-action-bar__actions {
   flex: 0 0 auto;
@@ -783,12 +763,12 @@ html[data-card-size="xl"] .gem-index { --gem-index-content-scale: 1.5; }
 }
 .item-action {
   width: auto;
-  height: calc(29px * var(--gem-index-content-scale, 1));
-  padding: 0 calc(8px * var(--gem-index-content-scale, 1));
+  height: calc(25px * var(--gem-index-content-scale, 1));
+  padding: 0 calc(7px * var(--gem-index-content-scale, 1));
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: calc(5px * var(--gem-index-content-scale, 1));
+  gap: calc(4px * var(--gem-index-content-scale, 1));
   border: 1px solid var(--border);
   border-radius: 4px;
   background: color-mix(in srgb, var(--bg-surface) 90%, transparent);
@@ -806,17 +786,13 @@ html[data-card-size="xl"] .gem-index { --gem-index-content-scale: 1.5; }
 .item-action .trade-scale,
 .item-action .add-build-icon,
 .item-action .add-pin-icon {
-  width: calc(15px * var(--gem-index-content-scale, 1));
-  height: calc(15px * var(--gem-index-content-scale, 1));
-}
-.item-index-sheet .item-action-bar__name,
-.gem-index-sheet .item-action-bar__name {
-  display: none;
+  width: calc(13px * var(--gem-index-content-scale, 1));
+  height: calc(13px * var(--gem-index-content-scale, 1));
 }
 @media (max-width: 520px) {
   .item-action__label { display: none; }
   .item-action {
-    width: calc(29px * var(--gem-index-content-scale, 1));
+    width: calc(25px * var(--gem-index-content-scale, 1));
     padding: 0;
   }
 }

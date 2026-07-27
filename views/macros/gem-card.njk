@@ -1,5 +1,6 @@
 {% from "macros/card-actions.njk" import tradeButton %}
 {% from "macros/item-index-row.njk" import itemIndexRow %}
+{% from "macros/item-actions.njk" import itemActionBar %}
 
 {# A single condensed card for the /gems browse grid. Also reused on the
    /theorycraft results page so gem matches render identically to /gems.
@@ -101,6 +102,7 @@
       <div class="itemName"><span class="lc">{{ vm.name }}</span></div>
       <div class="itemName typeLine"><span class="lc">{{ vm.typeLineHtml | safe }}</span></div>
     </div>
+    {{ itemActionBar('gem', vm.slug, vm.tradeUrl) }}
 
     <div class="content">
       <div class="Stats">

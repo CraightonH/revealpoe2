@@ -1,4 +1,5 @@
 {% from "macros/card-actions.njk" import tradeButton %}
+{% from "macros/item-actions.njk" import itemActionBar %}
 
 {# Compact class nav card used on the /bases index grid (and reused wherever we
    want to point at a whole item class rather than list every base): name, icon,
@@ -60,6 +61,7 @@
       <div class="itemName"><span class="lc normal-name">{{ vm.name }}</span></div>
       <div class="itemName typeLine"><span class="lc normal-type">{{ vm.className }}</span></div>
     </div>
+    {{ itemActionBar('base', vm.slug, vm.tradeUrl, vm.classSlug) }}
     <div class="content">
       {% if vm.properties.length %}
       <div class="Stats">

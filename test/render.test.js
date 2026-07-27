@@ -24,6 +24,16 @@ test('gem, unique, and base detail partials render one correctly keyed item acti
   assertItemActionBar(base.text, 'base', 'stellar-amulet', 'amulet');
 });
 
+test('gem, unique, and base hover-card fragments render one correctly keyed item action bar', async () => {
+  const app = createApp();
+  const gem = await request(app).get('/gem/herald-of-ash/card');
+  const unique = await request(app).get('/unique/astramentis/card');
+  const base = await request(app).get('/base/stellar-amulet/card');
+  assertItemActionBar(gem.text, 'gem', 'herald-of-ash');
+  assertItemActionBar(unique.text, 'unique', 'astramentis');
+  assertItemActionBar(base.text, 'base', 'stellar-amulet', 'amulet');
+});
+
 test('full-card popup fragments contain no card actions', async () => {
   const app = createApp();
   const fragments = [
