@@ -50,3 +50,26 @@ test('the anchored mod picker stays below the rail and the modal', () => {
   assert.ok(modPop < zIndexOf('.dossier-rail'));
   assert.ok(modPop < zIndexOf('.picker-panel'));
 });
+
+// The picker popups drifted warm because they referenced tokens that do not
+// exist and silently used their hardcoded fallbacks. Assert they are on the real
+// palette, since that failure mode is invisible in code review.
+test('the pickers use real design tokens, not phantom fallbacks', () => {
+  const defined = new Set();
+  const cssDir = path.join(import.meta.dirname, '..', 'public', 'css');
+  for (const f of fs.readdirSync(cssDir).filter((x) => x.endsWith('.css'))) {
+    const t = fs.readFileSync(path.join(cssDir, f), 'utf8');
+    for (const m of t.matchAll(/(--[a-z0-9-]+)\s*:/g)) defined.add(m[1]);
+  }
+  const phantom = [...new Set([...css.matchAll(/var\((--[a-z0-9-]+)\s*,/g)]
+    .map((m) => m[1]).filter((n) => !defined.has(n)))];
+  assert.deepEqual(phantom, [],
+    'these fall back to a literal and drift from the palette when tokens change');
+});
+
+test('the picker panel sits on the app surface', () => {
+  const m = css.match(/\.picker-panel\s*\{[^}]*\}/);
+  assert.ok(m, '.picker-panel rule not found');
+  assert.match(m[0], /background:\s*var\(--bg-surface\)/, 'must share the app surface');
+  assert.ok(!/#14130f/.test(m[0]), 'the warm literal must not come back');
+});

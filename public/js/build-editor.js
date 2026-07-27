@@ -225,9 +225,12 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
   }
 
   function pickSupport(forGemSlug, onPick) {
+    const rec = planner.recommends?.[forGemSlug] ?? [];
+    const gemName = docs.find((d) => d.slug === forGemSlug)?.name || 'this skill';
     openPicker({
       title: 'Choose a support', docs, categories: ['support'],
-      rank: planner.recommends?.[forGemSlug] ?? [],
+      rank: rec,
+      rankLabel: rec.length ? `Recommended for ${gemName}` : '',
       onPick,
     });
   }

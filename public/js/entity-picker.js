@@ -28,7 +28,20 @@ function groupHtml(label, docs) {
   return `<section class="picker-group"><h3>${esc(label)} <span>${docs.length}</span></h3>${shown.map(rowHtml).join('')}${more}</section>`;
 }
 
-export function openPicker({ title, docs, categories, rank = [], onPick }) {
+/**
+ * The graph's own answer to "what pairs with this gem" — recommends_support
+ * edges, projected into planner.recommends. Shown as its own section rather
+ * than folded into the sort order, where it was invisible.
+ */
+function recommendedHtml(docs, label) {
+  if (!docs.length) return '';
+  return `<section class="picker-group picker-group--rec">
+    <h3>${esc(label)} <span>${docs.length}</span></h3>
+    <p class="picker-rec-note">Suggested by the game data for this skill.</p>
+    ${docs.map(rowHtml).join('')}</section>`;
+}
+
+export function openPicker({ title, docs, categories, rank = [], rankLabel = '', onPick }) {
   closePicker();
   const pool = rankDocs(docs.filter((d) => categories.includes(d.category)), rank);
   const byKey = new Map(pool.map((d) => [`${d.category}:${d.slug}`, d]));
@@ -48,12 +61,23 @@ export function openPicker({ title, docs, categories, rank = [], onPick }) {
   const input = current.querySelector('.picker-input');
   const results = current.querySelector('.picker-results');
 
+  // Recommended docs, in the graph's own order, resolved once.
+  const rankSet = new Set(rank);
+  const recommended = rankLabel
+    ? rank.map((slug) => pool.find((d) => d.slug === slug)).filter(Boolean)
+    : [];
+
   function render(query) {
     if (!query.trim()) {
+      // The recommended set gets its own section, so drop it from the full list
+      // rather than showing every entry twice.
+      const rest = recommended.length ? pool.filter((d) => !rankSet.has(d.slug)) : pool;
       const groups = new Map();
-      for (const d of pool) { if (!groups.has(d.category)) groups.set(d.category, []); groups.get(d.category).push(d); }
-      results.innerHTML = [...groups].map(([cat, ds]) => groupHtml(LABEL_FOR.get(cat) || cat, ds)).join('') ||
-        '<p class="picker-more">Nothing available.</p>';
+      for (const d of rest) { if (!groups.has(d.category)) groups.set(d.category, []); groups.get(d.category).push(d); }
+      const body = recommendedHtml(recommended, rankLabel)
+        + [...groups].map(([cat, ds]) => groupHtml(
+            recommended.length ? `All ${LABEL_FOR.get(cat) || cat}` : (LABEL_FOR.get(cat) || cat), ds)).join('');
+      results.innerHTML = body || '<p class="picker-more">Nothing available.</p>';
       return;
     }
     const r = groupQuery(query, { docs: pool });
