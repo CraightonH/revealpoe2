@@ -985,36 +985,40 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
 }
 .tc-example:hover { border-color: var(--accent, var(--theory-accent)); color: var(--accent, var(--theory-accent)); }
 
-/* ── "Search on PoE Trade" action (Todo 4 part 1) ─────────────────────────────
-   `.card-actions` is the action slot; it holds the trade balance-scale icon today
-   and is sized to take a second button (Add to Theory Craft) later. Two contexts:
-   inside a full tooltip popup (.newItemPopup), and overlaid on a condensed card. */
+/* Condensed-card actions sit on the card border-box, outside the ornate header
+   geometry. They reveal without changing layout when the card is interactive. */
 .card-actions {
   position: absolute;
-  /* Vertically centered within the header band (56px, border-box) — the header's
-     right side is empty on unique/base popups. */
-  top: 17px;
-  right: 30px;
   z-index: 4;
   display: flex;
   align-items: center;
   gap: 4px;
 }
-/* Popups get a bit more right inset than the condensed cards. The gem popup pins a
-   gem icon (.trailGemIcon, 45px wide, ending at right:50px) in its header, so the
-   shared right:50px lands the trade icon just left of it — same header-band spot as
-   uniques, no overlap. */
-.newItemPopup .card-actions { right: 50px; }
-/* Gem popup: nudge 10px further left so it clears the pinned gem icon a bit more. */
-.GemPopup .card-actions { right: 60px; }
-/* Condensed browse/list cards are <a>; the trade affordance is a <span> overlay
-   (no nested anchor) handled by trade-link.js. The card must be a positioning
-   context for it — .gem-browse-card is already relative; .bases-list-card isn't. */
 .bases-list-card { position: relative; }
-/* On the narrow condensed cards, pin the overlay to the top corner instead of the
-   popups' vertical centering (which would float it over the card's stat text).
-   Keeps the shared right: 30px inset. */
-.card-actions--overlay { top: 6px; transform: none; }
+/* One offset for both condensed card types. 30px clears the ornate right corner
+   of .bases-list-header's 3-slice texture (~25px at the 34px header height); on
+   .gem-browse-header, whose art is left-anchored and has no right ornament, it
+   reads as a slightly deeper inset. Anything smaller buries the last control in
+   the filigree. */
+.card-actions--overlay {
+  top: 6px;
+  right: 30px;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.gem-browse-card:hover .card-actions--overlay,
+.gem-browse-card:focus-within .card-actions--overlay,
+.bases-list-card:hover .card-actions--overlay,
+.bases-list-card:focus-within .card-actions--overlay {
+  opacity: 1;
+}
+/* Reserve the cluster's footprint permanently (30px inset + 74px of controls +
+   breathing room) so revealing it on hover never reflows the name, and long
+   names ellipsis instead of running under the icons. */
+.gem-browse-header,
+.bases-list-card .bases-list-header {
+  padding-right: 110px;
+}
 
 .trade-link {
   display: inline-flex;
@@ -1043,9 +1047,8 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
   display: block;
 }
 
-/* Add-to-Build and Add-to-Theory-Craft affordances sit beside the trade scale in
-   .card-actions. They share the trade-link's 22px box (minus its background) so
-   all three controls are the same size and line up on one row. */
+/* Add-to-Build and Add-to-Theory-Craft affordances share the trade-link's 22px
+   box so all three controls are the same size and line up on one row. */
 .add-build, .add-pin {
   cursor: pointer;
   display: inline-flex;

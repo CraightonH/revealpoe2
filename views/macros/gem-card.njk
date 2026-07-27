@@ -1,4 +1,4 @@
-{% from "macros/card-actions.njk" import tradeLink, tradeButton %}
+{% from "macros/card-actions.njk" import tradeButton %}
 {% from "macros/item-index-row.njk" import itemIndexRow %}
 
 {# A single condensed card for the /gems browse grid. Also reused on the
@@ -87,7 +87,6 @@
      style="--card-border: {{ vm.borderColor }}; --card-glow: {{ vm.glowColor }};
             {% if vm.borderColor2 %}--card-border-2: {{ vm.borderColor2 }}; --card-glow-2: {{ vm.glowColor2 }};{% endif %}
             {% if vm.hoverImageUrl %}--hover-image: url('{{ vm.hoverImageUrl }}');{% endif %}">
-  {{ tradeLink(vm.tradeUrl, 'gem', vm.slug) }}
   <div class="bg-art"></div>
   <div class="content">
     <div class="itemHeader doubleLine">

@@ -1,4 +1,4 @@
-{% from "macros/card-actions.njk" import tradeLink, tradeButton %}
+{% from "macros/card-actions.njk" import tradeButton %}
 
 {% macro modLine(stat) %}
 <div class="explicitMod">
@@ -71,7 +71,6 @@
 <div class="unique-item-with-art">
   <div class="newItemPopup UniquePopup item-popup--poe2"
        style="--card-border: {{ vm.borderColor }}; --card-glow: {{ vm.glowColor }};">
-    {{ tradeLink(vm.tradeUrl, 'unique', vm.slug) }}
     <div class="itemHeader doubleLine">
       <div class="itemName"><span class="lc unique-name">{{ vm.name }}</span></div>
       <div class="itemName typeLine">{% if vm.baseSlug %}<a class="lc unique-type" href="/bases#{{ vm.classSlug }}" data-card-url="/base/{{ vm.baseSlug }}/card">{{ vm.base }}</a>{% elif vm.baseLabel %}<span class="lc unique-type unique-type--any">{{ vm.baseLabel }}</span>{% else %}<span class="lc unique-type">{{ vm.base }}</span>{% endif %}</div>

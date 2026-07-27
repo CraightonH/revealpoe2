@@ -183,15 +183,33 @@ if (root && input && target) {
     const doc = ref ? docForRef(ref) : null;
     const detailTitle = root.querySelector('[data-tc-detail-title]');
     if (detailTitle) detailTitle.textContent = doc?.name || 'Result details';
+    // Gem/unique/base fragments ship their own .item-action-bar, which already
+    // carries the name and the pin — the pane header would just repeat both.
+    // Kinds without one (passive, augment, emotion) still need it, so this is a
+    // per-selection decision, not a static one. The sheet header is exempt: it
+    // owns the close button, so only its pin is suppressed (below).
+    const paneContent = root.querySelector('.item-index-pane__content');
+    const paneHeader = root.querySelector('.tc-detail-header');
+    if (paneHeader) {
+      paneHeader.hidden = Boolean(paneContent?.querySelector('.item-action-bar'));
+    }
     root.querySelectorAll('[data-tc-detail-pin]').forEach((button) => {
+      const detailContent = button.classList.contains('tc-sheet-pin')
+        ? root.querySelector('.item-index-sheet__content')
+        : root.querySelector('.item-index-pane__content');
+      const hasItemActionBar = Boolean(detailContent?.querySelector('.item-action-bar'));
       button.innerHTML = pinIcon;
-      button.hidden = !ref;
+      button.hidden = !ref || hasItemActionBar;
       if (!ref) return;
       const pinned = pinStore.isPinned(ref);
       button.setAttribute('aria-pressed', String(pinned));
       button.setAttribute('aria-label', `${pinned ? 'Unpin' : 'Pin'} ${doc?.name || 'selected result'}`);
     });
   }
+
+  const detailObserver = new MutationObserver(syncDetailPins);
+  root.querySelectorAll('.item-index-pane__content, .item-index-sheet__content')
+    .forEach((content) => detailObserver.observe(content, { childList: true }));
 
   function resetClearConfirmation() {
     window.clearTimeout(clearTimer);

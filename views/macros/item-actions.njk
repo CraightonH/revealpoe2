@@ -1,0 +1,19 @@
+{% from "macros/card-actions.njk" import scaleIcon, buildIcon, pinIcon %}
+
+{% macro itemActionBar(name, kind, slug, tradeUrl, classSlug='') %}
+<header class="item-action-bar">
+  <span class="item-action-bar__name">{{ name }}</span>
+  <span class="item-action-bar__actions">
+    {% if tradeUrl %}
+    <a class="item-action" href="{{ tradeUrl }}" target="_blank" rel="noopener nofollow"
+       title="Search on PoE Trade" aria-label="Search on PoE Trade">{{ scaleIcon() }}<span class="item-action__label">Trade</span></a>
+    {% endif %}
+    <span class="item-action add-build" role="button" tabindex="0"
+          data-add-build-kind="{{ kind }}" data-add-build-slug="{{ slug }}"
+          title="Add to build" aria-label="Add to build">{{ buildIcon() }}<span class="item-action__label">Build</span></span>
+    <span class="item-action add-pin" role="button" tabindex="0"
+          data-pin-kind="{{ kind }}" data-pin-slug="{{ slug }}"{% if classSlug %} data-pin-class="{{ classSlug }}"{% endif %}
+          title="Add to Theory Craft" aria-label="Add to Theory Craft">{{ pinIcon() }}<span class="item-action__label">Pin</span></span>
+  </span>
+</header>
+{% endmacro %}

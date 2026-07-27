@@ -1,6 +1,8 @@
 {% from "macros/unique-card.njk" import uniqueCard %}
 {% from "macros/augment-cards.njk" import socketablesSection %}
+{% from "macros/item-actions.njk" import itemActionBar %}
 <div class="gem-detail item-detail" data-item-slug="{{ vm.slug }}">
+  {{ itemActionBar(vm.name, 'unique', vm.slug, vm.tradeUrl) }}
   {{ uniqueCard(vm) }}
   {{ socketablesSection(vm.augments) }}
 </div>

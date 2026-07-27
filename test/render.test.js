@@ -3,6 +3,50 @@ import assert from 'node:assert/strict';
 import request from 'supertest';
 import { createApp } from '../src/server.js';
 
+function countMatches(html, pattern) {
+  return (html.match(pattern) ?? []).length;
+}
+
+function assertItemActionBar(html, kind, slug, classSlug = null) {
+  assert.equal(countMatches(html, /class="item-action-bar"/g), 1);
+  assert.match(html, new RegExp(`data-add-build-kind="${kind}" data-add-build-slug="${slug}"`));
+  assert.match(html, new RegExp(`data-pin-kind="${kind}" data-pin-slug="${slug}"`));
+  if (classSlug) assert.match(html, new RegExp(`data-pin-class="${classSlug}"`));
+}
+
+test('gem, unique, and base detail partials render one correctly keyed item action bar', async () => {
+  const app = createApp();
+  const gem = await request(app).get('/gem/herald-of-ash');
+  const unique = await request(app).get('/unique/astramentis');
+  const base = await request(app).get('/base/stellar-amulet');
+  assertItemActionBar(gem.text, 'gem', 'herald-of-ash');
+  assertItemActionBar(unique.text, 'unique', 'astramentis');
+  assertItemActionBar(base.text, 'base', 'stellar-amulet', 'amulet');
+});
+
+test('full-card popup fragments contain no card actions', async () => {
+  const app = createApp();
+  const fragments = [
+    await request(app).get('/gem/herald-of-ash/card'),
+    await request(app).get('/unique/astramentis/card'),
+    await request(app).get('/base/stellar-amulet/card'),
+  ];
+  for (const fragment of fragments) {
+    assert.match(fragment.text, /newItemPopup/);
+    assert.doesNotMatch(fragment.text, /class="card-actions(?:\s|")/);
+  }
+});
+
+test('condensed grid cards retain overlay card actions', async () => {
+  const app = createApp();
+  const gems = await request(app).get('/gems');
+  const uniques = await request(app).get('/gem/life-remnants');
+  const bases = await request(app).get('/bases/amulet');
+  assert.match(gems.text, /card-actions card-actions--overlay/);
+  assert.match(uniques.text, /card-actions card-actions--overlay/);
+  assert.match(bases.text, /card-actions card-actions--overlay/);
+});
+
 test('GET /gem/herald-of-ash renders the card', async () => {
   const res = await request(createApp()).get('/gem/herald-of-ash');
   assert.equal(res.status, 200);

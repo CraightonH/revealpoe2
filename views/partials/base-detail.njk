@@ -1,7 +1,9 @@
 {% from "macros/base-card.njk" import baseCard %}
 {% from "macros/nav.njk" import breadcrumb %}
 {% from "macros/affix-tables.njk" import affixSection %}
+{% from "macros/item-actions.njk" import itemActionBar %}
 <div class="gem-detail item-detail" data-item-slug="{{ vm.slug }}">
+  {{ itemActionBar(vm.name, 'base', vm.slug, vm.tradeUrl, vm.classSlug) }}
   {% if vm.classHasPage %}
   {{ breadcrumb([
     { label: 'Modifiers', href: '/bases' },

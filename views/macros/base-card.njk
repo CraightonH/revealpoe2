@@ -1,4 +1,4 @@
-{% from "macros/card-actions.njk" import tradeLink, tradeButton %}
+{% from "macros/card-actions.njk" import tradeButton %}
 
 {# Compact class nav card used on the /bases index grid (and reused wherever we
    want to point at a whole item class rather than list every base): name, icon,
@@ -56,7 +56,6 @@
 {% macro baseCard(vm, full=false) %}
 <div class="unique-item-with-art">
   <div class="newItemPopup NormalPopup item-popup--poe2">
-    {{ tradeLink(vm.tradeUrl, 'base', vm.slug, vm.classSlug) }}
     <div class="itemHeader doubleLine">
       <div class="itemName"><span class="lc normal-name">{{ vm.name }}</span></div>
       <div class="itemName typeLine"><span class="lc normal-type">{{ vm.className }}</span></div>

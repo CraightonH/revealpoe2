@@ -1,13 +1,7 @@
-{# Card action affordances: the "Search on PoE Trade" balance-scale icon and the
-   "Add to build" plus-in-circle icon share a single `.card-actions` container.
-
-   Two render forms because of where they sit:
-   - tradeLink(url, kind, slug):   a real trade <a>, for the full tooltip popups
-     (uniqueCard / gemCard / baseCard) which are NOT wrapped in an anchor.
-   - tradeButton(url, kind, slug): a <span data-trade-url> trade control, for the
-     condensed browse/list cards, which are themselves <a> (a nested <a> is
-     invalid HTML). public/js/trade-link.js delegates the click → window.open.
-   The Add-to-Build control is a span in both forms for Task 5's JS handler. #}
+{# Card action affordances for condensed browse/list cards. These cards are
+   themselves <a> elements, so the trade control is a <span data-trade-url>
+   rather than an invalid nested anchor. public/js/trade-link.js delegates the
+   click to window.open. #}
 
 {# Traditional balance scales (scales of justice) — self-contained inline SVG. #}
 {% macro scaleIcon() %}
@@ -55,17 +49,6 @@
   <span class="add-build" role="button" tabindex="0"
         data-add-build-kind="{{ kind }}" data-add-build-slug="{{ slug }}"
         title="Add to build" aria-label="Add to build">{{ buildIcon() }}</span>
-{% endif %}
-{% endmacro %}
-
-{% macro tradeLink(url, kind, slug, classSlug='') %}
-{% if url or (kind and slug) %}
-<div class="card-actions">
-  {% if url %}<a class="trade-link" href="{{ url }}" target="_blank" rel="noopener nofollow"
-     title="Search on PoE Trade" aria-label="Search on PoE Trade">{{ scaleIcon() }}</a>{% endif %}
-  {{ addBuild(kind, slug) }}
-  {{ addPin(kind, slug, classSlug) }}
-</div>
 {% endif %}
 {% endmacro %}
 

@@ -277,7 +277,7 @@ export function initItemIndex(config) {
   }
 
   root.addEventListener('click', (event) => {
-    if (event.target.closest('.card-actions')) return;
+    if (event.target.closest('.card-actions, .item-action-bar')) return;
     const detailLink = event.target.closest('.item-index-pane__content a[href], .item-index-sheet__content a[href]');
     if (detailLink) {
       if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
