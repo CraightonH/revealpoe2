@@ -60,18 +60,21 @@ export async function mountTreePreview(mountEl, code, opts = {}) {
       // code is the host's business, not ours.
       onCopy: (c) => navigator.clipboard?.writeText(c),
     });
-    // Class BEFORE the code (selecting a class resets allocations), ascendancy
-    // AFTER it (importing the code clears the ascendancy selection, and
-    // selectAscendancy only drops nodes belonging to a *different* ascendancy,
-    // so the main-tree allocation survives).
-    if (opts.className) {
-      try { api.setClassAscendancy(opts.className, null); } catch { /* keep the default */ }
-    }
+    // CODE FIRST, then assert the class.
+    //
+    // importCode infers the class by BFS from each class start and overwrites
+    // whatever was selected — so setting the class first is pointless, and
+    // correcting it afterwards used to wipe the allocation (selectClass resets
+    // by design). keepAllocation lets the planner say "these passives are this
+    // class's" — which it knows for certain, and the inference does not for a
+    // sparse allocation.
     if (code) {
       try { await api.setCode(code); } catch { /* an unreadable code leaves an empty tree */ }
     }
-    if (opts.className && opts.ascId) {
-      try { api.setClassAscendancy(opts.className, opts.ascId); } catch { /* class alone is still right */ }
+    if (opts.className) {
+      try {
+        api.setClassAscendancy(opts.className, opts.ascId || null, { keepAllocation: true });
+      } catch { /* the inferred class is still a reasonable fallback */ }
     }
     // No manual fit here — fitTo:'allocated' above handles it deterministically.
     mounted.set(mountEl, api);

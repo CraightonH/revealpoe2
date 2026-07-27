@@ -2001,14 +2001,22 @@ export default function init(canvas, data, opts = {}) {
   }
 
   // Apply a class selection: swap art + start anchor, reset the tree.
-  function selectClass(name) {
+  //
+  // keepAllocation is for a HOST that already knows the allocation belongs to
+  // this class — a build planner importing its own saved code. importCode infers
+  // the class by BFS from each class start, which is unreliable for a sparse
+  // allocation, so the host must be able to correct the class afterwards without
+  // the reset a user-driven class change implies.
+  function selectClass(name, { keepAllocation = false } = {}) {
     if (!ascByClass[name] && !classArt?.[name]) return;
     activeClass = name;
     classRoot = (meta.classStarts ?? {})[name] ?? null;
-    activeAsc = null;
-    allocated = new Set();
+    if (!keepAllocation) {
+      activeAsc = null;
+      allocated = new Set();
+      decodedState = null;
+    }
     starts = classRoot != null ? [classRoot] : [];
-    decodedState = null;
     if (classSel) classSel.value = name;
     populateAscOptions();
     updatePoints();
@@ -2362,9 +2370,11 @@ export default function init(canvas, data, opts = {}) {
      * class picker). Switching class resets the tree (in-game behavior); a same-
      * class call only (re)selects the ascendancy. Pass ascId null/'' to clear.
      */
-    setClassAscendancy(className, ascId) {
+    setClassAscendancy(className, ascId, { keepAllocation = false } = {}) {
       if (className && className !== activeClass && (ascByClass[className] || classArt?.[className])) {
-        selectClass(className);   // resets allocations, sets activeClass, repopulates asc options
+        // Resets allocations unless the caller vouches that they belong to this
+        // class (see selectClass).
+        selectClass(className, { keepAllocation });
       }
       if ((ascId || null) !== activeAsc) selectAscendancy(ascId || null);
     },
