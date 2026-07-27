@@ -253,6 +253,16 @@ export function attributeRequirements(weights) {
 // Roman numerals for support gem tiers (crafting_level 1–5).
 const TIER_ROMAN = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V' };
 
+/**
+ * A support gem's tier: the level of uncut support gem needed to create it.
+ * 0 means "no tier" (a support that is not crafted from an uncut gem).
+ * Exported so the planner projector buckets identically — the rule must not be
+ * restated anywhere, or the detail page and the picker will drift apart.
+ */
+export function supportTier(craftingLevel) {
+  return craftingLevel >= 1 && craftingLevel <= 5 ? craftingLevel : 0;
+}
+
 // Recommended supports for a gem, resolved via recommends_support edges and
 // grouped into tiers by the support's crafting_level (the uncut-support level
 // needed to create it), mirroring the in-game I–V layout. Card VMs are the same
@@ -266,8 +276,7 @@ export function getRecommendedSupports(gem) {
   for (const edge of edgesFrom(gem.id, 'recommends_support')) {
     const node = getNode(edge.to);
     if (!node) continue;
-    const lvl = node.props?.craftingLevel;
-    const tier = lvl >= 1 && lvl <= 5 ? lvl : 0;
+    const tier = supportTier(node.props?.craftingLevel);
     if (!byTier.has(tier)) byTier.set(tier, []);
     byTier.get(tier).push(gemBrowseCardVM(node));
   }

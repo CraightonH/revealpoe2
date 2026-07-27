@@ -38,15 +38,45 @@ function groupHtml(label, docs) {
  * edges, projected into planner.recommends. Shown as its own section rather
  * than folded into the sort order, where it was invisible.
  */
-function recommendedHtml(docs, label) {
+// Roman numerals for the support tiers, matching the gem detail page's
+// recommended-supports macro. The tier RULE itself lives once in
+// src/data/gems.js (supportTier) and reaches us precomputed on planner.gems.
+const TIER_ROMAN = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V' };
+const TIER_ORDER = [1, 2, 3, 4, 5, 0];
+
+function recommendedHtml(docs, label, tierOf) {
   if (!docs.length) return '';
+  const tiered = typeof tierOf === 'function';
+  let body;
+  if (tiered) {
+    const buckets = new Map();
+    for (const d of docs) {
+      const t = tierOf(d.slug) || 0;
+      if (!buckets.has(t)) buckets.set(t, []);
+      buckets.get(t).push(d);
+    }
+    body = TIER_ORDER.filter((t) => buckets.has(t)).map((t) => {
+      const rows = buckets.get(t).map(rowHtml).join('');
+      // The tier IS the uncut-support level you need to craft it, which is the
+      // useful bit at a glance — so say so rather than just numbering.
+      const head = t
+        ? `<span class="picker-tier__num">${TIER_ROMAN[t]}</span>
+           <span class="picker-tier__label">Uncut support level ${t}</span>`
+        : '<span class="picker-tier__num">—</span><span class="picker-tier__label">Other</span>';
+      return `<div class="picker-tier"><h4 class="picker-tier__head">${head}
+        <span class="picker-tier__count">${buckets.get(t).length}</span></h4>${rows}</div>`;
+    }).join('');
+  } else {
+    body = docs.map(rowHtml).join('');
+  }
   return `<section class="picker-group picker-group--rec">
     <h3>${esc(label)} <span>${docs.length}</span></h3>
-    <p class="picker-rec-note">Suggested by the game data for this skill.</p>
-    ${docs.map(rowHtml).join('')}</section>`;
+    <p class="picker-rec-note">Suggested by the game data for this skill${
+      tiered ? ', grouped by the uncut support level needed to craft each one' : ''}.</p>
+    ${body}</section>`;
 }
 
-export function openPicker({ title, docs, categories, rank = [], rankLabel = '', onPick }) {
+export function openPicker({ title, docs, categories, rank = [], rankLabel = '', tierOf = null, onPick }) {
   closePicker();
   const pool = rankDocs(docs.filter((d) => categories.includes(d.category)), rank);
   const byKey = new Map(pool.map((d) => [`${d.category}:${d.slug}`, d]));
@@ -79,7 +109,7 @@ export function openPicker({ title, docs, categories, rank = [], rankLabel = '',
       const rest = recommended.length ? pool.filter((d) => !rankSet.has(d.slug)) : pool;
       const groups = new Map();
       for (const d of rest) { if (!groups.has(d.category)) groups.set(d.category, []); groups.get(d.category).push(d); }
-      const body = recommendedHtml(recommended, rankLabel)
+      const body = recommendedHtml(recommended, rankLabel, tierOf)
         + [...groups].map(([cat, ds]) => groupHtml(
             recommended.length ? `All ${LABEL_FOR.get(cat) || cat}` : (LABEL_FOR.get(cat) || cat), ds)).join('');
       results.innerHTML = body || '<p class="picker-more">Nothing available.</p>';

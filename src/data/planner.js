@@ -13,6 +13,7 @@
 // Two-hand occupancy is derived here from the source `twohand` tag; uniques
 // inherit their base's slot mapping through the has_base edge.
 import { nodesByKind, edgesTo, edgesFrom, getNode } from './graph.js';
+import { supportTier } from './gems.js';
 import { slugify } from './slug.js';
 
 const SUPPORTABLE = new Set(['active', 'spirit']); // gem types that take support sockets
@@ -74,6 +75,10 @@ export function plannerData() {
       maxSupports: SUPPORTABLE.has(gemType) ? DEFAULT_MAX_SUPPORTS : 0,
       color: g.props.color ?? null,
       reqs: g.props.requirementWeights ?? null,
+      // Support tier = the uncut-support level needed to craft it, so the
+      // planner's picker can group recommendations the way the gem detail page
+      // does. 0 for actives and for untiered supports.
+      tier: gemType === 'support' ? supportTier(g.props.craftingLevel) : 0,
     };
   }
 

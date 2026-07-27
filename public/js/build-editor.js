@@ -231,6 +231,7 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
       title: 'Choose a support', docs, categories: ['support'],
       rank: rec,
       rankLabel: rec.length ? `Recommended for ${gemName}` : '',
+      tierOf: (slug) => planner.gems?.[slug]?.tier ?? 0,
       onPick,
     });
   }

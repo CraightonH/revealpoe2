@@ -88,3 +88,24 @@ test('plannerData emits character classes with their ascendancies', () => {
   assert.ok(ranger.ascendancies.some((a) => a.slug === 'deadeye' && a.name === 'Deadeye'));
   for (const c of d.classes) assert.ok(c.ascendancies.length >= 1, `${c.slug} has ascendancies`);
 });
+
+test('planner gems carry the support tier, matching the detail page rule', async () => {
+  const { plannerData } = await import('../src/data/planner.js');
+  const { supportTier } = await import('../src/data/gems.js');
+  const { gems } = plannerData();
+  // The tier is the uncut-support level that crafts it; the picker groups on it.
+  assert.equal(gems['pierce-i'].tier, 1);
+  assert.equal(gems['pierce-ii'].tier, 3);
+  assert.equal(gems['pierce-iii'].tier, 5);
+  // Actives are never tiered.
+  assert.equal(gems['spark'].tier, 0);
+  // And the rule is the shared one, not a re-implementation.
+  assert.equal(supportTier(4), 4);
+  assert.equal(supportTier(0), 0);
+  assert.equal(supportTier(9), 0, 'out-of-range collapses to "other"');
+  assert.equal(supportTier(undefined), 0);
+  // Every support has a tier in 0..5.
+  const supports = Object.values(gems).filter((g) => g.gemType === 'support');
+  assert.ok(supports.length > 500, `${supports.length} supports`);
+  for (const g of supports) assert.ok(g.tier >= 0 && g.tier <= 5, `bad tier ${g.tier}`);
+});
