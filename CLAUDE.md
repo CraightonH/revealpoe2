@@ -83,6 +83,18 @@ Keep the hand-maintained surface as small as the irreducible fact; let the build
 - **Referential integrity** — every manual reference must resolve to a live source node. A patch that renames a key must **fail the build**, never silently drop the relationship.
 - **Retirement detection** — if source later ships a relationship we hand-authored, the build **warns** on the overlap so the manual copy can be deleted. Source wins.
 - **Provenance summary** — `meta.provenance` records counts by source; `meta.manualHash` lets the staleness guard distinguish "source changed" from "overlay changed".
+- **Unique reconciliation** — see below; every RePoE unique with no node must be curated or explicitly accepted.
+
+### ⚠️ Path of Building is the existence oracle for uniques
+
+`scripts/graph/uniques.js` enumerates unique nodes from **`pob-uniques/*.json`**; RePoE's `uniques.json` is only a name-keyed **metadata join**. So a unique exists on the site only if PoB ships a text block for it — RePoE knowing about it is not enough. PoB's format is (name, one base, fixed mod list), so it structurally **cannot** represent pool-driven uniques (Loreweave, Grip of Kulemak, Flesh Crucible), and those silently got no node at all. That's how Loreweave went missing for a whole league with a green build.
+
+Two mechanisms now cover this — do not remove either:
+
+- **`pool-uniques` overlay** (`data/manual/pool-uniques.json`) is the only handler that **creates** unique nodes. Hand-authored surface is just the `vid`, the mod-id prefix and the honesty note; the builder derives metadata from `uniques.json`, mod text from `mods.json`, and `pool_source` edges to each mod's origin unique. **Never assert a drop/craft formula the tables don't state** — the game data records neither how many pool mods an item receives nor how they're selected, and the card copy says so.
+- **Reconciliation guardrail** (post-loop in `manual.js`) diffs RePoE's unique names against the built graph every build and logs `[uniques] N built of M …`. An unlisted hole **warns**; accepting one requires an entry with a `why` in `data/manual/unique-gaps.json`.
+
+**Search gotcha when triaging a gap: internal names differ from display names.** Flesh Crucible's mods are `UniqueVivisectionPrice*`; Safrin's Resolve is `SekhemasResolve*` (GGG renamed the item, kept the id). Searching `mods.json` by display name finds nothing and makes data look absent when it isn't — always derive a stem from the item's art path / `visual_identity.id` and search that too.
 
 ## UI Fidelity Goal
 

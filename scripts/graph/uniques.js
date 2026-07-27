@@ -197,6 +197,26 @@ function classify(baseName, rawItemClass) {
   return canon ? { className: canon, classSlug: slug } : { className: rawItemClass, classSlug: slug };
 }
 
+// Reconcile a PoB block's name line against RePoE's unique names.
+//
+// PoB's line 1 is normally just the unique's name, but some blocks concatenate the
+// base onto it — belt.json ships "Waistgate Heavy Belt" over base "Heavy Belt".
+// Taken verbatim that yields a node named "Waistgate Heavy Belt" whose RePoE join
+// misses, so vid/icon/flavour/inventorySize all come back null AND the vid-keyed
+// overlays (unique-origins, cultivated-uniques) can never attach.
+//
+// RePoE is the authority on names, so the repair is source-anchored rather than a
+// guess: only strip the trailing base name when doing so produces a name RePoE
+// actually ships. A block whose raw name already resolves is never touched.
+function reconcileName(rawName, base, metaByName) {
+  if (metaByName[rawName]) return rawName;
+  if (base && rawName.endsWith(` ${base}`)) {
+    const stripped = rawName.slice(0, -(base.length + 1)).trim();
+    if (stripped && metaByName[stripped]) return stripped;
+  }
+  return rawName;
+}
+
 export function uniqueNodes() {
   const metaByName = buildMetaByName();
   const nodes = [];
@@ -209,6 +229,7 @@ export function uniqueNodes() {
     for (const text of entries) {
       const parsed = parseBlock(text);
       if (!parsed) continue;
+      parsed.name = reconcileName(parsed.name, parsed.base, metaByName);
       const slug = slugify(parsed.name);
       if (seenSlug.has(slug)) continue; // same-name dedup: keep first
       seenSlug.add(slug);

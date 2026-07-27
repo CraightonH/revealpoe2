@@ -56,6 +56,12 @@
       {% for s in u.implicits %}{{ modLineFlat(s) }}{% endfor %}
       {% if u.implicits.length and u.explicits.length %}<div class="separator"></div>{% endif %}
       {% for s in u.explicits %}{{ modLineFlat(s) }}{% endfor %}
+      {# Pool uniques have no fixed mods, so the grid card would otherwise be
+         blank. Summarize the pool instead of listing it — and say "possible" so
+         the grid doesn't imply the item carries them all. #}
+      {% if u.isPool and u.poolMods.length %}
+      <div class="explicitMod bases-list-pool">{{ u.poolLabel }}: <span class="poolMods-count">{{ u.poolMods.length }} possible</span></div>
+      {% endif %}
     </div>
   </div>
 </a>
@@ -68,7 +74,7 @@
     {{ tradeLink(vm.tradeUrl, 'unique', vm.slug) }}
     <div class="itemHeader doubleLine">
       <div class="itemName"><span class="lc unique-name">{{ vm.name }}</span></div>
-      <div class="itemName typeLine">{% if vm.baseSlug %}<a class="lc unique-type" href="/bases#{{ vm.classSlug }}" data-card-url="/base/{{ vm.baseSlug }}/card">{{ vm.base }}</a>{% else %}<span class="lc unique-type">{{ vm.base }}</span>{% endif %}</div>
+      <div class="itemName typeLine">{% if vm.baseSlug %}<a class="lc unique-type" href="/bases#{{ vm.classSlug }}" data-card-url="/base/{{ vm.baseSlug }}/card">{{ vm.base }}</a>{% elif vm.baseLabel %}<span class="lc unique-type unique-type--any">{{ vm.baseLabel }}</span>{% else %}<span class="lc unique-type">{{ vm.base }}</span>{% endif %}</div>
     </div>
     <div class="content">
       <div class="Stats">
@@ -100,6 +106,40 @@
       <div class="Stats cultivatedMods">
         <div class="cultivatedMods-label">Cultivated Mods</div>
         {% for stat in vm.cultivatedMods %}{{ modLine(stat) }}{% endfor %}
+      </div>
+      {% endif %}
+      {# Pool-driven unique (Loreweave & co): mods the item CAN have, not mods it
+         does have. The note is load-bearing — the game data records neither how
+         many pool mods a finished item gets nor how they're picked, so this block
+         must never read like a stat list. Each line links to the unique it was
+         woven from where the mod id identifies one. #}
+      {% if vm.poolMods.length %}
+      {# A pool unique has no implicits/explicits, so the unconditional separator
+         above already provides the break — only separate from real mod content. #}
+      {% if vm.implicits.length or vm.explicits.length or vm.cultivatedMods.length %}<div class="separator"></div>{% endif %}
+      <div class="Stats poolMods">
+        <div class="poolMods-label">{{ vm.poolLabel }} <span class="poolMods-count">{{ vm.poolMods.length }} possible</span></div>
+        {% for line in vm.poolNote %}<div class="poolMods-note">{{ line | safe }}</div>{% endfor %}
+        {% for stat in vm.poolMods %}
+        <div class="explicitMod poolMod">
+          <span class="poolMod-text">{{ stat.html | safe }}</span>
+          {%- if stat.sourceSlug %} <a class="poolMod-source" href="/uniques#{{ stat.sourceSlug }}" data-card-url="/unique/{{ stat.sourceSlug }}/card">{{ stat.sourceUnique }}</a>
+          {%- elif stat.sourceUnique %} <span class="poolMod-source">{{ stat.sourceUnique }}</span>{% endif -%}
+        </div>
+        {% endfor %}
+        {% if vm.wideRangeCount %}
+        <div class="poolMods-note poolMods-note--aside">{{ vm.wideRangeCount }} of these also exist with wider value ranges in the game data.</div>
+        {% endif %}
+      </div>
+      {% endif %}
+      {# Reverse pool_source: this unique's mods feed a pool item's pool. #}
+      {% if vm.wovenInto.length %}
+      {% if vm.implicits.length or vm.explicits.length or vm.cultivatedMods.length or vm.poolMods.length %}<div class="separator"></div>{% endif %}
+      <div class="Stats wovenInto">
+        <div class="wovenInto-label">Can be woven into</div>
+        {% for w in vm.wovenInto %}
+        <div class="explicitMod"><a class="poolMod-source poolMod-source--strong" href="/uniques#{{ w.slug }}" data-card-url="/unique/{{ w.slug }}/card">{{ w.name }}</a></div>
+        {% endfor %}
       </div>
       {% endif %}
       {% if vm.flavour.length %}

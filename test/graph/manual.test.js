@@ -228,3 +228,213 @@ test('cultivated-uniques: a mod id RePoE cannot resolve is a build error', () =>
   });
   assert.ok(r.errors.some((e) => /mod 'GoneModId'.*not resolvable/.test(e)));
 });
+
+// --- pool-uniques: overlay-created unique nodes -------------------------------
+// The only handler that CREATES unique nodes. Pool-driven uniques (Loreweave &
+// co) have no fixed stat block, so Path of Building can't express them and the
+// source builder — which enumerates uniques FROM PoB — never emits a node.
+const poolMeta = {
+  FourUniqueBodyStrInt14: {
+    id: 'Loreweave', name: 'Loreweave', item_class: 'Body Armour',
+    inventory_width: 2, inventory_height: 3,
+    visual_identity: { id: 'FourUniqueBodyStrInt14', dds_file: 'Art/Loreweave.dds' },
+  },
+};
+const poolModIds = [
+  'UniqueLoreweaveSnakepit1',
+  'UniqueLoreweaveSnakepit2',
+  'UniqueLoreweaveSnakepit1BigRange', // wider-range duplicate: counted, not listed
+  'UniqueLoreweaveOrphan1', // stem absent from sourceUniques -> no origin
+  'UniqueLoreweaveSekhemasResolveEmerald1', // explicit null -> deliberately unattributed
+];
+const poolBase = [
+  { id: 'Base/Ringmail', kind: 'base', name: 'Ringmail', slug: 'ringmail', props: { classSlug: 'body-armour', className: 'Body Armours', itemClass: 'Body Armour' }, source: 'repoe' },
+  { id: 'Unique/Snakepit', kind: 'unique', name: 'Snakepit', slug: 'snakepit', props: { vid: 'Ring1' }, source: 'repoe' },
+];
+const poolOverlay = (entries, sourceUniques) => [{
+  name: 'pool-uniques',
+  data: {
+    kind: 'pool-uniques',
+    entries,
+    sourceUniques: sourceUniques ?? { Snakepit: 'Snakepit', SekhemasResolveEmerald: null },
+  },
+}];
+const poolEntry = {
+  unique: 'Loreweave', vid: 'FourUniqueBodyStrInt14', modPrefix: 'UniqueLoreweave',
+  baseLabel: 'Any Body Armour', poolLabel: 'Woven Mods', note: ['not guaranteed'],
+};
+const runPool = (overlays, extra = {}) => applyOverlays({
+  nodes: poolBase,
+  edges: [],
+  overlays,
+  resolveModTexts: (id) => [`text:${id}`],
+  uniqueMetaByVid: (vid) => poolMeta[vid] ?? null,
+  modIdsByPrefix: (p) => poolModIds.filter((id) => id.startsWith(p)),
+  flavourForVid: () => ['flavour'],
+  ...extra,
+});
+
+test('pool-uniques creates a derived unique node with RePoE metadata joined by vid', () => {
+  const r = runPool(poolOverlay([poolEntry]));
+  assert.deepEqual(r.errors, []);
+  const n = r.nodes.find((x) => x.kind === 'unique');
+  assert.ok(n, 'a unique node was created');
+  assert.equal(n.id, 'Unique/Loreweave');
+  assert.equal(n.slug, 'loreweave');
+  assert.equal(n.source, 'derived');
+  assert.equal(n.via, 'manual:pool-uniques');
+  assert.equal(n.props.iconDds, 'Art/Loreweave.dds', 'icon derived from RePoE, not hand-authored');
+  assert.deepEqual(n.props.inventorySize, { w: 2, h: 3 });
+  assert.deepEqual(n.props.flavour, ['flavour']);
+  // Canonical class comes from the base nodes ("Body Armour" -> "Body Armours").
+  assert.equal(n.props.className, 'Body Armours');
+  assert.equal(n.props.classSlug, 'body-armour');
+});
+
+test('pool-uniques presents no guaranteed mods and keeps the honesty note', () => {
+  const r = runPool(poolOverlay([poolEntry]));
+  const n = r.nodes.find((x) => x.kind === 'unique');
+  // base stays null so nothing downstream mistakes the label for a real base.
+  assert.equal(n.props.base, null);
+  assert.equal(n.props.baseLabel, 'Any Body Armour');
+  assert.equal(n.props.isPool, true);
+  assert.deepEqual(n.props.poolNote, ['not guaranteed'], 'the uncertainty note survives to the node');
+  // A single empty variant: toUnique() indexes variants[currentIndex] for
+  // implicits/explicits, and a pool unique has neither.
+  assert.deepEqual(n.props.variants, [{ name: null, implicits: [], explicits: [] }]);
+  assert.equal(n.props.currentIndex, 0);
+});
+
+test('pool-uniques excludes BigRange twins from the pool but counts them', () => {
+  const r = runPool(poolOverlay([poolEntry]));
+  const n = r.nodes.find((x) => x.kind === 'unique');
+  assert.equal(n.props.poolMods.length, 4, 'the BigRange duplicate is not listed');
+  assert.equal(n.props.wideRangeCount, 1);
+  assert.ok(!n.props.poolMods.some((m) => m.modId.includes('BigRange')));
+});
+
+test('pool-uniques attributes pooled mods to their source unique, and only those', () => {
+  const r = runPool(poolOverlay([poolEntry]));
+  const n = r.nodes.find((x) => x.kind === 'unique');
+  const byId = new Map(n.props.poolMods.map((m) => [m.modId, m.sourceUnique]));
+  assert.equal(byId.get('UniqueLoreweaveSnakepit1'), 'Snakepit');
+  assert.equal(byId.get('UniqueLoreweaveSnakepit2'), 'Snakepit');
+  // A stem with no sourceUniques entry, and one mapped to an explicit null, are
+  // both left unattributed rather than guessed at.
+  assert.equal(byId.get('UniqueLoreweaveOrphan1'), null);
+  assert.equal(byId.get('UniqueLoreweaveSekhemasResolveEmerald1'), null);
+  // One pool_source edge per SOURCE UNIQUE, not per mod.
+  const edges = r.edges.filter((e) => e.type === 'pool_source');
+  assert.equal(edges.length, 1);
+  assert.equal(edges[0].from, 'Unique/Loreweave');
+  assert.equal(edges[0].to, 'Unique/Snakepit');
+  assert.equal(edges[0].source, 'derived');
+  assert.equal(edges[0].via, 'manual:pool-uniques');
+});
+
+test('pool-uniques resolves origins against uniques created in the same pass', () => {
+  // Loreweave weaves Grip of Kulemak, which this same overlay creates — the
+  // origin edge must still resolve.
+  const meta = {
+    ...poolMeta,
+    Ring33: { id: 'Kulemak', name: 'Grip of Kulemak', item_class: 'Ring', inventory_width: 1, inventory_height: 1, visual_identity: { id: 'Ring33', dds_file: 'a.dds' } },
+  };
+  const r = applyOverlays({
+    nodes: poolBase,
+    edges: [],
+    overlays: poolOverlay(
+      [poolEntry, { unique: 'Grip of Kulemak', vid: 'Ring33', modPrefix: 'UniqueLoreweaveKulemak' }],
+      { Kulemak: 'Grip of Kulemak' },
+    ),
+    resolveModTexts: (id) => [`text:${id}`],
+    uniqueMetaByVid: (vid) => meta[vid] ?? null,
+    modIdsByPrefix: (p) => ['UniqueLoreweaveKulemak1', 'UniqueLoreweaveSnakepit1'].filter((id) => id.startsWith(p)),
+    flavourForVid: () => null,
+  });
+  assert.deepEqual(r.errors, []);
+  const edge = r.edges.find((e) => e.type === 'pool_source');
+  assert.ok(edge, 'origin edge resolved to a node created in the same pass');
+  assert.equal(edge.to, 'Unique/Kulemak');
+  assert.notEqual(edge.from, edge.to, 'an item is never its own origin');
+});
+
+test('pool-uniques fails the build on an unresolvable vid, prefix, or source unique', () => {
+  const bad = runPool(poolOverlay([{ ...poolEntry, vid: 'GoneAfterRescrape' }]));
+  assert.ok(bad.errors.some((e) => /no RePoE uniques.json entry for vid/.test(e)), bad.errors.join('|'));
+
+  const noMods = runPool(poolOverlay([{ ...poolEntry, modPrefix: 'UniqueNothingMatches' }]));
+  assert.ok(noMods.errors.some((e) => /matches no mods/.test(e)), noMods.errors.join('|'));
+
+  // A renamed source unique must fail loudly, never silently drop the link —
+  // precedent: GGG renamed Sekhema's Resolve to Safrin's Resolve.
+  const renamed = runPool(poolOverlay([poolEntry], { Snakepit: 'Snakepit Renamed' }));
+  assert.ok(renamed.errors.some((e) => /resolves to no unique node/.test(e)), renamed.errors.join('|'));
+});
+
+test('pool-uniques retires itself when the source builder starts shipping the unique', () => {
+  const nodes = [
+    ...poolBase,
+    { id: 'Unique/Loreweave', kind: 'unique', name: 'Loreweave', slug: 'loreweave', props: { vid: 'FourUniqueBodyStrInt14' }, source: 'repoe' },
+  ];
+  const r = applyOverlays({
+    nodes,
+    edges: [],
+    overlays: poolOverlay([poolEntry]),
+    resolveModTexts: (id) => [`text:${id}`],
+    uniqueMetaByVid: (vid) => poolMeta[vid] ?? null,
+    modIdsByPrefix: (p) => poolModIds.filter((id) => id.startsWith(p)),
+    flavourForVid: () => null,
+  });
+  assert.deepEqual(r.errors, [], 'retirement warns, it does not fail');
+  assert.equal(r.nodes.filter((n) => n.kind === 'unique').length, 0, 'no duplicate node emitted');
+  assert.ok(r.warnings.some((w) => /retire manual:pool-uniques/.test(w)), r.warnings.join('|'));
+});
+
+// --- unique-gaps: the reconciliation guardrail --------------------------------
+// The defect that hid Loreweave was silence, not a wrong value: PoB decides which
+// uniques exist, and anything it lacks vanished with a green build.
+const gapsOverlay = (accepted) => [{ name: 'unique-gaps', data: { kind: 'unique-gaps', accepted } }];
+
+test('unique-gaps warns about a RePoE unique that produced no node', () => {
+  const r = applyOverlays({
+    nodes: poolBase,
+    edges: [],
+    overlays: gapsOverlay([]),
+    repoeUniqueNames: () => ['Snakepit', 'Loreweave'],
+  });
+  assert.ok(r.warnings.some((w) => /unique gap: RePoE ships 'Loreweave'/.test(w)), r.warnings.join('|'));
+  assert.deepEqual(r.reconciliation.unexpected, ['Loreweave']);
+  assert.equal(r.reconciliation.built, 1);
+  assert.equal(r.reconciliation.repoe, 2);
+});
+
+test('unique-gaps silences an explicitly accepted hole but still counts it', () => {
+  const r = applyOverlays({
+    nodes: poolBase,
+    edges: [],
+    overlays: gapsOverlay([{ unique: 'Megalomaniac', why: 'grants notables, not item mods' }]),
+    repoeUniqueNames: () => ['Snakepit', 'Megalomaniac'],
+  });
+  assert.ok(!r.warnings.some((w) => /unique gap:/.test(w)), 'accepted gaps are not warned about');
+  assert.deepEqual(r.reconciliation.unexpected, []);
+  assert.equal(r.reconciliation.acceptedGaps, 1);
+});
+
+test('unique-gaps requires a documented reason, and retires stale entries', () => {
+  const undocumented = applyOverlays({
+    nodes: poolBase, edges: [], overlays: gapsOverlay([{ unique: 'Mystery' }]), repoeUniqueNames: () => ['Mystery'],
+  });
+  assert.ok(undocumented.errors.some((e) => /needs a 'why'/.test(e)), undocumented.errors.join('|'));
+
+  // Now curated -> the allowlist entry must go.
+  const nowBuilt = applyOverlays({
+    nodes: poolBase, edges: [], overlays: gapsOverlay([{ unique: 'Snakepit', why: 'x' }]), repoeUniqueNames: () => ['Snakepit'],
+  });
+  assert.ok(nowBuilt.warnings.some((w) => /retire manual:unique-gaps: 'Snakepit'/.test(w)), nowBuilt.warnings.join('|'));
+
+  // Gone from RePoE -> the allowlist entry is stale.
+  const gone = applyOverlays({
+    nodes: poolBase, edges: [], overlays: gapsOverlay([{ unique: 'Removed', why: 'x' }]), repoeUniqueNames: () => ['Snakepit'],
+  });
+  assert.ok(gone.warnings.some((w) => /stale manual:unique-gaps: 'Removed'/.test(w)), gone.warnings.join('|'));
+});

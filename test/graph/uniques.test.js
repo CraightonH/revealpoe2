@@ -144,3 +144,31 @@ test('uniqueEdges: grants carry the variant index that grants each skill', () =>
   assert.equal(feastEdge.props.variantIndex, node.props.currentIndex,
     'Feast of Flesh (granted by the default variant) keeps the default variant');
 });
+
+// --- Name reconciliation against RePoE ---------------------------------------
+// Some PoB blocks concatenate the base onto the name line ("Waistgate Heavy Belt"
+// over base "Heavy Belt"). Taken verbatim the RePoE metadata join misses, so the
+// node loses vid/icon/flavour/inventorySize AND the vid-keyed overlays can never
+// attach. The repair is source-anchored: strip the trailing base only when that
+// yields a name RePoE actually ships.
+test('uniqueNodes: a PoB name line with the base appended resolves to the RePoE name', () => {
+  const { nodes } = uniqueNodes();
+  const wg = nodes.find((n) => n.name === 'Waistgate');
+  assert.ok(wg, 'Waistgate is built under its RePoE name, not "Waistgate Heavy Belt"');
+  assert.equal(wg.slug, 'waistgate');
+  assert.equal(wg.props.base, 'Heavy Belt');
+  // The whole point of the repair: the RePoE join now lands.
+  assert.ok(wg.props.vid, 'vid resolved from RePoE uniques.json');
+  assert.ok(wg.props.iconDds, 'icon resolved');
+  assert.ok(wg.props.inventorySize, 'inventory size resolved');
+  assert.ok(!nodes.some((n) => n.name === 'Waistgate Heavy Belt'), 'no name+base artifact node');
+});
+
+test('uniqueNodes: every built node joins RePoE metadata (no silent degradation)', () => {
+  const { nodes } = uniqueNodes();
+  // A node with no vid means the name line didn't match any RePoE unique — the
+  // failure mode that hid Waistgate. Guard it globally so the next PoB quirk of
+  // this shape fails the test instead of shipping a placeholder-icon page.
+  const unjoined = nodes.filter((n) => !n.props.vid).map((n) => n.name);
+  assert.deepEqual(unjoined, [], `every unique should join RePoE metadata; unjoined: ${unjoined.join(', ')}`);
+});

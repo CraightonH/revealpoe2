@@ -1,0 +1,55 @@
+{
+  "kind": "unique-gaps",
+  "_doc": [
+    "KNOWN-GAPS ALLOWLIST for the unique reconciliation guardrail.",
+    "",
+    "Why this exists: scripts/graph/uniques.js enumerates unique nodes from",
+    "pob-uniques/*.json, while RePoE's uniques.json is only a name-keyed metadata",
+    "join. So Path of Building — not RePoE — decides which uniques exist on the site,",
+    "and any unique RePoE knows about but PoB has no text block for was dropped with",
+    "NO warning. That is how Loreweave went missing for a whole league without the",
+    "build ever going red.",
+    "",
+    "The guardrail (applyOverlays in scripts/graph/manual.js) now diffs RePoE's unique",
+    "names against the built graph every build:",
+    "  - a missing unique NOT listed here      -> loud warning (new hole, investigate)",
+    "  - a name listed here that now HAS a node -> retirement warning (delete the entry)",
+    "",
+    "Listing a name here is an explicit, reviewed decision to accept the hole — per the",
+    "'Decide first: curate, or accept the hole' policy in CLAUDE.md. It is NOT a way to",
+    "silence the guardrail: every entry needs a `why` stating what was checked.",
+    "",
+    "SEARCH GOTCHA when triaging a new entry: internal names differ from display names.",
+    "Flesh Crucible's mods are UniqueVivisectionPrice* — searching mods.json for 'Flesh",
+    "Crucible' finds nothing and makes it look like a data hole when it is not. Derive a",
+    "stem from the item's art path and visual_identity.id and search for THAT too before",
+    "concluding the data is absent."
+  ],
+  "accepted": [
+    {
+      "unique": "Megalomaniac",
+      "vid": "FourUniqueJewel4",
+      "why": "Grants random passive NOTABLES, not item mods, so there is nothing mod-shaped to curate. Zero mods in RePoE mods.json under the display name or the DeliriumJewel art stem. GGPK corroborates the mechanic rather than the data: Stats 'map_megalomaniac_3_mod_can_drop' gates a 3-notable version. Base is Metadata/Items/Jewels/JewelDiamond per KeywordPopupItemReference[40]."
+    },
+    {
+      "unique": "Against the Darkness",
+      "vid": "FourUniqueJewel10",
+      "why": "Sanctum reward jewel (art Jewels/SanctumJewel.dds), dropped by BaseItemTypes 'Zarokh's Reliquary Key: Against the Darkness'. No mods in RePoE under the display name or the SanctumJewel stem."
+    },
+    {
+      "unique": "From Nothing",
+      "vid": "FourUniqueJewel6",
+      "why": "Ritual jewel (art Jewels/RitualJewel.dds). No mods in RePoE under the display name or the RitualJewel stem."
+    },
+    {
+      "unique": "Prism of Belief",
+      "vid": "FourUniqueJewel8",
+      "why": "No mods in RePoE under the display name or the PrismOfBelief art stem. Only Words[1769] + flavour ('Entropy can be reversed.') exist in GGPK."
+    },
+    {
+      "unique": "Heart of the Well",
+      "vid": "FourUniqueJewel12_",
+      "why": "No mods in RePoE under the display name or the ApostatesHeart art stem, and no flavour text shipped. Base is Metadata/Items/Jewels/JewelDiamond per KeywordPopupItemReference[80]."
+    }
+  ]
+}

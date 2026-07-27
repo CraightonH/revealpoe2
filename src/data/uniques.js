@@ -6,7 +6,7 @@ import { getBaseByName, listItemClasses } from './baseItems.js';
 import { parseLocalMods, computeProperties } from './itemStats.js';
 import { hasDefinition } from './keywordDefs.js';
 import { linkifyPhrases, renderGameText } from './keywords.js';
-import { nodesByKind, nodeBySlug, edgesTo, getNode } from './graph.js';
+import { nodesByKind, nodeBySlug, edgesFrom, edgesTo, getNode } from './graph.js';
 import { augmentsForUnique } from './augments.js';
 
 // Presentation adapter over the build-time graph (build/graph.json). Unique
@@ -73,6 +73,12 @@ function toUnique(node, variantIndex) {
     // Raw cultivated-mod display lines (RePoE "[Id|Display]" markup intact) — for
     // the search index. The rendered {text,html} form is built in the VMs.
     cultivatedText: (p.cultivatedMods ?? []).flatMap((m) => m.texts),
+    // Pool-driven unique (no fixed mods). `base` is null for these, so baseLabel
+    // carries the human-facing type line ("Any Body Armour") instead.
+    isPool: !!p.isPool,
+    baseLabel: p.baseLabel ?? null,
+    // Raw pool-mod lines for the search index, mirroring cultivatedText.
+    poolText: (p.poolMods ?? []).flatMap((m) => m.texts),
     tradeUrl: tradeUrl({ kind: 'unique', name: node.name, type: p.base }),
   };
 }
@@ -86,6 +92,57 @@ function renderCultivatedMods(node) {
   const cm = node.props.cultivatedMods;
   if (!cm || !cm.length) return [];
   return cm.flatMap((m) => m.texts).map((text) => ({ text, html: renderGameText(text, hasDefinition) }));
+}
+
+// --- Pool-driven uniques ----------------------------------------------------
+// A few uniques (Loreweave, Grip of Kulemak, Flesh Crucible) have no fixed stat
+// block at all: their mods are a POOL the item can draw from. They exist only as
+// overlay-created nodes (manual:pool-uniques) because Path of Building's data
+// format can't express them — see data/manual/pool-uniques.json.
+//
+// The presentation must not read as "this item has these mods". Which mods a
+// finished copy receives, and how they're chosen, are NOT in the game data, so the
+// pool renders under its own label with an explicit note, never as explicits.
+
+// Minimal inline markup for the hand-authored note lines: **bold** and *italic*
+// only, on escaped text, so the overlay can emphasize the uncertainty without the
+// note becoming an HTML injection point.
+function renderNote(line) {
+  const escaped = String(line)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  return escaped
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^*]+)\*/g, '<em>$1</em>');
+}
+
+// Pool mods with their source unique resolved to a live slug. The link target
+// comes from the node's `pool_source` edges rather than slugifying the stored
+// name, so a rendered origin link can never point at a slug that doesn't exist.
+function renderPoolMods(node) {
+  const pool = node.props.poolMods;
+  if (!pool || !pool.length) return [];
+  const slugByName = new Map();
+  for (const e of edgesFrom(node.id, 'pool_source')) {
+    const src = getNode(e.to);
+    if (src) slugByName.set(src.name, src.slug);
+  }
+  return pool.flatMap((m) => m.texts.map((text) => ({
+    text,
+    html: renderGameText(text, hasDefinition),
+    sourceUnique: m.sourceUnique ?? null,
+    sourceSlug: m.sourceUnique ? (slugByName.get(m.sourceUnique) ?? null) : null,
+  })));
+}
+
+// Reverse of pool_source: the pool uniques whose pool draws on THIS unique — e.g.
+// Snakepit gets "Weaves into: Loreweave". Empty for most uniques.
+function wovenInto(node) {
+  return edgesTo(node.id, 'pool_source')
+    .map((e) => getNode(e.from))
+    .filter(Boolean)
+    .map((n) => ({ name: n.name, slug: n.slug, label: n.props.poolLabel ?? null }));
 }
 
 export function listUniques() {
@@ -174,13 +231,19 @@ function uniqueCardVM(node, variantIndex) {
     group,
     groupSlug: group.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
     iconUrl: u.iconUrl,
-    inventorySize: baseRecord?.inventorySize ?? null,
+    // Pool uniques have no browsable base to size the icon box from, so fall back
+    // to the inventory size RePoE records on the unique itself.
+    inventorySize: baseRecord?.inventorySize ?? node.props.inventorySize ?? null,
     properties,
     requirements: baseRecord?.requirements ?? [],
     levelHint: baseRecord?.requirements?.[0] ?? 'No level requirement',
     implicits: parsed.slice(0, u.implicitCount),
     explicits: parsed.slice(u.implicitCount),
     origin: u.origin,
+    isPool: u.isPool,
+    baseLabel: u.baseLabel,
+    poolLabel: node.props.poolLabel ?? null,
+    poolMods: renderPoolMods(node),
     tradeUrl: u.tradeUrl,
   };
 }
@@ -222,10 +285,22 @@ export function buildUniqueViewModel(slug) {
     implicits,
     explicits,
     cultivatedMods: renderCultivatedMods(node),
+    // Pool-driven unique: the craftable mod pool, its label, and the note that
+    // spells out these are mods the item CAN have. `wideRangeCount` is how many of
+    // them also exist as wider-range duplicates in the data (not listed — they'd
+    // imply more distinct mods than there are).
+    poolMods: renderPoolMods(node),
+    poolLabel: node.props.poolLabel ?? null,
+    poolNote: (node.props.poolNote ?? []).map(renderNote),
+    wideRangeCount: node.props.wideRangeCount ?? 0,
+    // Pool uniques whose pool draws on this unique (reverse pool_source).
+    wovenInto: wovenInto(node),
     properties,
     requirements,
     // Prefer the base's display name ("Spears") over the raw item class ("Spear").
-    className: baseRecord?.className ?? u.itemClass,
+    // Pool uniques have no base record, so fall back to the canonical class the
+    // builder resolved on the node before the raw class.
+    className: baseRecord?.className ?? node.props.className ?? u.itemClass,
     classSlug: baseRecord?.classSlug ?? node.props.classSlug,
     borderColor: UNIQUE_BORDER,
     glowColor: UNIQUE_GLOW,

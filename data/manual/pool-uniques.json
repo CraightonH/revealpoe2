@@ -1,0 +1,125 @@
+{
+  "kind": "pool-uniques",
+  "_doc": [
+    "Pool-driven uniques: items whose mods are a CRAFTABLE POOL rather than a fixed",
+    "stat block. Path of Building's unique data format is (name, one base, fixed mod",
+    "list), so it cannot represent these items at all — they are simply absent from",
+    "pob-uniques/*.json, and since scripts/graph/uniques.js enumerates unique nodes",
+    "FROM PoB, they got no node and vanished from the site silently.",
+    "",
+    "RePoE has everything needed except the join: uniques.json carries the metadata",
+    "(icon, inventory size, item class) and mods.json carries the full mod pool. The",
+    "only irreducible hand-authored facts are in this file — which vid is the item,",
+    "which mod-id prefix is its pool, and the honest note about what is NOT known.",
+    "Everything else (mod display text, icon, flavour, edges) is builder-derived.",
+    "",
+    "HONESTY RULE: the game data does NOT record how many pool mods a finished item",
+    "receives, nor how they are selected. Do not add a count or formula here unless a",
+    "table actually states it. Every `note` must make clear the pool is what the item",
+    "CAN have, not what any single copy DOES have."
+  ],
+  "entries": [
+    {
+      "unique": "Loreweave",
+      "vid": "FourUniqueBodyStrInt14",
+      "modPrefix": "UniqueLoreweave",
+      "baseLabel": "Any Body Armour",
+      "_baseLabelWhy": "ItemVisualIdentity[15276] ships AO art for all six attribute combos (LoreweaveStr/Dex/Int/StrDex/StrInt/DexInt), i.e. it is not bound to one base. RePoE gives no base for it either (uniques.json has no base field).",
+      "poolLabel": "Woven Mods",
+      "note": [
+        "Woven by Dannig in the Ruins of Kingmarch from unique Rings. Requires the recipe book *One Hundred Ways to Weave a Lore*; the exchange window has 60 ring slots.",
+        "Every mod below is one Loreweave **can** have — this is the whole pool, not one item's mods. How many a finished Loreweave receives, and how they are chosen, are **not recorded in the game data**."
+      ],
+      "_noteEvidence": {
+        "60 slots": "LoreweaveExchangeLayout = 60 rows (10-column grid)",
+        "rings": "ClientStrings LoreweaveExchangeRingSlotNotFull = 'Requires {0} additional Unique Rings'",
+        "Dannig": "NPCTalkDialogue 'DannigLoreweave' + ClientStrings ItemFunctionLoreweaveBook = 'Can be brought to Dannig in the Ruins of Kingmarch'",
+        "recipe book": "QuestFlags LoreweaveRecipeBookHeld / LoreweaveRecipeBookUsed; item Metadata/Items/QuestItems/Gallows/Endgame/OneHundredWaysToWeaveALore",
+        "count unknown": "ring count is a runtime value in both strings ('{0}/{1}', 'Requires {0} additional'); no table states the output mod count or selection rule"
+      }
+    },
+    {
+      "unique": "Grip of Kulemak",
+      "vid": "FourUniqueRing33_a",
+      "modPrefix": "UniqueLoreweaveKulemak",
+      "poolLabel": "Possible Mods",
+      "note": [
+        "Every mod below is one Grip of Kulemak **can** have, not what any single copy does have. How many it receives, and how they are chosen, are **not recorded in the game data**."
+      ],
+      "_vidWhy": "RePoE lists FIVE non-alternate-art vids for this name (FourUniqueRing33_a..__e); _a is pinned as canonical. If RePoE re-scrapes with different suffixes the vid guardrail fails the build rather than silently mis-joining.",
+      "_modPrefixWhy": "INFERRED. The only Kulemak mods anywhere in RePoE mods.json are UniqueLoreweaveKulemak1..15 (+BigRange twins) — there is no separate non-Loreweave Kulemak mod set. Attributing them to the ring is the only reading available, but it is an inference from the id naming, not a stated relationship. The note wording stays hedged accordingly."
+    },
+    {
+      "unique": "Flesh Crucible",
+      "vid": "FourUniqueJewel13",
+      "modPrefix": "UniqueVivisectionPrice",
+      "poolLabel": "Possible Prices",
+      "note": [
+        "Flesh Crucible exacts a **price**. Every line below is a price it can carry; which one a given jewel has is **not recorded in the game data**."
+      ],
+      "_modPrefixWhy": "Internal name differs from display name: this jewel's art is Art/2DItems/Jewels/Uniques/Vivisection.dds, and its mods are UniqueVivisectionPrice{Life,Mana,Defences,Spirit,MovementSpeed,Damage}1. Searching mods.json by DISPLAY name finds nothing — that is why this one was first mistaken for a data hole. Always search by the art/vid stem too.",
+      "_excludes": "UniqueMutatedVaalVivisectionPrice* are the Vaal-cultivated twins of the same six prices and are handled by the cultivated-uniques overlay, not here — the UniqueVivisectionPrice prefix deliberately does not match them."
+    }
+  ],
+  "_sourceUniquesDoc": [
+    "Loreweave mod ids encode the unique ring each woven mod came from:",
+    "UniqueLoreweaveSnakepit1 -> Snakepit. That mapping is what makes the pool",
+    "traversable — every pooled mod links to its source unique, and each ring page",
+    "gains a reverse 'weaves into Loreweave' lookup via edgesTo(id,'pool_source').",
+    "",
+    "internal stem -> display name. Listed EXHAUSTIVELY on purpose (not as a rule):",
+    "the stem->name mapping is irreducible and cannot be derived, and an explicit",
+    "list means a GGG rename fails the build loudly instead of silently dropping the",
+    "relationship. Precedent for why that matters: SekhemasResolve is displayed as",
+    "\"Safrin's Resolve\" — GGG renamed the item and kept the old internal id.",
+    "",
+    "null = deliberately UNATTRIBUTED. Safrin's Resolve is Ruby-only, so the Emerald",
+    "and Sapphire jewel-restriction mods belong to sibling rings that are not in our",
+    "data. Those mods still appear in the pool, just with no origin link — better",
+    "than asserting an origin we cannot support."
+  ],
+  "sourceUniques": {
+    "Andvarius": "Andvarius",
+    "BereksGripShockedGroundBoost": "Berek's Grip",
+    "BereksPassChilledGroundBoost": "Berek's Pass",
+    "BereksRespiteIgnitedGroundBoost": "Berek's Respite",
+    "BlackflameIgniteDealsChaosDamageInstead": "Blackflame",
+    "BlackflameWitherAlsoIncreasesFireDamage": "Blackflame",
+    "BlackflameWitherNeverExpiresOnIgnitedEnemies": "Blackflame",
+    "Blackheart": "Blackheart",
+    "BlisteringBond": "Blistering Bond",
+    "Burrower": "The Burrower",
+    "BurstingDecay": "Bursting Decay",
+    "CallBrotherhood": "Call of the Brotherhood",
+    "Cracklecreep": "Cracklecreep",
+    "DeathRush": "Death Rush",
+    "Doedres": "Doedre's Damning",
+    "DreamFragments": "Dream Fragments",
+    "Evergrasping": "Evergrasping Ring",
+    "GiftsAbove": "Gifts from Above",
+    "Glowswarm": "Glowswarm",
+    "Heartbound": "Heartbound Loop",
+    "Icefang": "Icefang Orbit",
+    "Kulemak": "Grip of Kulemak",
+    "Levinstone": "Levinstone",
+    "MingsHeart": "Ming's Heart",
+    "OriginalSin": "Original Sin",
+    "PerandusSeal": "Perandus Seal",
+    "Polcirkeln": "Polcirkeln",
+    "PrizedPain": "Prized Pain",
+    "SeedOfCataclysm": "Seed of Cataclysm",
+    "SekhemasResolveCold": "Safrin's Resolve",
+    "SekhemasResolveFire": "Safrin's Resolve",
+    "SekhemasResolveLightning": "Safrin's Resolve",
+    "SekhemasResolveRuby": "Safrin's Resolve",
+    "SekhemasResolveEmerald": null,
+    "SekhemasResolveSapphire": null,
+    "Snakepit": "Snakepit",
+    "TheTamingElementalGroundBoost": "The Taming",
+    "ThiefsTorment": "Thief's Torment",
+    "Veilpiercer": "Veilpiercer",
+    "Venopuncture": "Venopuncture",
+    "VigilantView": "Vigilant View",
+    "WhisperBrotherhood": "Whisper of the Brotherhood"
+  }
+}

@@ -24,7 +24,9 @@
     <span class="gem-index-row__name item-index-row__name{% if kind == 'unique' %} item-index-row__name--unique{% endif %}">{{ item.name }}</span>
     <span class="gem-index-row__tags item-index-row__tags">
       {% if isGem %}{{ item.typeLineHtml | safe }}{% for tag in item.tags.slice(0, 3) %}{% if loop.first %} · {% else %}, {% endif %}{{ tag | safe }}{% endfor %}
-      {% elif kind == 'unique' %}{{ item.base }} · {{ item.itemClass }}
+      {# Pool uniques have no fixed base, so fall back to the descriptive label
+         ("Any Body Armour") — otherwise a null base renders a stray separator. #}
+      {% elif kind == 'unique' %}{% if item.base or item.baseLabel %}{{ item.base or item.baseLabel }} · {% endif %}{{ item.itemClass }}
       {% elif isBaseClass %}{{ item.group }}
       {% else %}{{ item.className }}{% endif %}
     </span>

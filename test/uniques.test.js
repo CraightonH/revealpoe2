@@ -5,7 +5,16 @@ import { listUniques, getUnique, buildUniqueViewModel } from '../src/data/unique
 test('listUniques returns a non-empty array with required fields', () => {
   const items = listUniques();
   assert.ok(items.length > 300);
-  assert.ok(items.every((u) => u.slug && u.name && u.base));
+  assert.ok(items.every((u) => u.slug && u.name));
+  // `base` is no longer universal: pool-driven uniques (Loreweave & co) have no
+  // fixed base, so they carry base:null plus a descriptive baseLabel instead —
+  // null deliberately, so nothing downstream treats the label as a base name.
+  // Every unique must still have exactly one of the two to render a type line.
+  assert.ok(items.every((u) => u.base || u.baseLabel), 'every unique has a base or a baseLabel');
+  // Only pool uniques may omit the base — a regular unique losing it is a bug.
+  const baseless = items.filter((u) => !u.base);
+  assert.ok(baseless.length > 0, 'pool uniques exist');
+  assert.ok(baseless.every((u) => u.isPool), `only pool uniques lack a base: ${baseless.filter((u) => !u.isPool).map((u) => u.name).join(', ')}`);
 });
 
 test('getUnique resolves Astramentis by slug', () => {

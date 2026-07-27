@@ -16,6 +16,10 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { makeNode, makeEdge, KINDS, EDGE_TYPES, SOURCES } from './schema.js';
 import { resolveImplicitTexts } from './affixes.js';
+import { slugify } from '../../src/data/slug.js';
+import { loadJson } from './loader.js';
+import { REPOE } from './source.js';
+import { getFlavourLines } from './flavour.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const MANUAL_DIR = path.join(ROOT, 'data', 'manual');
@@ -276,11 +280,170 @@ function expandWeaponReqs(data, ctx, via) {
   return { nodes: [], edges: [], errors: [], warnings, patches: [] };
 }
 
+// Strip a pool mod id down to the stem that identifies its SOURCE unique:
+// 'UniqueLoreweaveSnakepit2' + prefix 'UniqueLoreweave' -> 'Snakepit'. Drops the
+// 'BigRange' marker, any 'CombinedWithBase…' qualifier, and the trailing ordinal.
+function poolModStem(modId, prefix) {
+  return modId
+    .slice(prefix.length)
+    .replace('BigRange', '')
+    .replace(/CombinedWithBase.*$/, '')
+    .replace(/\d+$/, '');
+}
+
+// "Pool-driven uniques" — items whose mods are a craftable POOL, not a fixed stat
+// block, so Path of Building's (name, base, fixed mods) format cannot express them
+// and they are absent from pob-uniques entirely. Overlay shape:
+//   { "kind": "pool-uniques",
+//     "entries": [ { unique, vid, modPrefix, poolLabel, note[], baseLabel? }, … ],
+//     "sourceUniques": { "<mod stem>": "<source unique display name>" | null } }
+//
+// This is the ONLY handler that CREATES unique nodes — every other overlay patches
+// nodes the source builder already produced. The hand-authored surface is just the
+// vid, the mod-id prefix and the honesty note; the builder derives the metadata
+// (from RePoE uniques.json via vid), the mod display text (mods.json) and the
+// flavour. `BigRange` twins are counted but NOT listed: they are wider-range
+// duplicates of an effect already in the pool, so rendering both would imply more
+// distinct mods than exist. Emits one `pool_source` edge per source unique so a
+// ring page can reverse-traverse to "weaves into Loreweave".
+function expandPoolUniques(data, ctx, via) {
+  const nodes = [];
+  const edges = [];
+  const errors = [];
+  const warnings = [];
+  const sourceUniques = data.sourceUniques ?? {};
+  const created = new Map(); // display name -> node id, so entries can reference each other
+  const pending = []; // { fromId, fromName, sourceNames:Set }
+
+  for (const e of data.entries ?? []) {
+    if (!e || !e.vid || !e.unique || !e.modPrefix) {
+      errors.push(`${via}: entry needs unique+vid+modPrefix (${JSON.stringify(e)})`);
+      continue;
+    }
+    // A pool unique must NOT already exist: if PoB (or RePoE) starts shipping it,
+    // the source copy wins and this entry has to go — otherwise we'd emit a
+    // duplicate node under the same id.
+    if (ctx.nodesByVid(e.vid).length) {
+      warnings.push(`retire ${via}: '${e.unique}' (vid ${e.vid}) now has a source-built node — remove the overlay entry`);
+      continue;
+    }
+    const meta = ctx.uniqueMetaByVid(e.vid);
+    if (!meta) {
+      errors.push(`${via}: no RePoE uniques.json entry for vid '${e.vid}' (${e.unique}) — renamed or removed?`);
+      continue;
+    }
+    if (meta.name !== e.unique) {
+      warnings.push(`${via}: name mismatch for vid '${e.vid}' — overlay '${e.unique}' vs RePoE '${meta.name}' (stale vid?)`);
+    }
+
+    const modIds = ctx.modIdsByPrefix(e.modPrefix);
+    if (!modIds.length) {
+      errors.push(`${via}: mod prefix '${e.modPrefix}' (${e.unique}) matches no mods in RePoE mods.json`);
+      continue;
+    }
+    const poolMods = [];
+    let wideRangeCount = 0;
+    const sourceNames = new Set();
+    for (const modId of modIds) {
+      if (modId.includes('BigRange')) { wideRangeCount += 1; continue; }
+      const texts = ctx.resolveModTexts(modId);
+      if (!texts || !texts.length) {
+        errors.push(`${via}: mod '${modId}' (${e.unique}) not resolvable in RePoE mods.json`);
+        continue;
+      }
+      const stem = poolModStem(modId, e.modPrefix);
+      // Attribution is opt-in: a stem absent from sourceUniques simply has no
+      // origin (the item's own mods), and an explicit null means "deliberately
+      // unattributed" — see the _sourceUniquesDoc note about Emerald/Sapphire.
+      const sourceUnique = Object.hasOwn(sourceUniques, stem) ? sourceUniques[stem] : null;
+      if (sourceUnique) sourceNames.add(sourceUnique);
+      poolMods.push({ modId, texts, sourceUnique });
+    }
+    if (!poolMods.length) {
+      errors.push(`${via}: '${e.unique}' resolved no pool mods from prefix '${e.modPrefix}'`);
+      continue;
+    }
+
+    const { className, classSlug } = ctx.canonicalClass(meta.item_class);
+    const slug = slugify(e.unique);
+    const id = `Unique/${meta.id}`;
+    const note = Array.isArray(e.note) ? e.note : [];
+    const props = {
+      // Pool uniques have no fixed base. `base` stays null so nothing downstream
+      // mistakes a label for a real base name (tradeUrl, getBaseByName); the
+      // human-facing string rides along as baseLabel.
+      base: null,
+      // Falls back to the raw item class ("Ring", "Jewel") so the card's type line
+      // is never blank; entries override it where the item is genuinely unbound to
+      // one base (Loreweave -> "Any Body Armour").
+      baseLabel: e.baseLabel ?? meta.item_class ?? null,
+      itemClass: meta.item_class,
+      className,
+      classSlug,
+      vid: e.vid,
+      iconDds: meta.visual_identity?.dds_file ?? null,
+      flavour: ctx.flavourForVid(e.vid),
+      inventorySize: { w: meta.inventory_width, h: meta.inventory_height },
+      // toUnique() in src/data/uniques.js indexes props.variants[currentIndex] for
+      // implicits/explicits. A pool unique has no guaranteed mods, so it presents
+      // as a single empty variant and renders from poolMods instead.
+      currentIndex: 0,
+      variants: [{ name: null, implicits: [], explicits: [] }],
+      isPool: true,
+      poolLabel: e.poolLabel ?? 'Possible Mods',
+      poolNote: note,
+      poolMods,
+      wideRangeCount,
+    };
+    const search = [e.unique, className, e.baseLabel ?? '', ...poolMods.flatMap((m) => m.texts), ...(props.flavour ?? [])]
+      .join(' ')
+      .toLowerCase();
+
+    nodes.push(makeNode({
+      id, kind: KINDS.UNIQUE, name: e.unique, slug, props, search,
+      source: SOURCES.DERIVED, via,
+    }));
+    created.set(e.unique, id);
+    pending.push({ fromId: id, fromName: e.unique, sourceNames });
+  }
+
+  // Resolve origin edges only after every entry exists, so pool uniques can point
+  // at each other (Loreweave weaves Grip of Kulemak, which this same pass creates).
+  for (const { fromId, fromName, sourceNames } of pending) {
+    for (const name of sourceNames) {
+      const toId = created.get(name) ?? ctx.uniqueIdByName(name);
+      if (!toId) {
+        errors.push(`${via}: source unique '${name}' (in ${fromName}'s pool) resolves to no unique node — renamed in RePoE/PoB?`);
+        continue;
+      }
+      if (toId === fromId) continue; // an item is not its own origin
+      edges.push(makeEdge({
+        type: EDGE_TYPES.POOL_SOURCE, from: fromId, to: toId,
+        source: SOURCES.DERIVED, via,
+      }));
+    }
+  }
+  return { nodes, edges, errors, warnings };
+}
+
+// "Known-gaps allowlist" — data only; the reconciliation that consumes it runs
+// after every handler in applyOverlays (it has to see nodes this pass created).
+function expandUniqueGaps(data, ctx, via) {
+  const errors = [];
+  for (const e of data.accepted ?? []) {
+    if (!e || !e.unique) { errors.push(`${via}: accepted entry missing 'unique' (${JSON.stringify(e)})`); continue; }
+    if (!e.why) errors.push(`${via}: '${e.unique}' needs a 'why' documenting what was checked`);
+  }
+  return { nodes: [], edges: [], errors, warnings: [] };
+}
+
 const HANDLERS = {
   'weapon-default-skills': expandWeaponDefaultSkills,
   'gear-slots': expandGearSlots,
   'unique-origins': expandUniqueOrigins,
   'cultivated-uniques': expandCultivatedUniques,
+  'pool-uniques': expandPoolUniques,
+  'unique-gaps': expandUniqueGaps,
   'gem-levels': expandGemLevels,
   'gem-quality': expandGemQuality,
   'weapon-reqs': expandWeaponReqs,
@@ -308,7 +471,18 @@ function loadOverlays() {
 // `resolveModTexts(modId) -> string[]` resolves a RePoE mod id to its display-text
 // line(s); injected so applyOverlays stays pure/testable (build wires the real
 // affixes-backed resolver; tests pass a stub). Defaults to "unknown" (empty).
-export function applyOverlays({ nodes, edges, overlays, resolveModTexts = () => [] }) {
+export function applyOverlays({
+  nodes,
+  edges,
+  overlays,
+  resolveModTexts = () => [],
+  // Injected RePoE readers for the pool-uniques handler + the reconciliation
+  // guardrail (kept as injections so applyOverlays stays pure/testable).
+  uniqueMetaByVid = () => null,
+  modIdsByPrefix = () => [],
+  flavourForVid = () => null,
+  repoeUniqueNames = () => [],
+}) {
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const basesByClass = new Map();
   const basesByClassId = new Map();
@@ -332,6 +506,13 @@ export function applyOverlays({ nodes, edges, overlays, resolveModTexts = () => 
       basesByClassId.get(ci).push(n);
     }
   }
+  // Unique display name -> node id, for pool-mod origin resolution. First write
+  // wins, mirroring the name indexes elsewhere in the builder.
+  const uniqueIdByName = new Map();
+  for (const n of nodes) {
+    if (n.kind === 'unique' && !uniqueIdByName.has(n.name)) uniqueIdByName.set(n.name, n.id);
+  }
+
   const ctx = {
     node: (id) => byId.get(id) ?? null,
     basesByClassSlug: (slug) => basesByClass.get(slug) ?? [],
@@ -339,7 +520,20 @@ export function applyOverlays({ nodes, edges, overlays, resolveModTexts = () => 
     classIds: () => [...classIdSet],
     classSlugs: () => [...basesByClass.keys()],
     nodesByVid: (vid) => nodesByVid.get(vid) ?? [],
+    uniqueIdByName: (name) => uniqueIdByName.get(name) ?? null,
+    // Normalize a raw RePoE item_class to the canonical class the base nodes use
+    // ("Body Armour" -> {className:'Body Armours', classSlug:'body-armour'}), the
+    // same rule scripts/graph/uniques.js classify() applies. Classes with no
+    // browsable bases (jewels, flasks, charms) keep the raw name.
+    canonicalClass: (rawItemClass) => {
+      const slug = slugify(rawItemClass);
+      const bases = basesByClass.get(slug);
+      return { className: bases?.[0]?.props?.className ?? rawItemClass, classSlug: slug };
+    },
     resolveModTexts,
+    uniqueMetaByVid,
+    modIdsByPrefix,
+    flavourForVid,
   };
 
   const outNodes = [];
@@ -380,6 +574,40 @@ export function applyOverlays({ nodes, edges, overlays, resolveModTexts = () => 
     }
   }
 
+  // --- Unique reconciliation guardrail -------------------------------------
+  // The source builder enumerates unique NODES from pob-uniques/*.json and uses
+  // RePoE's uniques.json only as a name-keyed metadata join, which makes Path of
+  // Building — not RePoE — the existence oracle for uniques. Anything PoB has no
+  // text block for silently got no node: that is how Loreweave went missing for a
+  // whole league without the build ever going red. So diff the two every build and
+  // require every hole to be explicitly accepted.
+  const gapsOverlay = overlays.find((o) => !o.parseError && o.data?.kind === 'unique-gaps');
+  const accepted = new Map((gapsOverlay?.data?.accepted ?? []).map((e) => [e.unique, e]));
+  const builtNames = new Set(
+    [...nodes, ...outNodes].filter((n) => n.kind === 'unique').map((n) => n.name),
+  );
+  const repoeNames = repoeUniqueNames();
+  const unexpected = repoeNames.filter((n) => !builtNames.has(n) && !accepted.has(n));
+  for (const name of unexpected) {
+    warnings.push(
+      `unique gap: RePoE ships '${name}' but no node was built (PoB has no block for it). `
+      + 'Curate it in data/manual/pool-uniques.json, or accept the hole explicitly in data/manual/unique-gaps.json.',
+    );
+  }
+  for (const name of accepted.keys()) {
+    if (builtNames.has(name)) {
+      warnings.push(`retire manual:unique-gaps: '${name}' now has a node — remove the accepted-gap entry.`);
+    } else if (!repoeNames.includes(name)) {
+      warnings.push(`stale manual:unique-gaps: '${name}' is gone from RePoE uniques.json — remove the accepted-gap entry.`);
+    }
+  }
+  const reconciliation = {
+    built: builtNames.size,
+    repoe: repoeNames.length,
+    acceptedGaps: accepted.size,
+    unexpected,
+  };
+
   // Retirement detection: if source already expresses an identical relationship
   // (same type/from/to), the hand-authored copy is redundant — drop it and warn
   // so it can be deleted. Source always wins.
@@ -394,14 +622,52 @@ export function applyOverlays({ nodes, edges, overlays, resolveModTexts = () => 
     kept.push(e);
   }
 
-  return { nodes: outNodes, edges: kept, errors, warnings };
+  return { nodes: outNodes, edges: kept, errors, warnings, reconciliation };
 }
 
 // Build-facing entry: load overlays from data/manual and apply them. `nodes`/
 // `edges` are the source-derived graph built so far. Injects the real mod-text
 // resolver (RePoE mods.json via the shared affix renderer) for overlays that
 // resolve mod ids to display text (cultivated-uniques).
+// --- RePoE readers for the pool-uniques handler + reconciliation ------------
+// Lazily built and cached: uniques.json / mods.json are large, and only these two
+// overlays need them.
+let _uniqueMeta = null;
+function uniqueMetaIndex() {
+  if (_uniqueMeta) return _uniqueMeta;
+  const raw = loadJson(`${REPOE}/uniques.json`);
+  const byVid = new Map();
+  const names = [];
+  const seenName = new Set();
+  for (const v of Object.values(raw)) {
+    if (!v.name || v.is_alternate_art) continue;
+    const vid = v.visual_identity?.id;
+    // First write wins per vid, mirroring buildMetaByName's name-keyed dedup. A
+    // name can legitimately carry several vids (Grip of Kulemak ships five art
+    // variants), so the vid index is the finer-grained one.
+    if (vid && !byVid.has(vid)) byVid.set(vid, v);
+    if (!seenName.has(v.name)) { seenName.add(v.name); names.push(v.name); }
+  }
+  _uniqueMeta = { byVid, names };
+  return _uniqueMeta;
+}
+
+let _modIds = null;
+function modIdList() {
+  if (!_modIds) _modIds = Object.keys(loadJson(`${REPOE}/mods.json`));
+  return _modIds;
+}
+
 export function manualOverlay({ nodes, edges }) {
   const resolveModTexts = (modId) => resolveImplicitTexts([modId]).map((x) => x.text);
-  return applyOverlays({ nodes, edges, overlays: loadOverlays(), resolveModTexts });
+  return applyOverlays({
+    nodes,
+    edges,
+    overlays: loadOverlays(),
+    resolveModTexts,
+    uniqueMetaByVid: (vid) => uniqueMetaIndex().byVid.get(vid) ?? null,
+    modIdsByPrefix: (prefix) => modIdList().filter((id) => id.startsWith(prefix)),
+    flavourForVid: (vid) => getFlavourLines(vid),
+    repoeUniqueNames: () => uniqueMetaIndex().names,
+  });
 }

@@ -9,6 +9,11 @@ export const EDGE_TYPES = {
   HAS_BASE: 'has_base', TAGGED: 'tagged', REFERENCES_KEYWORD: 'references_keyword',
   IN_CLASS: 'in_class', IN_ASCENDANCY: 'in_ascendancy',
   DEFAULT_SKILL: 'default_skill', FITS_SLOT: 'fits_slot', SOCKETS_INTO: 'sockets_into',
+  // A mod in a pool-driven unique's craftable pool originates from another
+  // unique (Loreweave weaves ring mods). from = the pool item, to = the source
+  // unique; reverse-traverse for "feeds into Loreweave". See manual.js
+  // expandPoolUniques and data/manual/pool-uniques.json.
+  POOL_SOURCE: 'pool_source',
 };
 
 // Provenance tier stamped on every node and edge (see CLAUDE.md "Data Provenance
@@ -23,13 +28,18 @@ const SOURCE_SET = new Set(Object.values(SOURCES));
 
 // `source` defaults to 'repoe' so every existing source-derived builder is
 // backfilled with no change; only the manual overlay passes 'manual'/'derived'.
-export function makeNode({ id, kind, name, slug, props = {}, search = '', source = SOURCES.REPOE }) {
+// `via` is the basis pointer for derived nodes (e.g. 'manual:pool-uniques'), the
+// same contract makeEdge uses — a node the builder expanded from a manual rule is
+// auditable back to that rule. Omitted for plain source/manual nodes.
+export function makeNode({ id, kind, name, slug, props = {}, search = '', source = SOURCES.REPOE, via }) {
   if (!id) throw new Error('makeNode: id required');
   if (!KIND_SET.has(kind)) throw new Error(`makeNode: invalid kind '${kind}'`);
   if (!name) throw new Error(`makeNode: name required (${id})`);
   if (!slug) throw new Error(`makeNode: slug required (${id})`);
   if (!SOURCE_SET.has(source)) throw new Error(`makeNode: invalid source '${source}' (${id})`);
-  return { id, kind, name, slug, props, search, source };
+  const node = { id, kind, name, slug, props, search, source };
+  if (via) node.via = via;
+  return node;
 }
 
 // `via` is the basis pointer for derived elements (e.g. 'manual:weapon-default-skills').

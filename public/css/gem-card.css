@@ -455,6 +455,84 @@ a.lc.unique-type:hover {
    keep their own explicit colors, so only the surrounding prose turns red. */
 .cultivatedMods .explicitMod { color: var(--color-corrupted); }
 
+/* Pool-driven uniques (Loreweave, Grip of Kulemak, Flesh Crucible): the mods the
+   item CAN have, not mods it does have. Mirrors the .cultivatedMods block since
+   both are "possible outcomes, not guaranteed stats", but stays visually distinct
+   and leads with an explanatory note rather than a bare label — the game data
+   records neither the number of pool mods rolled nor the selection rule, so the
+   uncertainty has to be on the card, not just in the docs. */
+.poolMods .poolMods-label {
+  color: var(--color-crafted);
+  font-family: var(--font-regular);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 1px 0 4px;
+  opacity: 0.92;
+}
+/* "67 possible" — de-emphasized count so the label reads as a heading, and the
+   qualifier travels with it everywhere the pool is summarized. */
+.poolMods-count {
+  font-size: 0.92em;
+  letter-spacing: 0.04em;
+  opacity: 0.75;
+  text-transform: none;
+}
+/* The honesty note. Deliberately not styled as a mod line: italic, dimmer, and
+   wrapped, so it can't be mistaken for one of the item's stats. */
+.poolMods .poolMods-note {
+  color: var(--color-default);
+  font-size: 10.5px;
+  font-style: italic;
+  line-height: 1.5;
+  padding: 0 6px 6px;
+  text-align: center;
+  text-wrap: pretty;
+}
+.poolMods .poolMods-note--aside { padding-top: 6px; opacity: 0.8; }
+/* The load-bearing words ("can", "not recorded in the game data") go white and
+   upright — the same high-contrast emphasis .mod-value uses for numbers, so the
+   caveat is the first thing read, not the last. */
+.poolMods .poolMods-note strong { color: white; font-style: normal; }
+/* Pool mod rows: the mod text, then the unique it was woven from. */
+.poolMods .poolMod {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.poolMods .poolMod-text { flex: 1 1 auto; min-width: 0; }
+/* Origin attribution — the "which ring did this come from" link that makes the
+   pool traversable. Small, right-aligned, never competing with the mod text. */
+.poolMod-source {
+  flex: 0 0 auto;
+  color: var(--color-unique, #af6025);
+  font-size: 9.5px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0.85;
+}
+a.poolMod-source:hover { opacity: 1; text-decoration: underline; }
+.poolMod-source--strong { font-size: 11px; text-transform: none; opacity: 1; }
+/* Reverse lookup block on a source unique ("Can be woven into: Loreweave"). */
+.wovenInto .wovenInto-label {
+  color: var(--color-crafted);
+  font-family: var(--font-regular);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 1px 0 4px;
+  opacity: 0.92;
+}
+/* "Any Body Armour" type line — a pool unique has no single base, so this is a
+   descriptive label, not a linkable base name. */
+.unique-type--any { font-style: italic; opacity: 0.9; }
+/* Pool summary on the /uniques grid card. */
+.bases-list-pool { opacity: 0.9; }
+
 /* Cultural-origin badge (Kalguuran/Ezomyte/Vaal) on the class line. */
 .unique-origin {
   display: inline-block;

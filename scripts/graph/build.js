@@ -87,6 +87,18 @@ export function buildGraph() {
   if (overlay.errors.length) throw new Error(`manual overlay failed:\n${overlay.errors.join('\n')}`);
   for (const w of overlay.warnings) console.warn(`[manual overlay] ${w}`);
 
+  // Unique reconciliation summary, logged every build so "no new holes" is an
+  // affirmative statement rather than the absence of output. PoB — not RePoE —
+  // decides which uniques get nodes, so a league can add uniques the site never
+  // shows; this line is what makes that visible.
+  const rec = overlay.reconciliation;
+  if (rec) {
+    console.log(
+      `[uniques] ${rec.built} built of ${rec.repoe} in RePoE — `
+      + `${rec.acceptedGaps} accepted gap(s), ${rec.unexpected.length} unexpected`,
+    );
+  }
+
   const nodes = [...srcNodes, ...overlay.nodes];
   const edges = [...srcEdges, ...overlay.edges];
 

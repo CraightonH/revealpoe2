@@ -90,14 +90,23 @@ function uniqueDocs() {
     cardUrl: `/unique/${u.slug}/card`,
     category: 'unique',
     iconUrl: u.iconUrl || null,
-    subtitle: u.base || '',
-    hint: u.stats?.[0] || u.base || '',
+    // Pool-driven uniques have no fixed base or stats, so fall back to the
+    // descriptive baseLabel ("Any Body Armour") for the type line.
+    subtitle: u.base || u.baseLabel || '',
+    hint: u.stats?.[0] || u.base || u.baseLabel || '',
     color: '',
     tags: [String(u.itemClass || '').toLowerCase()].filter(Boolean),
     req: [],
     grants: [],
     origin: (u.origin || '').toLowerCase(),
-    text: norm([u.name, u.base, u.origin, ...(u.stats || []), ...(u.flavour || []), ...(u.cultivatedText || []).map(stripKw)]),
+    // poolText carries a pool-driven unique's craftable mods — without it
+    // Loreweave would be findable only by name, never by what it can roll.
+    text: norm([
+      u.name, u.base, u.baseLabel, u.origin,
+      ...(u.stats || []), ...(u.flavour || []),
+      ...(u.cultivatedText || []).map(stripKw),
+      ...(u.poolText || []).map(stripKw),
+    ]),
   }));
 }
 
