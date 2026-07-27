@@ -51,6 +51,11 @@ export async function mountTreePreview(mountEl, code, opts = {}) {
     const api = await load(canvas, {
       root: wrap,
       readonly: true,
+      // Let the embed own the timing: it reframes when the canvas gets real
+      // dimensions AND when a code is applied, in whichever order those land.
+      // Calling fitAllocated() from here instead raced both and produced the
+      // right zoom only ~60% of the time.
+      fitTo: 'allocated',
       // A preview must never write anywhere: no onCodeChange, and copying the
       // code is the host's business, not ours.
       onCopy: (c) => navigator.clipboard?.writeText(c),
@@ -68,7 +73,7 @@ export async function mountTreePreview(mountEl, code, opts = {}) {
     if (opts.className && opts.ascId) {
       try { api.setClassAscendancy(opts.className, opts.ascId); } catch { /* class alone is still right */ }
     }
-    try { api.fitAllocated?.(); } catch { /* fall back to the default fit */ }
+    // No manual fit here — fitTo:'allocated' above handles it deterministically.
     mounted.set(mountEl, api);
     mountEl.classList.remove('is-loading');
     opts.onReady?.(api);

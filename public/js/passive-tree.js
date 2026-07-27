@@ -381,6 +381,18 @@ export default function init(canvas, data, opts = {}) {
   const CENTER_Y = 0;
   const view = { scale: 1, ox: 0, oy: 0 };
   let fitted = false;
+  let pendingFitAllocated = false;   // fitAllocated() called before real dimensions
+  // opts.fitTo === 'allocated': keep the camera framed on the allocation. The
+  // fit depends on TWO async things — the canvas getting real dimensions (the
+  // ResizeObserver) and the code being imported — and they can land in either
+  // order. Rather than race them, both re-run the fit; the later one wins and
+  // the earlier is harmlessly redundant.
+  const autoFitAllocated = opts.fitTo === 'allocated';
+  function maybeAutoFit() {
+    if (!autoFitAllocated) return;
+    if (!fitted) { pendingFitAllocated = true; return; }
+    fitAllocated();
+  }
 
   function fitView() {
     const baseFit = Math.min(
@@ -1905,6 +1917,9 @@ export default function init(canvas, data, opts = {}) {
     if (!fitted) {
       fitView();
       fitted = true;
+      // Real dimensions have landed: (re)frame on the allocation if asked, and
+      // honour a fitAllocated() that arrived before the canvas had a size.
+      if (pendingFitAllocated || autoFitAllocated) { pendingFitAllocated = false; fitAllocated(); }
       // Now that the camera is fit to real dimensions, honor a ?node= deep link
       // by centering on that node instead of the origin (once).
       if (deepLinkHash != null && !didDeepLink) {
@@ -2329,7 +2344,12 @@ export default function init(canvas, data, opts = {}) {
     setAllocated(set) { allocated = set instanceof Set ? set : new Set(set); requestDraw(); },
     setStarts(arr) { starts = arr; },
     redraw: requestDraw,
-    async setCode(code) { await importCode(code || null); lastEmitted = code || null; updatePoints(); },
+    async setCode(code) {
+      await importCode(code || null);
+      lastEmitted = code || null;
+      updatePoints();
+      maybeAutoFit();   // the allocation just changed — reframe if this embed asked for it
+    },
     async getCode() { const cm = await codeMod(); return buildShareCode(cm); },
     async setState(code) { return api.setCode(code); },
     async getState() { return { code: await api.getCode() }; },
