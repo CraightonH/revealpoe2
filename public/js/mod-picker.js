@@ -3,6 +3,7 @@
 // lives in the pure mod-core (node-tested); this file is DOM glue only.
 import { poolsForBase, corruptedForRef, modPickerHtml } from '/static/js/mod-core.js';
 import { itemCardView } from '/static/js/item-card-view.js';
+import { loadTradeStatIds, tradeStatIds } from '/static/js/trade-stat-ids.js';
 
 let current = null;
 export function closeModPicker() {
@@ -73,7 +74,8 @@ export function openModPicker({ anchorEl, ref, cell, pools, cardUrl = null, onCh
   };
   const renderPreview = () => {
     if (!cardHtml || !current) return;
-    previewEl.innerHTML = itemCardView(cardHtml, { ...current.cell, item: ref }, pools, { dropArt: true });
+    previewEl.innerHTML = itemCardView(cardHtml, { ...current.cell, item: ref }, pools,
+      { dropArt: true, statIds: tradeStatIds() });
     previewEl.hidden = false;
   };
   const rerender = () => {
@@ -157,7 +159,9 @@ export function openModPicker({ anchorEl, ref, cell, pools, cardUrl = null, onCh
   rerender();
   el.querySelector('.mod-picker__search')?.focus();
   // Preview arrives async and widens the popover — reposition once it lands.
-  fetchCard(cardUrl).then((html) => {
+  // The stat-id map is fetched alongside so the preview card's trade link is
+  // mod-filtered from the first paint; if it lands second, re-render once.
+  Promise.all([fetchCard(cardUrl), loadTradeStatIds()]).then(([html]) => {
     if (!current || current.el !== el || !html) return;
     cardHtml = html;
     renderPreview();

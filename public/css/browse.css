@@ -783,6 +783,19 @@ html[data-card-size="xl"] .gem-index { --gem-index-content-scale: 1.5; }
   border-color: color-mix(in srgb, var(--accent-ui) 55%, var(--border));
   outline: none;
 }
+/* Planner trade link that could only filter SOME of the crafted mods. The
+   label ("Trade (4 of 5)") carries the detail, but it is hidden on narrow
+   screens, so the amber edge is what survives — the title/aria-label always
+   names the mods the trade site has no filter for. */
+.item-action--partial {
+  border-color: color-mix(in srgb, var(--color-notable) 55%, var(--border));
+  color: var(--color-notable);
+}
+.item-action--partial:hover,
+.item-action--partial:focus-visible {
+  color: var(--color-notable);
+  border-color: var(--color-notable);
+}
 .item-action .trade-scale,
 .item-action .add-build-icon,
 .item-action .add-pin-icon {

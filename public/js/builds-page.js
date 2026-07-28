@@ -5,6 +5,7 @@ import { getStore, loadItemMath, safeWrite } from '/static/js/build-host.js';
 import { parseRoute, renderBuild, renderImport } from '/static/js/builds-render.js';
 import { renderEditor, renderSummary } from '/static/js/editor-render.js';
 import { itemCardView } from '/static/js/item-card-view.js';
+import { loadTradeStatIds, tradeStatIds } from '/static/js/trade-stat-ids.js';
 import { decodeGroup } from '/static/js/build-code.js';
 import { clampBuild } from '/static/js/build-store.js';
 import { mountTreePreview } from '/static/js/tree-preview.js';
@@ -58,6 +59,10 @@ if (root && view) {
       .catch((e) => { poolsLoading = null; throw e; });
     return poolsLoading;
   }
+  // Affix → official trade stat ids, for mod-filtered trade links. Purely
+  // additive: if it fails to load, cards keep the plain name/type trade link
+  // the server baked in, exactly as before.
+  loadTradeStatIds();
   const resolveRef = (ref) => {
     for (const cat of CATEGORIES[ref.kind] ?? []) {
       const d = docsByKey?.get(`${cat}:${ref.slug}`);
@@ -117,7 +122,7 @@ if (root && view) {
         const b = route.id ? store.get(route.id) : (importState?.state?.build ?? null);
         const cell = b?.gear?.[slotId];
         if (!cell) return html;
-        return itemCardView(html, cell, pools, { dropArt: true });
+        return itemCardView(html, cell, pools, { dropArt: true, statIds: tradeStatIds() });
       },
     });
   }

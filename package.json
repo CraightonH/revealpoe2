@@ -14,6 +14,7 @@
     "build:index": "node scripts/build-index.js",
     "build:images": "env -u SSL_CERT_FILE -u NODE_EXTRA_CA_CERTS node scripts/fetch-images.js",
     "fetch:exchange-ids": "node scripts/fetch-exchange-ids.js",
+    "fetch:trade-stats": "env -u SSL_CERT_FILE -u NODE_EXTRA_CA_CERTS node scripts/fetch-trade-stats.js",
     "build:og": "node scripts/build-og.js",
     "build:passives": "node scripts/build-passive-tree.js",
     "build:banners": "node scripts/build-class-banners.js",

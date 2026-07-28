@@ -83,6 +83,18 @@ fs.writeFileSync(path.join(OUT, 'mod-pools.json'), JSON.stringify(modpools));
 
 fs.writeFileSync(path.join(OUT, 'item-math.json'), JSON.stringify(itemMath()));
 
+// Affix → official trade stat ids, for the planner's mod-filtered trade links.
+// Committed under src/data (trade-service state refreshed by
+// `npm run fetch:trade-stats`), copied out for the client. Optional: a checkout
+// without it just gets the plain name/type trade links.
+const TRADE_IDS_SRC = path.join(root, 'src', 'data', 'trade-stat-ids.json');
+let tradeStatCount = 0;
+if (fs.existsSync(TRADE_IDS_SRC)) {
+  const tradeIds = JSON.parse(fs.readFileSync(TRADE_IDS_SRC, 'utf8'));
+  tradeStatCount = Object.keys(tradeIds.map ?? {}).length;
+  fs.writeFileSync(path.join(OUT, 'trade-stat-ids.json'), JSON.stringify({ map: tradeIds.map ?? {} }));
+}
+
 const exportIds = buildExportIds();
 fs.writeFileSync(path.join(OUT, 'build-export.json'), JSON.stringify(exportIds));
 
@@ -92,5 +104,6 @@ console.log(
   `${planner.slots.length} slots / ${Object.keys(planner.items).length} items / ${Object.keys(planner.gems).length} gems ` +
   `/ ${Object.keys(modpools.families).length} affix families ` +
   `/ ${Object.keys(exportIds.gemIds).length} gem export ids ` +
+  `/ ${tradeStatCount} trade stat ids ` +
   `-> public/generated/`,
 );

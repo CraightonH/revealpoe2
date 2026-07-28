@@ -10,6 +10,7 @@
 // (builds-page.js) and the mod picker's live preview (mod-picker.js) so the two
 // can never drift into showing the same item two different ways.
 import { baseRarity, modCardSections } from './editor-render.js';
+import { tradeQueryFilters, mergeTradeQuery, tradeActionLabel } from './trade-core.js';
 
 /**
  * Splice `html` in after `node` and hand back the last element inserted, so a
@@ -25,13 +26,40 @@ function insertAfter(node, html) {
 }
 
 /**
+ * Retarget the card's "Search on PoE Trade" link at the item as crafted here —
+ * the base/unique the card already names, narrowed by this build's chosen mods.
+ *
+ * The card arrives with a correct name/type link from the server, so we merge
+ * into that rather than rebuilding it: no client-side name resolution, and no
+ * way for the planner's link to drift from the wiki's. When some chosen mod has
+ * no trade filter the label says so ("Trade (4 of 5)") rather than handing back
+ * a search that quietly omits it.
+ */
+function retargetTradeLink(box, cell, pools, statIds, isUnique) {
+  if (!statIds) return;
+  const a = box.querySelector('.item-action-bar a.item-action[href]');
+  if (!a) return;
+  const { filters, stats, mapped, unmapped } = tradeQueryFilters({ cell, pools, statIds, isUnique });
+  if (!filters && !stats) return;
+  a.setAttribute('href', mergeTradeQuery(a.getAttribute('href'), { filters, stats }));
+  const label = tradeActionLabel({ mapped, unmapped });
+  if (!label) return;
+  const span = a.querySelector('.item-action__label');
+  if (span) span.textContent = label.label;
+  a.setAttribute('title', label.title);
+  a.setAttribute('aria-label', label.title);
+  if (unmapped.length) a.classList.add('item-action--partial');
+}
+
+/**
  * @param {string} html   the fetched card fragment
  * @param {object} cell   the build's gear cell ({ item, mods, corrupted })
  * @param {object} pools  parsed mod-pools.json
- * @param {{dropArt?: boolean}} opts  drop the big item art (the caller already shows it)
+ * @param {{dropArt?: boolean, statIds?: object}} opts  drop the big item art
+ *        (the caller already shows it); statIds = parsed trade-stat-ids.json
  * @returns {string} the rewritten fragment HTML
  */
-export function itemCardView(html, cell, pools, { dropArt = true } = {}) {
+export function itemCardView(html, cell, pools, { dropArt = true, statIds = null } = {}) {
   const box = document.createElement('div');
   box.innerHTML = html;
   if (dropArt) box.querySelector('.itemboximage')?.remove();
@@ -52,6 +80,9 @@ export function itemCardView(html, cell, pools, { dropArt = true } = {}) {
     if (rarity === 'rare') popup.classList.replace('NormalPopup', 'RarePopup');
     else if (rarity === 'magic') popup.classList.replace('NormalPopup', 'MagicPopup');
   }
+  // A unique keeps its own popup class — and its trade link already pins the
+  // unique by name, so it needs no rarity filter on top.
+  retargetTradeLink(box, cell, pools, statIds, !popup);
 
   const { corrupted, mods } = modCardSections(cell, pools);
   const content = box.querySelector('.content') || box.querySelector('.newItemPopup');
