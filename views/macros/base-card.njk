@@ -77,8 +77,11 @@
       </div>
       <div class="separator"></div>
       {% endif %}
+      {# card-implicits / card-granted mark the item's own intrinsic blocks. The
+         Build Planner anchors a build's crafted mods after them so the planner
+         card keeps in-game reading order (implicits above explicits). #}
       {% if vm.implicits.length %}
-      <div class="Stats">
+      <div class="Stats card-implicits">
         {% for imp in vm.implicits %}
         <div class="explicitMod">{{ imp.html | safe }}</div>
         {% endfor %}
@@ -86,7 +89,7 @@
       <div class="separator"></div>
       {% endif %}
       {% if vm.grantedSkills.length %}
-      <div class="Stats">
+      <div class="Stats card-granted">
         {% for s in vm.grantedSkills %}
         <div class="explicitMod">
           {%- if s.iconUrl %}<img loading="lazy" src="{{ s.iconUrl }}" class="grantsSkill" alt="" onerror="this.style.display='none'">{% endif -%}

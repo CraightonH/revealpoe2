@@ -1,6 +1,42 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { reconcilePriority, renderPriorityList } from '../public/js/tree-priority.js';
+import { reconcilePriority, renderPriorityList, insertionIndex, moveTo } from '../public/js/tree-priority.js';
+
+// Three 40px tiles on one row (y 0–40), then a fourth wrapped onto row two.
+const rect = (left, top) => ({ left, top, width: 40, height: 40, right: left + 40, bottom: top + 40 });
+const ROW = [rect(0, 0), rect(50, 0), rect(100, 0)];
+const WRAPPED = [...ROW, rect(0, 50)];
+
+test('insertionIndex: gaps by tile midpoint, and past the last tile appends', () => {
+  assert.equal(insertionIndex(ROW, 5, 20), 0);      // left half of tile 0
+  assert.equal(insertionIndex(ROW, 35, 20), 1);     // right half of tile 0
+  assert.equal(insertionIndex(ROW, 55, 20), 1);     // left half of tile 1
+  assert.equal(insertionIndex(ROW, 135, 20), 3);    // right half of the last tile
+  // The reported bug: released in the empty strip to the RIGHT of everything.
+  assert.equal(insertionIndex(ROW, 400, 20), 3, 'past the right edge appends');
+  assert.equal(insertionIndex([], 400, 20), 0);
+});
+
+test('insertionIndex: prefers the row the pointer is on', () => {
+  // x=400 on row two must land after the wrapped tile, not after row one's last.
+  assert.equal(insertionIndex(WRAPPED, 400, 70), 4);
+  assert.equal(insertionIndex(WRAPPED, 400, 20), 3);
+  // Below every row still resolves to the nearest row (the last one).
+  assert.equal(insertionIndex(WRAPPED, 5, 500), 3, 'left of the wrapped tile');
+});
+
+test('moveTo: inserts at the gap, compensating for the removal', () => {
+  const order = [1, 2, 3, 4];
+  assert.deepEqual(moveTo(order, 1, 4), [2, 3, 4, 1]);   // first -> end
+  assert.deepEqual(moveTo(order, 4, 0), [4, 1, 2, 3]);   // last -> front
+  assert.deepEqual(moveTo(order, 1, 2), [2, 1, 3, 4]);   // forward one gap
+  assert.deepEqual(moveTo(order, 3, 1), [1, 3, 2, 4]);   // backward one gap
+  // A no-op returns the SAME reference so the caller can skip the write.
+  assert.equal(moveTo(order, 2, 1), order);
+  assert.equal(moveTo(order, 2, 2), order);
+  assert.equal(moveTo(order, 99, 0), order, 'unknown hash never reorders');
+  assert.deepEqual(order, [1, 2, 3, 4], 'input untouched');
+});
 
 test('reconcilePriority: keeps prior order, appends new, drops deallocated', () => {
   assert.deepEqual(reconcilePriority([3, 1, 2], [1, 2, 3]), [3, 1, 2]);      // all kept, order held

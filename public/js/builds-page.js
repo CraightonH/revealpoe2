@@ -3,10 +3,12 @@
 // builds-render.js (node-tested); this file is DOM wiring only.
 import { getStore, loadItemMath, safeWrite } from '/static/js/build-host.js';
 import { parseRoute, renderBuild, renderImport } from '/static/js/builds-render.js';
-import { baseRarity, modCardSections, renderEditor } from '/static/js/editor-render.js';
+import { renderEditor, renderSummary } from '/static/js/editor-render.js';
+import { itemCardView } from '/static/js/item-card-view.js';
 import { decodeGroup } from '/static/js/build-code.js';
 import { clampBuild } from '/static/js/build-store.js';
 import { mountTreePreview } from '/static/js/tree-preview.js';
+import { fillTreeChapter, chapterState } from '/static/js/tree-chapter.js';
 import { mountEditor } from '/static/js/build-editor.js';
 
 const root = document.querySelector('[data-builds-root]');
@@ -67,6 +69,14 @@ if (root && view) {
   let importState = null; // cached decode for the current #/import/<code>
   let activeUnmount = null;
   let itemMath = null;
+  let previewApi = null;  // the import view's read-only tree embed
+  // Rail Summary collapse — the same per-browser preference the editor persists
+  // (build-editor.js SUMMARY_KEY), so the panel doesn't flip state between the
+  // build you're editing and a link someone sent you.
+  const SUMMARY_KEY = 'reveal.planner.summaryCollapsed';
+  let summaryCollapsed = (() => {
+    try { return window.localStorage.getItem(SUMMARY_KEY) === '1'; } catch { return false; }
+  })();
 
   // A decoded group has no local ids (the codec strips them), so give each
   // snapshot a stable synthetic id for the variant strip to key on. These never
@@ -98,8 +108,8 @@ if (root && view) {
       },
       // Tailor the wiki item card to a build tooltip: drop the redundant art
       // (the well itself is the art) and splice the chosen mods into the in-game
-      // render — corrupted as its own section between requirements and the mod
-      // list, like a real corrupted item — rather than tacking a block on the end.
+      // render. The rewrite itself lives in item-card-view.js, shared with the
+      // mod picker's live preview so both show the item identically.
       transform: function (html, ref) {
         if (!pools) return html;
         const slotId = ref.getAttribute('data-slot-mods');
@@ -107,35 +117,7 @@ if (root && view) {
         const b = route.id ? store.get(route.id) : (importState?.state?.build ?? null);
         const cell = b?.gear?.[slotId];
         if (!cell) return html;
-        const box = document.createElement('div');
-        box.innerHTML = html;
-        box.querySelector('.itemboximage')?.remove(); // redundant with the hovered art
-        // Drop wiki-only sections that aren't part of "what you want for this build":
-        // the runeforged-variants table and the "Unique versions" cross-reference.
-        box.querySelectorAll('.base-card-runeforged, .base-card-uniques').forEach((sec) => {
-          const sib = sec.nextElementSibling?.classList.contains('separator') ? sec.nextElementSibling
-            : (sec.previousElementSibling?.classList.contains('separator') ? sec.previousElementSibling : null);
-          sib?.remove();
-          sec.remove();
-        });
-        // Rarity by chosen explicit-mod count (corrupted implicits don't count):
-        // 1–2 → magic (blue), 3+ → rare (yellow), 0 stays normal (white). Uniques
-        // keep their own UniquePopup styling.
-        const popup = box.querySelector('.newItemPopup.NormalPopup');
-        if (popup) {
-          const rarity = baseRarity(cell);
-          if (rarity === 'rare') popup.classList.replace('NormalPopup', 'RarePopup');
-          else if (rarity === 'magic') popup.classList.replace('NormalPopup', 'MagicPopup');
-        }
-        const { corrupted, mods } = modCardSections(cell, pools);
-        if (corrupted || mods) {
-          const content = box.querySelector('.content') || box.querySelector('.newItemPopup');
-          const reqStats = content && content.querySelector('.requirements')?.closest('.Stats');
-          const anchor = reqStats || (content && content.lastElementChild);
-          if (anchor) anchor.insertAdjacentHTML('afterend', corrupted + mods);
-          else if (content) content.insertAdjacentHTML('beforeend', corrupted + mods);
-        }
-        return box.innerHTML;
+        return itemCardView(html, cell, pools, { dropArt: true });
       },
     });
   }
@@ -195,9 +177,13 @@ if (root && view) {
       // Guard every write with `importState === st` so a stale decode (from a
       // hash that has since moved to a different import code) can't clobber
       // the current importState after this chain settles.
-      Promise.all([decodeGroup(route.code), loadDocs().catch(() => null), loadPlanner().catch(() => null), loadPools().catch(() => null)])
-        .then(([group]) => {
+      // itemMath rides along so the shared preview can show the rail Summary —
+      // a reader's first question is whether their character could wear this.
+      Promise.all([decodeGroup(route.code), loadDocs().catch(() => null), loadPlanner().catch(() => null),
+        loadPools().catch(() => null), loadItemMath().catch(() => null)])
+        .then(([group, , , , math]) => {
           if (importState !== st) return;
+          itemMath ??= math;
           // Clamp for DISPLAY too: the preview renders straight from the
           // fragment, so an oversized code must not break the page before the
           // visitor ever reaches "Copy" (which clamps again in the store).
@@ -219,18 +205,44 @@ if (root && view) {
     // thing; without it (fetch failed) fall back to the plain preview.
     if (importState.state.status === 'ready' && planner) {
       const shown = sharedSnapshot(importState);
-      view.innerHTML = renderEditor(shown.build, {
-        planner, resolveRef, pools, weaponSet: importState.weaponSet, mode: 'import',
+      const summaryCtx = (treeLines) => ({
+        planner, resolveRef, pools, itemMath, treeLines, summaryCollapsed,
+        weaponSet: importState.weaponSet, mode: 'import',
         group: shown.group, currentId: shown.id, trimmed: importState.state.trimmed,
       });
+      view.innerHTML = renderEditor(shown.build, summaryCtx(importState.treeLines ?? []));
       // The tree is pivotal to a build, so a shared link shows it without asking.
       // Dynamic import: the rest of the preview has already painted by now.
       // Same identity plumbing as the editor: the embed needs the GGG class name
       // and ascendancy id, which our slugs are not.
       const shownCls = (planner?.classes ?? []).find((c) => c.slug === shown.build?.class) ?? null;
+      previewApi = null;   // the old embed died with the innerHTML above
       mountTreePreview(view.querySelector('[data-tree-preview-mount]'), shown.build?.tree?.code ?? null, {
         className: shownCls?.name ?? null,
         ascId: shownCls?.ascendancies.find((a) => a.slug === shown.build?.ascendancy)?.gggId ?? null,
+        // The tree's own stat lines land only once the embed is up. Patch the
+        // Summary in place rather than re-rendering — a full render would tear
+        // down the embed that just finished mounting. Without this the shared
+        // build's life/resistances would silently omit everything from the tree.
+        // statLinesReady first: the stat-line artifact loads lazily, so reading
+        // straight from onReady returns [] and the tree's contribution silently
+        // vanishes from the totals.
+        onReady: (api) => {
+          previewApi = api;
+          // Same Passive Tree chapter the editor shows — points strip + Notable
+          // Priority — but fixed: a reader sees the author's order, not handles.
+          fillTreeChapter(view, api, { ...chapterState(api, shown.build), readonly: true });
+          api?.statLinesReady?.().then(() => {
+            const lines = api?.getAllocatedStatLines?.() ?? [];
+            if (!lines.length || importState?.state.status !== 'ready') return;
+            importState.treeLines = lines;
+            const box = document.createElement('div');
+            box.innerHTML = renderSummary(shown.build, summaryCtx(lines));
+            const next = box.firstElementChild;
+            const cur = view.querySelector('[data-summary]');
+            if (next && cur) cur.replaceWith(next);
+          });
+        },
       });
     } else if (importState.state.status === 'ready') {
       view.innerHTML = renderImport({ status: 'ready', build: importState.state.group.parent }, resolveRef);
@@ -247,6 +259,26 @@ if (root && view) {
     if (rail) {
       e.preventDefault();
       view.querySelector(rail.getAttribute('href'))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    // Click a notable-priority tile to find it in the tree: the embed centres on
+    // the node and pulses it. Same affordance the editor has; a reader following
+    // someone's build needs it most.
+    const prioRow = e.target.closest('[data-prio-row]');
+    if (prioRow && previewApi) {
+      previewApi.focusNode(Number(prioRow.getAttribute('data-prio-row')));
+      view.querySelector('[data-tree-preview-mount]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    // Summary collapse on the import preview (the editor owns it on the build
+    // route). Toggled in place — a re-render would tear down the tree embed.
+    if (e.target.closest('[data-summary-toggle]') && parseRoute(location.hash).view === 'import') {
+      e.preventDefault();
+      summaryCollapsed = !summaryCollapsed;
+      try { window.localStorage.setItem(SUMMARY_KEY, summaryCollapsed ? '1' : '0'); } catch { /* storage may be unavailable */ }
+      const panel = view.querySelector('[data-summary]');
+      panel?.classList.toggle('collapsed', summaryCollapsed);
+      panel?.querySelector('[data-summary-toggle]')?.setAttribute('aria-expanded', String(!summaryCollapsed));
       return;
     }
     // Weapon-set toggle on the read-only import preview (the editor owns it
@@ -295,6 +327,17 @@ if (root && view) {
       const saved = safeWrite(() => store.importGroup(importState.state.group));
       if (saved) location.hash = `#/b/${encodeURIComponent(saved.id)}`;
     }
+  });
+
+  // Hovering a priority tile tints its node in the tree, so you can locate it
+  // without committing to a click.
+  view.addEventListener('pointerover', (e) => {
+    const row = e.target.closest?.('[data-prio-row]');
+    if (row) previewApi?.setHighlight([Number(row.getAttribute('data-prio-row'))]);
+  });
+  view.addEventListener('pointerout', (e) => {
+    const row = e.target.closest?.('[data-prio-row]');
+    if (row && !row.contains(e.relatedTarget)) previewApi?.setHighlight(null);
   });
 
   // Rail scroll-spy — lives here (not the editor mount) so every dossier

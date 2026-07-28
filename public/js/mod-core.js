@@ -25,18 +25,26 @@ function tierSelect(affix, fam, chosenTierId, attr = 'data-mod-tier') {
 // data-mod-corrupt* hooks so it never collides with the mods[] prefix/suffix flow.
 function corruptedCol(view, cell) {
   const cur = cell?.corrupted?.affix ?? null;
-  const curFam = cur ? view.corrupted.find((f) => f.affix === cur) : null;
   const rows = view.corrupted.map((f) =>
     `<button type="button" class="mod-picker__row mod-picker__row--corrupt${f.affix === cur ? ' is-chosen' : ''}" data-mod-corrupt="${esc(f.affix)}">` +
     `<span class="mod-picker__generic mod-picker__generic--corrupt">${esc(f.generic)}</span></button>`).join('')
     || '<p class="mod-picker__none">No corrupted implicits on this base.</p>';
-  const chosen = curFam
-    ? `<div class="mod-picker__chosen-row mod-picker__chosen-row--corrupt">` +
-      `<span class="mod-picker__generic mod-picker__generic--corrupt">${esc(curFam.name)}</span>` +
-      `${tierSelect(cur, curFam, cell.corrupted.tier, 'data-mod-tier-corrupt')}` +
-      `<button type="button" class="mod-picker__remove" data-mod-corrupt-remove aria-label="Remove corruption">×</button></div>`
-    : '';
-  return `<div class="mod-picker__col mod-picker__col--corrupt"><h4>Corrupted implicit <span>${cur ? '1' : '0'}/1</span></h4>${rows}${chosen}</div>`;
+  return `<div class="mod-picker__col mod-picker__col--corrupt"><h4>Corrupted implicit <span>${cur ? '1' : '0'}/1</span></h4>${rows}</div>`;
+}
+
+// The chosen corrupted implicit, as a row for the sticky chosen list. It rides
+// with the explicit picks rather than sitting at the foot of its own column, so
+// every current choice (and its tier select) stays on screen while you scroll
+// the pools underneath.
+function corruptedChosenRow(view, cell) {
+  const cur = cell?.corrupted?.affix ?? null;
+  const fam = cur ? view.corrupted.find((f) => f.affix === cur) : null;
+  if (!fam) return '';
+  return `<li class="mod-picker__chosen-row mod-picker__chosen-row--corrupt">` +
+    `<span class="mod-picker__kind mod-picker__kind--corrupt">I</span>` +
+    `<span class="mod-picker__generic mod-picker__generic--corrupt" title="${esc(fam.name)}">${esc(fam.name)}</span>` +
+    `${tierSelect(cur, fam, cell.corrupted.tier, 'data-mod-tier-corrupt')}` +
+    `<button type="button" class="mod-picker__remove" data-mod-corrupt-remove aria-label="Remove corruption">×</button></li>`;
 }
 
 // Origin pill for non-standard families (desecrated = Well-of-Souls boss, or
@@ -56,6 +64,33 @@ function addRows(fams, chosenAffixes) {
   }).join('');
 }
 
+/**
+ * Prefix before suffix, and within each of those, standard before desecrated
+ * (the same standard-then-Abyssal ranking poolsForBase gives the pool columns).
+ * Unknowns sort last; ties keep insertion order.
+ */
+const GEN_RANK = { prefix: 0, suffix: 1 };
+const originRank = (o) => (o === 'standard' ? 0 : o === 'desecrated' ? 1 : 2);
+const bySection = (infoOf) => (list) => list
+  .map((m, i) => ({ m, i, ...infoOf(m) }))
+  .sort((a, b) => (GEN_RANK[a.gen] ?? 2) - (GEN_RANK[b.gen] ?? 2)
+    || originRank(a.origin) - originRank(b.origin) || a.i - b.i)
+  .map((x) => x.m);
+
+/**
+ * A cell's chosen mods in display order — every prefix, then every suffix, as a
+ * real item lists them, with desecrated mods last inside each. Pure reordering:
+ * the stored array is untouched, so a build made before this ordering existed
+ * still reads correctly.
+ */
+export function orderMods(pools, mods, baseSlug = null) {
+  const list = Array.isArray(mods) ? mods : [];
+  return bySection((m) => {
+    const r = resolveMod(pools, m, baseSlug);
+    return { gen: r?.gen ?? null, origin: r?.origin ?? null };
+  })(list);
+}
+
 /** Popover inner HTML. `view` = { prefix, suffix, corrupted, mode }. */
 export function modPickerHtml(view, cell) {
   const mods = Array.isArray(cell?.mods) ? cell.mods : [];
@@ -67,30 +102,52 @@ export function modPickerHtml(view, cell) {
     (withSearch ? '<input class="mod-picker__search" type="search" placeholder="Filter modifiers…" autocomplete="off">' : '') +
     `<button type="button" class="mod-picker__close" data-mod-close aria-label="Close">×</button></header>`;
 
+  // Selection pins to the top of the popover: it is what you came here to check,
+  // and at the foot of a long pool list it was unreachable without scrolling past
+  // everything. It is a flex header OUTSIDE the scroller (not position:sticky
+  // inside it) so the popover has exactly one scrollbar — the pool body below.
+  const stickyBlock = (title, withSearch, rows) =>
+    `<div class="mod-picker__sticky">${head(title, withSearch)}` +
+    (rows ? `<ul class="mod-picker__chosen">${rows}</ul>` : '') + `</div>`;
+
   // Uniques: only the corrupted implicit.
   if (view.mode === 'unique') {
-    return `<div class="mod-picker" data-mod-picker>${head('Corrupted implicit', false)}${corruptedCol(view, cell)}</div>`;
+    return `<div class="mod-picker" data-mod-picker>` +
+      stickyBlock('Corrupted implicit', false, corruptedChosenRow(view, cell)) +
+      `<div class="mod-picker__body">${corruptedCol(view, cell)}</div></div>`;
   }
 
-  const chosenList = mods.map((m) => {
+  // The chosen tier decides the bucket: a family that lives in both pools is a
+  // prefix or a suffix depending on which tier was picked, not on map order.
+  const genOfChosen = (m) => {
+    for (const f of [...view.prefix, ...view.suffix]) {
+      if (f.affix === m.affix && f.tiers.some((t) => t.id === m.tier)) return f.gen;
+    }
+    return famByAffix.get(m.affix)?.gen ?? null;
+  };
+  const chosenList = bySection((m) => ({
+    gen: genOfChosen(m), origin: famByAffix.get(m.affix)?.origin ?? null,
+  }))(mods).map((m) => {
     const fam = famByAffix.get(m.affix);
     if (!fam) return '';
+    const gen = genOfChosen(m);
     return `<li class="mod-picker__chosen-row">` +
-      `<span class="mod-picker__generic">${esc(fam.name)}</span>` +
+      `<span class="mod-picker__kind">${gen === 'suffix' ? 'S' : 'P'}</span>` +
+      `<span class="mod-picker__generic" title="${esc(fam.name)}">${esc(fam.name)}</span>` +
       `${tierSelect(m.affix, fam, m.tier)}` +
       `<button type="button" class="mod-picker__remove" data-mod-remove="${esc(m.affix)}" aria-label="Remove">×</button></li>`;
   }).join('');
 
   // Bases: prefix/suffix explicits + (if any) a corrupted implicit chooser.
   return `<div class="mod-picker" data-mod-picker>` +
-    head('Modifiers', true) +
-    `<div class="mod-picker__cols">` +
-      `<div class="mod-picker__col"><h4>Prefixes <span>${view.prefix.filter((f) => chosen.has(f.affix)).length}/${MAX_PREFIX}</span></h4>${addRows(view.prefix, chosen)}</div>` +
-      `<div class="mod-picker__col"><h4>Suffixes <span>${view.suffix.filter((f) => chosen.has(f.affix)).length}/${MAX_SUFFIX}</span></h4>${addRows(view.suffix, chosen)}</div>` +
-    `</div>` +
-    (view.corrupted.length ? corruptedCol(view, cell) : '') +
-    `<ul class="mod-picker__chosen">${chosenList}</ul>` +
-    `</div>`;
+    stickyBlock('Modifiers', true, corruptedChosenRow(view, cell) + chosenList) +
+    `<div class="mod-picker__body">` +
+      `<div class="mod-picker__cols">` +
+        `<div class="mod-picker__col"><h4>Prefixes <span>${view.prefix.filter((f) => chosen.has(f.affix)).length}/${MAX_PREFIX}</span></h4>${addRows(view.prefix, chosen)}</div>` +
+        `<div class="mod-picker__col"><h4>Suffixes <span>${view.suffix.filter((f) => chosen.has(f.affix)).length}/${MAX_SUFFIX}</span></h4>${addRows(view.suffix, chosen)}</div>` +
+      `</div>` +
+      (view.corrupted.length ? corruptedCol(view, cell) : '') +
+    `</div></div>`;
 }
 
 // One family view for the picker: tiers narrowed to a base's allowed indices.
@@ -130,28 +187,60 @@ export function poolsForBase(pools, baseSlug) {
   return out;
 }
 
+/** The base a gear ref rolls its mods on — itself, or a unique's base item. */
+export function baseSlugOf(pools, ref) {
+  if (!ref) return null;
+  if (ref.kind === 'unique') return pools?.uniques?.[ref.slug] ?? null;
+  return ref.slug ?? null;
+}
+
 /** Corrupted-implicit family views for a base or unique ref. */
 export function corruptedForRef(pools, ref) {
-  if (!ref) return [];
-  const baseSlug = ref.kind === 'unique' ? pools?.uniques?.[ref.slug] : ref.slug;
+  const baseSlug = baseSlugOf(pools, ref);
   if (!baseSlug) return [];
   return poolsForBase(pools, baseSlug).corrupted;
 }
 
 /**
+ * The tier ladder a mod is ranked against on a given base. Tiers are per-base in
+ * game: a base that cannot roll the top two tiers of a family has its own T1.
+ * That narrowing is exactly what the picker's `tierSelect` labels, so ranking
+ * anywhere else has to use the same ladder or the card contradicts the picker.
+ */
+function tierLadder(pools, affix, baseSlug) {
+  const fam = pools?.families?.[affix];
+  if (!fam) return null;
+  if (!baseSlug) return fam.tiers;
+  const ref = (pools?.bases?.[baseSlug] ?? []).find((r) => r.a === affix);
+  if (!ref || !Array.isArray(ref.t)) return fam.tiers;
+  const allow = new Set(ref.t);
+  const narrowed = fam.tiers.filter((_, i) => allow.has(i));
+  return narrowed.length ? narrowed : fam.tiers;
+}
+
+/**
  * A chosen { affix, tier } to renderable data, or null if it no longer resolves.
  * `tierNum` is the in-game tier rank (T1 = top/highest, matching the picker's
- * `tierSelect` labelling); `tierCount` is the family's tier total.
+ * `tierSelect` labelling) and `tierCount` the ladder total — both relative to
+ * `baseSlug` when one is given, so tooltip and picker always agree.
  */
-export function resolveMod(pools, chosen) {
+export function resolveMod(pools, chosen, baseSlug = null) {
   if (!chosen) return null;
   const fam = pools?.families?.[chosen.affix];
-  const idx = fam ? fam.tiers.findIndex((t) => t.id === chosen.tier) : -1;
-  if (!fam || idx < 0) return null;
-  const tier = fam.tiers[idx];
+  if (!fam) return null;
+  let ladder = tierLadder(pools, chosen.affix, baseSlug);
+  let idx = ladder.findIndex((t) => t.id === chosen.tier);
+  // A tier this base cannot roll is still worth rendering (modViolations flags
+  // it separately) — rank it on the family's full ladder rather than dropping it.
+  if (idx < 0 && ladder !== fam.tiers) {
+    ladder = fam.tiers;
+    idx = ladder.findIndex((t) => t.id === chosen.tier);
+  }
+  if (idx < 0) return null;
+  const tier = ladder[idx];
   return {
     affix: chosen.affix, name: fam.name, origin: fam.origin, id: tier.id, level: tier.level,
-    gen: tier.gen, text: tier.text, tierNum: fam.tiers.length - idx, tierCount: fam.tiers.length,
+    gen: tier.gen, text: tier.text, tierNum: ladder.length - idx, tierCount: ladder.length,
   };
 }
 

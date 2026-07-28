@@ -3,7 +3,7 @@
 // viewer, import preview). No DOM access, no fetch: node-testable
 // (query-core.js pattern). The controller (builds-page.js) owns wiring.
 
-import { resolveMod } from './mod-core.js';
+import { resolveMod, orderMods, baseSlugOf } from './mod-core.js';
 
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -45,9 +45,10 @@ function refHtml(ref, resolveRef) {
 function sections(b, resolveRef, pools) {
   const modLines = (g) => {
     if (!pools) return '';
-    const items = (g.mods ?? []).map((m) => resolveMod(pools, m)).filter(Boolean)
+    const baseSlug = baseSlugOf(pools, g.item);
+    const items = orderMods(pools, g.mods, baseSlug).map((m) => resolveMod(pools, m, baseSlug)).filter(Boolean)
       .map((m) => `<li class="explicitMod">${esc(m.text)}</li>`);
-    const corr = g.corrupted ? resolveMod(pools, g.corrupted) : null;
+    const corr = g.corrupted ? resolveMod(pools, g.corrupted, baseSlug) : null;
     if (corr) items.push(`<li class="explicitMod corruptedMod">${esc(corr.text)}</li>`);
     return items.length ? `<ul class="builds-slot__mods">${items.join('')}</ul>` : '';
   };

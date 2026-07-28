@@ -6,7 +6,7 @@
 // attributes consumed by build-editor.js.
 import { esc, classLine } from './builds-render.js';
 import { gearViolations } from './build-rules.js';
-import { modViolations, resolveMod } from './mod-core.js';
+import { modViolations, resolveMod, orderMods, baseSlugOf } from './mod-core.js';
 import { decode as decodePassiveCode } from './passive-code.js';
 import { computeMath } from './build-math.js';
 import { MAX_BUILDS, LIMITS } from './build-store.js';
@@ -30,7 +30,12 @@ const rangeText = (r) => (r.lo === r.hi ? `${r.lo}` : `${r.lo}–${r.hi}`);
 // nav. Echoes the passive tree's stats panel (display-font title + a collapse
 // toggle) but shows the build-relevant rollup — attribute requirements, the
 // whitelist totals, and legality warnings — rather than raw allocated stat
-// lines. Collapse state (ctx.summaryCollapsed) is owned by build-editor.js.
+// lines. Collapse state (ctx.summaryCollapsed) is owned by the host controller.
+//
+// Rendered in EVERY mode, shared previews included: "can my character actually
+// wear this?" is the first question a reader has, and the attribute/level
+// requirements answering it were previously editor-only. Returns '' without
+// ctx.itemMath, so a host that hasn't loaded it simply shows no panel.
 export function renderSummary(build, ctx) {
   if (!ctx.itemMath) return '';
   const m = computeMath(build, ctx);
@@ -100,15 +105,17 @@ function wellArt(ref, resolveRef) {
  * requirements and the explicit mod list; `mods` is the explicit prefix/suffix list.
  */
 export function modCardSections(cell, pools) {
-  const mods = Array.isArray(cell?.mods) ? cell.mods : [];
+  // Tier ranks are per-base, so every resolve here carries the cell's base.
+  const baseSlug = baseSlugOf(pools, cell?.item);
+  const mods = orderMods(pools, cell?.mods, baseSlug);
   // Each explicit mod row is flagged prefix/suffix (P/S) on the left and its
   // tier rank (T1 = top) on the right — build-planner detail the wiki card omits.
-  const explicit = mods.map((m) => resolveMod(pools, m)).filter(Boolean)
+  const explicit = mods.map((m) => resolveMod(pools, m, baseSlug)).filter(Boolean)
     .map((m) => `<div class="explicitMod planner-mod${m.origin === 'desecrated' ? ' planner-mod--desecrated' : ''}">` +
       `<span class="planner-mod__kind">${m.gen === 'suffix' ? 'S' : 'P'}</span>` +
       `<span class="planner-mod__text">${esc(m.text)}</span>` +
       `<span class="planner-mod__tier">T${m.tierNum}</span></div>`).join('');
-  const corr = cell?.corrupted ? resolveMod(pools, cell.corrupted) : null;
+  const corr = cell?.corrupted ? resolveMod(pools, cell.corrupted, baseSlug) : null;
   return {
     corrupted: corr
       ? `<div class="separator"></div><div class="Stats"><div class="explicitMod corruptedMod">${esc(corr.text)}</div></div>`
@@ -179,10 +186,11 @@ export function renderGear(build, ctx) {
     if (g?.item) {
       state = g.item.kind === 'unique' ? 'is-unique'
         : { rare: 'is-rare', magic: 'is-magic', normal: 'is-filled' }[baseRarity(g)];
-      const nMods = (g.mods?.length ?? 0) + (g.corrupted ? 1 : 0);
-      const indicator = nMods ? `<span class="editor-slot__mods">${nMods} mod${nMods === 1 ? '' : 's'}</span>` : '';
+      // No mod-count caption: item art is mostly transparent, so text laid over
+      // it was half-legible noise. The rarity tint already says "this is modded",
+      // and the hover card lists the mods themselves.
       const modsBtn = ro ? '' : `<button class="editor-slot__mods-edit" type="button" data-mods-edit="${esc(s.id)}" aria-label="Choose modifiers for ${esc(s.name)}">✎ mods</button>`;
-      body = wellArt(g.item, resolveRef) + indicator + modsBtn +
+      body = wellArt(g.item, resolveRef) + modsBtn +
         (ro ? '' : `<button class="editor-slot__clear" type="button" data-slot-clear="${esc(s.id)}" aria-label="Unequip ${esc(s.name)}">×</button>`);
     } else if (ghosted(s)) {
       state = 'is-ghost';
@@ -509,10 +517,6 @@ export function renderVariantStrip(build, ctx) {
 export function renderEditor(build, ctx) {
   const mode = ctx.mode ?? 'edit';
   const ro = mode !== 'edit';
-  const t = treeSummary(build);
-  const stat = !t.saved ? 'No passive tree saved yet'
-    : t.points !== null ? `${t.points} passives allocated` : 'Passive tree saved';
-  const prio = build.tree.notablePriority.length;
 
   const nameHtml = ro
     ? `<span class="dossier-name dossier-name--static">${esc(build.name)}</span>`
@@ -563,19 +567,27 @@ export function renderEditor(build, ctx) {
     ? 'Someone shared this build with you. Copy it to make it yours.'
     : 'Saved in this browser only. The share link makes this build portable.';
 
-  const treeBody = ro
-    ? `<p class="editor-tree-stat">${esc(stat)}${prio ? ` · ${prio} notables prioritized` : ''}</p>
-       ${build.tree.code ? `<div class="editor-tree-preview">
-         <div class="editor-tree-mount" data-tree-preview-mount></div>
-       </div>` : ''}
-       <a class="editor-tree-open" href="/passives${build.tree.code ? '#' + esc(build.tree.code) : ''}">Open the passive tree →</a>`
-    : `<div class="editor-tree-points" data-tree-points-summary></div>
-       <div class="editor-tree-embed"><div class="passive-tree-wrap passive-tree-wrap--embed" data-tree-mount></div></div>
-       <a class="editor-tree-open" href="/passives${build.tree.code ? '#' + esc(build.tree.code) : ''}">Open full page →</a>
-       <div class="editor-notable-priority" data-notable-priority>
+  // One chapter shape in every mode: points strip, tree, Notable Priority. The
+  // only difference is which embed mounts — the editable one, or the read-only
+  // preview for "View" and shared links (whose priority list is fixed, not
+  // reorderable). The old read-only variant was a different thing entirely: a
+  // "N passives allocated · N notables prioritized" sentence and no priority
+  // list, so a reader could not see the order the author cared about.
+  //
+  // No link out to /passives in ANY mode: that page is a standalone tree with no
+  // idea which build sent you, so anything allocated over there never came back.
+  // The embed is the tree, and its own Fullscreen button covers wanting more room.
+  const priorityBlock = `<div class="editor-notable-priority" data-notable-priority>
          <h3 class="editor-subhead">Notable Priority</h3>
          <p class="editor-none">Loading tree…</p>
        </div>`;
+  const treeBody = ro
+    ? `<div class="editor-tree-points" data-tree-points-summary></div>
+       ${build.tree.code ? `<div class="editor-tree-embed"><div class="editor-tree-mount" data-tree-preview-mount></div></div>
+       ${priorityBlock}` : '<p class="editor-none">No passive tree saved yet.</p>'}`
+    : `<div class="editor-tree-points" data-tree-points-summary></div>
+       <div class="editor-tree-embed"><div class="passive-tree-wrap passive-tree-wrap--embed" data-tree-mount></div></div>
+       ${priorityBlock}`;
 
   const notesBody = ro
     ? (build.notes ? `<div class="editor-notes-static">${esc(build.notes)}</div>`
@@ -593,7 +605,7 @@ export function renderEditor(build, ctx) {
         <li><a href="#tree" data-rail-link>Passive Tree</a></li>
         <li><a href="#notes" data-rail-link>Notes</a></li>
       </ol>
-      ${isReadonly(ctx) ? '' : renderSummary(build, ctx)}
+      ${renderSummary(build, ctx)}
       <p class="dossier-rail__note">${railNote}</p>
     </nav>
     <div class="dossier-main">

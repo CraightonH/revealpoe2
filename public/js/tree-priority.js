@@ -16,6 +16,48 @@ export function reconcilePriority(prevOrder, allocatedHashes) {
   return out;
 }
 
+/**
+ * Which gap a drop at (x, y) targets, as an index into the CURRENT order —
+ * 0 = before the first tile, order.length = after the last. `rects` are the
+ * tiles' bounding boxes, in order.
+ *
+ * The list wraps, so this scores by row first (vertical distance dominates) and
+ * then by horizontal distance to a tile's midpoint. That makes the whole strip
+ * a drop target rather than just the tiles themselves: releasing in the empty
+ * space right of the last tile on a line lands after that tile, and past the
+ * final tile appends — which "drop must land on a tile" could never express, so
+ * the drag just snapped back.
+ */
+export function insertionIndex(rects, x, y) {
+  if (!rects.length) return 0;
+  let best = 0;
+  let bestScore = Infinity;
+  rects.forEach((r, i) => {
+    const mid = r.left + r.width / 2;
+    const dy = y < r.top ? r.top - y : (y > r.bottom ? y - r.bottom : 0);
+    // Row mismatch outweighs any horizontal distance within a row.
+    const score = dy * 10000 + Math.abs(x - mid);
+    if (score < bestScore) { bestScore = score; best = x < mid ? i : i + 1; }
+  });
+  return best;
+}
+
+/**
+ * `hash` moved to the gap at `index` (an index into the pre-move array).
+ * Returns the same array reference when nothing moves, so callers can skip a
+ * pointless write. Never mutates the input.
+ */
+export function moveTo(order, hash, index) {
+  const from = order.indexOf(hash);
+  if (from < 0) return order;
+  // Removing the dragged tile first shifts every later gap down by one.
+  const to = Math.max(0, Math.min(index > from ? index - 1 : index, order.length - 1));
+  if (to === from) return order;
+  const next = [...order];
+  next.splice(to, 0, next.splice(from, 1)[0]);
+  return next;
+}
+
 const KIND_LABEL = { keystone: 'Keystone', notable: 'Notable', ascNotable: 'Ascendancy', blighted: 'Notable' };
 
 export function renderPriorityList(order, metaByHash, opts = {}) {

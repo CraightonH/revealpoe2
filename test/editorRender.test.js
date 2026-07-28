@@ -93,6 +93,20 @@ test('renderGear: a filled well exposes data-slot-mods and a mods-edit affordanc
   const html = renderGear(b, ctx);
   assert.match(html, /data-slot-mods="helmet"/);
   assert.match(html, /data-mods-edit="helmet"/);
+  // No mod-count caption over the art — it was unreadable on transparent icons.
+  assert.ok(!/editor-slot__mods"/.test(html));
+  assert.ok(!/1 mod</.test(html));
+});
+
+test('modCardSections: prefixes render above suffixes regardless of pick order', () => {
+  const cell = { item: { kind: 'base', slug: 'iron-hat' },
+    mods: [{ affix: 'abyss', tier: 'ab1' }, { affix: 'life', tier: 'life1' }], corrupted: null };
+  const { mods } = modCardSections(cell, MODPOOLS);
+  const prefixAt = mods.indexOf('maximum Life');
+  const suffixAt = mods.indexOf('increased Armour, +10 Life');
+  assert.ok(prefixAt >= 0 && suffixAt >= 0, 'both mod lines render');
+  assert.ok(prefixAt < suffixAt,
+    'the prefix line precedes the suffix line even though the suffix was chosen first');
 });
 
 test('baseRarity: normal / magic / rare by explicit-mod count (corrupted excluded)', () => {
@@ -362,6 +376,26 @@ test('renderEditor: edit mode offers the view-published toggle', () => {
   assert.match(renderEditor(fixed(), sctx), /data-view-published/);
 });
 
+test('renderEditor: the rail Summary renders in every mode, given itemMath', () => {
+  const ITEMMATH = {
+    classBase: { warrior: { str: 15, dex: 7, int: 7, life: 16, mana: 30 } },
+    gemLevel: {},
+    items: { 'iron-hat': { req: { level: 8, str: 40, dex: 0, int: 0 }, lines: ['+(30-40) to maximum Life'] } },
+  };
+  const b = fixed({ class: 'warrior',
+    gear: { helmet: { item: { kind: 'base', slug: 'iron-hat' }, mods: [], corrupted: null } } });
+  // A reader of a shared link needs the requirements most of all — the panel
+  // used to be editor-only.
+  for (const mode of ['edit', 'view', 'import']) {
+    const html = renderEditor(b, { ...sctx, itemMath: ITEMMATH, treeLines: [], mode });
+    assert.match(html, /data-summary/, `${mode} renders the summary`);
+    assert.match(html, /Need 25 more Strength/, `${mode} shows the attribute deficit`);
+    assert.match(html, /rail-summary__lvl">Lv 8\+/, `${mode} shows the level requirement`);
+  }
+  // Without itemMath the panel is simply absent — never a broken shell.
+  assert.ok(!renderEditor(b, { ...sctx, mode: 'import' }).includes('data-summary'));
+});
+
 test('renderEditor: import mode — save-a-copy banner, no switcher/manage/share', () => {
   const { id, createdAt, updatedAt, ...canonical } = fixed();
   const html = renderEditor(canonical, { ...sctx, mode: 'import' });
@@ -391,7 +425,6 @@ test('renderEditor: dossier shell — rail, header hooks, four chapters, escapes
   assert.match(html, /data-share/);
   assert.match(html, /data-description/);
   assert.match(html, /data-notes/);
-  assert.match(html, /href="\/passives"/);
   assert.ok(html.includes('hi &lt;b&gt;there&lt;/b&gt;'));
   assert.ok(html.includes('desc &lt;i&gt;x&lt;/i&gt;'));
 });
@@ -404,14 +437,35 @@ test('renderEditor: tree chapter mounts the embed, drops the code paste', () => 
   assert.match(html, /data-notable-priority/);
   assert.match(html, /Notable Priority/);
   assert.ok(!html.includes('data-tree-code'), 'code paste input removed in edit mode');
-  assert.match(html, /href="\/passives/);
 });
 
-test('renderEditor: read-only tree chapter is a static summary (no embed mount)', () => {
-  const b = fixed({ tree: { code: null, notablePriority: [] } });
-  const html = renderEditor(b, { ...sctx, mode: 'view' });
-  assert.ok(!html.includes('data-tree-mount'), 'no interactive embed in read-only');
-  assert.match(html, /Open the passive tree/);
+test('renderEditor: no link out to /passives in ANY mode', () => {
+  // That page has no idea which build sent you, so allocations made there never
+  // came back — the embed is the tree in every mode.
+  for (const mode of ['edit', 'view', 'import']) {
+    const out = renderEditor(fixed({ tree: { code: 'abc', notablePriority: [] } }), { ...sctx, mode });
+    assert.ok(!out.includes('href="/passives'), `no full-page tree link in ${mode} mode`);
+    assert.ok(!out.includes('editor-tree-open'), `no tree-open button in ${mode} mode`);
+  }
+});
+
+test('renderEditor: read-only tree chapter mirrors the editor, minus the editable embed', () => {
+  const b = fixed({ tree: { code: 'abc', notablePriority: [12, 34] } });
+  for (const mode of ['view', 'import']) {
+    const html = renderEditor(b, { ...sctx, mode });
+    assert.ok(!html.includes('data-tree-mount"'), `${mode}: no interactive embed`);
+    assert.match(html, /data-tree-preview-mount/, `${mode}: read-only preview mounts`);
+    // Same chapter shape as edit mode — a reader needs the author's priority order.
+    assert.match(html, /data-tree-points-summary/, `${mode}: points strip`);
+    assert.match(html, /data-notable-priority/, `${mode}: notable priority block`);
+    // The old "N passives allocated · N notables prioritized" sentence is gone.
+    assert.ok(!html.includes('editor-tree-stat'), `${mode}: no stat sentence`);
+    assert.ok(!/passives allocated/.test(html), `${mode}: no allocated-count copy`);
+  }
+  // Without a saved tree there is nothing to preview or prioritize.
+  const empty = renderEditor(fixed({ tree: { code: null, notablePriority: [] } }), { ...sctx, mode: 'view' });
+  assert.ok(!empty.includes('data-tree-preview-mount'));
+  assert.match(empty, /No passive tree saved yet/);
 });
 
 test('treeSummary: non-v7 decodable garbage yields no point count', () => {

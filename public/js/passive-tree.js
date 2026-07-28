@@ -2410,6 +2410,14 @@ export default function init(canvas, data, opts = {}) {
     async setState(code) { return api.setCode(code); },
     async getState() { return { code: await api.getCode() }; },
     getAllocatedStatLines: () => { try { return allocatedStatLines(); } catch { return []; } },
+    /**
+     * Resolves once the stat-line artifact is in memory. Until it is,
+     * getAllocatedStatLines() reports [] — and it is NOT loaded by onReady
+     * (only lazily, by the stats panel), so a host that read the lines at mount
+     * silently got nothing and undercounted every tree-granted stat. Await this
+     * first, then read.
+     */
+    statLinesReady: () => loadStatLines().then(() => true, () => false),
     setHighlight, focusNode, fitAllocated, getAllocatedNotables, getPoints, paintNodeIcon, deallocate, destroy,
     /**
      * Current class (GGG name) + ascendancy id, for the host to mirror.

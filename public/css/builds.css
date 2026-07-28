@@ -6,10 +6,21 @@
 
 /* Picker overlay (z above build-menu 130/131, below header search 200). */
 .picker-overlay .picker-scrim { position: fixed; inset: 0; z-index: 140; background: rgb(0 0 0 / .6); }
-.picker-panel { position: fixed; z-index: 141; inset: 8vh auto auto 50%; transform: translateX(-50%);
-  width: min(34rem, calc(100vw - 2rem)); max-height: 80vh; display: flex; flex-direction: column;
+/* `zoom` scales absolute and viewport lengths on this element, so a plain
+   `max-height: 80vh` rendered as 100vh at L and 120vh at XL — the panel ran off
+   the bottom of a FIXED-position box, which page scrolling cannot reach.
+   Dividing the viewport-relative values by the same factor cancels the scale.
+   Percentages are NOT affected (they resolve in the element's own zoomed
+   coordinate space), so `left: 50%` must stay untouched or the panel de-centers. */
+.picker-panel { --picker-zoom: 1;
+  position: fixed; z-index: 141; left: 50%; transform: translateX(-50%);
+  top: calc(6vh / var(--picker-zoom)); max-height: calc(88vh / var(--picker-zoom));
+  width: min(34rem, calc((100vw - 2rem) / var(--picker-zoom))); display: flex; flex-direction: column;
   background: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px;
   box-shadow: 0 18px 48px rgb(0 0 0 / .38); }
+.picker-input { flex: none; }
+.picker-head { flex: none; }
+.picker-results { flex: 1 1 auto; min-height: 0; }
 .picker-head h2 { margin: 0; font-family: var(--font-display); font-size: 15px;
   font-weight: 500; color: var(--color-normal); }
 .picker-close:hover { color: var(--color-normal); }
@@ -52,13 +63,13 @@
    dossier narrower and scales it up, so the page never overflows sideways. */
 html[data-card-size="s"] .dossier,
 html[data-card-size="s"] .builds-import,
-html[data-card-size="s"] .picker-panel { zoom: 0.85; }
+html[data-card-size="s"] .picker-panel { zoom: 0.85; --picker-zoom: 0.85; }
 html[data-card-size="l"] .dossier,
 html[data-card-size="l"] .builds-import,
-html[data-card-size="l"] .picker-panel { zoom: 1.25; }
+html[data-card-size="l"] .picker-panel { zoom: 1.25; --picker-zoom: 1.25; }
 html[data-card-size="xl"] .dossier,
 html[data-card-size="xl"] .builds-import,
-html[data-card-size="xl"] .picker-panel { zoom: 1.5; }
+html[data-card-size="xl"] .picker-panel { zoom: 1.5; --picker-zoom: 1.5; }
 html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: flex-end; }
 .dossier { display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: 28px; }
 /* z-index is load-bearing: `position: sticky` ALWAYS creates a stacking context,
@@ -453,18 +464,12 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
   border: 1px solid var(--border); border-radius: 8px;
   background: color-mix(in srgb, var(--bg-surface) 88%, transparent);
   box-shadow: 0 12px 32px rgb(0 0 0 / .14); }
-.editor-tree-stat { margin: 0; color: var(--color-normal); font-size: 17px; }
 .editor-tree-code { display: flex; flex-direction: column; gap: 5px; max-width: 38rem;
   color: var(--color-default); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
 .editor-tree-code input { padding: 8px 11px; border: 1px solid var(--border); border-radius: 6px;
   background: rgb(0 0 0 / .25); color: var(--text); font: 13.5px/1.4 var(--font-regular);
   letter-spacing: normal; text-transform: none; }
 .editor-tree-code input.is-invalid { border-color: var(--color-corrupted); }
-.editor-tree-open { align-self: flex-start; padding: 8px 17px; border-radius: 6px; text-decoration: none;
-  border: 1px solid color-mix(in srgb, var(--accent-ui) 40%, var(--border));
-  background: color-mix(in srgb, var(--accent-ui) 8%, transparent); color: var(--color-normal);
-  font: 13.5px/1.4 var(--font-smallcaps); letter-spacing: .06em; }
-.editor-tree-open:hover { background: color-mix(in srgb, var(--accent-ui) 14%, transparent); }
 .editor-tree-hint { margin: 0; color: var(--color-default); font-size: 12px; }
 .editor-notes textarea { width: 100%; min-height: 10rem; padding: 13px 15px; resize: vertical;
   border: 1px solid var(--border); border-radius: 8px; background: rgb(0 0 0 / .25);
@@ -497,8 +502,6 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
 }
 
 /* ---- well mods indicator + affordance ---- */
-.editor-slot__mods { font-size: 9px; letter-spacing: .08em; text-transform: uppercase;
-  color: var(--color-crafted); }
 .editor-slot__mods-edit { position: absolute; bottom: 4px; right: 4px; padding: 2px 6px; border: 0;
   border-radius: 4px; background: rgb(0 0 0 / .5); color: var(--color-default); font: 9px/1 var(--font-smallcaps);
   cursor: pointer; opacity: 0; transition: opacity 120ms ease; }
@@ -506,15 +509,32 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
 .editor-slot__mods-edit:hover { color: var(--color-crafted); }
 
 /* ---- anchored mod picker popover ---- */
-.mod-picker-pop { position: absolute; z-index: 60; width: 340px; }
-/* The visual card: capped height with a single internal scroll and a sticky
-   header, so a long mod list scrolls inside the popover (not the page) and the
-   search box stays reachable. position() also clamps it into the viewport. */
-.mod-picker { max-height: min(78vh, 560px); overflow-y: auto;
+/* Two panes: the chooser and a live card of the item being crafted. --mirror
+   puts the card on the left, for slots sitting in the right half of the screen. */
+.mod-picker-pop { position: absolute; z-index: 60; display: flex; align-items: flex-start; gap: 10px; }
+.mod-picker-pop--mirror { flex-direction: row-reverse; }
+.mod-picker-host { width: 340px; flex: none; }
+.mod-picker-preview { flex: none; max-width: 390px; max-height: min(80vh, 620px); overflow-y: auto;
+  overscroll-behavior: contain; filter: drop-shadow(0 18px 44px rgb(0 0 0 / .45)); }
+.mod-picker-preview[hidden] { display: none; }
+.mod-picker-preview .newItemPopup { margin: 0; }
+/* ONE scroller. The card is a flex column: a fixed header block (search +
+   current selection) and a single scrolling body holding the pools. Nesting a
+   scrolling selection inside a scrolling card gave three overlapping scrollbars
+   with the page's, and which one caught the wheel depended on the cursor.
+   overscroll-behavior stops a wheel that reaches the end from scrolling the
+   page out from under the popover. */
+.mod-picker { max-height: min(80vh, 620px); display: flex; flex-direction: column; overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--color-crafted) 40%, var(--border)); border-radius: 8px;
   background: var(--bg-surface); box-shadow: 0 18px 44px rgb(0 0 0 / .45); }
-.mod-picker__head { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; gap: 8px;
-  padding: 8px 10px; background: var(--bg-surface); border-bottom: 1px solid var(--border); }
+.mod-picker__body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+/* Header + current selection ride together above the scroller: the selection is
+   what you scroll the pools to change, so it has to stay put. Bounded at 6 mods
+   + 1 implicit; the max-height is a safety valve for a very short viewport. */
+.mod-picker__sticky { flex: 0 0 auto; max-height: 62%; overflow-y: auto; overscroll-behavior: contain;
+  background: var(--bg-surface); border-bottom: 1px solid var(--border); }
+.mod-picker__head { display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; background: var(--bg-surface); }
 .mod-picker__head h3 { margin: 0; font-size: 12px; color: var(--color-normal); }
 .mod-picker__search { flex: 1; padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px;
   background: rgb(0 0 0 / .25); color: var(--text); font: 12px/1.4 var(--font-regular); }
@@ -527,7 +547,6 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
   color: var(--color-corrupted); }
 .mod-picker__row--corrupt:hover { border-color: color-mix(in srgb, var(--color-corrupted) 55%, var(--border)); }
 .mod-picker__col--corrupt > h4 { color: var(--color-corrupted); }
-.mod-picker__chosen-row--corrupt { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
 .mod-picker__col h4 { margin: 0 0 6px; padding: 2px 0;
   font-size: 9px; letter-spacing: .12em; text-transform: uppercase;
   color: var(--color-default); display: flex; justify-content: space-between; }
@@ -543,8 +562,27 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
   border: 1px solid color-mix(in srgb, var(--color-desecrated, #c9a0ff) 45%, var(--border));
   background: color-mix(in srgb, var(--color-desecrated, #c9a0ff) 12%, transparent); }
 .mod-picker__chosen { list-style: none; margin: 0; padding: 8px 10px; border-top: 1px solid var(--border);
-  display: flex; flex-direction: column; gap: 5px; flex: none; max-height: 26vh; overflow-y: auto; }
-.mod-picker__chosen-row { display: flex; align-items: center; gap: 6px; }
+  display: flex; flex-direction: column; gap: 5px; flex: none;
+  background: color-mix(in srgb, var(--color-crafted) 7%, var(--bg-surface)); }
+/* One line per family name (hover for the full text) — wrapped names made each
+   pick three lines tall and pushed the pools off the popover. */
+.mod-picker__chosen-row .mod-picker__generic { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Two lines per pick: flag + family + remove, then the tier select full width.
+   One line squeezed the select to a few characters, which is the one control
+   here you actually need to read. */
+.mod-picker__chosen-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center; column-gap: 6px; row-gap: 3px;
+  padding-bottom: 5px; border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }
+.mod-picker__chosen-row:last-child { padding-bottom: 0; border-bottom: 0; }
+.mod-picker__chosen-row > .mod-picker__kind { grid-area: 1 / 1; }
+.mod-picker__chosen-row > .mod-picker__generic { grid-area: 1 / 2; }
+.mod-picker__chosen-row > .mod-picker__remove { grid-area: 1 / 3; }
+.mod-picker__chosen-row > .mod-picker__tier { grid-area: 2 / 1 / auto / -1; max-width: none; width: 100%; }
+/* P / S / I flag, matching the card's planner-mod__kind badge. */
+.mod-picker__kind { flex: none; width: 13px; text-align: center; border-radius: 3px;
+  border: 1px solid var(--border); font: 8.5px/1.5 var(--font-smallcaps); color: var(--color-default); }
+.mod-picker__kind--corrupt { color: var(--color-corrupted);
+  border-color: color-mix(in srgb, var(--color-corrupted) 45%, var(--border)); }
 .mod-picker__generic { flex: 1; font-size: 11px; color: var(--color-magic, var(--color-normal)); }
 .mod-picker__tier { max-width: 60%; padding: 2px 4px; border: 1px solid var(--border); border-radius: 4px;
   background: rgb(0 0 0 / .25); color: var(--text); font: 10px/1.3 var(--font-regular); }
@@ -554,6 +592,12 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
 
 /* ---- Passive tree embed (Phase 5) ---- */
 .editor-tree-embed { position: relative; margin: 4px 0 14px; }
+/* The read-only preview mounts into .editor-tree-mount inside the same wrapper;
+   the wrapper already owns the spacing. */
+.editor-tree-embed > .editor-tree-mount { margin-top: 0; }
+/* A fixed (read-only) list has no drag handles, but the tiles still click
+   through to their node in the tree — so pointer, not grab. */
+.prio-list:not([data-prio-dnd]) .prio-tile { cursor: pointer; }
 .passive-tree-wrap--embed { position: relative; width: 100%; height: min(72vh, 720px);
   border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
   background: color-mix(in srgb, var(--bg-base) 60%, transparent); }
@@ -575,7 +619,17 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
   letter-spacing: .16em; text-transform: uppercase; }
 /* Square icon tiles flowing left-to-right, wrapping — a compact constellation
    read (order = reading order) instead of full-width stacked rows. */
-.prio-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+/* position: relative anchors the drop caret; the trailing padding gives the
+   "drop after the last tile" gesture somewhere to land even when the last row
+   is full. */
+.prio-list { position: relative; list-style: none; margin: 0; padding: 0 0 0 6px;
+  display: flex; flex-wrap: wrap; gap: 8px; min-height: 46px; }
+.prio-tile.is-dragging { opacity: .35; cursor: grabbing; }
+.prio-tile.is-dragging:hover { transform: none; }
+/* Drop caret — where the dragged tile lands on release. */
+.prio-dropbar { position: absolute; width: 2px; border-radius: 2px; pointer-events: none;
+  background: var(--accent-ui);
+  box-shadow: 0 0 9px 1px color-mix(in srgb, var(--accent-ui) 65%, transparent); }
 .prio-tile { position: relative; flex: none; height: 46px;
   display: flex; align-items: center; gap: 3px; cursor: grab; border-radius: 8px;
   box-shadow: 0 0 11px 1px rgb(0 0 0 / .42);
@@ -752,7 +806,6 @@ html[data-card-size="xl"] .dossier-actions { flex-wrap: wrap; justify-content: f
 /* ---- read-only tree preview (shared view / import) ----------------------
    Mounted automatically — the tree is pivotal to a build. The embed is ~3 MB but
    loads dynamically, so it fills in after the rest of the preview has painted. */
-.editor-tree-preview { margin: 10px 0 12px; }
 .editor-tree-mount:empty { display: none; }
 .editor-tree-mount { margin-top: 12px; }
 .editor-tree-mount.is-loading { padding: 18px 0; color: var(--color-default); font-size: 12.5px; }

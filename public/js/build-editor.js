@@ -9,7 +9,8 @@ import { LIMITS } from '/static/js/build-store.js';
 import { encodeGroup } from '/static/js/build-code.js';
 import { buildToBuildFile, buildFileName } from '/static/js/build-file.js';
 import { load as loadTree } from '/static/js/passive-tree.js';
-import { reconcilePriority, renderPriorityList } from '/static/js/tree-priority.js';
+import { reconcilePriority, insertionIndex, moveTo } from '/static/js/tree-priority.js';
+import { fillTreeChapter, chapterState } from '/static/js/tree-chapter.js';
 import { mountTreePreview, destroyTreePreview } from '/static/js/tree-preview.js';
 
 const KIND_FOR_CATEGORY = { gem: 'gem', support: 'gem', spirit: 'gem', unique: 'unique', base: 'base' };
@@ -37,19 +38,32 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
 
   // ---- embedded passive tree (Phase 5) --------------------------------
   let treeEmbed = null;       // the embed API (passive-tree.js init return)
+  let previewApi = null;      // the read-only preview's API, in 'view' mode
   let treeLines = [];
   let treeWrapEl = null;      // the live .passive-tree-wrap DOM, reparented across renders
   let notableMeta = new Map();// h -> {kind,name,icon}, sourced live from the embed
   let suppressRender = false; // true while persisting a tree-only change (skip our own re-render)
-  let dragH = null;
+  let dragH = null;           // hash of the priority tile being dragged
+  let dropIndex = null;       // gap it would land in, per the last dragover
 
   const build = () => store.get(buildId);
   const patch = (p) => safeWrite(() => store.update(buildId, p));
   // Class/ascendancy belong to the GROUP, not to whichever variant is open.
   const setGroupClass = (cls, asc) => safeWrite(() => store.setGroupClass(buildId, cls, asc));
+
+  // True while the tree embed itself is the fullscreen element.
+  const treeIsFullscreen = () => !!treeWrapEl && !!document.fullscreenElement
+    && (document.fullscreenElement === treeWrapEl || document.fullscreenElement.contains(treeWrapEl));
+  let renderAfterFullscreen = false;
+
   const render = () => {
     const b = build();
     if (!b) { location.hash = ''; return; }
+    // Detaching the fullscreen element drops out of fullscreen — and a re-render
+    // reparents the tree canvas. So every allocation click in the fullscreen tree
+    // (onChange -> render) kicked you straight back to the dossier. Hold the
+    // re-render until fullscreen ends; the dossier behind it isn't visible anyway.
+    if (treeIsFullscreen()) { renderAfterFullscreen = true; refreshTreeUI(); return; }
     // Detach the live embed before innerHTML wipes the old mount, so its canvas +
     // allocation state survive a full dossier re-render (gear/skill edits, etc.).
     if (treeWrapEl && treeWrapEl.parentNode) treeWrapEl.remove();
@@ -63,10 +77,26 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
     });
     if (mode === 'edit') mountTree(b);
     // Read-only modes get the preview embed automatically (dynamic import, so it
-    // does not hold up this render).
-    else mountTreePreview(container.querySelector('[data-tree-preview-mount]'), b.tree?.code ?? null,
-      treeIdentity(b, planner));
+    // does not hold up this render). Same chapter as the editor — points strip
+    // and Notable Priority — only fixed rather than reorderable.
+    else {
+      previewApi = null;   // the old embed died with the innerHTML above
+      mountTreePreview(container.querySelector('[data-tree-preview-mount]'), b.tree?.code ?? null, {
+        ...treeIdentity(b, planner),
+        onReady: (api) => {
+          previewApi = api;
+          fillTreeChapter(container, api, { ...chapterState(api, b), readonly: true });
+        },
+      });
+    }
   };
+
+  // Whichever tree is actually on screen: the editable embed, or the read-only
+  // preview behind "View". Priority-tile hover/click drive this one.
+  const activeTreeApi = () => (mode === 'edit' ? treeEmbed : previewApi);
+  const activeTreeEl = () => (mode === 'edit'
+    ? treeWrapEl
+    : container.querySelector('[data-tree-preview-mount]'));
 
   // ---- passive-tree embed: mount / reparent / persist / refresh -------
   function mountTree(b) {
@@ -88,16 +118,33 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
         treeEmbed = api;
         syncTreeClass();
         captureNotables();
-        treeLines = treeEmbed.getAllocatedStatLines?.() ?? [];
+        refreshTreeLines();
         render();
       },
       onChange: () => {
         captureNotables();
-        treeLines = treeEmbed?.getAllocatedStatLines?.() ?? [];
+        refreshTreeLines();
         render();
       },
       onCodeChange: (code) => persistTree(code),
     }).then((api) => { treeEmbed = api; }).catch((err) => console.warn('[builds] tree embed failed:', err));
+  }
+  /**
+   * Pull the embed's allocated stat lines into `treeLines` (the Summary's tree
+   * contribution). The stat-line artifact loads lazily, so at mount the sync
+   * read returns [] — which is why the Summary counted no tree life/mana/res at
+   * all until something else happened to re-render it. Read once now, then again
+   * when the artifact lands, re-rendering only if the answer actually changed.
+   */
+  function refreshTreeLines() {
+    if (!treeEmbed) return;
+    treeLines = treeEmbed.getAllocatedStatLines?.() ?? [];
+    treeEmbed.statLinesReady?.().then(() => {
+      const next = treeEmbed?.getAllocatedStatLines?.() ?? [];
+      if (next.length === treeLines.length) return;   // already current
+      treeLines = next;
+      render();
+    });
   }
   function captureNotables() {
     if (!treeEmbed) return;
@@ -114,24 +161,9 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
     patch({ tree: { code: code || null, notablePriority } });
     suppressRender = false;
   }
-  const pts = (label, o) => `<span class="tree-chip"><b>${o.spent}</b>${o.max != null ? ` / ${o.max}` : ''} <span>${label}</span></span>`;
   function refreshTreeUI() {
     const b = build(); if (!b) return;
-    const summary = container.querySelector('[data-tree-points-summary]');
-    if (summary && treeEmbed) {
-      const p = treeEmbed.getPoints();
-      summary.innerHTML = pts('Passives', p.main) + (p.asc.spent ? pts('Ascendancy', p.asc) : '')
-        + (p.ws1.spent ? pts('Set I', p.ws1) : '') + (p.ws2.spent ? pts('Set II', p.ws2) : '');
-    }
-    const box = container.querySelector('[data-notable-priority]');
-    if (box) {
-      const order = currentOrder(b);
-      box.innerHTML = '<h3 class="editor-subhead">Notable Priority</h3>'
-        + renderPriorityList(order, notableMeta, { readonly: false });
-      for (const c of box.querySelectorAll('[data-prio-icon]')) {
-        treeEmbed?.paintNodeIcon(Number(c.getAttribute('data-prio-icon')), c);
-      }
-    }
+    fillTreeChapter(container, treeEmbed, { order: currentOrder(b), meta: notableMeta, readonly: false });
   }
   // Keep the embed's class/ascendancy matched to the build's own picker (the
   // authoritative selection). `force` = the user just changed the picker, so
@@ -482,6 +514,9 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
       if (!cell?.item || !pools) return;
       openModPicker({
         anchorEl: modsEdit, ref: cell.item, cell, pools,
+        // Feeds the picker's live item card, so a tier change is visible on the
+        // item itself without having to close the popover and hover the well.
+        cardUrl: resolveRef(cell.item)?.cardUrl ?? null,
         onChange: (next) => patch({ gear: { ...build().gear, [slotId]: next } }),
       });
       return;
@@ -558,10 +593,13 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
       treeEmbed?.deallocate(h);
       return;
     }
+    // Click a priority tile to find it in the tree — the embed centres on the
+    // node and pulses a ring around it. Works in read-only modes too, driving
+    // the preview embed rather than the (detached) editable one.
     const prioRow = e.target.closest('[data-prio-row]');
     if (prioRow && !e.target.closest('[data-prio-remove]')) {
-      treeEmbed?.focusNode(Number(prioRow.getAttribute('data-prio-row')));
-      treeWrapEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      activeTreeApi()?.focusNode(Number(prioRow.getAttribute('data-prio-row')));
+      activeTreeEl()?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
     const sc = attr('data-socket-clear');
@@ -579,15 +617,43 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
   }
 
   function onPointerOver(e) {
-    if (mode !== 'edit') return;
     const row = e.target.closest?.('[data-prio-row]');
-    if (row && treeEmbed) treeEmbed.setHighlight([Number(row.getAttribute('data-prio-row'))]);
+    if (row) activeTreeApi()?.setHighlight([Number(row.getAttribute('data-prio-row'))]);
   }
 
   function onPointerOut(e) {
-    if (mode !== 'edit') return;
     const row = e.target.closest?.('[data-prio-row]');
-    if (row && !row.contains(e.relatedTarget) && treeEmbed) treeEmbed.setHighlight(null);
+    if (row && !row.contains(e.relatedTarget)) activeTreeApi()?.setHighlight(null);
+  }
+
+  // ---- priority drag & drop -------------------------------------------
+  const prioTiles = (list) => [...list.querySelectorAll('[data-prio-row]')];
+
+  // A vertical caret in the gap the tile would land in. Absolutely positioned
+  // inside the list (an <li> so the <ol> stays valid) and out of flow, so it
+  // never disturbs the tiles it is measuring against.
+  function showDropBar(list, index) {
+    const tiles = prioTiles(list);
+    if (!tiles.length) return;
+    let bar = list.querySelector('.prio-dropbar');
+    if (!bar) {
+      bar = document.createElement('li');
+      bar.className = 'prio-dropbar';
+      bar.setAttribute('aria-hidden', 'true');
+      list.appendChild(bar);
+    }
+    const past = index >= tiles.length;
+    const r = (past ? tiles[tiles.length - 1] : tiles[index]).getBoundingClientRect();
+    const lr = list.getBoundingClientRect();
+    bar.style.left = `${(past ? r.right + 3 : r.left - 5) - lr.left}px`;
+    bar.style.top = `${r.top - lr.top}px`;
+    bar.style.height = `${r.height}px`;
+  }
+  function endPrioDrag() {
+    container.querySelector('.prio-tile.is-dragging')?.classList.remove('is-dragging');
+    container.querySelector('.prio-dropbar')?.remove();
+    dragH = null;
+    dropIndex = null;
   }
 
   function onDragStart(e) {
@@ -595,33 +661,41 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
     const row = e.target.closest?.('[data-prio-row]');
     if (!row) return;
     dragH = Number(row.getAttribute('data-prio-row'));
+    dropIndex = null;
+    row.classList.add('is-dragging');
     e.dataTransfer.effectAllowed = 'move';
+    // Firefox refuses to start a drag that carries no payload.
+    try { e.dataTransfer.setData('text/plain', String(dragH)); } catch { /* not settable here */ }
   }
 
   function onDragOver(e) {
-    if (mode === 'edit' && dragH != null && e.target.closest?.('[data-prio-dnd]')) e.preventDefault();
+    if (mode !== 'edit' || dragH == null) return;
+    const list = e.target.closest?.('[data-prio-dnd]');
+    if (!list) { dropIndex = null; container.querySelector('.prio-dropbar')?.remove(); return; }
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    dropIndex = insertionIndex(prioTiles(list).map((t) => t.getBoundingClientRect()), e.clientX, e.clientY);
+    showDropBar(list, dropIndex);
   }
 
   function onDrop(e) {
-    if (mode !== 'edit') return;
-    const target = e.target.closest?.('[data-prio-row]');
-    if (dragH == null || !target) return;
+    if (mode !== 'edit' || dragH == null) return;
+    // The whole strip is the drop target, not just the tiles — dropping in the
+    // empty space after the last tile is the natural "move it to the end".
+    if (!e.target.closest?.('[data-prio-dnd]')) return;
     e.preventDefault();
     const b = build();
     const order = currentOrder(b);
-    const from = order.indexOf(dragH);
-    const to = order.indexOf(Number(target.getAttribute('data-prio-row')));
-    if (from < 0 || to < 0 || from === to) {
-      dragH = null;
-      return;
-    }
-    order.splice(to, 0, order.splice(from, 1)[0]);
-    dragH = null;
+    const next = moveTo(order, dragH, dropIndex ?? order.length);
+    endPrioDrag();
+    if (next === order) return;
     suppressRender = true;
-    patch({ tree: { ...b.tree, notablePriority: order } });
+    patch({ tree: { ...b.tree, notablePriority: next } });
     suppressRender = false;
     refreshTreeUI();
   }
+
+  function onDragEnd() { if (dragH != null) endPrioDrag(); }
 
   // Inline rename: blur or Enter commits (non-empty, changed), Escape cancels.
   function commitRename(input) {
@@ -661,6 +735,14 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
   }
 
 
+  // Catch up on whatever render() deferred while the tree held the screen.
+  function onFullscreenChange() {
+    if (treeIsFullscreen() || !renderAfterFullscreen) return;
+    renderAfterFullscreen = false;
+    render();
+  }
+  document.addEventListener('fullscreenchange', onFullscreenChange);
+
   container.addEventListener('click', onClick);
   container.addEventListener('change', onChange);
   container.addEventListener('focusout', onFocusOut);
@@ -670,10 +752,12 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
   container.addEventListener('dragstart', onDragStart);
   container.addEventListener('dragover', onDragOver);
   container.addEventListener('drop', onDrop);
+  container.addEventListener('dragend', onDragEnd);
   render();
   const unsub = store.subscribe(() => { if (suppressRender) return; render(); });
 
   return function unmount() {
+    document.removeEventListener('fullscreenchange', onFullscreenChange);
     container.removeEventListener('click', onClick);
     container.removeEventListener('change', onChange);
     container.removeEventListener('focusout', onFocusOut);
@@ -683,8 +767,10 @@ export function mountEditor(container, buildId, { store, planner, docs, resolveR
     container.removeEventListener('dragstart', onDragStart);
     container.removeEventListener('dragover', onDragOver);
     container.removeEventListener('drop', onDrop);
+    container.removeEventListener('dragend', onDragEnd);
     treeEmbed?.destroy?.();
     treeEmbed = null;
+    previewApi = null;
     treeWrapEl = null;
     unsub();
     closePicker();

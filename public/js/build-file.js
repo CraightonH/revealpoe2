@@ -12,7 +12,7 @@
 // Unmappable pieces are SKIPPED, never emitted with a guessed id: a file the
 // game rejects is worse than one that omits a slot.
 import { decode as decodePassiveCode } from './passive-code.js';
-import { resolveMod } from './mod-core.js';
+import { resolveMod, orderMods, baseSlugOf } from './mod-core.js';
 
 /**
  * Our gear slot id -> GGG Inventories table id. Hand-authored export-format
@@ -70,7 +70,9 @@ function allocations(code) {
 
 function modLines(cell, pools) {
   if (!pools) return [];
-  return (cell.mods ?? []).map((m) => resolveMod(pools, m)).filter(Boolean).map((m) => m.text);
+  const baseSlug = baseSlugOf(pools, cell.item);
+  return orderMods(pools, cell.mods, baseSlug)
+    .map((m) => resolveMod(pools, m, baseSlug)).filter(Boolean).map((m) => m.text);
 }
 
 function inventorySlot(slotId, cell, { pools, resolveRef }) {
@@ -78,7 +80,8 @@ function inventorySlot(slotId, cell, { pools, resolveRef }) {
   if (!inventory_id || !cell?.item) return null;
   const slot = { inventory_id, slot_x: 0, slot_y: 0 };
   const name = resolveRef(cell.item)?.name ?? cell.item.slug;
-  const corrupted = cell.corrupted && pools ? resolveMod(pools, cell.corrupted) : null;
+  const corrupted = cell.corrupted && pools
+    ? resolveMod(pools, cell.corrupted, baseSlugOf(pools, cell.item)) : null;
 
   if (cell.item.kind === 'unique') {
     slot.unique_name = name;

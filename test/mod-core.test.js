@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  poolsForBase, corruptedForRef, resolveMod, modViolations,
+  poolsForBase, corruptedForRef, resolveMod, modViolations, orderMods, baseSlugOf,
   MAX_PREFIX, MAX_SUFFIX,
 } from '../public/js/mod-core.js';
 
@@ -74,6 +74,42 @@ test('resolveMod: returns renderable tier data or null', () => {
   assert.equal(resolveMod(POOLS, { affix: 'ghost', tier: 'x' }), null);
 });
 
+test('resolveMod: tier rank is relative to the tiers the BASE can roll', () => {
+  // plated-boots only rolls life tier index 0 (life1), so on that base life1 is
+  // the top tier available — T1, not T2. The picker's tier select narrows the
+  // same way, and the card used to contradict it (bug: T1 values labelled T2).
+  assert.equal(resolveMod(POOLS, { affix: 'life', tier: 'life1' }, 'plated-boots').tierNum, 1);
+  assert.equal(resolveMod(POOLS, { affix: 'life', tier: 'life1' }, 'plated-boots').tierCount, 1);
+  // iron-greaves rolls both tiers, so the full ladder applies there.
+  assert.equal(resolveMod(POOLS, { affix: 'life', tier: 'life1' }, 'iron-greaves').tierNum, 2);
+  // A tier the base cannot roll still renders, ranked on the family's ladder.
+  assert.equal(resolveMod(POOLS, { affix: 'life', tier: 'life2' }, 'plated-boots').tierNum, 1);
+  // Unknown base / no base -> family ladder, unchanged from before.
+  assert.equal(resolveMod(POOLS, { affix: 'life', tier: 'life1' }, 'nope').tierNum, 2);
+});
+
+test('baseSlugOf: a base is its own base, a unique resolves through the uniques map', () => {
+  assert.equal(baseSlugOf(POOLS, { kind: 'base', slug: 'iron-greaves' }), 'iron-greaves');
+  assert.equal(baseSlugOf(POOLS, { kind: 'unique', slug: 'the-anvil' }), 'iron-greaves');
+  assert.equal(baseSlugOf(POOLS, { kind: 'unique', slug: 'nope' }), null);
+  assert.equal(baseSlugOf(POOLS, null), null);
+});
+
+test('orderMods: every prefix before every suffix, desecrated last within each', () => {
+  const mods = [
+    { affix: 'abyssarm', tier: 'aarm1' }, // desecrated prefix
+    { affix: 'fireres', tier: 'fr1' },    // suffix
+    { affix: 'life', tier: 'life1' },     // prefix
+    { affix: 'armour', tier: 'arm1' },    // prefix
+  ];
+  assert.deepEqual(orderMods(POOLS, mods, 'iron-greaves').map((m) => m.affix),
+    ['life', 'armour', 'abyssarm', 'fireres']);
+  // Unresolvable picks sort last rather than disappearing or throwing.
+  const withGhost = [{ affix: 'ghost', tier: 'x' }, { affix: 'fireres', tier: 'fr1' }];
+  assert.deepEqual(orderMods(POOLS, withGhost).map((m) => m.affix), ['fireres', 'ghost']);
+  assert.deepEqual(orderMods(POOLS, null), []);
+});
+
 test('modViolations: warns on prefix overflow but never throws', () => {
   const cell = { item: { kind: 'base', slug: 'iron-greaves' }, mods: [
     { affix: 'life', tier: 'life1' }, { affix: 'armour', tier: 'arm1' },
@@ -111,6 +147,36 @@ test('modPickerHtml: base mode renders prefix/suffix add rows + chosen tier sele
   // Bases now also offer a corrupted implicit chooser (distinct hook).
   assert.match(html, /Corrupted implicit/);
   assert.match(html, /data-mod-corrupt="corrarm"/);
+});
+
+test('modPickerHtml: the chosen list is sticky at the top, above the pools', () => {
+  const view = { ...poolsForBase(POOLS, 'iron-greaves'), mode: 'base' };
+  const cell = { item: { kind: 'base', slug: 'iron-greaves' },
+    mods: [{ affix: 'fireres', tier: 'fr1' }, { affix: 'abyssarm', tier: 'aarm1' },
+      { affix: 'life', tier: 'life1' }],
+    corrupted: { affix: 'corrarm', tier: 'carm1' } };
+  const html = modPickerHtml(view, cell);
+  assert.ok(html.indexOf('mod-picker__sticky') < html.indexOf('mod-picker__cols'),
+    'sticky selection block precedes the prefix/suffix pools');
+  assert.ok(html.indexOf('mod-picker__chosen"') < html.indexOf('mod-picker__cols'),
+    'chosen list precedes the prefix/suffix pools');
+  // Implicit, then standard prefixes, then desecrated prefixes, then suffixes.
+  const order = ['data-mod-corrupt-remove', 'data-mod-remove="life"',
+    'data-mod-remove="abyssarm"', 'data-mod-remove="fireres"'].map((s) => html.indexOf(s));
+  assert.ok(order.every((i) => i >= 0), 'every chosen row present');
+  assert.deepEqual([...order].sort((a, b) => a - b), order,
+    'implicit, then standard prefixes, then desecrated prefixes, then suffixes');
+  assert.match(html, /mod-picker__kind">P</);
+  assert.match(html, /mod-picker__kind">S</);
+});
+
+test('modPickerHtml: unique mode lifts the chosen corrupted row into the sticky block', () => {
+  const view = { prefix: [], suffix: [], corrupted: poolsForBase(POOLS, 'iron-greaves').corrupted, mode: 'unique' };
+  const cell = { item: { kind: 'unique', slug: 'the-anvil' }, mods: [],
+    corrupted: { affix: 'corrarm', tier: 'carm1' } };
+  const html = modPickerHtml(view, cell);
+  assert.ok(html.indexOf('data-mod-tier-corrupt') < html.indexOf('mod-picker__col--corrupt'),
+    'the tier select sits above the chooser list, not below it');
 });
 
 test('modPickerHtml: desecrated add rows carry an origin badge with the boss name', () => {
