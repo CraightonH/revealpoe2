@@ -4,8 +4,8 @@ Investigation (2026-07-27) into exposing `build/graph.json` as a queryable
 **remote MCP server on Cloudflare**, so an LLM can traverse the graph directly
 instead of scraping the prerendered site.
 
-Status: **investigation only — nothing built.** Read this before starting the
-work; the measurements and the cost model are the parts worth keeping.
+Status: **implemented** — see docs/superpowers/specs/2026-07-28-mcp-graph-server-design.md and the runbook below. The rest of this doc is the original
+feasibility investigation; the measurements and the cost model are still the parts worth keeping.
 
 ## TL;DR
 
@@ -469,3 +469,13 @@ billing alarm to warn you. Mitigations:
    arguably the most valuable deliverable shape, and it's free.
 8. **Serve the passive adjacency from D1 or bundle it?** Only decision left on
    the data-plumbing side; both fit comfortably.
+
+## Runbook
+
+- **Endpoint:** `https://mcp.revealpoe2.com/mcp` (Streamable HTTP), bearer token required.
+- **Client setup:** `claude mcp add --transport http revealpoe2 https://mcp.revealpoe2.com/mcp --header "Authorization: Bearer <token>"`
+- **Rotate the token:** `npx wrangler secret put MCP_TOKEN --config workers/mcp/wrangler.jsonc`, then tell everyone.
+- **Reseed D1:** runs automatically in `refresh-data.yml`; manually: `npm run build:graph && npm run build:passives && npm run build:mcp-sql && npx wrangler d1 execute revealpoe2-graph --remote -y --config workers/mcp/wrangler.jsonc --file build/mcp.sql`. A full reseed writes **~252,000 rows** (indexes + FTS shadow tables inflate the raw ~91k source rows) against the 100k-row/day free-tier write allowance. The first seed exceeded that daily allowance in a single burst and still succeeded, but don't rely on that — **never run a manual reseed twice in the same day**; treat reseeds as once-per-refresh only.
+- **Rollback:** Worker — `npx wrangler rollback --config workers/mcp/wrangler.jsonc` (or redeploy the previous commit); D1 — reseed from a checkout of the previous data state, or D1 Time Travel (7 days on free).
+- **Local dev:** seed local D1 (`--local --file build/mcp.sql`), `.dev.vars` for the token, `npx wrangler dev --config workers/mcp/wrangler.jsonc`.
+- **CPU watch item:** production observability shows ~7ms CPU for a simple tool call and ~29ms for `build_link` (which allocates the passive tree). Workers Free's nominal budget is 10ms CPU/request — `build_link` runs over that nominal figure but requests have completed successfully so far (Cloudflare's enforcement isn't a hard per-request kill at exactly 10ms). Keep an eye on this if `build_link` usage or tree size grows; it's the first tool worth profiling if free-tier CPU errors start showing up.

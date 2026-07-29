@@ -104,3 +104,43 @@ jobs:
           set -euo pipefail
           tar --zstd -cf "${CACHE_KEY}" data/source public/img public/og
           aws s3 cp "${CACHE_KEY}" "s3://${R2_BUCKET}/${CACHE_KEY}" --endpoint-url "$R2_ENDPOINT"
+
+  # Separate job so a D1 failure never fails the site refresh above. This is
+  # the ONLY place that reseeds D1 — never do it from deploy.yml (code-only).
+  seed-mcp:
+    needs: refresh
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Restore build cache from R2 (just refreshed by the refresh job)
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: https://${{ secrets.CLOUDFLARE_ACCOUNT_ID }}.r2.cloudflarestorage.com
+        run: |
+          set -euo pipefail
+          aws s3 cp "s3://${R2_BUCKET}/${CACHE_KEY}" "${CACHE_KEY}" --endpoint-url "$R2_ENDPOINT"
+          tar --zstd -xf "${CACHE_KEY}"
+          rm -f "${CACHE_KEY}"
+
+      - name: Build the seed
+        run: |
+          npm run build:graph
+          npm run build:passives
+          npm run build:mcp-sql
+
+      - name: Reseed D1 + assert hash parity
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx wrangler d1 execute revealpoe2-graph --remote -y --config workers/mcp/wrangler.jsonc --file build/mcp.sql
+          node scripts/check-mcp-seed.js
