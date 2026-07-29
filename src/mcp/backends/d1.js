@@ -23,7 +23,22 @@ export function createD1Backend(db) {
   async function metaValue(key) {
     if (!metaCache.has(key)) {
       const row = await db.prepare('SELECT value FROM meta WHERE key = ?').bind(key).first();
-      metaCache.set(key, row ? row.value : null);
+      if (row) {
+        metaCache.set(key, row.value);
+      } else {
+        // Oversized values (e.g. the planner projection) are split across
+        // `<key>:chunk:0..n-1` rows by scripts/build-mcp-sql.js, with a
+        // `<key>:chunks` row recording the count — see that file for why.
+        const chunksRow = await db.prepare('SELECT value FROM meta WHERE key = ?').bind(`${key}:chunks`).first();
+        if (chunksRow) {
+          const n = Number(chunksRow.value);
+          const rows = await Promise.all(Array.from({ length: n }, (_, i) =>
+            db.prepare('SELECT value FROM meta WHERE key = ?').bind(`${key}:chunk:${i}`).first()));
+          metaCache.set(key, rows.map((r) => r?.value ?? '').join(''));
+        } else {
+          metaCache.set(key, null);
+        }
+      }
     }
     return metaCache.get(key);
   }

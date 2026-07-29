@@ -105,7 +105,24 @@ const metaRows = {
   pointBudget: String(tree.meta.pointBudget),
   ascendancyBudget: String(tree.meta.ascendancyBudget),
 };
-for (const [k, v] of Object.entries(metaRows)) out.push(`INSERT INTO meta VALUES(${q(k)},${q(v)});`);
+// D1/miniflare cap a single SQL statement around 100KB. A few meta values
+// (the planner projection) blow past that as one row, so split any oversized
+// value into fixed-size chunks BEFORE escaping — reassembly on read is pure
+// concatenation, so a plain character-boundary slice of the raw string is fine.
+const META_CHUNK_SIZE = 80_000;
+for (const [k, v] of Object.entries(metaRows)) {
+  if (v.length <= META_CHUNK_SIZE) {
+    out.push(`INSERT INTO meta VALUES(${q(k)},${q(v)});`);
+    continue;
+  }
+  const n = Math.ceil(v.length / META_CHUNK_SIZE);
+  for (let i = 0; i < n; i++) {
+    const piece = v.slice(i * META_CHUNK_SIZE, (i + 1) * META_CHUNK_SIZE);
+    out.push(`INSERT INTO meta VALUES(${q(`${k}:chunk:${i}`)},${q(piece)});`);
+  }
+  out.push(`INSERT INTO meta VALUES(${q(`${k}:chunks`)},${q(String(n))});`);
+  console.log(`[mcp-sql] meta.${k} is ${v.length} chars — split into ${n} chunks of <=${META_CHUNK_SIZE}`);
+}
 
 out.push(
   `CREATE INDEX idx_edges_src ON edges(src, type);`,
