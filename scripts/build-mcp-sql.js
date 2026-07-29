@@ -118,7 +118,13 @@ out.push(
 );
 
 const dest = path.join(ROOT, 'build', 'mcp.sql');
-fs.writeFileSync(dest, out.join('\n') + '\n');
+// Publish atomically: write to a unique temp file in the same directory, then
+// rename onto dest. Same-directory rename is atomic on POSIX, so a concurrent
+// reader (e.g. test/mcp/d1-adapter.js) always sees either the old complete
+// file or the new one — never a torn write.
+const tmp = `${dest}.tmp-${process.pid}`;
+fs.writeFileSync(tmp, out.join('\n') + '\n');
+fs.renameSync(tmp, dest);
 const rows = nodes.length + graph.edges.length + tree.nodes.length + tree.edges.length
   + Object.keys(metaRows).length + nodes.length; // + FTS rows
 console.log(`[mcp-sql] wrote ${dest}: ${out.length} statements, ~${rows} rows written on import`
