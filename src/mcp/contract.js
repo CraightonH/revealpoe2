@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { schema } from './tools/schema.js';
 import { find, explain } from './tools/find.js';
 import { gem, item, affix, slot, ascendancy, passives } from './tools/entities.js';
+import { traverse } from './tools/traverse.js';
 import { KINDS } from './kinds.js';
 
 const limit = z.number().int().min(1).max(100).optional();
@@ -33,4 +34,5 @@ export const TOOLS = [
   { name: 'slot', description: 'A gear slot: what it accepts, grouped by item class.', inputSchema: { name: z.string().min(2) }, handler: slot },
   { name: 'ascendancy', description: 'An ascendancy: its class and passives with tree hashes + stat lines.', inputSchema: { name: z.string().min(2) }, handler: ascendancy },
   { name: 'passives', description: 'Search passive tree nodes by name or intent; returns tree hashes usable in build_link notables.', inputSchema: { query: z.string().min(2), limit }, handler: passives },
+  { name: 'traverse', description: 'Typed multi-hop graph walk for questions no semantic tool covers. Compose hops from schema() relations; results are refs only, capped. Example: unique --has_base(out)--> base <--rolls_on(in)-- affixes.', inputSchema: { start: z.object({ kind: z.enum(KINDS), slug: z.string() }), hops: z.array(z.object({ relation: z.string(), direction: z.enum(['out', 'in']) })).min(1).max(4), limit }, handler: traverse },
 ];
