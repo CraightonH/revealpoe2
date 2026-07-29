@@ -50,6 +50,22 @@ export function createD1Backend(db) {
     return (await stmt.all()).results.map(toEdge);
   }
 
+  // Batched sibling of edgeQuery — one IN(...) query per CHUNK ids instead of
+  // one query per id, so a wide traversal frontier doesn't spend one D1
+  // subrequest per node (Workers free tier caps subrequests at 50/request).
+  async function edgeQueryMany(col, ids, type) {
+    const out = [];
+    for (let i = 0; i < ids.length; i += CHUNK) {
+      const chunk = ids.slice(i, i + CHUNK);
+      if (!chunk.length) continue;
+      const placeholders = chunk.map(() => '?').join(',');
+      const sql = `SELECT type, src, dst FROM edges WHERE ${col} IN (${placeholders})${type ? ' AND type = ?' : ''}`;
+      const stmt = type ? db.prepare(sql).bind(...chunk, type) : db.prepare(sql).bind(...chunk);
+      out.push(...(await stmt.all()).results.map(toEdge));
+    }
+    return out;
+  }
+
   return {
     async getNode(id) {
       return toNode(await db.prepare(`SELECT ${NODE_COLS} FROM nodes WHERE id = ?`).bind(id).first());
@@ -78,6 +94,8 @@ export function createD1Backend(db) {
     },
     async edgesFrom(id, type = null) { return edgeQuery('src', id, type); },
     async edgesTo(id, type = null) { return edgeQuery('dst', id, type); },
+    async edgesFromMany(ids, type = null) { return edgeQueryMany('src', ids, type); },
+    async edgesToMany(ids, type = null) { return edgeQueryMany('dst', ids, type); },
     async search(query, { kind = null, limit = 25 } = {}) {
       const match = ftsQuery(query);
       if (!match) return [];

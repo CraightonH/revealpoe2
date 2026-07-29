@@ -42,3 +42,39 @@ test('fs and d1 agree on non-search methods (equivalence)', async (t) => {
   const dset = new Set(ds.map((h) => h.slug));
   assert.ok(fsr.some((h) => dset.has(h.slug)), 'top fs hit present in d1 results');
 });
+
+test('edgesFromMany/edgesToMany agree between fs and d1, including the >90-id chunking path', async (t) => {
+  const d1 = await makeD1();
+  if (!d1) { t.skip('node:sqlite unavailable'); return; }
+  const fs = createFsBackend();
+  const norm = (list) => list.map((e) => `${e.type}|${e.from}|${e.to}`).sort();
+
+  // Affix/*/LocalAttributeRequirements is the measured worst-case fan-out
+  // (940 rolls_on edges) — its rolls_on targets alone exceed the 90-id
+  // chunk boundary, so a single query against them exercises chunking.
+  const hub = await fs.nodeBySlug('affix', 'localattributerequirements');
+  assert.ok(hub, 'worst fan-out affix findable by slug');
+  const hubEdges = await fs.edgesFrom(hub.id, 'rolls_on');
+  const ids = hubEdges.map((e) => e.to);
+  assert.ok(ids.length > 90, 'need >90 ids to exercise the d1 chunking path');
+
+  const [fromD1, fromFs] = await Promise.all([
+    d1.edgesFromMany(ids, 'rolls_on'),
+    fs.edgesFromMany(ids, 'rolls_on'),
+  ]);
+  assert.deepEqual(norm(fromD1), norm(fromFs));
+
+  const [toD1, toFs] = await Promise.all([
+    d1.edgesToMany(ids, 'rolls_on'),
+    fs.edgesToMany(ids, 'rolls_on'),
+  ]);
+  assert.deepEqual(norm(toD1), norm(toFs));
+  assert.ok(toD1.length > 0, 'incoming rolls_on edges exist for these bases');
+
+  // No type filter — flat union across all ids for both directions.
+  const [fromD1All, fromFsAll] = await Promise.all([
+    d1.edgesFromMany(ids),
+    fs.edgesFromMany(ids),
+  ]);
+  assert.deepEqual(norm(fromD1All), norm(fromFsAll));
+});

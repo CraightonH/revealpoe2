@@ -115,13 +115,26 @@ for (const [k, v] of Object.entries(metaRows)) {
     out.push(`INSERT INTO meta VALUES(${q(k)},${q(v)});`);
     continue;
   }
-  const n = Math.ceil(v.length / META_CHUNK_SIZE);
-  for (let i = 0; i < n; i++) {
-    const piece = v.slice(i * META_CHUNK_SIZE, (i + 1) * META_CHUNK_SIZE);
-    out.push(`INSERT INTO meta VALUES(${q(`${k}:chunk:${i}`)},${q(piece)});`);
+  // Boundaries are plain UTF-16 offsets, which can land between the two
+  // halves of a surrogate pair. Reassembly is pure concatenation (see above),
+  // so a split pair would silently corrupt one character — back the boundary
+  // off by one when it lands on a high surrogate (0xD800-0xDBFF).
+  const pieces = [];
+  let start = 0;
+  while (start < v.length) {
+    let end = Math.min(start + META_CHUNK_SIZE, v.length);
+    if (end < v.length) {
+      const code = v.charCodeAt(end - 1);
+      if (code >= 0xd800 && code <= 0xdbff) end -= 1;
+    }
+    pieces.push(v.slice(start, end));
+    start = end;
   }
-  out.push(`INSERT INTO meta VALUES(${q(`${k}:chunks`)},${q(String(n))});`);
-  console.log(`[mcp-sql] meta.${k} is ${v.length} chars — split into ${n} chunks of <=${META_CHUNK_SIZE}`);
+  pieces.forEach((piece, i) => {
+    out.push(`INSERT INTO meta VALUES(${q(`${k}:chunk:${i}`)},${q(piece)});`);
+  });
+  out.push(`INSERT INTO meta VALUES(${q(`${k}:chunks`)},${q(String(pieces.length))});`);
+  console.log(`[mcp-sql] meta.${k} is ${v.length} chars — split into ${pieces.length} chunks of <=${META_CHUNK_SIZE}`);
 }
 
 out.push(

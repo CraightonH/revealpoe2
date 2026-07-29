@@ -24,15 +24,17 @@ export async function traverse(backend, { start, hops, limit = 50 }) {
   const hopCounts = [];
   let capped = false;
   for (const hop of hops) {
+    // One batched query per hop instead of one per frontier node — a wide
+    // frontier (capped at 500) would otherwise spend one D1 subrequest per
+    // node, blowing past the Workers free-tier subrequest cap well before
+    // FRONTIER_CAP is reached.
+    const edges = hop.direction === 'in'
+      ? await backend.edgesToMany(frontier, hop.relation)
+      : await backend.edgesFromMany(frontier, hop.relation);
     const next = new Set();
-    outer: for (const id of frontier) {
-      const edges = hop.direction === 'in'
-        ? await backend.edgesTo(id, hop.relation)
-        : await backend.edgesFrom(id, hop.relation);
-      for (const e of edges) {
-        next.add(hop.direction === 'in' ? e.from : e.to);
-        if (next.size >= FRONTIER_CAP) { capped = true; break outer; }
-      }
+    for (const e of edges) {
+      next.add(hop.direction === 'in' ? e.from : e.to);
+      if (next.size >= FRONTIER_CAP) { capped = true; break; }
     }
     frontier = [...next];
     hopCounts.push(frontier.length);

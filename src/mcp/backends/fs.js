@@ -81,6 +81,16 @@ export function createFsBackend() {
     async nodesByIds(ids) { return ids.map((id) => wrap(getNode(id))).filter(Boolean); },
     async edgesFrom(id, type = null) { return edgesFrom(id, type ?? undefined).map(edge); },
     async edgesTo(id, type = null) { return edgesTo(id, type ?? undefined).map(edge); },
+    async edgesFromMany(ids, type = null) {
+      const out = [];
+      for (const id of ids) out.push(...edgesFrom(id, type ?? undefined).map(edge));
+      return out;
+    },
+    async edgesToMany(ids, type = null) {
+      const out = [];
+      for (const id of ids) out.push(...edgesTo(id, type ?? undefined).map(edge));
+      return out;
+    },
     async search(query, { kind = null, limit = 25 } = {}) {
       const q = String(query).toLowerCase();
       const tokens = q.split(/\s+/).filter(Boolean);
