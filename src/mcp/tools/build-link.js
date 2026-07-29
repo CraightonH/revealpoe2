@@ -4,6 +4,10 @@
 // names refuse with the candidate list.
 import { slugify } from '../../data/slug.js';
 import { err, resolveRef } from './util.js';
+import { shortestPath } from '../../../public/js/passive-path.js';
+import { allocate } from '../../../public/js/passive-alloc.js';
+// NOTE path depth: src/mcp/tools/ -> repo root is ../../.. — verify relative
+// paths compile in node BEFORE writing more code (node -e "import('./src/mcp/tools/build-link.js')").
 
 const NOTABLE_KINDS = new Set(['notable', 'keystone', 'ascNotable']);
 
@@ -92,4 +96,87 @@ export async function resolveSpec(backend, planner, spec) {
   }
 
   return { cls, asc, skills, gear, notables, warnings };
+}
+
+export function greedyAllocate(adj, starts, targetHashes, isPathable) {
+  let allocated = new Set();
+  const order = [];
+  const pending = new Set();
+  for (const t of targetHashes) {
+    if (starts.includes(t)) order.push(t); // a class start is "free"
+    else pending.add(t);
+  }
+  while (pending.size) {
+    let best = null;
+    for (const t of pending) {
+      if (allocated.has(t)) { best = { t, path: [] }; break; } // picked up en route
+      const p = shortestPath(adj, new Set([...allocated, ...starts]), t, { isPathable });
+      if (p && (!best || p.length < best.path.length)) best = { t, path: p };
+    }
+    if (!best) return { unreachable: [...pending] };
+    for (const h of best.path) allocated = allocate(adj, allocated, starts, h); // starts is an ARRAY — see traps
+    order.push(best.t);
+    pending.delete(best.t);
+  }
+  return { allocated, order };
+}
+
+export function isConnected(adj, start, allocated) {
+  if (!allocated.size) return true;
+  const seen = new Set();
+  const q = [start];
+  while (q.length) {
+    const h = q.pop();
+    for (const nb of adj.get(h) ?? []) {
+      if (allocated.has(nb) && !seen.has(nb)) { seen.add(nb); q.push(nb); }
+    }
+  }
+  return seen.size === allocated.size;
+}
+
+export async function allocateSpecTree(backend, { cls, asc, notables }) {
+  const [tm, adj, all] = await Promise.all([backend.treeMeta(), backend.passiveAdj(), backend.passiveNodes()]);
+  const info = new Map(all.map((p) => [p.h, p]));
+  const startHash = tm.classStarts[cls.name];
+  if (startHash == null) return err('invalid', `no tree start for class ${cls.name}`);
+
+  const mainTargets = [];
+  const ascTargets = [];
+  for (const p of notables) {
+    if (p.asc == null) mainTargets.push(p);
+    else if (asc && p.asc === asc.gggId) ascTargets.push(p);
+    else {
+      return err('invalid', `'${p.name}' belongs to ascendancy ${p.asc}, not ${asc ? asc.gggId : '(no ascendancy chosen)'}`);
+    }
+  }
+
+  // TRAP: isPathable must exclude ascendancy nodes or main paths route through them.
+  const isMainPathable = (h) => { const p = info.get(h); return !!p && p.asc == null; };
+  const main = greedyAllocate(adj, [startHash], mainTargets.map((p) => p.h), isMainPathable);
+  if (main.unreachable) {
+    return err('unreachable', `cannot connect to the ${cls.name} start: ${main.unreachable.map((h) => info.get(h)?.name ?? h).join(', ')}`);
+  }
+
+  let ascResult = { allocated: new Set(), order: [] };
+  if (ascTargets.length) {
+    const ascStart = tm.ascStarts[asc.gggId];
+    if (ascStart == null) return err('invalid', `no ascendancy start recorded for ${asc.gggId}`);
+    const inThisAsc = (h) => info.get(h)?.asc === asc.gggId;
+    ascResult = greedyAllocate(adj, [ascStart], ascTargets.map((p) => p.h), inThisAsc);
+    if (ascResult.unreachable) {
+      return err('unreachable', `ascendancy nodes unreachable from the ${asc.name} start: ${ascResult.unreachable.map((h) => info.get(h)?.name ?? h).join(', ')}`);
+    }
+  }
+
+  // TRAP: a disconnected tree code decodes fine and renders wrong. Re-verify
+  // from scratch — never trust the allocator's own bookkeeping.
+  if (!isConnected(adj, startHash, main.allocated)) {
+    return err('invalid', 'internal error: emitted main tree is not connected to the class start');
+  }
+
+  return {
+    mainAllocated: main.allocated, mainOrder: main.order,
+    ascAllocated: ascResult.allocated, ascOrder: ascResult.order,
+    info, tm,
+  };
 }
