@@ -6,8 +6,13 @@ import { slugify } from '../../data/slug.js';
 import { err, resolveRef } from './util.js';
 import { shortestPath } from '../../../public/js/passive-path.js';
 import { allocate } from '../../../public/js/passive-alloc.js';
+import { encodeGroup } from '../../../public/js/build-code.js';
+import { validateBuild, SCHEMA_VERSION } from '../../../public/js/build-store.js';
+import { synthesizeState, encode } from '../../../public/js/passive-code.js';
 // NOTE path depth: src/mcp/tools/ -> repo root is ../../.. — verify relative
 // paths compile in node BEFORE writing more code (node -e "import('./src/mcp/tools/build-link.js')").
+
+const URL_PREFIX = 'https://revealpoe2.com/builds#/import/';
 
 const NOTABLE_KINDS = new Set(['notable', 'keystone', 'ascNotable']);
 
@@ -178,5 +183,93 @@ export async function allocateSpecTree(backend, { cls, asc, notables }) {
     mainAllocated: main.allocated, mainOrder: main.order,
     ascAllocated: ascResult.allocated, ascOrder: ascResult.order,
     info, tm,
+  };
+}
+
+async function buildOne(backend, planner, spec) {
+  const res = await resolveSpec(backend, planner, spec);
+  if (res.error) return res;
+  const tree = await allocateSpecTree(backend, res);
+  if (tree.error) return tree;
+
+  const { cls, asc } = res;
+  // ascByte: 1-based index from the gggId's trailing digit ('Sorceress2' -> 2) —
+  // exactly how the site's own tree panel derives it.
+  const ascByte = asc ? Number(String(asc.gggId).match(/\d+$/)?.[0] ?? 0) || 0 : 0;
+  const classAttr = tree.tm.classAttrs[cls.name] ?? 'str';
+  const allocated = [...tree.mainAllocated, ...tree.ascAllocated];
+
+  // Refuse-vs-warn: an over-budget tree still decodes and renders, it's just
+  // not a legal in-game allocation — that's a warning, not a refusal.
+  if (tree.mainAllocated.size > tree.tm.pointBudget) {
+    res.warnings.push(`passive points spent (${tree.mainAllocated.size}) exceed the ${tree.tm.pointBudget}-point budget`);
+  }
+  if (tree.ascAllocated.size > tree.tm.ascendancyBudget) {
+    res.warnings.push(`ascendancy points spent (${tree.ascAllocated.size}) exceed the ${tree.tm.ascendancyBudget}-point budget`);
+  }
+
+  let code = null;
+  if (allocated.length) {
+    const state = synthesizeState({
+      allocated,
+      ascByte,
+      ascOf: (h) => tree.info.get(h)?.asc ?? null,
+      isAttr: (h) => Boolean(tree.info.get(h)?.attr),
+      attrOf: () => classAttr,
+    });
+    code = encode(state);
+  }
+
+  const notablePriority = [...tree.mainOrder, ...tree.ascOrder];
+  const build = {
+    schema: SCHEMA_VERSION,
+    name: spec.name ?? 'Untitled Build',
+    notes: spec.notes ?? '',
+    description: spec.description ?? '',
+    class: cls.slug,
+    ascendancy: asc?.slug ?? null,
+    gear: res.gear,
+    unassigned: [],
+    skills: res.skills.map(({ _name, ...s }) => s),
+    tree: { code, notablePriority },
+    variants: [],
+  };
+  const { ok, errors } = validateBuild(build);
+  if (!ok) return err('invalid', `assembled build failed validation: ${errors.join('; ')}`);
+  return { build, res, tree, notablePriority };
+}
+
+export async function buildLink(backend, spec) {
+  const planner = await backend.planner();
+  const parent = await buildOne(backend, planner, spec);
+  if (parent.error) return parent;
+
+  const variantEntries = [];
+  const variantWarnings = [];
+  for (const v of spec.variants ?? []) {
+    const { label, ...overrides } = v;
+    const merged = { ...spec, ...overrides, variants: undefined };
+    const r = await buildOne(backend, planner, merged);
+    if (r.error) {
+      return { ...r, error: { ...r.error, message: `variant '${label ?? '?'}': ${r.error.message}` } };
+    }
+    variantWarnings.push(...r.res.warnings.map((w) => `variant '${label}': ${w}`));
+    variantEntries.push({ label: label ?? `Variant ${variantEntries.length + 1}`, build: r.build });
+  }
+
+  const code = await encodeGroup({ parent: parent.build, variants: variantEntries });
+  return {
+    url: URL_PREFIX + code,
+    points_spent: { passive: parent.tree.mainAllocated.size, ascendancy: parent.tree.ascAllocated.size },
+    notable_priority: parent.notablePriority.map((h) => ({ hash: h, name: parent.tree.info.get(h)?.name ?? null })),
+    resolved: {
+      class: parent.res.cls.slug,
+      ascendancy: parent.res.asc?.slug ?? null,
+      skills: parent.res.skills.map((s) => ({ gem: s.gem.slug, name: s._name, supports: s.supports.map((x) => x.slug) })),
+      gear: Object.fromEntries(Object.entries(parent.res.gear).map(([k, g]) => [k, g.item])),
+      notables: parent.notablePriority.map((h) => ({ hash: h, name: parent.tree.info.get(h)?.name ?? null })),
+      variants: variantEntries.map((v) => v.label),
+    },
+    warnings: [...parent.res.warnings, ...variantWarnings],
   };
 }
