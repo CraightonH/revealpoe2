@@ -1,0 +1,15 @@
+// workers/mcp/wrangler.jsonc
+{
+  "name": "revealpoe2-mcp",
+  "main": "index.js",
+  "compatibility_date": "2026-07-01",
+  "observability": { "enabled": true },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "revealpoe2-graph",
+      "database_id": "TO_FILL_AFTER_D1_CREATE"
+    }
+  ],
+  "routes": [{ "pattern": "mcp.revealpoe2.com", "custom_domain": true }]
+}
