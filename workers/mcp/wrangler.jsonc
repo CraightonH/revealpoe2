@@ -9,7 +9,7 @@
     {
       "binding": "DB",
       "database_name": "revealpoe2-graph",
-      "database_id": "TO_FILL_AFTER_D1_CREATE"
+      "database_id": "e4422d3b-5450-450f-a376-7f29ffb5ab35"
     }
   ],
   "routes": [{ "pattern": "mcp.revealpoe2.com", "custom_domain": true }]
