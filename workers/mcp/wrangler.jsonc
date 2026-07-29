@@ -3,6 +3,7 @@
   "name": "revealpoe2-mcp",
   "main": "index.js",
   "compatibility_date": "2026-07-01",
+  "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
   "d1_databases": [
     {
