@@ -1,0 +1,100 @@
+name: TEST r2 upload (throwaway)
+
+# Throwaway diagnostic: isolate the R2 upload SignatureDoesNotMatch from the
+# 6-min scrape pipeline. Uploads a ~600 MiB dummy (matches the real cache, so it
+# also exercises any single-PUT size limit) via several methods, each
+# continue-on-error, so ONE ~1-min dispatch reveals which method R2 accepts.
+# Landed on main with [skip ci] so deploy.yml does not fire. DELETE once fixed.
+
+on:
+  workflow_dispatch:
+
+env:
+  R2_BUCKET: revealpoe2-cache
+  AWS_DEFAULT_REGION: auto
+  AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+  AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_ENDPOINT: https://${{ secrets.CLOUDFLARE_ACCOUNT_ID }}.r2.cloudflarestorage.com
+    steps:
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Setup — versions + dummy + reset config
+        run: |
+          set -x
+          aws --version || true
+          dd if=/dev/zero of=dummy.bin bs=1M count=600 status=none
+          ls -lh dummy.bin
+          aws configure set default.s3.addressing_style auto
+          aws configure set default.s3.payload_signing_enabled false
+
+      - name: "P) path-style addressing"
+        continue-on-error: true
+        run: |
+          aws configure set default.s3.addressing_style path
+          aws configure set default.s3.payload_signing_enabled false
+          if aws s3 cp dummy.bin "s3://${R2_BUCKET}/_diag/p.bin" --endpoint-url "$R2_ENDPOINT"; then
+            echo "::notice::RESULT P (path-style) = PASS"
+          else
+            echo "::error::RESULT P (path-style) = FAIL"
+          fi
+
+      - name: "S) payload_signing_enabled (virtual-host)"
+        continue-on-error: true
+        run: |
+          aws configure set default.s3.addressing_style auto
+          aws configure set default.s3.payload_signing_enabled true
+          if aws s3 cp dummy.bin "s3://${R2_BUCKET}/_diag/s.bin" --endpoint-url "$R2_ENDPOINT"; then
+            echo "::notice::RESULT S (payload-signing) = PASS"
+          else
+            echo "::error::RESULT S (payload-signing) = FAIL"
+          fi
+
+      - name: "PS) path-style + payload signing"
+        continue-on-error: true
+        run: |
+          aws configure set default.s3.addressing_style path
+          aws configure set default.s3.payload_signing_enabled true
+          if aws s3 cp dummy.bin "s3://${R2_BUCKET}/_diag/ps.bin" --endpoint-url "$R2_ENDPOINT"; then
+            echo "::notice::RESULT PS (path+payload) = PASS"
+          else
+            echo "::error::RESULT PS (path+payload) = FAIL"
+          fi
+
+      - name: "R) rclone"
+        continue-on-error: true
+        env:
+          RCLONE_CONFIG_R2_TYPE: s3
+          RCLONE_CONFIG_R2_PROVIDER: Cloudflare
+          RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          RCLONE_CONFIG_R2_ENDPOINT: https://${{ secrets.CLOUDFLARE_ACCOUNT_ID }}.r2.cloudflarestorage.com
+          RCLONE_CONFIG_R2_REGION: auto
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq rclone
+          rclone --version | head -1
+          if rclone copyto dummy.bin "R2:${R2_BUCKET}/_diag/r.bin"; then
+            echo "::notice::RESULT R (rclone) = PASS"
+          else
+            echo "::error::RESULT R (rclone) = FAIL"
+          fi
+
+      - name: "W) wrangler r2 object put (CF API token, no SigV4)"
+        continue-on-error: true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if npx wrangler@4 r2 object put "${R2_BUCKET}/_diag/w.bin" --file dummy.bin --remote; then
+            echo "::notice::RESULT W (wrangler) = PASS"
+          else
+            echo "::error::RESULT W (wrangler) = FAIL"
+          fi
