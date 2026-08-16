@@ -1,8 +1,8 @@
 name: TEST r2 upload (throwaway)
 
-# Throwaway diagnostic — capture R2's RAW response + the signed request for a
-# failing PUT vs a working GET, to pinpoint why writes get SignatureDoesNotMatch
-# while reads succeed with the same keys. No credential changes. DELETE when done.
+# Throwaway: find the exact config that stops aws-cli adding the CRC64NVME
+# streaming-trailer checksum R2 rejects. Each method attempts a PUT and reports
+# PASS/FAIL plus whether the x-amz-trailer header is still present. [skip ci].
 
 on:
   workflow_dispatch:
@@ -19,31 +19,65 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
       R2_ENDPOINT: https://${{ secrets.CLOUDFLARE_ACCOUNT_ID }}.r2.cloudflarestorage.com
     steps:
-      - name: aws version + tiny dummy
+      - name: setup
         run: |
           aws --version
           head -c 1048576 /dev/zero > dummy.bin
 
-      - name: "PUT (fails) — capture signed request + R2 response"
+      - name: "A) env AWS_REQUEST_CHECKSUM_CALCULATION=when_required"
         continue-on-error: true
+        env:
+          AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+          AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
         run: |
-          set -x
-          aws s3api put-object --bucket "$R2_BUCKET" --key "_diag/probe.bin" \
-            --body dummy.bin --endpoint-url "$R2_ENDPOINT" --debug 2> put.log || true
-          echo "=================== PUT: SignedHeaders ==================="
-          grep -aoE "SignedHeaders=[^,]+" put.log | tail -1
-          echo "=================== PUT: CanonicalRequest ==================="
-          awk '/CanonicalRequest:/{f=1} f{print} /StringToSign:/{if(f>1)exit; f++}' put.log | sed -n '1,40p'
-          echo "=================== PUT: R2 response status + body ==================="
-          grep -aiE "Response headers|https_response|<Code>|<Message>|x-amz-|cf-ray|Signature|StringToSign we|expecting|status_code" put.log | tail -40
+          rm -f ~/.aws/config
+          trailer=$(aws s3api put-object --bucket "$R2_BUCKET" --key "_diag/a.bin" --body dummy.bin \
+            --endpoint-url "$R2_ENDPOINT" --debug 2>&1 | grep -c "x-amz-trailer" || true)
+          if aws s3api put-object --bucket "$R2_BUCKET" --key "_diag/a.bin" --body dummy.bin --endpoint-url "$R2_ENDPOINT" >/dev/null 2>&1; then
+            echo "::notice::A env = PASS (trailer-lines-in-debug=$trailer)"
+          else
+            echo "::error::A env = FAIL (trailer-lines-in-debug=$trailer)"
+          fi
 
-      - name: "GET (works) — capture signed request for comparison"
+      - name: "B) config request_checksum_calculation=when_required (top-level)"
         continue-on-error: true
         run: |
-          set -x
-          aws s3api head-object --bucket "$R2_BUCKET" --key "cache.tar.zst" \
-            --endpoint-url "$R2_ENDPOINT" --debug 2> get.log || true
-          echo "=================== GET: SignedHeaders ==================="
-          grep -aoE "SignedHeaders=[^,]+" get.log | tail -1
-          echo "=================== GET: status ==================="
-          grep -aiE "https_response|status_code" get.log | tail -5
+          rm -f ~/.aws/config
+          aws configure set default.request_checksum_calculation when_required
+          aws configure set default.response_checksum_validation when_required
+          if aws s3api put-object --bucket "$R2_BUCKET" --key "_diag/b.bin" --body dummy.bin --endpoint-url "$R2_ENDPOINT" >/dev/null 2>&1; then
+            echo "::notice::B config = PASS"
+          else
+            echo "::error::B config = FAIL"
+          fi
+
+      - name: "C) both env + config"
+        continue-on-error: true
+        env:
+          AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+          AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+        run: |
+          rm -f ~/.aws/config
+          aws configure set default.request_checksum_calculation when_required
+          aws configure set default.response_checksum_validation when_required
+          if aws s3api put-object --bucket "$R2_BUCKET" --key "_diag/c.bin" --body dummy.bin --endpoint-url "$R2_ENDPOINT" >/dev/null 2>&1; then
+            echo "::notice::C both = PASS"
+          else
+            echo "::error::C both = FAIL"
+          fi
+
+      - name: "D) winner @ 600 MiB multipart (env+config)"
+        continue-on-error: true
+        env:
+          AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+          AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+        run: |
+          rm -f ~/.aws/config
+          aws configure set default.request_checksum_calculation when_required
+          aws configure set default.response_checksum_validation when_required
+          dd if=/dev/zero of=big.bin bs=1M count=600 status=none
+          if aws s3 cp big.bin "s3://${R2_BUCKET}/_diag/d.bin" --endpoint-url "$R2_ENDPOINT"; then
+            echo "::notice::D 600MiB multipart = PASS"
+          else
+            echo "::error::D 600MiB multipart = FAIL"
+          fi
