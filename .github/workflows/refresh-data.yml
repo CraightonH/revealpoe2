@@ -105,9 +105,16 @@ jobs:
           tar --zstd -cf "${CACHE_KEY}" data/source public/img public/og
           aws s3 cp "${CACHE_KEY}" "s3://${R2_BUCKET}/${CACHE_KEY}" --endpoint-url "$R2_ENDPOINT"
 
+  # DISABLED 2026-09-07. This job reseeded the entire graph into D1 on every
+  # refresh — ~253k rows in a single bulk write, 2.5x the D1 free-tier cap of
+  # 100k rows/day, which tripped quota alerts on every weekly run. The MCP
+  # server it feeds (revealpoe2-mcp) is unused, so the reseed stays off until
+  # the integration is reworked — see docs/TODO.md. Drop the `if:` to re-enable.
+  #
   # Separate job so a D1 failure never fails the site refresh above. This is
   # the ONLY place that reseeds D1 — never do it from deploy.yml (code-only).
   seed-mcp:
+    if: false
     needs: refresh
     runs-on: ubuntu-latest
     steps:
