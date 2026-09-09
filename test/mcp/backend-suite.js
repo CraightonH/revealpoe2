@@ -22,7 +22,7 @@ export function runBackendSuite(name, makeBackend) {
     });
     await t.test('schemaInfo', async () => {
       const info = await b.schemaInfo();
-      assert.equal(info.kinds.keyword, 720);
+      assert.equal(info.kinds.keyword, 770); // 0.5.5 mirror
       assert.equal(info.relations.length, 11);
     });
     await t.test('planner + tree', async () => {

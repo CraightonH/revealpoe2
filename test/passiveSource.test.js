@@ -71,9 +71,9 @@ test('parseTree: returns the expected node/edge magnitudes', () => {
   const { nodes, edges, meta } = parseTree();
   // 5150 total passives; placeholders without a name are dropped, so <=5150.
   assert.ok(nodes.length > 4000 && nodes.length <= 5150, `nodes=${nodes.length}`);
-  // 5566: mastery (is_icon_only) nodes are dropped and contracted out of the edge
-  // graph — direct real↔real connections plus per-mastery neighbour cliques.
-  assert.equal(edges.length, 5566);
+  // 5568 (0.5.5 mirror): mastery (is_icon_only) nodes are dropped and contracted
+  // out of the edge graph — direct real↔real connections plus per-mastery cliques.
+  assert.equal(edges.length, 5568);
   // every edge endpoint resolves to a node
   const ids = new Set(nodes.map((n) => n.h));
   for (const e of edges) {
@@ -101,9 +101,9 @@ test('parseTree: live ascendancies exclude PoE1 placeholders', () => {
 test('parseTree: arc vs straight edge counts match the data', () => {
   const { edges } = parseTree();
   const arcs = edges.filter((e) => e.arc);
-  // Observed after mastery contraction: 1615 arcs + 3951 straight = 5566 total.
+  // Observed after mastery contraction (0.5.5 mirror): 1615 arcs + 3953 straight = 5568.
   assert.equal(arcs.length, 1615);
-  assert.equal(edges.length - arcs.length, 3951);
+  assert.equal(edges.length - arcs.length, 3953);
 });
 
 test('arc edges carry a center, radius and angle span', () => {

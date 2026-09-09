@@ -7,14 +7,15 @@ import { REPOE } from '../../scripts/graph/source.js';
 
 // Expected family node counts (Rune 221 source entries collapse to 174 identities;
 // every other family is one node per entry). See docs augments-graph-design spec.
+// Pinned to the 0.5.5 mirror (SoulCore 34 -> 52: the patch's new endgame Soul Cores).
 const EXPECTED_BY_FAMILY = {
   AbyssalEye: 4,
   CongealedMist: 1,
   Idol: 35,
   Rune: 174,
-  SoulCore: 34,
+  SoulCore: 52,
 };
-const EXPECTED_TOTAL = Object.values(EXPECTED_BY_FAMILY).reduce((a, b) => a + b, 0); // 248
+const EXPECTED_TOTAL = Object.values(EXPECTED_BY_FAMILY).reduce((a, b) => a + b, 0); // 266
 
 function countByFamily(nodes) {
   const out = {};
@@ -24,7 +25,7 @@ function countByFamily(nodes) {
 
 test('augmentNodes: total node count and per-family breakdown', () => {
   const { nodes } = augmentNodes();
-  assert.equal(nodes.length, EXPECTED_TOTAL, '248 augment identities total');
+  assert.equal(nodes.length, EXPECTED_TOTAL, '266 augment identities total');
   assert.ok(nodes.every((n) => n.kind === 'augment'), 'every node is kind augment');
   assert.deepEqual(countByFamily(nodes), EXPECTED_BY_FAMILY, 'per-family node counts');
 });
@@ -105,7 +106,7 @@ test('augmentEdges: every sockets_into edge resolves to a live Class node; deriv
   const nodeIds = new Set(cNodes.map((n) => n.id));
 
   const edges = augmentEdges(records, nodeIds);
-  assert.equal(edges.length, 1304, '1304 sockets_into edges');
+  assert.equal(edges.length, 1531, '1531 sockets_into edges (0.5.5 mirror)');
   for (const e of edges) {
     assert.equal(e.type, 'sockets_into', 'edge type');
     assert.equal(e.source, 'derived', 'edge source is derived');

@@ -5,8 +5,8 @@ import { gemNodes } from '../../scripts/graph/gems.js';
 
 test('passiveNodes: one node per keystone/notable, Passive/ id scheme', () => {
   const { nodes } = passiveNodes();
-  // 33 keystones + 984 notables + 320 ascendancy notables - 8 empty-name = 1329
-  assert.equal(nodes.length, 1329, `expected 1329 passive nodes, got ${nodes.length}`);
+  // 33 keystones + 984 notables + 321 ascendancy notables - 8 empty-name = 1330 (0.5.5 mirror)
+  assert.equal(nodes.length, 1330, `expected 1330 passive nodes, got ${nodes.length}`);
   const ids = new Set();
   for (const n of nodes) {
     assert.equal(n.kind, 'passive');
@@ -91,9 +91,9 @@ test('passiveEdges: grants resolves to gem nodes; in_ascendancy to ascendancy no
   for (const e of grants) assert.ok(gemIds.has(e.to), `grants target ${e.to} is a gem`);
   for (const e of grants) assert.ok(String(e.from).startsWith('Passive/'), 'grants from a passive');
 
-  // 208 named ascendancy notables sit in a *live* ascendancy; the other 104 named
-  // ones belong to non-live PoE1-legacy ascendancies (no node -> no edge).
-  assert.equal(inAsc.length, 208, `one in_ascendancy edge per live-ascendancy notable, got ${inAsc.length}`);
+  // 209 named ascendancy notables sit in a *live* ascendancy (0.5.5 mirror); the
+  // other 104 named ones belong to non-live PoE1-legacy ascendancies (no node -> no edge).
+  assert.equal(inAsc.length, 209, `one in_ascendancy edge per live-ascendancy notable, got ${inAsc.length}`);
   for (const e of inAsc) assert.ok(ascIds.has(e.to), `in_ascendancy target ${e.to} is an ascendancy`);
 
   // Hollow Resonance Technique -> the Hollow Resonance gem; and -> Monk1 ascendancy.

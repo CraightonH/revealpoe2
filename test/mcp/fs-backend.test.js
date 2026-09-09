@@ -47,7 +47,7 @@ test('search finds by name and stat text, respects kind + limit', async () => {
 test('schemaInfo counts match the artifact', async () => {
   const info = await b.schemaInfo();
   assert.equal(Object.keys(info.kinds).length, 12);
-  assert.equal(info.kinds.keyword, 720);
+  assert.equal(info.kinds.keyword, 770); // 0.5.5 mirror
   assert.equal(info.relations.length, 11);
   const rolls = info.relations.find((r) => r.type === 'rolls_on');
   assert.deepEqual(rolls.from, ['affix']);
