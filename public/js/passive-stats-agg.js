@@ -17,9 +17,12 @@
 // Fixed display order of the summed-stat categories.
 export const CATEGORY_ORDER = ['Offense', 'Defense', 'Attributes', 'Other'];
 
-// Strip GGG keyword markup: [HitDamage|Hit] -> "Hit", [Shock] -> "Shock".
+// Strip GGG keyword markup: [HitDamage|Hit] -> "Hit", [Shock] -> "Shock", and
+// the client's inline text markup: "<underline>{Summon Infernal Hound}" ->
+// "Summon Infernal Hound" (the "Grants Skill:" lines on ascendancy nodes).
 export function stripMarkup(line) {
   return String(line)
+    .replace(/<\w+>\{([^}]*)\}/g, '$1')
     .replace(/\[([^\]]+)\]/g, (_, body) => {
       const parts = body.split('|');
       return parts[parts.length - 1];

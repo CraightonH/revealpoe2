@@ -19,6 +19,7 @@ import { buildEmotionIndex, resolveRecipe } from './graph/emotions.js';
 import { ddsUrl } from '../src/data/images.js';
 import { renderGameText, stripGameText, escapeHtml } from '../src/data/keywords.js';
 import { hasDefinition } from '../src/data/keywordDefs.js';
+import { getGemRefByKey } from '../src/data/gems.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const GEN_DIR = path.join(__dirname, '..', 'public', 'generated');
@@ -47,6 +48,46 @@ function emotionIndex() {
     _emotionIndex = buildEmotionIndex(JSON.parse(fs.readFileSync(p, 'utf8')));
   }
   return _emotionIndex;
+}
+
+// GGG's tree strings carry the in-game client's inline text markup, e.g.
+// "Grants Skill: <underline>{Summon Infernal Hound}" (and "<i>{Sekhema}" in
+// flavour). RePoE strings never do, so the shared [tag|text] renderer has no
+// notion of it and would HTML-escape the tag verbatim onto the page. Unwrap to
+// the plain text; the surrounding styling is the card's job.
+const GGG_MARKUP_RE = /<(\w+)>\{([^}]*)\}/g;
+export function stripGggMarkup(text) {
+  return String(text ?? '').replace(GGG_MARKUP_RE, '$2');
+}
+
+// RePoE's passive table for the character tree, keyed by GGG node hash (the
+// two datasets share the hash id space).
+let _repoePassives;
+function repoePassives() {
+  if (!_repoePassives) {
+    const p = path.join(getDataDir(), REPOE, 'passive_skill_trees', 'Default.json');
+    _repoePassives = JSON.parse(fs.readFileSync(p, 'utf8')).passives;
+  }
+  return _repoePassives;
+}
+
+// Granted skill per node hash, as a gem ref ({ slug, name, iconUrl }). GGG's
+// tree only states "Grants Skill: <name>" as prose; RePoE carries the gem's
+// metadata id, which the graph resolves to the gem node. That lets the card
+// render the site's linked line — deep link into /gems plus the gem's own
+// tooltip via data-card-url — exactly as passiveDetail does for graph-driven
+// passive cards. Note the graph itself only carries `grants` edges for
+// keystones/notables, so this goes to RePoE directly: the Pathfinder
+// concoction options are multiple-choice nodes with no graph node at all.
+function grantedSkillByHash() {
+  const map = new Map();
+  for (const rec of Object.values(repoePassives())) {
+    if (!rec.granted_skill || rec.hash === undefined) continue;
+    const ref = getGemRefByKey(rec.granted_skill);
+    if (ref) map.set(rec.hash, ref);
+    else console.warn(`build-passive-tree: ${rec.name} grants ${rec.granted_skill}, not a gem node — rendering as plain text`);
+  }
+  return map;
 }
 
 // Dominant base attribute of a class → the default attribute for path-allocated
@@ -160,6 +201,7 @@ export function buildCards() {
     { key: 'dex', line: renderGameText('+5 to Dexterity', hasDefinition) },
   ];
   const emo = emotionIndex();
+  const grants = grantedSkillByHash();
   const { nodes } = parseGggTree();
   const cards = {};
   for (const n of nodes) {
@@ -169,13 +211,19 @@ export function buildCards() {
     const instill = n.recipe
       ? resolveRecipe(emo, n.recipe).map((e) => ({ key: e.key, name: e.name, iconUrl: e.iconUrl }))
       : null;
+    // When the granted skill resolves to a gem, the template renders its own
+    // linked "Grants Skill:" line, so GGG's prose version of it is dropped.
+    const grantedSkill = grants.get(n.h) ?? null;
+    const statLines = n.stats.flatMap((s) => s.split('\n')).filter(Boolean)
+      .filter((line) => !(grantedSkill && /^Grants Skill:/.test(line)))
+      .map((line) => renderGameText(stripGggMarkup(line), hasDefinition));
     const vm = {
       name: n.name,
       kind: n.k,
       typeLabel: typeLabelForKind(n.k),
       iconUrl: iconWebp(n.icon),
-      statLines: n.stats.flatMap((s) => s.split('\n')).filter(Boolean)
-        .map((line) => renderGameText(line, hasDefinition)),
+      statLines,
+      grantedSkill,
       reminderText: [],
       flavourText: null,
       attrOptions: n.attr ? ATTR_OPTS : null,
@@ -226,7 +274,7 @@ export function buildSearch() {
   const out = {};
   for (const n of nodes) {
     if (n.hidden) continue;
-    const text = [n.name, ...n.stats.map(stripGameText)]
+    const text = [n.name, ...n.stats.map((s) => stripGameText(stripGggMarkup(s)))]
       .filter(Boolean).join(' ').replace(/\s+/g, ' ').trim().toLowerCase();
     out[n.h] = text;
   }
@@ -270,10 +318,8 @@ function main() {
   // file uses for `passives[].id` (NOT the node hash). Its own artifact,
   // lazily fetched only when a user exports: folding ~36 KB gz into
   // passive-tree.json would tax every /passives visitor for a click-time need.
-  const repoePassives = JSON.parse(fs.readFileSync(
-    path.join(getDataDir(), REPOE, 'passive_skill_trees', 'Default.json'), 'utf8')).passives;
   const passiveIds = {};
-  for (const p of Object.values(repoePassives)) {
+  for (const p of Object.values(repoePassives())) {
     if (p.hash !== undefined && p.id) passiveIds[String(p.hash)] = p.id;
   }
   fs.writeFileSync(BUILD_IDS_OUT, JSON.stringify({ passiveIds }));

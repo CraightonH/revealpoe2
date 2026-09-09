@@ -7,6 +7,8 @@ import {
 
 test('stripMarkup unwraps [tag|text] to text and [tag] to tag', () => {
   assert.equal(stripMarkup('15% increased chance to [Shock]'), '15% increased chance to Shock');
+  // GGG client inline markup on granted-skill lines.
+  assert.equal(stripMarkup('Grants Skill: <underline>{Summon Infernal Hound}'), 'Grants Skill: Summon Infernal Hound');
   assert.equal(stripMarkup('[Minion|Minions] deal 10% increased Damage'), 'Minions deal 10% increased Damage');
   assert.equal(stripMarkup('  spaced   out  '), 'spaced out');
 });
