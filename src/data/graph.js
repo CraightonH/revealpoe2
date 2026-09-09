@@ -94,6 +94,13 @@ function slugMap(kind) {
   return m;
 }
 
+// Artifact-level metadata (schema, hashes, provenance summary, `game` = which
+// patch/league the data describes). Read-only; presentation reads `meta.game`
+// for the header badge.
+export function graphMeta() {
+  return state().meta;
+}
+
 export function getNode(id) {
   return state().nodes.get(id) ?? null;
 }

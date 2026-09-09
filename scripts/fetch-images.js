@@ -26,6 +26,7 @@ import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import sharp from 'sharp';
 import { imageRelPath } from '../src/data/images.js';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -172,6 +173,21 @@ export function syncGate({ dds, manifest, exists, force }) {
 // whose path is unchanged is only picked up on a `--force` pass.
 export function needsFetch(onDisk, force) { return force || !onDisk; }
 
+// League wordmarks (Art/2DArt/Logos/POELeagueLogo*.dds) ship at 1080x420 (~350KB)
+// with the text floating in a sea of transparent padding, and the CDN ignores
+// resize params. They render ~40px tall in the site header on every page, so on
+// ingest: trim the padding (else the text is a third of the box), then shrink.
+// 2x the ~160px display width keeps retina crisp.
+export const LOGO_WIDTH = 320;
+export function isLeagueLogo(ddsPath) { return /^Art\/2DArt\/Logos\//i.test(ddsPath); }
+export async function downscaleLogo(buf) {
+  return sharp(buf)
+    .trim()
+    .resize({ width: LOGO_WIDTH, withoutEnlargement: true })
+    .webp({ quality: 85 })
+    .toBuffer();
+}
+
 async function run() {
   if (!fs.existsSync(GRAPH)) {
     console.error('fetch-images: build/graph.json missing — run build:graph first.');
@@ -222,7 +238,8 @@ async function run() {
     // adding art pulls just that art instead of revalidating the whole set.
     if (!needsFetch(onDisk, FORCE)) { stats.fresh++; return; }
 
-    const commit = async (buf, source) => {
+    const commit = async (raw, source) => {
+      const buf = isLeagueLogo(ddsPath) ? await downscaleLogo(raw) : raw;
       await fsp.mkdir(path.dirname(dest), { recursive: true });
       await fsp.writeFile(dest, buf);
       manifest[ddsPath] = { bytes: buf.length, ...(source ? { source } : {}) };

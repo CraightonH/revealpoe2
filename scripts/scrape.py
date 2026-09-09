@@ -58,6 +58,12 @@ SOURCES = [
         # Art/ is image assets (.png/.webp/.dds), not data -> reference via
         # ggpk-exposed instead of mirroring hundreds of MB.
         "exclude_dirs": ["Art"],
+        # Files that exist upstream but are NOT listed in the tree -H index, so
+        # the crawler can't discover them. version.txt names the client build the
+        # tables were exported from (4.5.5.1.6 -> public patch 0.5.5); the site's
+        # "data is on patch X" badge derives from it, and mirroring it in the same
+        # run keeps the label atomic with the data it labels.
+        "extra_files": ["version.txt"],
     },
     {
         # Path of Building's hand-maintained PoE 2 Uniques (NOT in game files).
@@ -209,8 +215,13 @@ def scrape_source(src: dict, data_dir: str, workers: int, include_min: bool,
     wanted = [(u, r) for u, r in all_files
               if want_file(r, include_min, include_html)]
     skipped = len(all_files) - len(wanted)
+    # Known-but-unlisted files (see SOURCES) bypass discovery and selection.
+    extra = [f for f in src.get("extra_files", []) if f not in {r for _, r in wanted}]
+    wanted += [(urljoin(base, f), f) for f in extra]
     log(f"    discovered {len(all_files)} files; selected {len(wanted)} "
-        f"(skipped {skipped} min/other) in {time.time() - t0:.1f}s")
+        f"(skipped {skipped} min/other"
+        + (f"; +{len(extra)} unlisted: {', '.join(extra)}" if extra else "")
+        + f") in {time.time() - t0:.1f}s")
 
     if dry_run:
         return {"name": name, "base": base, "discovered": len(all_files),
@@ -265,6 +276,12 @@ def scrape_source(src: dict, data_dir: str, workers: int, include_min: bool,
     # Atomic-ish swap: <name> -> <name>.bak, staging -> <name>, drop .bak.
     final = os.path.join(data_dir, name)
     bak = os.path.join(data_dir, f"{name}.bak")
+    # The per-folder CLAUDE.md guide is the one committed file inside a mirror
+    # (a .gitignore exception); carry it across the swap so a re-scrape never
+    # shows up as a deleted tracked file.
+    guide = os.path.join(final, "CLAUDE.md")
+    if os.path.isfile(guide):
+        shutil.copy2(guide, os.path.join(staging, "CLAUDE.md"))
     shutil.rmtree(bak, ignore_errors=True)
     if os.path.exists(final):
         os.replace(final, bak)

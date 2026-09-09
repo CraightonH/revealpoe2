@@ -71,6 +71,12 @@ jobs:
       - name: Fetch GGG passive tree + atlases
         run: npm run fetch:tree
 
+      # League list for the header's patch/league badge — captured here, with the
+      # data it labels, and never on the cached deploy path. Warns (never fails)
+      # if GGG is unreachable; the previous leagues.json in the cache is kept.
+      - name: Fetch GGG league list
+        run: npm run fetch:leagues
+
       - name: Build static site (full)
         run: |
           set -euo pipefail

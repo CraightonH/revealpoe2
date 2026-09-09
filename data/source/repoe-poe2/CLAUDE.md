@@ -15,6 +15,10 @@ python scripts/scrape.py --dry-run       # discover + count, download nothing
 Upstream `https://repoe-fork.github.io/poe2/` regenerates on every game patch;
 re-run to re-mirror. Stdlib-only (no pip install). ~259M, ~2100 files.
 
+`version.txt` (root of the mirror) is the client build RePoE exported from, e.g.
+`4.5.5.1.6` → public patch `0.5.5`. `scripts/graph/gameMeta.js` turns it into
+`meta.game.patch` for the header badge, so a mirror without it shows no badge.
+
 ## Working with the data
 
 Consumed at build time by `scripts/graph/*` (gems, bases, uniques, affixes,
