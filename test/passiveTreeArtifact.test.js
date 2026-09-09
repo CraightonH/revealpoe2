@@ -88,6 +88,25 @@ test('buildCards: a small passive renders with the popup shell', () => {
   assert.match(html, /itemHeader doubleLine/);
 });
 
+test('buildCards: a skill-granting node links the granted gem instead of leaking GGG markup', () => {
+  const cards = buildCards();
+  // Loyal Hellhound (Infernalist) grants Summon Infernal Hound. GGG's stat line
+  // is "Grants Skill: <underline>{Summon Infernal Hound}" — in-game markup that
+  // must never reach the page; the card renders the site's gem link instead
+  // (deep link into /gems + nested gem tooltip via data-card-url).
+  const html = cards[17754];
+  assert.ok(html, 'Loyal Hellhound card exists');
+  assert.doesNotMatch(html, /underline|[{}]/, 'no raw GGG markup');
+  assert.match(html, /href="\/gems#summon-infernal-hound"/);
+  assert.match(html, /data-card-url="\/gem\/summon-infernal-hound\/card"/);
+  assert.match(html, /class="skill-grant-link">Summon Infernal Hound</);
+  assert.equal((html.match(/Grants Skill:/g) || []).length, 1, 'exactly one Grants Skill line');
+  // Every GGG "Grants Skill" node resolves the same way — none leaks markup.
+  for (const [h, c] of Object.entries(cards)) {
+    assert.doesNotMatch(c, /&lt;underline&gt;|<underline>/, `card ${h} leaks <underline>`);
+  }
+});
+
 test('buildStats: raw stat lines keyed by hash, markup preserved, feed the agg module', () => {
   const art = buildArtifact();
   const stats = buildStats();
