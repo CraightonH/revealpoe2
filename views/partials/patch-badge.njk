@@ -1,0 +1,22 @@
+{#
+  Data-provenance badge: which patch / league the site's data describes.
+  Fed by build/graph.json meta.game (scripts/graph/gameMeta.js) via the GAME
+  template global. Renders nothing until the mirror carries version.txt +
+  leagues.json. Desktop: league wordmark + version pill; mobile keeps only the
+  pill (CSS). The wordmark falls back to the league name if the art is missing.
+#}
+{% if GAME and GAME.patch %}
+{% set tip = 'Data: Path of Exile 2 patch ' ~ GAME.patch %}
+{% if GAME.build %}{% set tip = tip ~ ' (client ' ~ GAME.build ~ ')' %}{% endif %}
+{% if GAME.league %}{% set tip = tip ~ ' — ' ~ GAME.league.name ~ ' league' %}{% endif %}
+{% if GAME.dataFetchedAt %}{% set tip = tip ~ ' — scraped ' ~ (GAME.dataFetchedAt | truncate(10, true, '')) %}{% endif %}
+<div class="patch-badge" title="{{ tip }}">
+  {% if GAME.league %}
+  <img class="patch-badge__logo" src="/static/img/{{ GAME.league.logoDds | replace('.dds', '.webp') }}"
+       alt="{{ GAME.league.name }}" width="160" height="62" decoding="async"
+       onerror="this.hidden=true;this.nextElementSibling.hidden=false">
+  <span hidden class="patch-badge__name">{{ GAME.league.name }}</span>
+  {% endif %}
+  <span class="patch-badge__version">{{ GAME.patch }}</span>
+</div>
+{% endif %}

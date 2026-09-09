@@ -41,6 +41,28 @@ body {
 }
 .search-box { flex: 1; max-width: 480px; position: relative; }
 
+/* Data-provenance badge: which patch/league the data describes (meta.game).
+   Centred in the header's free space: both it and .card-size carry
+   margin-left:auto, so flex splits the slack evenly on either side of it. The
+   league wordmark is the game's own art (downscaled on ingest); the version pill
+   is the one element that survives on mobile. */
+.patch-badge { display: inline-flex; align-items: center; gap: 10px; margin-left: auto; white-space: nowrap; }
+.patch-badge__logo { display: block; height: 38px; width: auto; }
+.patch-badge__name { color: var(--text); font-size: 13px; letter-spacing: 0.04em; }
+.patch-badge__version {
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-base);
+  color: var(--color-prop);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+@media (max-width: 640px) {
+  .patch-badge__logo, .patch-badge__name { display: none; }
+}
+
 /* Card size control (S/M/L) — scales the gem-detail unit, persisted in localStorage */
 .card-size { display: flex; gap: 2px; margin-left: auto; }
 .card-size button {

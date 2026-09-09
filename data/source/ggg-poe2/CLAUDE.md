@@ -20,6 +20,19 @@ after a game patch to refresh tree geometry/atlases. Writes:
 Upstream: `https://pathofexile2.com/internal-api/content/game-passive-skill-tree`
 and the versioned atlas asset URLs it references.
 
+## leagues.json — current PoE2 league list
+
+```
+npm run fetch:leagues  # scripts/fetch-ggg-leagues.js
+```
+
+GGG's PoE2 trade league list (`/api/trade2/data/leagues` — the public `/leagues`
+API ignores `realm=poe2`). Consumed by `scripts/graph/gameMeta.js`: the first
+softcore, non-permanent entry is "the current league" for the header's patch
+badge, and its wordmark is derived as `Art/2DArt/Logos/POELeagueLogo<Name>.dds`.
+Run it with `scrape.py` so the label is captured with the data it labels; it warns
+and keeps the previous file if GGG is unreachable.
+
 ## Working with the data
 
 This backs the interactive tree **render only** (geometry, node icons/frames,

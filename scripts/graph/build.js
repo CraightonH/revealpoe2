@@ -12,6 +12,7 @@ import { passiveNodes, ascendancyNodes, passiveEdges } from './passives.js';
 import { keywordNodes } from './keywords.js';
 import { manualOverlay, hashManual } from './manual.js';
 import { validateGraph } from './validate.js';
+import { readGameMeta, GAME_META_FILES } from './gameMeta.js';
 
 // Source files this build reads — the sourceHash covers exactly these.
 const SOURCE_FILES = [
@@ -33,6 +34,9 @@ const SOURCE_FILES = [
   `${REPOE}/stat_translations/active_skill_gem_stat_descriptions.json`,
   `${REPOE}/stat_translations/skill_stat_descriptions.json`,
   `${REPOE}/gem_tags.json`,
+  // Patch/league provenance inputs (meta.game) — a refreshed label must
+  // invalidate the artifact just like refreshed tables do.
+  ...GAME_META_FILES,
 ];
 
 // Hash of the source files this build reads. Reused by the app's boot-time
@@ -111,6 +115,9 @@ export function buildGraph() {
       sourceHash: hashSources(),
       manualHash: hashManual(),
       provenance: provenanceSummary(nodes, edges),
+      // Which patch / league this data describes — drives the header badge.
+      // Null fields until the mirror is refreshed with version.txt + leagues.json.
+      game: readGameMeta(getDataDir()),
     },
     nodes,
     edges,

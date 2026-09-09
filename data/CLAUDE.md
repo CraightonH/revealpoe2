@@ -24,6 +24,7 @@ it. See **Data Architecture: the Graph** in the root `CLAUDE.md`.
 ```
 python scripts/scrape.py      # repoe-poe2 + pob-uniques  (RePoE-fork mirror)
 npm run fetch:tree            # ggg-poe2  (GGG passive-tree data + atlases)
+npm run fetch:leagues         # ggg-poe2/leagues.json (current PoE2 leagues → header patch badge)
 npm run fetch:dat             # ggpk-poe2 (raw .datc64 tables via ggpk.exposed)
 npm run build:images          # public/img/ icons (optional; placeholder fallback otherwise)
 ```

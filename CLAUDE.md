@@ -10,7 +10,9 @@ A modern, beginner-friendly Path of Exile 2 wiki. The target experience is the o
 
 All game data is in `data/source/` — gitignored (large, ~250M, regenerable via `scripts/scrape.py`), so never committed. Paths below are relative to `data/source/`. (Hand-authored overlays under `data/manual/` *are* committed — see **Data Provenance**.)
 
-**Each `data/source/<folder>/` has its own committed `CLAUDE.md`** (a `.gitignore` exception — the guides ship even though the data doesn't) covering how to regenerate that mirror if empty and how to work with it. They auto-load when you work in that folder. `data/CLAUDE.md` is the overview. Regenerate commands: `python scripts/scrape.py` (repoe-poe2, pob-uniques), `npm run fetch:tree` (ggg-poe2), `npm run fetch:dat` (ggpk-poe2 — raw `.datc64`, see `docs/ggpk-datamining.md`).
+**Each `data/source/<folder>/` has its own committed `CLAUDE.md`** (a `.gitignore` exception — the guides ship even though the data doesn't) covering how to regenerate that mirror if empty and how to work with it. They auto-load when you work in that folder. `data/CLAUDE.md` is the overview. Regenerate commands: `python scripts/scrape.py` (repoe-poe2, pob-uniques), `npm run fetch:tree` + `npm run fetch:leagues` (ggg-poe2), `npm run fetch:dat` (ggpk-poe2 — raw `.datc64`, see `docs/ggpk-datamining.md`).
+
+**Which patch/league the data describes** is *not* in the tables. It's derived at build time (`scripts/graph/gameMeta.js` → `meta.game` in the graph) from two files captured with the data: RePoE's `version.txt` (client build `4.M.m.*` → public patch `0.M.m`; mirrored by `scrape.py`) and GGG's PoE2 trade league list (`ggg-poe2/leagues.json`, written by `fetch:leagues`; the first softcore non-permanent entry is "the current league", its wordmark is `Art/2DArt/Logos/POELeagueLogo<Name>.dds`). The header badge (`views/partials/patch-badge.njk`) renders from `meta.game` and is absent until both files exist — so a refreshed label always ships with, never ahead of, refreshed data.
 
 ### Primary tables (most-used)
 
@@ -164,7 +166,7 @@ Production is a **static prerender** of the app, hosted on **Cloudflare Pages** 
 - `pob-uniques/*.json` format: each file is a list of strings. Each string is a multi-line block where line 1 = unique name, rest = PoB text format with `{tags:...}` and `{variant:...}` annotations.
 - `stat_translations/specific_skill_stat_descriptions/` has 559 per-skill files — load on demand, not at startup.
 - **Passive tree is the exception to "everything from RePoE."** The interactive tree **render** (geometry, node icons/frames, connector arcs, class art) is sourced from **GGG's own official web data + sprite atlases**, not RePoE — RePoE lacks the precomputed per-edge arc geometry and the web atlases. Ingested by `scripts/fetch-ggg-tree.js` (`npm run fetch:tree`) into `data/source/ggg-poe2/` + `public/img/passive-atlas/`; RePoE still backs the passive **pages/relationships** (graph). **Read `docs/passive-tree.md` before touching the tree.** RePoE's `repoe-poe2/passive_skill_trees/` (Default = character tree; Atlas/EndgameMap = endgame) remains the source for those graph relationships only.
-- Data was scraped 2026-06-03 from RePoE-fork. Re-scrape with `python scripts/scrape.py` after game patches (writes to `data/source/`). **Also run `npm run fetch:tree`** after a patch to refresh the GGG passive-tree data/atlases (it's part of `build:static`, so deploy covers it; run once on a fresh checkout for dev).
+- Data was scraped 2026-06-03 from RePoE-fork. Re-scrape with `python scripts/scrape.py` after game patches (writes to `data/source/`). **Also run `npm run fetch:tree`** after a patch to refresh the GGG passive-tree data/atlases, and **`npm run fetch:leagues`** to refresh the league list behind the header's patch badge (both are part of `build:static` and `refresh-data.yml`; run once on a fresh checkout for dev).
 
 ## Environment
 

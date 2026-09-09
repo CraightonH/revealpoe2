@@ -7,6 +7,7 @@ import { registerSearch } from './routes/search.js';
 import { registerKeywords } from './routes/keywords.js';
 import { registerTheorycraft } from './routes/theorycraft.js';
 import { installKeywordPhrases } from './data/keywordPhrases.js';
+import { graphMeta } from './data/graph.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
@@ -26,6 +27,8 @@ export function createApp() {
   // Overridable for preview deploys; defaults to production.
   const SITE_URL = (process.env.SITE_URL || 'https://revealpoe2.com').replace(/\/$/, '');
   env.addGlobal('SITE_URL', SITE_URL);
+  // Which patch/league the data describes — the header badge (partials/patch-badge.njk).
+  env.addGlobal('GAME', graphMeta().game ?? null);
   app.set('view engine', 'njk');
 
   app.use('/static', express.static(path.join(root, 'public')));
