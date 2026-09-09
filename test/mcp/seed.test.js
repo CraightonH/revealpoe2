@@ -15,8 +15,9 @@ test('build-mcp-sql emits a loadable, complete seed', { skip: !DatabaseSync && '
   const db = new DatabaseSync(':memory:');
   db.exec(sql);
   const one = (q) => db.prepare(q).get();
-  assert.equal(one('SELECT count(*) AS n FROM nodes').n, 7369);
-  assert.equal(one('SELECT count(*) AS n FROM edges').n, 65973);
+  // Graph row counts are pinned to the 0.5.5 mirror; passive_* come from the GGG tree.
+  assert.equal(one('SELECT count(*) AS n FROM nodes').n, 7453);
+  assert.equal(one('SELECT count(*) AS n FROM edges').n, 66429);
   assert.equal(one('SELECT count(*) AS n FROM passive_nodes').n, 4784);
   assert.equal(one('SELECT count(*) AS n FROM passive_edges').n, 5426);
   // FTS wired to nodes rowids
