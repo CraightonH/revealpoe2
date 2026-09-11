@@ -660,15 +660,18 @@ export default function init(canvas, data, opts = {}) {
   // Timing is hover-intent: the mouse must REST on a node for SHOW_DELAY before
   // its card opens (a sweep across the tree opens nothing), and the card snaps
   // away on hide with no fade — the fade-out is what made cards feel like they
-  // lingered. HIDE_GRACE is only the travel window from node edge to card
-  // (offset 14px); the card itself hides instantly on mouseleave.
+  // lingered. The graces below are how long the cursor may REST outside the
+  // node and every tooltip before the card goes; moving toward an open tooltip
+  // keeps re-arming them, moving away hides at once (see leaveIntent).
   const SHOW_DELAY = 250;
-  const HIDE_GRACE = 160;
+  const HIDE_GRACE = 160;   // leaving the node: the card sits 14px away
+  const RETURN_GRACE = 250; // leaving a tooltip: the trip back may be long, people pause
   let tip = null, hoverHash = null, overTip = false, hideTimer = null;
   let showTimer = null, pendingHash = null; // armed hover-intent (mouse only)
-  // Last cursor position while ON the open card's node. Leaving the node, the
-  // cursor's net displacement from here says where it's headed (see leaveIntent).
-  let lastNodePt = null;
+  // Where the cursor was when it last left "safe ground" — the node, or a
+  // tooltip. Net displacement from here says where it's headed (see leaveIntent).
+  let aimOrigin = null;
+  let returning = false; // true while travelling back from a tooltip across open space
   const CARD_APPROACH_PAD = 12; // px the card rect is inflated by for the aim test
   const AIM_MIN_PX = 4;         // displacement below this is jitter, not direction
   // Hash of the generic-attribute node whose Str/Int/Dex picker is currently
@@ -710,33 +713,66 @@ export default function init(canvas, data, opts = {}) {
       ] },
       onMount(instance) {
         instance.popper.addEventListener('mouseenter', () => { overTip = true; cancelHide(); });
-        instance.popper.addEventListener('mouseleave', () => { overTip = false; hideTip(); });
+        instance.popper.addEventListener('mouseleave', (e) => {
+          // Crossing into a nested tooltip (glossary term, instill recipe, gem
+          // card) is intent to keep reading, not to leave. Stepping off onto open
+          // space is judged by the return-trip rules instead of hiding here: the
+          // document mouseover that follows starts the trip, so a slow crossing
+          // of the 6px gap to a docked instill tooltip keeps both cards open,
+          // while heading anywhere else still hides on the next move.
+          const to = e.relatedTarget;
+          if (to && to.closest && to.closest('[data-tippy-root]')) return;
+          if (!to) { overTip = false; hideTip(); } // left the window: nothing follows
+        });
         if (!instance.popper._attrBound) {
           instance.popper._attrBound = true;
           instance.popper.addEventListener('click', onAttrOptionClick);
         }
       },
     });
+    // "In tooltips" intent, page-wide. Entering any tooltip while the card is
+    // open is safe ground (cancel any hide). Leaving them onto open space starts
+    // a return trip: from that exit point, movement toward an open tooltip keeps
+    // the card, movement away hides it, resting for RETURN_GRACE hides it. This
+    // is what lets you get back to the node card after a middle tooltip (e.g.
+    // instill → glossary) has closed underneath you.
+    const inTooltip = (t) => !!(t && t.closest && t.closest('[data-tippy-root]'));
+    document.addEventListener('mouseover', (e) => {
+      if (!tip || !tip.state.isVisible || hoverHash == null) return;
+      if (inTooltip(e.target)) { overTip = true; returning = false; cancelHide(); return; }
+      if (!overTip) return;
+      overTip = false;
+      returning = true;
+      aimOrigin = { x: e.clientX, y: e.clientY };
+      scheduleHide(RETURN_GRACE);
+    });
+    // Off-canvas travel (side panel, page chrome) is judged here; on-canvas
+    // travel by the pointermove hit-test, which also knows about nodes.
+    document.addEventListener('mousemove', (e) => {
+      if (!returning || overTip || !tip || !tip.state.isVisible || hoverHash == null) return;
+      if (e.target === canvas || inTooltip(e.target)) return;
+      leaveIntent(e.clientX, e.clientY, RETURN_GRACE);
+    });
     return tip;
   }
   function cancelPendingShow() { clearTimeout(showTimer); showTimer = null; pendingHash = null; }
   // overTip is reset here because unmounting the popper under the cursor fires
   // no mouseleave — a stale `true` would veto every later grace-hide.
-  function hideTip() { hoverHash = null; attrChoosing = null; overTip = false; if (tip) tip.hide(); }
+  function hideTip() { hoverHash = null; attrChoosing = null; overTip = false; returning = false; if (tip) tip.hide(); }
   // Gesture dismissal (pan / pinch / zoom / leave): also drop any armed hover-intent
   // so a card can't pop up mid-gesture.
   function dismissTip() { cancelPendingShow(); hideTip(); }
   // Arm once, don't restart: pointermove fires continuously, and re-arming on
   // every move meant a card never hid while the cursor kept moving over empty
-  // canvas. The grace counts from the moment the cursor first left the node.
-  function scheduleHide() {
+  // canvas. Only leaveIntent re-arms, and only for movement toward a tooltip.
+  function scheduleHide(ms = HIDE_GRACE) {
     if (hideTimer) return;
     hideTimer = setTimeout(() => {
       hideTimer = null;
       // Trust the live :hover state over the flag — it can't go stale.
       const onCard = overTip || !!(tip && tip.popper && tip.popper.matches(':hover'));
       if (!onCard) hideTip();
-    }, HIDE_GRACE);
+    }, ms);
   }
   function cancelHide() { clearTimeout(hideTimer); hideTimer = null; }
   // Does the ray from (px,py) along (dx,dy) hit the rect? Slab method, forward
@@ -752,20 +788,26 @@ export default function init(canvas, data, opts = {}) {
     }
     return tmax > 0;
   }
-  // Cursor moved onto empty canvas while a card is open. Intent, not a timer:
-  // aimed at the card → keep it for the travel grace (armed once, from the first
-  // off-node sample); aimed anywhere else → the card hides right now. Too little
-  // displacement to judge → fall back to the grace.
-  function leaveIntent(x, y) {
+  // Cursor is on open space while a card is open. Intent, not a timer: aimed
+  // at the card or any other open tooltip → keep it, re-arming the grace so it
+  // lives as long as the cursor keeps coming; aimed anywhere else → hide right
+  // now; too little displacement to judge → let the armed grace run (resting
+  // outside is how you leave).
+  function leaveIntent(x, y, grace = HIDE_GRACE) {
     const popper = tip && tip.popper;
     if (!popper || !tip.state.isMounted) { cancelHide(); hideTip(); return; } // no card to travel into
-    if (!lastNodePt) { scheduleHide(); return; }
-    const dx = x - lastNodePt.x, dy = y - lastNodePt.y;
-    if (Math.hypot(dx, dy) < AIM_MIN_PX) { scheduleHide(); return; }
-    const r = popper.getBoundingClientRect();
-    const box = { left: r.left - CARD_APPROACH_PAD, right: r.right + CARD_APPROACH_PAD,
-                  top: r.top - CARD_APPROACH_PAD, bottom: r.bottom + CARD_APPROACH_PAD };
-    if (rayHitsRect(x, y, dx, dy, box)) { scheduleHide(); return; }
+    if (!aimOrigin) { scheduleHide(grace); return; }
+    const dx = x - aimOrigin.x, dy = y - aimOrigin.y;
+    if (Math.hypot(dx, dy) < AIM_MIN_PX) { scheduleHide(grace); return; }
+    // Targets: every open tooltip, plus the node the card belongs to — heading
+    // back to the node is intent to keep its card, not to leave.
+    const targets = [...document.querySelectorAll('[data-tippy-root] .tippy-box')].map((el) => el.getBoundingClientRect()).filter((r) => r.width);
+    targets.push({ left: tipRect.x, right: tipRect.x + tipRect.w, top: tipRect.y, bottom: tipRect.y + tipRect.h });
+    for (const r of targets) {
+      const box = { left: r.left - CARD_APPROACH_PAD, right: r.right + CARD_APPROACH_PAD,
+                    top: r.top - CARD_APPROACH_PAD, bottom: r.bottom + CARD_APPROACH_PAD };
+      if (rayHitsRect(x, y, dx, dy, box)) { cancelHide(); scheduleHide(grace); return; }
+    }
     cancelHide(); hideTip();
   }
   // Mouse hover: open `node`'s card only once the cursor has rested on it for
@@ -1989,11 +2031,13 @@ export default function init(canvas, data, opts = {}) {
     const best = nodeAtClient(e.clientX, e.clientY);
     canvas.style.cursor = best ? 'pointer' : '';
     if (best) {
-      lastNodePt = { x: e.clientX, y: e.clientY };
+      aimOrigin = { x: e.clientX, y: e.clientY };
+      if (best.h === hoverHash) returning = false; // made it back to the node
       hoverCardFor(best);
     } else {
       cancelPendingShow();
-      if (hoverHash != null) leaveIntent(e.clientX, e.clientY); else scheduleHide();
+      if (hoverHash != null) leaveIntent(e.clientX, e.clientY, returning ? RETURN_GRACE : HIDE_GRACE);
+      else scheduleHide();
       clearPathPreview();
     }
   });

@@ -106,6 +106,25 @@
         for (var p = ref.parentElement; p; p = p.parentElement) {
           if (p.matches && p.matches('[data-card-url]') && p._tippy && p._tippy !== instance) p._tippy.hide();
         }
+        // A card tooltip opened from INSIDE a passive-tree hover card (instill
+        // recipe, granted-skill gem) docks below that card instead of beside
+        // its small trigger, so it never covers the node's own text. The tree
+        // card is the positioning reference; flip to above when out of room.
+        var host = ref.closest && ref.matches('[data-card-url]') && ref.closest('.tippy-box[data-theme~="passive-tree"]');
+        if (host && !instance._poe2Docked) {
+          instance._poe2Docked = true;
+          instance.setProps({
+            placement: 'bottom-start',
+            offset: [0, 6],
+            getReferenceClientRect: function () { return host.getBoundingClientRect(); },
+            popperOptions: {
+              modifiers: [
+                { name: 'preventOverflow', options: { padding: 8, altAxis: true, tether: false } },
+                { name: 'flip', options: { padding: 8, fallbackPlacements: ['top-start'] } },
+              ],
+            },
+          });
+        }
         var url = config.resolveUrl(instance.reference);
         if (!url) return false;
         function apply(html) {
