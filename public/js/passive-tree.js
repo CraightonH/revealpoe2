@@ -710,12 +710,30 @@ export default function init(canvas, data, opts = {}) {
       ] },
       onMount(instance) {
         instance.popper.addEventListener('mouseenter', () => { overTip = true; cancelHide(); });
-        instance.popper.addEventListener('mouseleave', () => { overTip = false; hideTip(); });
+        instance.popper.addEventListener('mouseleave', (e) => {
+          // Crossing into a nested tooltip (glossary term, instill recipe, gem
+          // card) is intent to keep reading, not to leave. The card stays until
+          // the cursor lands outside every tooltip — see the document mouseover.
+          const to = e.relatedTarget;
+          if (to && to.closest && to.closest('[data-tippy-root]')) return;
+          overTip = false; hideTip();
+        });
         if (!instance.popper._attrBound) {
           instance.popper._attrBound = true;
           instance.popper.addEventListener('click', onAttrOptionClick);
         }
       },
+    });
+    // While the cursor is "in tooltips" (card or a nested one), the first
+    // mouseover outside any tooltip ends that intent. Onto the canvas, the
+    // pointermove hit-test decides (same node keeps the card); anywhere else
+    // hides it.
+    document.addEventListener('mouseover', (e) => {
+      if (!overTip || !tip || !tip.state.isVisible) return;
+      const t = e.target;
+      if (t && t.closest && t.closest('[data-tippy-root]')) return;
+      overTip = false;
+      if (t !== canvas) hideTip();
     });
     return tip;
   }
