@@ -656,7 +656,21 @@ export default function init(canvas, data, opts = {}) {
   // One Tippy instance driven by a virtual reference repositioned to the hovered
   // node. Manual trigger; a short hide delay + an over-card flag let the cursor
   // travel from the node into the (interactive) card to reach keyword tooltips.
+  //
+  // Timing is hover-intent: the mouse must REST on a node for SHOW_DELAY before
+  // its card opens (a sweep across the tree opens nothing), and the card snaps
+  // away on hide with no fade — the fade-out is what made cards feel like they
+  // lingered. HIDE_GRACE is only the travel window from node edge to card
+  // (offset 14px); the card itself hides instantly on mouseleave.
+  const SHOW_DELAY = 250;
+  const HIDE_GRACE = 160;
   let tip = null, hoverHash = null, overTip = false, hideTimer = null;
+  let showTimer = null, pendingHash = null; // armed hover-intent (mouse only)
+  // Last cursor position while ON the open card's node. Leaving the node, the
+  // cursor's net displacement from here says where it's headed (see leaveIntent).
+  let lastNodePt = null;
+  const CARD_APPROACH_PAD = 12; // px the card rect is inflated by for the aim test
+  const AIM_MIN_PX = 4;         // displacement below this is jitter, not direction
   // Hash of the generic-attribute node whose Str/Int/Dex picker is currently
   // open (set on node-click, cleared on pick / hover-change / hide). It may be
   // an unallocated node awaiting its initial choice, or an allocated cut node
@@ -669,6 +683,7 @@ export default function init(canvas, data, opts = {}) {
     document.body.appendChild(anchor);
     tip = window.tippy(anchor, {
       theme: 'poe2 passive-tree', allowHTML: true, interactive: true, maxWidth: 'none',
+      duration: [200, 0], // fade in; snap out (see timing note above)
       // hideOnClick defaults to true, which tears down the card on any click
       // outside it — including clicking the node itself (the reference is a
       // virtual anchor, not the canvas). That would hide the card the moment you
@@ -694,7 +709,7 @@ export default function init(canvas, data, opts = {}) {
         { name: 'flip', options: { padding: 8, fallbackPlacements: ['left-start', 'top', 'bottom'] } },
       ] },
       onMount(instance) {
-        instance.popper.addEventListener('mouseenter', () => { overTip = true; clearTimeout(hideTimer); });
+        instance.popper.addEventListener('mouseenter', () => { overTip = true; cancelHide(); });
         instance.popper.addEventListener('mouseleave', () => { overTip = false; hideTip(); });
         if (!instance.popper._attrBound) {
           instance.popper._attrBound = true;
@@ -704,8 +719,74 @@ export default function init(canvas, data, opts = {}) {
     });
     return tip;
   }
-  function hideTip() { hoverHash = null; attrChoosing = null; if (tip) tip.hide(); }
-  function scheduleHide() { clearTimeout(hideTimer); hideTimer = setTimeout(() => { if (!overTip) hideTip(); }, 160); }
+  function cancelPendingShow() { clearTimeout(showTimer); showTimer = null; pendingHash = null; }
+  // overTip is reset here because unmounting the popper under the cursor fires
+  // no mouseleave — a stale `true` would veto every later grace-hide.
+  function hideTip() { hoverHash = null; attrChoosing = null; overTip = false; if (tip) tip.hide(); }
+  // Gesture dismissal (pan / pinch / zoom / leave): also drop any armed hover-intent
+  // so a card can't pop up mid-gesture.
+  function dismissTip() { cancelPendingShow(); hideTip(); }
+  // Arm once, don't restart: pointermove fires continuously, and re-arming on
+  // every move meant a card never hid while the cursor kept moving over empty
+  // canvas. The grace counts from the moment the cursor first left the node.
+  function scheduleHide() {
+    if (hideTimer) return;
+    hideTimer = setTimeout(() => {
+      hideTimer = null;
+      // Trust the live :hover state over the flag — it can't go stale.
+      const onCard = overTip || !!(tip && tip.popper && tip.popper.matches(':hover'));
+      if (!onCard) hideTip();
+    }, HIDE_GRACE);
+  }
+  function cancelHide() { clearTimeout(hideTimer); hideTimer = null; }
+  // Does the ray from (px,py) along (dx,dy) hit the rect? Slab method, forward
+  // hits only. Used to ask "is the cursor aimed at the card?".
+  function rayHitsRect(px, py, dx, dy, r) {
+    let tmin = -Infinity, tmax = Infinity;
+    for (const [p, d, lo, hi] of [[px, dx, r.left, r.right], [py, dy, r.top, r.bottom]]) {
+      if (d === 0) { if (p < lo || p > hi) return false; continue; }
+      let t1 = (lo - p) / d, t2 = (hi - p) / d;
+      if (t1 > t2) [t1, t2] = [t2, t1];
+      tmin = Math.max(tmin, t1); tmax = Math.min(tmax, t2);
+      if (tmin > tmax) return false;
+    }
+    return tmax > 0;
+  }
+  // Cursor moved onto empty canvas while a card is open. Intent, not a timer:
+  // aimed at the card → keep it for the travel grace (armed once, from the first
+  // off-node sample); aimed anywhere else → the card hides right now. Too little
+  // displacement to judge → fall back to the grace.
+  function leaveIntent(x, y) {
+    const popper = tip && tip.popper;
+    if (!popper || !tip.state.isMounted) { cancelHide(); hideTip(); return; } // no card to travel into
+    if (!lastNodePt) { scheduleHide(); return; }
+    const dx = x - lastNodePt.x, dy = y - lastNodePt.y;
+    if (Math.hypot(dx, dy) < AIM_MIN_PX) { scheduleHide(); return; }
+    const r = popper.getBoundingClientRect();
+    const box = { left: r.left - CARD_APPROACH_PAD, right: r.right + CARD_APPROACH_PAD,
+                  top: r.top - CARD_APPROACH_PAD, bottom: r.bottom + CARD_APPROACH_PAD };
+    if (rayHitsRect(x, y, dx, dy, box)) { scheduleHide(); return; }
+    cancelHide(); hideTip();
+  }
+  // Mouse hover: open `node`'s card only once the cursor has rested on it for
+  // SHOW_DELAY. Re-anchors immediately if that node's card is already open.
+  // Landing on a DIFFERENT node is unambiguous intent to leave the old card, so
+  // it hides at once (no travel grace — you can't be heading into it from there).
+  // The route preview is deliberately NOT gated by the rest timer: it's cheap,
+  // in-canvas feedback that the hover registered, and it never occludes anything.
+  function hoverCardFor(node) {
+    updatePathPreview(node);
+    if (node.h === hoverHash) { cancelHide(); cancelPendingShow(); showCardFor(node); return; }
+    if (hoverHash != null) { cancelHide(); hideTip(); }
+    if (pendingHash === node.h) return;
+    cancelPendingShow();
+    pendingHash = node.h;
+    showTimer = setTimeout(() => {
+      showTimer = null; pendingHash = null;
+      cancelHide();
+      showCardFor(node);
+    }, SHOW_DELAY);
+  }
 
   // The picked attribute for an allocated node (defaults to Strength — covers
   // imported builds whose pick we don't yet decode from the share-code tag).
@@ -1740,7 +1821,7 @@ export default function init(canvas, data, opts = {}) {
     view.ox = mx - (mx - view.ox) * factor;
     view.oy = my - (my - view.oy) * factor;
     view.scale = target;
-    hideTip();
+    dismissTip();
     requestDraw();
   }, { passive: false });
 
@@ -1855,7 +1936,7 @@ export default function init(canvas, data, opts = {}) {
       beginPinch();
       dragMoved = true;
       touchInspect = null;
-      hideTip();
+      dismissTip();
       clearPathPreview();
     }
   });
@@ -1889,7 +1970,7 @@ export default function init(canvas, data, opts = {}) {
       if (!dragMoved && (Math.abs(cssDx) > 3 || Math.abs(cssDy) > 3)) {
         dragMoved = true;
         touchInspect = null; // a pan cancels a pending touch inspection
-        hideTip(); // a real pan has begun → dismiss the hover card
+        dismissTip(); // a real pan has begun → dismiss the hover card
         clearPathPreview(); // …and the path preview
       }
       if (dragMoved) {
@@ -1908,10 +1989,11 @@ export default function init(canvas, data, opts = {}) {
     const best = nodeAtClient(e.clientX, e.clientY);
     canvas.style.cursor = best ? 'pointer' : '';
     if (best) {
-      clearTimeout(hideTimer);
-      showCardFor(best);
+      lastNodePt = { x: e.clientX, y: e.clientY };
+      hoverCardFor(best);
     } else {
-      scheduleHide();
+      cancelPendingShow();
+      if (hoverHash != null) leaveIntent(e.clientX, e.clientY); else scheduleHide();
       clearPathPreview();
     }
   });
@@ -1963,6 +2045,9 @@ export default function init(canvas, data, opts = {}) {
     }
 
     // Mouse: click commits immediately. Empty space dismisses a pending picker.
+    // A click inside SHOW_DELAY is intent enough — open the card now so the
+    // attribute picker (painted into the card) has somewhere to render.
+    if (hit && pendingHash === hit.h) { cancelPendingShow(); cancelHide(); showCardFor(hit); }
     if (hit) commitTap(hit);
     else if (attrChoosing != null) { hideTip(); clearPathPreview(); }
   });
@@ -1972,6 +2057,7 @@ export default function init(canvas, data, opts = {}) {
     if (pointers.size < 2) pinch = null;
     if (e.pointerId === panId) { panId = null; dragMoved = false; }
     touchInspect = null;
+    cancelPendingShow();
     scheduleHide();
     clearPathPreview();
   });
@@ -1981,6 +2067,7 @@ export default function init(canvas, data, opts = {}) {
     // fires pointerleave and would otherwise close the just-opened inspect card.
     if (e.pointerType === 'touch') return;
     // Delay so the cursor can travel into the (interactive) card without it closing.
+    cancelPendingShow();
     scheduleHide();
     clearPathPreview();
   });
@@ -2393,7 +2480,7 @@ export default function init(canvas, data, opts = {}) {
   function destroy() {
     ro.disconnect();
     document.removeEventListener('fullscreenchange', syncFsLabel);
-    clearTimeout(codeTimer); clearTimeout(hideTimer); clearTimeout(hoverTimer);
+    clearTimeout(codeTimer); clearTimeout(hideTimer); clearTimeout(showTimer); clearTimeout(hoverTimer);
     if (tip) { try { tip.destroy(); } catch {} tip = null; }
   }
   const api = {
