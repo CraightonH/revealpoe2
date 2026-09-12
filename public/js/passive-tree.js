@@ -129,6 +129,39 @@ const CENTER_CLIP_FILL = 0.74;
 // look (docs/passive-tree.md references image #4/#5).
 const MASTERY_SCALE = 1.5;
 
+/**
+ * Frame a set of world points inside a w×h canvas.
+ *
+ * Returns the view { scale, ox, oy } that centres the points' bounding box and
+ * scales it to fill `padding` of the limiting canvas dimension, clamped to
+ * [minScale, maxScale]. Each point gets `nodePad` world units of margin so a
+ * node's own art isn't cut at the edge. A single point degenerates to a zero
+ * box and clamps to maxScale — which is exactly the "zoom right in on the one
+ * hit" case. Pure: shared by the allocation fit and the search-box fit, and
+ * unit-tested directly.
+ * @param {{x:number,y:number}[]} points
+ * @param {number} w canvas buffer width
+ * @param {number} h canvas buffer height
+ * @returns {{scale:number, ox:number, oy:number}|null} null when there are no points
+ */
+export function fitBounds(points, w, h, { padding = 0.86, nodePad = 120, minScale = 0, maxScale = Infinity } = {}) {
+  if (!points.length) return null;
+  let x0 = Infinity; let y0 = Infinity; let x1 = -Infinity; let y1 = -Infinity;
+  for (const p of points) {
+    if (p.x < x0) x0 = p.x; if (p.x > x1) x1 = p.x;
+    if (p.y < y0) y0 = p.y; if (p.y > y1) y1 = p.y;
+  }
+  const bw = (x1 - x0) + nodePad * 2;
+  const bh = (y1 - y0) + nodePad * 2;
+  const want = Math.min((w * padding) / (bw || 1), (h * padding) / (bh || 1));
+  const scale = Math.min(maxScale, Math.max(minScale, want));
+  return {
+    scale,
+    ox: w / 2 - ((x0 + x1) / 2) * scale,
+    oy: h / 2 - ((y0 + y1) / 2) * scale,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Adjacency builder (with skip-guard for ghost nodes)
 // ---------------------------------------------------------------------------
@@ -1760,21 +1793,69 @@ export default function init(canvas, data, opts = {}) {
     const hashes = [...allocated, ...wsAlloc[1], ...wsAlloc[2]];
     const pts = hashes.map((h) => nodeMap.get(h)).filter(Boolean);
     if (pts.length < 2) { fitView(); requestDraw(); return false; }
-
-    let x0 = Infinity; let y0 = Infinity; let x1 = -Infinity; let y1 = -Infinity;
-    for (const n of pts) {
-      if (n.x < x0) x0 = n.x; if (n.x > x1) x1 = n.x;
-      if (n.y < y0) y0 = n.y; if (n.y > y1) y1 = n.y;
-    }
-    // A node is drawn around its centre, so leave room for its own footprint.
-    const NODE_PAD = 120;
-    const w = (x1 - x0) + NODE_PAD * 2;
-    const h = (y1 - y0) + NODE_PAD * 2;
-    const want = Math.min((canvas.width * padding) / (w || 1), (canvas.height * padding) / (h || 1));
-    view.scale = Math.min(maxScale, Math.max(minScale, want));
-    view.ox = canvas.width / 2 - ((x0 + x1) / 2) * view.scale;
-    view.oy = canvas.height / 2 - ((y0 + y1) / 2) * view.scale;
+    Object.assign(view, fitBounds(pts, canvas.width, canvas.height, { padding, minScale, maxScale }));
     requestDraw();
+    return true;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Camera glide: ease the view to a target over GLIDE_MS. A cut from the full
+  // disc to a single node is disorienting; a short glide keeps the user oriented
+  // because they see where the camera went. The gesture handlers (wheel, drag,
+  // pinch) mutate `view` directly, so they cancel an in-flight glide rather than
+  // fight it; a newer glide supersedes an older one the same way.
+  // ---------------------------------------------------------------------------
+  const GLIDE_MS = 350;
+  let glideId = 0;
+  function cancelGlide() { glideId++; }
+  function glideTo(target) {
+    const id = ++glideId;
+    const W = canvas.width, H = canvas.height;
+    // Glide in (world-centre, scale) space, not (ox, oy, scale): lerping the
+    // offsets while the scale changes swings the centre off-target mid-flight.
+    // Scale interpolates geometrically so the zoom reads as even "steps" instead
+    // of rushing at the wide end and crawling at the close end.
+    const centreOf = (v) => ({ x: (W / 2 - v.ox) / v.scale, y: (H / 2 - v.oy) / v.scale });
+    const from = { scale: view.scale, ...centreOf(view) };
+    const to   = { scale: target.scale, ...centreOf(target) };
+    const t0 = performance.now();
+    const tick = () => {
+      if (id !== glideId) return;                     // superseded / cancelled
+      const t = Math.min(1, (performance.now() - t0) / GLIDE_MS);
+      const e = 1 - Math.pow(1 - t, 3);               // ease-out cubic
+      const scale = from.scale * Math.pow(to.scale / from.scale, e);
+      const cx = from.x + (to.x - from.x) * e;
+      const cy = from.y + (to.y - from.y) * e;
+      view.scale = scale;
+      view.ox = W / 2 - cx * scale;
+      view.oy = H / 2 - cy * scale;
+      requestDraw();
+      if (t < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+
+  /**
+   * Frame the current search hits (Enter in the search box). Only VISIBLE hits
+   * count — a hit in another ascendancy's cluster or behind an unlock gate isn't
+   * drawn, so including it would either zoom out to frame nothing or centre on
+   * empty canvas. The zoom falls out of the spread: a generic stat spans the disc
+   * and clamps wide; an exact notable name is one point and clamps close, at the
+   * deep-link distance (FOCUS_ZOOM) so Enter and ?node= land at the same zoom.
+   * @returns {boolean} true when it framed something
+   */
+  function fitSearchHits() {
+    if (!searchHits || !searchHits.size) return false;
+    const pts = [];
+    for (const h of searchHits) {
+      const n = nodeMap.get(h);
+      if (n && nodeVisible(n)) pts.push(n);
+    }
+    if (!pts.length) return false;
+    const baseFit = maxScale / MAX_SCALE_FACTOR;
+    glideTo(fitBounds(pts, canvas.width, canvas.height, {
+      minScale, maxScale: Math.min(maxScale, baseFit * FOCUS_ZOOM),
+    }));
     return true;
   }
 
@@ -1848,6 +1929,7 @@ export default function init(canvas, data, opts = {}) {
   // Wheel: zoom about the cursor.
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
+    cancelGlide();   // the user took the camera back
     const rect = canvas.getBoundingClientRect();
     // Anchor in canvas BUFFER pixels, not CSS pixels: the view transform works in
     // buffer space (canvas.width = rect.width * devicePixelRatio), so an unscaled
@@ -1966,6 +2048,7 @@ export default function init(canvas, data, opts = {}) {
   }
 
   canvas.addEventListener('pointerdown', (e) => {
+    cancelGlide();   // a press (drag/pinch/tap) takes the camera back from a glide
     canvas.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pointers.size === 1) {
@@ -2305,6 +2388,16 @@ export default function init(canvas, data, opts = {}) {
     // Typing in the box is a free search — it no longer corresponds to a pinned
     // panel stat, so drop the selection marker before running it.
     searchInput.addEventListener('input', () => { unmarkSelected(); runSearch(searchInput.value); });
+    // Enter → glide the camera to frame the hits. A fast first Enter can beat the
+    // index load: run the search once it lands, then frame. Empty box is a no-op.
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      if (!searchInput.value.trim()) return;
+      const go = () => { runSearch(searchInput.value); fitSearchHits(); };
+      if (searchIndex) go();
+      else loadSearchIndex().then(go);
+    });
   }
 
   // ---------------------------------------------------------------------------
