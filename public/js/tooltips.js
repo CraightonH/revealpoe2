@@ -110,8 +110,16 @@
         // recipe, granted-skill gem) docks below that card instead of beside
         // its small trigger, so it never covers the node's own text. The tree
         // card is the positioning reference; flip to above when out of room.
-        var host = ref.closest && ref.matches('[data-card-url]') && ref.closest('.tippy-box[data-theme~="passive-tree"]');
-        if (host && !instance._poe2Docked) {
+        var host = ref.closest && ref.closest('.tippy-box[data-theme~="passive-tree"]');
+        // Any tooltip opened from inside a tree card gets a wide interactive
+        // border: Tippy schedules its hide 80ms after the cursor leaves the
+        // trigger + 2px, and the trip from an instill box across the card's
+        // padding and the 6px dock gap is longer than that at a careful pace.
+        if (host && !instance._poe2InCard) {
+          instance._poe2InCard = true;
+          instance.setProps({ interactiveBorder: 28 });
+        }
+        if (host && ref.matches('[data-card-url]') && !instance._poe2Docked) {
           instance._poe2Docked = true;
           instance.setProps({
             placement: 'bottom-start',
