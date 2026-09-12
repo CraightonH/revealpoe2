@@ -3,7 +3,7 @@
 // These helpers are DOM-free, so they run directly under node:test.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { worldToScreen, screenToWorld } from '../public/js/passive-tree.js';
+import { worldToScreen, screenToWorld, fitBounds } from '../public/js/passive-tree.js';
 
 // ---------------------------------------------------------------------------
 // worldToScreen correctness
@@ -100,4 +100,50 @@ test('round-trip: large tree coordinates (typical passive tree range)', () => {
   const wp = screenToWorld(view, sp.x, sp.y);
   assert.ok(approx(wp.x, wx), `x round-trip: got ${wp.x}, expected ${wx}`);
   assert.ok(approx(wp.y, wy), `y round-trip: got ${wp.y}, expected ${wy}`);
+});
+
+// ---------------------------------------------------------------------------
+// fitBounds: frame a set of world points in a canvas (shared by fitAllocated
+// and the search-box Enter → frame-the-hits behaviour).
+// ---------------------------------------------------------------------------
+
+test('fitBounds: no points → null', () => {
+  assert.strictEqual(fitBounds([], 800, 600), null);
+});
+
+test('fitBounds: scale fills the padded box, centred on the box midpoint', () => {
+  // Box 1000 wide, 0 tall; padding 1 and no node pad → width-limited to 2000/1000.
+  const v = fitBounds([{ x: 0, y: 0 }, { x: 1000, y: 0 }], 2000, 2000,
+    { padding: 1, nodePad: 0, minScale: 0, maxScale: Infinity });
+  assert.strictEqual(v.scale, 2);
+  // Midpoint (500, 0) lands at the canvas centre (1000, 1000).
+  assert.strictEqual(v.ox + 500 * v.scale, 1000);
+  assert.strictEqual(v.oy + 0 * v.scale, 1000);
+});
+
+test('fitBounds: padding shrinks the fit, nodePad grows the box', () => {
+  // Box 1000 wide + 100 pad each side = 1200; fill 60% of 2400 → 1440/1200 = 1.2.
+  const v = fitBounds([{ x: 0, y: 0 }, { x: 1000, y: 0 }], 2400, 2400,
+    { padding: 0.6, nodePad: 100, minScale: 0, maxScale: Infinity });
+  assert.ok(approx(v.scale, 1.2), `scale ${v.scale}`);
+});
+
+test('fitBounds: a single point (exact notable) clamps to maxScale and centres on it', () => {
+  const v = fitBounds([{ x: 300, y: -200 }], 800, 600, { minScale: 0.01, maxScale: 0.5 });
+  assert.strictEqual(v.scale, 0.5);
+  assert.strictEqual(v.ox + 300 * v.scale, 400);
+  assert.strictEqual(v.oy + -200 * v.scale, 300);
+});
+
+test('fitBounds: a disc-wide spread (generic stat) clamps to minScale', () => {
+  const pts = [{ x: -20000, y: -20000 }, { x: 20000, y: 20000 }];
+  const v = fitBounds(pts, 800, 600, { minScale: 0.05, maxScale: 1 });
+  assert.strictEqual(v.scale, 0.05);
+  assert.strictEqual(v.ox + 0 * v.scale, 400);
+});
+
+test('fitBounds: the limiting axis wins (tall box in a wide canvas)', () => {
+  const v = fitBounds([{ x: 0, y: 0 }, { x: 0, y: 1000 }], 4000, 1000,
+    { padding: 1, nodePad: 0, minScale: 0, maxScale: Infinity });
+  assert.strictEqual(v.scale, 1);
 });
