@@ -665,7 +665,7 @@ export default function init(canvas, data, opts = {}) {
   // keeps re-arming them, moving away hides at once (see leaveIntent).
   const SHOW_DELAY = 250;
   const HIDE_GRACE = 160;   // leaving the node: the card sits 14px away
-  const RETURN_GRACE = 250; // leaving a tooltip: the trip back may be long, people pause
+  const RETURN_GRACE = 350; // leaving a tooltip: the trip back may be long, people pause
   let tip = null, hoverHash = null, overTip = false, hideTimer = null;
   let showTimer = null, pendingHash = null; // armed hover-intent (mouse only)
   // Where the cursor was when it last left "safe ground" — the node, or a
@@ -812,14 +812,16 @@ export default function init(canvas, data, opts = {}) {
   }
   // Mouse hover: open `node`'s card only once the cursor has rested on it for
   // SHOW_DELAY. Re-anchors immediately if that node's card is already open.
-  // Landing on a DIFFERENT node is unambiguous intent to leave the old card, so
-  // it hides at once (no travel grace — you can't be heading into it from there).
+  // Landing on a DIFFERENT node is judged like open space: the tree is dense,
+  // and a trip between tooltips often crosses nodes — so heading toward a
+  // tooltip keeps the old card, heading anywhere else hides it at once. Either
+  // way the new node arms its own rest timer and takes over if you stay.
   // The route preview is deliberately NOT gated by the rest timer: it's cheap,
   // in-canvas feedback that the hover registered, and it never occludes anything.
-  function hoverCardFor(node) {
+  function hoverCardFor(node, x, y) {
     updatePathPreview(node);
     if (node.h === hoverHash) { cancelHide(); cancelPendingShow(); showCardFor(node); return; }
-    if (hoverHash != null) { cancelHide(); hideTip(); }
+    if (hoverHash != null) leaveIntent(x, y, returning ? RETURN_GRACE : HIDE_GRACE);
     if (pendingHash === node.h) return;
     cancelPendingShow();
     pendingHash = node.h;
@@ -2031,9 +2033,11 @@ export default function init(canvas, data, opts = {}) {
     const best = nodeAtClient(e.clientX, e.clientY);
     canvas.style.cursor = best ? 'pointer' : '';
     if (best) {
-      aimOrigin = { x: e.clientX, y: e.clientY };
+      // The aim origin follows the cursor only on the card's own node (or when
+      // no card is open); crossing another node mid-trip keeps the trip's origin.
+      if (hoverHash == null || best.h === hoverHash) aimOrigin = { x: e.clientX, y: e.clientY };
       if (best.h === hoverHash) returning = false; // made it back to the node
-      hoverCardFor(best);
+      hoverCardFor(best, e.clientX, e.clientY);
     } else {
       cancelPendingShow();
       if (hoverHash != null) leaveIntent(e.clientX, e.clientY, returning ? RETURN_GRACE : HIDE_GRACE);
