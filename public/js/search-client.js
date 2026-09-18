@@ -37,13 +37,21 @@ if (input && target) {
     const attrs = [];
     if (r.url) attrs.push(`href="${esc(r.url)}"`);
     else if (r.cardUrl) attrs.push('tabindex="0"', 'role="button"');
+    // Glossary terms have no page and no card: the row is a tooltip target only.
+    else if (r.keyword) attrs.push('tabindex="0"');
     if (r.cardUrl) attrs.push(`data-card-url="${esc(r.cardUrl)}"`);
+    // The .kw hook (with data-keyword) is what the delegated keyword tooltip
+    // binds to — put it on the name span so hovering the term shows the definition.
+    const nameAttrs = r.keyword
+      ? `class="search-result-name kw" data-keyword="${esc(r.keyword)}"`
+      : 'class="search-result-name"';
     // Chevron cues a hover submenu/flyout — only affixes have one ("Can roll on"
-    // bases). Other hover-only results (augments) show a plain tooltip, no chevron.
+    // bases). Other hover-only results (augments, glossary terms) show a plain
+    // tooltip, no chevron.
     const caret = r.category === 'Affix' && r.cardUrl && !r.url
       ? '<span class="search-result-caret" aria-hidden="true">&rsaquo;</span>' : '';
     return `<a class="search-result-row" ${attrs.join(' ')}>` +
-      `<span class="search-result-name">${esc(r.name)}</span>` +
+      `<span ${nameAttrs}>${esc(r.name)}</span>` +
       `<span class="search-result-cat search-result-cat--${esc(String(r.category).toLowerCase())}">${esc(r.category)}</span>` +
       `${caret}</a>`;
   }

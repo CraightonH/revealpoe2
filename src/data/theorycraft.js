@@ -4,7 +4,7 @@ import { listItemClasses, getItemClass, affixBaseTargets } from './baseItems.js'
 import { listKeystones, listNotables } from './passiveTree.js';
 import { listAugments } from './augments.js';
 import { listModGroups } from './mods.js';
-import { getNode } from './graph.js';
+import { getNode, nodesByKind } from './graph.js';
 import { parseQuery, docMatches, groupQuery } from '../../public/js/query-core.js';
 
 // Query parsing/matching/grouping live in the pure, browser-shared core so
@@ -237,6 +237,27 @@ export function allDocs() {
     ...nodeDocs(listNotables(), 'notable', 'notable'),
     ...baseDocs(),
     ...augmentDocs(),
+    ...glossaryDocs(),
   ];
   return _docs;
+}
+
+// Glossary terms ride along in the doc set so the global search dropdown can
+// pin a term match to the front (see searchRank). They have no page and no
+// card — the dropdown renders them as tooltip-only rows — and groupQuery
+// deliberately excludes them, so Theory Crafting is untouched.
+function glossaryDocs() {
+  return nodesByKind('keyword').map((n) => ({
+    name: n.name,
+    slug: n.slug ?? null,
+    url: null,
+    cardUrl: null,
+    category: 'glossary',
+    keyword: n.id,
+    color: '',
+    tags: [],
+    req: [],
+    grants: [],
+    text: norm([n.name, ...(n.props.phrases ?? [])]),
+  }));
 }

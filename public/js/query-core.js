@@ -89,7 +89,7 @@ export function groupQuery(q, { docs, capPerGroup = 100 } = {}) {
   const { terms } = parseQuery(q);
   const query = (q ?? '').trim();
   if (!terms.length) return { empty: true, groups: [], total: 0, query };
-  const matched = docs.filter((d) => docMatches(d, terms));
+  const matched = docs.filter((d) => d.category !== 'glossary' && docMatches(d, terms));
   const groups = [];
   for (const g of GROUPS) {
     const items = matched.filter((d) => d.category === g.category);
@@ -114,6 +114,7 @@ const CATEGORY_LABEL = {
   gem: 'Skill', support: 'Support', spirit: 'Spirit',
   unique: 'Unique', affix: 'Affix', keystone: 'Keystone',
   notable: 'Notable', base: 'Base', augment: 'Augment',
+  glossary: 'Glossary',
 };
 
 // Round-robin order across categories for the capped dropdown.
@@ -137,6 +138,7 @@ export function toSearchDocs(rawDocs) {
       cardUrl: d.cardUrl ?? null,
       cat: d.category,
       category: CATEGORY_LABEL[d.category] ?? d.category,
+      keyword: d.keyword ?? null,
       nameHaystack: label.toLowerCase(),
       textHaystack: d.text,
     };
@@ -146,12 +148,30 @@ export function toSearchDocs(rawDocs) {
 // Rank search docs for a needle. Per category, name matches outrank stat-text
 // matches; then round-robin across categories so the capped preview shows
 // variety; finally order the chosen set alphabetically for scanning.
+//
+// Glossary terms never enter the round-robin: at most one pins to the very
+// front when the needle matches its term name (exact match first, then
+// alphabetical). A glossary term has no page — its row is a hover-tooltip
+// target, so it must not compete with navigable results for the other slots.
 export function searchRank(searchDocs, q, limit = 20) {
   const needle = (q ?? '').trim().toLowerCase();
   if (!needle) return [];
 
+  const project = (d) => ({
+    name: d.name, slug: d.slug, url: d.url, cardUrl: d.cardUrl, category: d.category,
+    keyword: d.keyword ?? null,
+  });
+
+  const gloss = searchDocs
+    .filter((d) => d.cat === 'glossary' && d.nameHaystack.includes(needle))
+    .sort((a, b) =>
+      (a.nameHaystack === needle ? 0 : 1) - (b.nameHaystack === needle ? 0 : 1) ||
+      alphaKey(a.name).localeCompare(alphaKey(b.name)));
+  const pinned = gloss.length ? [project(gloss[0])] : [];
+
   const buckets = new Map(CAT_ORDER.map((c) => [c, { name: [], text: [] }]));
   for (const d of searchDocs) {
+    if (d.cat === 'glossary') continue;
     if (!buckets.has(d.cat)) buckets.set(d.cat, { name: [], text: [] });
     const b = buckets.get(d.cat);
     if (d.nameHaystack.includes(needle)) b.name.push(d);
@@ -160,19 +180,18 @@ export function searchRank(searchDocs, q, limit = 20) {
   const queues = [...buckets.values()].map((b) => [...b.name, ...b.text]).filter((qq) => qq.length);
 
   const out = [];
+  const room = Math.max(0, limit - pinned.length);
   let drained = false;
-  while (out.length < limit && !drained) {
+  while (out.length < room && !drained) {
     drained = true;
     for (const queue of queues) {
       if (queue.length) {
         out.push(queue.shift());
         drained = false;
-        if (out.length >= limit) break;
+        if (out.length >= room) break;
       }
     }
   }
   out.sort((a, b) => alphaKey(a.name).localeCompare(alphaKey(b.name)));
-  return out.map((d) => ({
-    name: d.name, slug: d.slug, url: d.url, cardUrl: d.cardUrl, category: d.category,
-  }));
+  return [...pinned, ...out.map(project)];
 }
