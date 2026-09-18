@@ -101,9 +101,11 @@ function uniqueDocs() {
     origin: (u.origin || '').toLowerCase(),
     // poolText carries a pool-driven unique's craftable mods — without it
     // Loreweave would be findable only by name, never by what it can roll.
+    // Flavour text is deliberately NOT indexed: lore matches ("pin" in
+    // "keeping") pollute stat/mod searches with inexplicable hits.
     text: norm([
       u.name, u.base, u.baseLabel, u.origin,
-      ...(u.stats || []), ...(u.flavour || []),
+      ...(u.stats || []),
       ...(u.cultivatedText || []).map(stripKw),
       ...(u.poolText || []).map(stripKw),
     ]),
@@ -166,7 +168,9 @@ function nodeDocs(list, category, urlBase) {
     tags: [],
     req: [],
     grants: [],
-    text: norm([n.name, n.statRaw, n.flavourText]),
+    // Flavour text is display-only (hint) — indexing it lets lore matches
+    // ("pin" in "keeping") pollute stat searches with inexplicable hits.
+    text: norm([n.name, n.statRaw]),
   }));
 }
 
