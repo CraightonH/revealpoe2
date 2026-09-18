@@ -328,6 +328,33 @@ export default function init(canvas, data, opts = {}) {
   // adopting ours — see identityFromDecoded and getClassAscendancy().
   let identityFromCode = false;
 
+  // --- Persisted class/ascendancy identity (opt-in via opts.persistIdentity) ---
+  // Only the /passives page opts in: its class/ascendancy <select>s are the
+  // user's own picks, so the last explicit selection is saved to localStorage
+  // and restored on reload. Hosts that own the class (build editor, read-only
+  // previews) leave it off. A share code with real identity evidence still wins
+  // on import — importCode assigns activeClass/activeAsc directly, bypassing the
+  // write below.
+  const IDENTITY_KEY = 'revealpoe2.passiveTree.identity';
+  const persistIdentity = !!opts.persistIdentity;
+  function readStoredIdentity() {
+    if (!persistIdentity) return null;
+    try {
+      const raw = localStorage.getItem(IDENTITY_KEY);
+      if (!raw) return null;
+      const { className, ascId } = JSON.parse(raw) ?? {};
+      if (!selectableClasses.includes(className)) return null;
+      const ascIds = new Set((ascByClass[className] ?? []).map((a) => a.id));
+      return { className, ascId: ascIds.has(ascId) ? ascId : null };
+    } catch { return null; }
+  }
+  function writeStoredIdentity() {
+    if (!persistIdentity) return;
+    try {
+      localStorage.setItem(IDENTITY_KEY, JSON.stringify({ className: activeClass, ascId: activeAsc }));
+    } catch { /* storage unavailable (private mode/quota) — page still works, just not sticky */ }
+  }
+
   const atlasCache = new Map(); // name -> {img, frames, scale} | 'loading' | 'error'
   // Plain-image cache for ascendancy illustrations (no GGG atlas; ggpk webp).
   const imgCache = new Map(); // url -> Image | 'loading' | 'error'
@@ -2306,6 +2333,7 @@ export default function init(canvas, data, opts = {}) {
     }
     allocated = next;
     if (ascSel) ascSel.value = activeAsc ?? '';
+    writeStoredIdentity();
     updatePoints();
     requestDraw();
   }
@@ -2329,6 +2357,7 @@ export default function init(canvas, data, opts = {}) {
     starts = classRoot != null ? [classRoot] : [];
     if (classSel) classSel.value = name;
     populateAscOptions();
+    writeStoredIdentity();
     updatePoints();
     requestDraw();
   }
@@ -2346,6 +2375,16 @@ export default function init(canvas, data, opts = {}) {
   }
   populateAscOptions();
   if (ascSel) ascSel.addEventListener('change', () => selectAscendancy(ascSel.value));
+
+  // Restore the last explicit class/ascendancy pick (opt-in). This runs before
+  // the initialCode import at the bottom of init, so a share code carrying real
+  // identity evidence still overrides it; an allocation-free code keeps the
+  // restored identity instead of guessing (see importCode).
+  const storedIdentity = readStoredIdentity();
+  if (storedIdentity) {
+    selectClass(storedIdentity.className, { keepAllocation: true });
+    selectAscendancy(storedIdentity.ascId);
+  }
 
   // ---------------------------------------------------------------------------
   // Copy share code
