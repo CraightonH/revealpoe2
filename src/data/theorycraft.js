@@ -251,7 +251,15 @@ export function allDocs() {
 // card — the dropdown renders them as tooltip-only rows — and groupQuery
 // deliberately excludes them, so Theory Crafting is untouched.
 function glossaryDocs() {
-  return nodesByKind('keyword').map((n) => ({
+  // Keywords that duplicate a keystone/notable name carry the identical stat
+  // text — prefer the tree node (it links somewhere useful) and drop the
+  // redundant glossary row.
+  const treeNames = new Set(
+    [...listKeystones(), ...listNotables()].map((n) => n.name.toLowerCase()),
+  );
+  return nodesByKind('keyword')
+    .filter((n) => !treeNames.has(n.name.toLowerCase()))
+    .map((n) => ({
     name: n.name,
     slug: n.slug ?? null,
     url: null,

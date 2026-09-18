@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { affixCardSeeds, baseDetailSeeds, passiveDocSeeds, searchCardSeeds, extractLinks } from '../scripts/prerender.js';
+import { affixCardSeeds, baseDetailSeeds, glossaryKeywordSeeds, passiveDocSeeds, searchCardSeeds, extractLinks } from '../scripts/prerender.js';
 import { search } from '../src/data/search.js';
 import { allDocs } from '../src/data/theorycraft.js';
 
@@ -24,6 +24,17 @@ test('prerender seeds every non-affix card url the client search can open', () =
     if (doc.category !== 'affix' && doc.cardUrl) {
       assert.ok(seeds.has(doc.cardUrl), `missing search card seed for ${doc.cardUrl}`);
     }
+  }
+});
+
+test('prerender seeds every glossary keyword tooltip url the dropdown can pin', () => {
+  const seeds = new Set(glossaryKeywordSeeds());
+  assert.ok(seeds.size > 0, 'expected glossary keyword seeds');
+  for (const u of seeds) assert.match(u, /^\/api\/keyword\/.+$/);
+  for (const doc of allDocs()) {
+    if (doc.category !== 'glossary' || !doc.keyword) continue;
+    const url = `/api/keyword/${encodeURIComponent(doc.keyword)}`;
+    assert.ok(seeds.has(url), `missing glossary keyword seed for ${url}`);
   }
 });
 

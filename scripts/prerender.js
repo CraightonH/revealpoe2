@@ -101,6 +101,18 @@ export function passiveDocSeeds() {
   return [...out];
 }
 
+// Glossary rows are tooltip-only: the dropdown pins a matching keyword term and
+// hovering it fetches /api/keyword/:key. Keywords never mentioned in crawled
+// page text (e.g. "Avatar of Fire") get no fragment from the link crawl, so the
+// tooltip 404s on the static site. Seed every glossary doc's keyword URL from
+// the same doc set the client dropdown reads — same divergence-proof pattern as
+// affixCardSeeds, so the seeds can't drift from what search surfaces.
+export function glossaryKeywordSeeds() {
+  return [...new Set(allDocs()
+    .filter((d) => d.category === 'glossary' && d.keyword)
+    .map((d) => keywordUrl(d.keyword)))];
+}
+
 // Attributes whose "/..." values are internal links worth following.
 const LINK_ATTRS = ['href', 'hx-get', 'data-card-url'];
 const ATTR_RE = new RegExp(`(?:${LINK_ATTRS.join('|')})="(/[^"]*)"`, 'g');
@@ -192,6 +204,9 @@ async function run() {
   // Keystone/notable pages + cards, formerly reached via the deleted /keystones
   // index (see passiveDocSeeds).
   for (const u of passiveDocSeeds()) { const n = normalize(u); if (n) enqueue(n); }
+  // Glossary tooltip fragments for pinned terms never mentioned in crawled
+  // page text (see glossaryKeywordSeeds).
+  for (const u of glossaryKeywordSeeds()) { const n = normalize(u); if (n) enqueue(n); }
 
   async function handle(urlPath) {
     let res;
