@@ -11,6 +11,8 @@ function assertItemActionBar(html, kind, slug, classSlug = null) {
   assert.equal(countMatches(html, /class="item-action-bar"/g), 1);
   assert.match(html, new RegExp(`data-add-build-kind="${kind}" data-add-build-slug="${slug}"`));
   assert.match(html, new RegExp(`data-pin-kind="${kind}" data-pin-slug="${slug}"`));
+  assert.match(html, new RegExp(`data-share-kind="${kind}" data-share-slug="${slug}"`));
+  assert.match(html, new RegExp(`data-share-name="`));
   if (classSlug) assert.match(html, new RegExp(`data-pin-class="${classSlug}"`));
 }
 
@@ -263,4 +265,20 @@ test('cards carry the Add-to-Theory-Craft pin affordance', async () => {
   const bases = await request(app).get('/bases');
   assert.match(bases.text, /data-pin-kind="base"/);
   assert.match(bases.text, /data-pin-class="/);
+});
+
+test('detail action bars and condensed grid cards carry the Share affordance', async () => {
+  const app = createApp();
+  const detail = await request(app).get('/gem/herald-of-ash');
+  assert.match(detail.text, /data-share-kind="gem"/);
+  assert.match(detail.text, /data-share-slug="herald-of-ash"/);
+  assert.match(detail.text, /data-share-name="/);
+  // Condensed grid cards (browse grids, theorycraft results) get the same
+  // share control in their hover overlay cluster.
+  const gems = await request(app).get('/gems');
+  assert.match(gems.text, /data-share-kind="gem"/);
+  const uniques = await request(app).get('/uniques');
+  assert.match(uniques.text, /data-share-kind="unique"/);
+  const bases = await request(app).get('/bases/amulet');
+  assert.match(bases.text, /data-share-kind="base"/);
 });

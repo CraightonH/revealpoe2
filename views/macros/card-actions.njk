@@ -36,6 +36,16 @@
 </svg>
 {% endmacro %}
 
+{# Share "copy link / share sheet" icon — self-contained inline SVG, scaleIcon's style. #}
+{% macro shareIcon() %}
+<svg class="share-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+     stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+  <path d="M12 15V4"/>
+  <path d="M8 8l4-4 4 4"/>
+  <path d="M5.5 12.5V20h13v-7.5"/>
+</svg>
+{% endmacro %}
+
 {% macro addPin(kind, slug, classSlug='') %}
 {% if kind and slug %}
   <span class="add-pin" role="button" tabindex="0"
@@ -52,13 +62,22 @@
 {% endif %}
 {% endmacro %}
 
-{% macro tradeButton(url, kind, slug, classSlug='') %}
+{% macro shareLink(kind, slug, name='') %}
+{% if kind and slug %}
+  <span class="share-link" role="button" tabindex="0"
+        data-share-kind="{{ kind }}" data-share-slug="{{ slug }}"{% if name %} data-share-name="{{ name }}"{% endif %}
+        title="Share" aria-label="Share">{{ shareIcon() }}</span>
+{% endif %}
+{% endmacro %}
+
+{% macro tradeButton(url, kind, slug, classSlug='', name='') %}
 {% if url or (kind and slug) %}
 <span class="card-actions card-actions--overlay">
   {% if url %}<span class="trade-link" role="button" tabindex="0" data-trade-url="{{ url }}"
         title="Search on PoE Trade" aria-label="Search on PoE Trade">{{ scaleIcon() }}</span>{% endif %}
   {{ addBuild(kind, slug) }}
   {{ addPin(kind, slug, classSlug) }}
+  {{ shareLink(kind, slug, name) }}
 </span>
 {% endif %}
 {% endmacro %}
