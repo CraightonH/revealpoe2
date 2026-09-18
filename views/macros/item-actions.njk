@@ -1,6 +1,6 @@
-{% from "macros/card-actions.njk" import scaleIcon, buildIcon, pinIcon %}
+{% from "macros/card-actions.njk" import scaleIcon, buildIcon, pinIcon, shareIcon %}
 
-{% macro itemActionBar(kind, slug, tradeUrl, classSlug='') %}
+{% macro itemActionBar(kind, slug, tradeUrl, classSlug='', name='') %}
 <header class="item-action-bar">
   <span class="item-action-bar__actions">
     {% if tradeUrl %}
@@ -13,6 +13,9 @@
     <span class="item-action add-pin" role="button" tabindex="0"
           data-pin-kind="{{ kind }}" data-pin-slug="{{ slug }}"{% if classSlug %} data-pin-class="{{ classSlug }}"{% endif %}
           title="Add to Theory Craft" aria-label="Add to Theory Craft">{{ pinIcon() }}<span class="item-action__label">Pin</span></span>
+    <span class="item-action share-link" role="button" tabindex="0"
+          data-share-kind="{{ kind }}" data-share-slug="{{ slug }}"{% if name %} data-share-name="{{ name }}"{% endif %}
+          title="Share" aria-label="Share">{{ shareIcon() }}<span class="item-action__label">Share</span></span>
   </span>
 </header>
 {% endmacro %}

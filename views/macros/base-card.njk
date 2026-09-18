@@ -19,7 +19,7 @@
    same keyword-linked labels unique cards use; full tooltip on hover. #}
 {% macro baseListCard(b) %}
 <a class="bases-list-card" href="/bases#{{ b.classSlug }}" data-card-url="/base/{{ b.slug }}/card"{% if b.attr %} data-attr="{{ b.attr }}"{% endif %}>
-  {{ tradeButton(b.tradeUrl, 'base', b.slug, b.classSlug) }}
+  {{ tradeButton(b.tradeUrl, 'base', b.slug, b.classSlug, b.name) }}
   <div class="bases-list-header"><span class="bases-list-name">{{ b.name }}</span></div>
   <div class="bases-list-main">
     {% set sizeClass = 'bases-list-icon--' ~ b.inventorySize.w ~ 'x' ~ b.inventorySize.h %}
@@ -61,7 +61,7 @@
       <div class="itemName"><span class="lc normal-name">{{ vm.name }}</span></div>
       <div class="itemName typeLine"><span class="lc normal-type">{{ vm.className }}</span></div>
     </div>
-    {{ itemActionBar('base', vm.slug, vm.tradeUrl, vm.classSlug) }}
+    {{ itemActionBar('base', vm.slug, vm.tradeUrl, vm.classSlug, vm.name) }}
     <div class="content">
       {% if vm.properties.length %}
       <div class="Stats">

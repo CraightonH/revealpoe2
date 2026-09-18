@@ -1034,12 +1034,12 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
 .bases-list-card:focus-within .card-actions--overlay {
   opacity: 1;
 }
-/* Reserve the cluster's footprint permanently (30px inset + 74px of controls +
+/* Reserve the cluster's footprint permanently (30px inset + 100px of controls +
    breathing room) so revealing it on hover never reflows the name, and long
    names ellipsis instead of running under the icons. */
 .gem-browse-header,
 .bases-list-card .bases-list-header {
-  padding-right: 110px;
+  padding-right: 136px;
 }
 
 .trade-link {
@@ -1069,9 +1069,9 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
   display: block;
 }
 
-/* Add-to-Build and Add-to-Theory-Craft affordances share the trade-link's 22px
-   box so all three controls are the same size and line up on one row. */
-.add-build, .add-pin {
+/* Add-to-Build, Add-to-Theory-Craft and Share affordances share the trade-link's
+   22px box so all four controls are the same size and line up on one row. */
+.add-build, .add-pin, .share-link {
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -1081,8 +1081,9 @@ html[data-card-size="xl"] .tippy-box[data-theme~='poe2'] { zoom: 1.5; }
   opacity: .75;
 }
 .add-build:hover, .add-build:focus-visible,
-.add-pin:hover, .add-pin:focus-visible { opacity: 1; }
-.add-build-icon, .add-pin-icon { width: 1.05em; height: 1.05em; }
+.add-pin:hover, .add-pin:focus-visible,
+.share-link:hover, .share-link:focus-visible { opacity: 1; }
+.add-build-icon, .add-pin-icon, .share-icon { width: 1.05em; height: 1.05em; }
 
 .build-menu { position: absolute; z-index: 130; min-width: 12rem; display: flex; flex-direction: column;
   background: var(--card-bg, #14130f); border: 1px solid var(--card-border, #3a352a); border-radius: 6px;

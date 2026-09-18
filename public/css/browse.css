@@ -798,7 +798,8 @@ html[data-card-size="xl"] .gem-index { --gem-index-content-scale: 1.5; }
 }
 .item-action .trade-scale,
 .item-action .add-build-icon,
-.item-action .add-pin-icon {
+.item-action .add-pin-icon,
+.item-action .share-icon {
   width: calc(13px * var(--gem-index-content-scale, 1));
   height: calc(13px * var(--gem-index-content-scale, 1));
 }

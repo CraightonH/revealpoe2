@@ -12,7 +12,7 @@
    data-type="{{ dataType }}"
    data-origin="{{ g.origin }}"
    data-req="{{ g.req | join(' ') }}">
-  {{ tradeButton(g.tradeUrl, 'gem', g.slug) }}
+  {{ tradeButton(g.tradeUrl, 'gem', g.slug, '', g.name) }}
   <div class="gem-browse-header"><span class="gem-browse-name">{{ g.name }}</span></div>
   <div class="gem-browse-main">
     {% if g.iconUrl %}
@@ -102,7 +102,7 @@
       <div class="itemName"><span class="lc">{{ vm.name }}</span></div>
       <div class="itemName typeLine"><span class="lc">{{ vm.typeLineHtml | safe }}</span></div>
     </div>
-    {{ itemActionBar('gem', vm.slug, vm.tradeUrl) }}
+    {{ itemActionBar('gem', vm.slug, vm.tradeUrl, '', vm.name) }}
 
     <div class="content">
       <div class="Stats">
