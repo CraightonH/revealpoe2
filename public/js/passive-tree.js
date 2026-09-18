@@ -1327,6 +1327,30 @@ export default function init(canvas, data, opts = {}) {
     requestDraw();
   }
 
+  // Pull a shared-pool node into the active weapon set. Equivalent to
+  // deallocating it from the shared tree (same cascade semantics) and
+  // allocating it into the set — one click instead of deallocate → switch
+  // set → reallocate. The move only commits when the node still touches the
+  // (possibly shrunken) shared frontier and the set has budget; otherwise
+  // it's a no-op. An attribute pick on the node is preserved — it stays
+  // allocated, just in a different pool.
+  function _wsMoveFromSharedSync(h) {
+    if (!_allocMod || wsMode == null) return;
+    if (!allocated.has(h)) return;
+    const trimmed = _allocMod.deallocate(adj, allocated, starts, h);
+    const set = wsAlloc[wsMode];
+    if (!_allocMod.wsCanAfford(set, 1, budgets().ws)) return;        // set full
+    if (!_allocMod.wsCanAllocate(adj, trimmed, starts, set, h)) return; // lost frontier touch
+    allocated = trimmed;
+    wsAlloc[wsMode] = _allocMod.wsAllocate(adj, allocated, starts, set, h);
+    decodedState = null;
+    pruneWeaponLayers(); // the shared tree shrank — re-anchor both sets
+    pruneAttrChoices();
+    clearPathPreview();
+    updatePoints();
+    requestDraw();
+  }
+
   // Re-anchor both weapon-set layers to the (possibly shrunk) shared tree.
   function pruneWeaponLayers() {
     if (!_allocMod) return;
@@ -2063,7 +2087,11 @@ export default function init(canvas, data, opts = {}) {
           _wsDeallocateSync(hit.h); // second click, non-attr, or leaf: refund now
           attrChoosing = null;
         }
-      } else if (allocated.has(hit.h) || starts.includes(hit.h)) {
+      } else if (allocated.has(hit.h)) {
+        // Shared-pool node clicked while a weapon set is active — pull it into
+        // the set instead of forcing deallocate → switch → reallocate.
+        _wsMoveFromSharedSync(hit.h);
+      } else if (starts.includes(hit.h)) {
         // Shared/anchor node — backbone, not editable from here. No-op.
       } else {
         // Same "route collapses into one click" behaviour, into the set's pool.
