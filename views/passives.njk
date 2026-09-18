@@ -17,6 +17,9 @@
       initialFocus: focus != null && focus !== '' ? Number(focus) : null,
       // Remember the user's last class/ascendancy pick across reloads.
       persistIdentity: true,
+      // Remember the last allocated tree (as a share-code string) across
+      // reloads. A build link in the URL hash still wins over storage.
+      persistBuild: true,
       // /passives keeps its historic behavior: the share code lives in the URL
       // hash and Copy yields a shareable link. (No onCodeChange — the hash only
       // changes on Copy, not on every allocation.)

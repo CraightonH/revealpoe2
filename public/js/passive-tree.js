@@ -355,6 +355,30 @@ export default function init(canvas, data, opts = {}) {
     } catch { /* storage unavailable (private mode/quota) — page still works, just not sticky */ }
   }
 
+  // --- Persisted tree build (opt-in via opts.persistBuild) ---
+  // Same idea as identity above, one level up: the last allocated tree is
+  // saved as a share-code string and restored on reload. Precedence: an
+  // explicit build link (opts.initialCode) > stored build > fresh tree.
+  // Only the /passives page opts in; the build editor persists through its
+  // own build store.
+  const BUILD_KEY = 'revealpoe2.passiveTree.build';
+  const persistBuild = !!opts.persistBuild;
+  function readStoredBuild() {
+    if (!persistBuild) return null;
+    try {
+      return localStorage.getItem(BUILD_KEY) || null;
+    } catch { return null; }
+  }
+  function writeStoredBuild(code) {
+    if (!persistBuild || !code) return;
+    try {
+      localStorage.setItem(BUILD_KEY, code);
+    } catch { /* non-fatal; the tree still works, just not sticky */ }
+  }
+  // A build link wins over storage; storage wins over a fresh tree. Computed
+  // once so lastEmitted and the boot import below agree.
+  const bootCode = opts.initialCode || readStoredBuild() || null;
+
   const atlasCache = new Map(); // name -> {img, frames, scale} | 'loading' | 'error'
   // Plain-image cache for ascendancy illustrations (no GGG atlas; ggpk webp).
   const imgCache = new Map(); // url -> Image | 'loading' | 'error'
@@ -582,16 +606,20 @@ export default function init(canvas, data, opts = {}) {
   let wsMode       = null;
   let decodedState = null;
   let ready = false;                 // suppress change/emit during boot import
-  let lastEmitted = opts.initialCode || null;
+  let lastEmitted = bootCode;
   let codeTimer = null;
   function scheduleCodeChange() {
-    if (!opts.onCodeChange) return;
+    if (!opts.onCodeChange && !persistBuild) return;
     clearTimeout(codeTimer);
     codeTimer = setTimeout(async () => {
       try {
         const cm = await codeMod();
         const code = buildShareCode(cm);
-        if (code && code !== lastEmitted) { lastEmitted = code; opts.onCodeChange(code); }
+        if (code && code !== lastEmitted) {
+          lastEmitted = code;
+          writeStoredBuild(code);
+          if (opts.onCodeChange) opts.onCodeChange(code);
+        }
       } catch (err) { console.warn('[passive-tree] code emit failed:', err); }
     }, 400);
   }
@@ -2714,7 +2742,7 @@ export default function init(canvas, data, opts = {}) {
   // Load alloc + code (+ path) modules eagerly so click handlers have them ready.
   Promise.all([allocMod(), codeMod(), pathMod()]).then(async () => {
     updatePoints();                                   // show "0 / 122 · 0 / 8"
-    try { await importCode(opts.initialCode || null); }
+    try { await importCode(bootCode); }
     catch (err) { console.warn('[passive-tree] importCode error:', err); }
     ready = true;                                      // now user actions emit
     if (opts.onReady) opts.onReady(api);
