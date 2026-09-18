@@ -15,6 +15,8 @@
     load(canvas, {
       initialCode: location.hash ? location.hash.slice(1) : null,
       initialFocus: focus != null && focus !== '' ? Number(focus) : null,
+      // Remember the user's last class/ascendancy pick across reloads.
+      persistIdentity: true,
       // /passives keeps its historic behavior: the share code lives in the URL
       // hash and Copy yields a shareable link. (No onCodeChange — the hash only
       // changes on Copy, not on every allocation.)
