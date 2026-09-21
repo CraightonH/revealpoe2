@@ -270,7 +270,7 @@ const runPool = (overlays, extra = {}) => applyOverlays({
   resolveModTexts: (id) => [`text:${id}`],
   uniqueMetaByVid: (vid) => poolMeta[vid] ?? null,
   modIdsByPrefix: (p) => poolModIds.filter((id) => id.startsWith(p)),
-  flavourForVid: () => ['flavour'],
+  flavourForName: () => ['flavour'],
   ...extra,
 });
 
