@@ -59,7 +59,26 @@
       </div>
     </div>
     {% endif %}
-    {% if node.attrOptions %}
+    {% if node.choiceOptions %}
+    {# Multiple-choice node (e.g. Implanted Gems): the node itself does nothing;
+       the player picks one option, which takes the node's place for a single
+       point. The picker; paintChoiceMenu() in passive-tree.js marks the picked
+       option and collapses the list to it once picked. #}
+    <div class="Stats choice-menu">
+      <div class="explicitMod choice-hint">Choose one:</div>
+      {% for opt in node.choiceOptions %}
+      <div class="explicitMod choice-opt" data-choice-hash="{{ opt.h }}">
+        <div class="choice-opt-name">{{ opt.name }}</div>
+        {% if opt.grantedSkill %}
+        <div class="choice-grants">Grants Skill: <a href="/gems#{{ opt.grantedSkill.slug }}" data-card-url="/gem/{{ opt.grantedSkill.slug }}/card" class="skill-grant-link">{{ opt.grantedSkill.name }}</a></div>
+        {% endif %}
+        {% for line in opt.statLines %}
+        <div class="choice-stat">{{ line | safe }}</div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+    {% elif node.attrOptions %}
     {# Generic-attribute node: resting state shows the generic "+5 to any
        Attribute" line; clicking the node reveals the Str/Int/Dex picker
        (.attr-choice, hidden until then); once picked it collapses to the chosen

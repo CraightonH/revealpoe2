@@ -139,6 +139,11 @@ export function buildArtifact() {
       asc: n.asc, ws: n.ws,
       ...(n.lock ? { lock: n.lock } : {}),
       ...(n.attr ? { attr: 1 } : {}),
+      // Multiple-choice node (e.g. Implanted Gems): allocating it opens the
+      // option picker; the picked option takes the node's place (1 point, not
+      // 2). `choice` lists the option hashes; the client rewires adjacency so
+      // options hang directly off the choice node's tree neighbours.
+      ...(n.choice ? { choice: n.choice } : {}),
       ...(n.hidden ? { hidden: 1 } : {}),
     })),
     edges,
@@ -203,6 +208,19 @@ export function buildCards() {
   const emo = emotionIndex();
   const grants = grantedSkillByHash();
   const { nodes } = parseGggTree();
+  const byHash = new Map(nodes.map((x) => [x.h, x]));
+  // One menu entry per multiple-choice option (name + stat lines + granted
+  // skill, same pipeline as the node's own card). Built for the choice node's
+  // card so the in-card picker can offer the real options.
+  const choiceOptionVm = (h) => {
+    const o = byHash.get(h);
+    if (!o) return null;
+    const og = grants.get(h) ?? null;
+    const statLines = o.stats.flatMap((s) => s.split('\n')).filter(Boolean)
+      .filter((line) => !(og && /^Grants Skill:/.test(line)))
+      .map((line) => renderGameText(stripGggMarkup(line), hasDefinition));
+    return { h, name: o.name, statLines, grantedSkill: og };
+  };
   const cards = {};
   for (const n of nodes) {
     if (n.hidden) continue;
@@ -227,6 +245,7 @@ export function buildCards() {
       reminderText: [],
       flavourText: null,
       attrOptions: n.attr ? ATTR_OPTS : null,
+      choiceOptions: n.choice ? n.choice.map(choiceOptionVm).filter(Boolean) : null,
       instill,
     };
     cards[n.h] = tmpl.render({ vm });

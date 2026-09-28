@@ -65,7 +65,12 @@ function arcFor(ax, ay, bx, by, cx, cy) {
 }
 
 export function parseGggTree() {
-  const d = rawData();
+  return parseGggTreeData(rawData());
+}
+
+// Pure parse of GGG passive-tree JSON (split out so tests can inject a
+// synthetic tree without the full mirror on disk).
+export function parseGggTreeData(d) {
   const rawNodes = d.nodes;
 
   // Keep only renderable nodes: skip the synthetic root, masteries, and any
@@ -129,6 +134,10 @@ export function parseGggTree() {
       lock,
       // "+5 to any Attribute" — the player picks Str/Int/Dex when allocating.
       attr: n.isGenericAttribute || undefined,
+      // Multiple-choice back-link (option -> choice node hash), e.g. the
+      // Implanted Gems options pointing at AscendancyMercenary3Notable2.
+      // Resolved into `choice: [optionHashes]` on the choice node below.
+      choiceParent: n.multipleChoiceParent != null ? Number(n.multipleChoiceParent) : undefined,
       // Distilled Emotion "instill" recipe (3 emotion tokens) — notables only.
       recipe: Array.isArray(n.recipe) && n.recipe.length ? n.recipe : undefined,
       hidden: classStartHashes.has(h) || undefined, // class-start roots: anchor only
@@ -137,6 +146,25 @@ export function parseGggTree() {
   }
 
   const pos = new Map(nodes.map((n) => [n.h, n]));
+
+  // Multiple-choice linkage: choice node hash -> sorted option hashes, from
+  // GGG's multipleChoiceParent back-reference. This is authoritative where the
+  // choice<->option edge DIRECTION is not: Implanted Gems points at its options
+  // (out), while Projectile Proximity Specialisation is pointed at by its
+  // (its options carry the parent link either way). Non-option neighbours that
+  // merely touch the choice node (e.g. Path Seeker's "Passive Points" reward
+  // node 36676) carry no parent link and are correctly excluded.
+  const choiceOptions = new Map(); // choiceHash -> optionHash[]
+  for (const n of nodes) {
+    if (n.choiceParent == null || !keep.has(n.choiceParent)) continue;
+    if (!choiceOptions.has(n.choiceParent)) choiceOptions.set(n.choiceParent, []);
+    choiceOptions.get(n.choiceParent).push(n.h);
+  }
+  for (const n of nodes) {
+    const opts = choiceOptions.get(n.h);
+    if (opts) n.choice = opts.sort((a, b) => a - b);
+    delete n.choiceParent;
+  }
 
   // Classes → start node + central illustration placement. A start node carries
   // classStartIndex [i, …] indexing into d.classes; map each class to its node.

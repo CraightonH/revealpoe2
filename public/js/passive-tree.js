@@ -190,6 +190,61 @@ export function buildAdjacency(nodes, edges) {
 }
 
 /**
+ * Drop multiple-choice node hashes from an allocation set. The choice node
+ * itself is never allocated — the picked option takes its place — but legacy
+ * share codes (written before the fix) may still carry it; without this it
+ * would double-charge and render as allocated.
+ * @param {Set<number>} allocated
+ * @param {Map<number, number[]>} choices  choice node hash -> option hashes
+ * @returns {Set<number>}
+ */
+export function stripChoiceNodes(allocated, choices) {
+  if (!choices || choices.size === 0) return allocated;
+  const out = new Set(allocated);
+  for (const c of choices.keys()) out.delete(c);
+  return out;
+}
+
+/**
+ * Rewire adjacency around multiple-choice nodes (e.g. Implanted Gems, 60287).
+ * The choice node itself is never allocated — the picked option takes its
+ * place for a single point — so options hang directly off the choice node's
+ * tree neighbours instead of routing through it:
+ *
+ *   before:  tree -- C -- O (option only reachable via C)
+ *   after:   tree -- O,  C keeps its tree edges (menu still opens from it)
+ *
+ * With this, the untouched allocation primitives (canAllocate / reachable /
+ * wouldCascade) treat the option exactly like the choice node for pathing,
+ * while pointsSpent counts the single allocated option as 1 point. Mutates and
+ * returns `adj`.
+ * @param {Map<number, number[]>} adj
+ * @param {Map<number, number[]>} choices  choice node hash -> option hashes
+ * @returns {Map<number, number[]>}
+ */
+export function rewireChoiceAdjacency(adj, choices) {
+  for (const [c, opts] of choices) {
+    const optSet = new Set(opts);
+    // The choice node's non-option neighbours: the tree the pick attaches to.
+    const treeNbrs = (adj.get(c) ?? []).filter((n) => !optSet.has(n));
+    for (const o of opts) {
+      const next = (adj.get(o) ?? []).filter((n) => n !== c);
+      for (const t of treeNbrs) {
+        if (!next.includes(t)) next.push(t);
+        // Symmetric: the tree neighbour must reach the option too, or
+        // frontier-outward pathfinding (shortestPath) can never arrive at it.
+        const tn = adj.get(t) ?? [];
+        if (!tn.includes(o)) tn.push(o);
+        adj.set(t, tn);
+      }
+      adj.set(o, next);
+    }
+    adj.set(c, treeNbrs);
+  }
+  return adj;
+}
+
+/**
  * Count how many nodes in `targetSet` are reachable from `root` via `adjacency`,
  * only traversing edges that stay within `targetSet`.
  * Used to identify which class root "owns" a decoded allocation.
@@ -307,6 +362,19 @@ export default function init(canvas, data, opts = {}) {
 
   // Build adjacency (with skip-guard for ghost nodes).
   const adj = buildAdjacency(nodes, edges);
+
+  // Multiple-choice nodes (Implanted Gems et al.): choice hash -> option
+  // hashes, plus the reverse lookup. The choice node itself is never allocated
+  // — the picked option takes its place for a single point — so adjacency is
+  // rewired around it (see rewireChoiceAdjacency).
+  const choiceOptions = new Map();
+  const choiceOf = new Map();
+  for (const n of nodes) {
+    if (!n.choice || !n.choice.length) continue;
+    choiceOptions.set(n.h, [...n.choice]);
+    for (const o of n.choice) choiceOf.set(o, n.h);
+  }
+  rewireChoiceAdjacency(adj, choiceOptions);
 
   // --- Sprite atlases (GGG's own web art) ---
   // Each atlas is an image + a frame map ({key:{frame:{x,y,w,h}}}, meta.scale).
@@ -767,6 +835,10 @@ export default function init(canvas, data, opts = {}) {
   // an unallocated node awaiting its initial choice, or an allocated cut node
   // being re-chosen before a possible second-click cascade refund.
   let attrChoosing = null;
+  // Hash of the multiple-choice node whose option picker is currently open
+  // (set on node-click, cleared on pick / hover-change / hide). The choice node
+  // itself is never allocated; the picked option takes its place.
+  let choiceChoosing = null;
   let tipRect = { x: 0, y: 0, w: 0, h: 0 };
   function ensureTip() {
     if (tip || !window.tippy) return tip;
@@ -815,6 +887,7 @@ export default function init(canvas, data, opts = {}) {
         if (!instance.popper._attrBound) {
           instance.popper._attrBound = true;
           instance.popper.addEventListener('click', onAttrOptionClick);
+          instance.popper.addEventListener('click', onChoiceOptionClick);
         }
       },
     });
@@ -846,7 +919,7 @@ export default function init(canvas, data, opts = {}) {
   function cancelPendingShow() { clearTimeout(showTimer); showTimer = null; pendingHash = null; }
   // overTip is reset here because unmounting the popper under the cursor fires
   // no mouseleave — a stale `true` would veto every later grace-hide.
-  function hideTip() { hoverHash = null; attrChoosing = null; overTip = false; returning = false; if (tip) tip.hide(); }
+  function hideTip() { hoverHash = null; attrChoosing = null; choiceChoosing = null; overTip = false; returning = false; if (tip) tip.hide(); }
   // Gesture dismissal (pan / pinch / zoom / leave): also drop any armed hover-intent
   // so a card can't pop up mid-gesture.
   function dismissTip() { cancelPendingShow(); hideTip(); }
@@ -982,6 +1055,63 @@ export default function init(canvas, data, opts = {}) {
     attrChoosing = null;
     if (tip) paintAttrChoice(tip.popper, h);
     requestDraw();
+  }
+
+  // Clicking a multiple-choice option: allocate the OPTION (never the choice
+  // node — the pick takes the node's place, 1 point not 2). Re-picking swaps
+  // the old option out first, so the count never double-charges; the swap is
+  // budget-checked against the post-removal set, not the current one.
+  function onChoiceOptionClick(e) {
+    const opt = e.target.closest('.choice-opt[data-choice-hash]');
+    if (!opt) return;
+    const c = choiceChoosing;
+    const n = c != null ? nodeMap.get(c) : null;
+    if (c == null || !n || !n.choice) return;
+    const pick = Number(opt.getAttribute('data-choice-hash'));
+    if (!choiceOptions.get(c)?.includes(pick)) return;
+    const cur = choiceOptions.get(c).find((o) => allocated.has(o)) ?? null;
+    if (cur === pick) {
+      choiceChoosing = null; // already picked — just close the menu
+      if (tip) paintChoiceMenu(tip.popper, c);
+      requestDraw();
+      return;
+    }
+    const afterDrop = cur != null
+      ? _allocMod.deallocate(adj, allocated, starts, cur)
+      : new Set(allocated);
+    // The pick hangs off the choice node's tree neighbours (see
+    // rewireChoiceAdjacency), so it is allocatable exactly when the choice
+    // node was — but re-verify after the swap, then budget-check the swap.
+    if (!_allocMod.canAllocate(adj, afterDrop, starts, pick)) return;
+    if (!_allocMod.canAfford(afterDrop, nodeKindOf, [pick], budgets())) return;
+    allocated = _allocMod.allocate(adj, afterDrop, starts, pick);
+    decodedState = null;
+    pruneAttrChoices();
+    clearPathPreview();
+    choiceChoosing = null;
+    updatePoints();
+    if (tip) paintChoiceMenu(tip.popper, c);
+    requestDraw();
+  }
+
+  // Paint a choice node's card across its states:
+  //   choosing (picker open)            → all options, picked one marked;
+  //   picked (option allocated)         → collapse to just the picked option;
+  //   picked + choosing (re-pick)       → all options, picked one marked.
+  function paintChoiceMenu(popper, c) {
+    if (!popper) return;
+    const opts = choiceOptions.get(c) ?? [];
+    const picked = opts.find((o) => allocated.has(o)) ?? null;
+    const choosing = choiceChoosing === c;
+    const box = popper.querySelector('.choice-menu');
+    if (box) {
+      box.classList.toggle('locked', picked != null && !choosing);
+      for (const el of box.querySelectorAll('.choice-opt')) {
+        const h = Number(el.getAttribute('data-choice-hash'));
+        el.classList.toggle('chosen', h === picked);
+        el.hidden = picked != null && !choosing && h !== picked;
+      }
+    }
   }
 
   function nodeKindOf(h) {
@@ -1396,6 +1526,9 @@ export default function init(canvas, data, opts = {}) {
         const n = nodeMap.get(h);
         if (!n || !nodeVisible(n)) return false;
         if (m != null && n.asc != null) return false; // ws routes never run through ascendancy
+        // Multiple-choice nodes are never allocated — routes may END at one
+        // (hover preview of the pick's path) but never pass THROUGH one.
+        if (m == null && choiceOptions.has(h) && h !== hash) return false;
         return true;
       },
       isAttr: (h) => !!nodeMap.get(h)?.attr,
@@ -1462,18 +1595,23 @@ export default function init(canvas, data, opts = {}) {
   function _allocatePathSync(path) {
     if (!_allocMod || !path || !path.length) return;
     const primary = classPrimaryAttr();
-    const m = modeFor(path[path.length - 1]); // the target decides the pool
+    const target = path[path.length - 1];
+    const m = modeFor(target); // the target decides the pool
+    // Multiple-choice nodes are never allocated themselves — the pick takes the
+    // node's place. Strip them from the route; a choice-node target opens its
+    // picker instead of allocating.
+    const route = path.filter((h) => !choiceOptions.has(h));
     if (m != null) {
       // Route into the active weapon set's 25-pt pool.
-      if (!_allocMod.wsCanAfford(wsAlloc[m], path.length, budgets().ws)) return;
-      for (const h of path) {
+      if (!_allocMod.wsCanAfford(wsAlloc[m], route.length, budgets().ws)) return;
+      for (const h of route) {
         const n = nodeMap.get(h);
         if (n && n.attr) attrChoice.set(h, primary);
         wsAlloc[m] = _allocMod.wsAllocate(adj, allocated, starts, wsAlloc[m], h);
       }
     } else {
-      if (!canAfford(path)) return; // route doesn't fit the main budget — no-op
-      for (const h of path) {
+      if (!canAfford(route)) return; // route doesn't fit the main budget — no-op
+      for (const h of route) {
         const n = nodeMap.get(h);
         if (n && n.attr) attrChoice.set(h, primary);
         allocated = _allocMod.allocate(adj, allocated, starts, h);
@@ -1483,6 +1621,11 @@ export default function init(canvas, data, opts = {}) {
     clearPathPreview();
     updatePoints();
     requestDraw();
+    if (choiceOptions.has(target)) {
+      attrChoosing = null;
+      choiceChoosing = target;
+      if (tip && hoverHash === target) paintChoiceMenu(tip.popper, target);
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -1974,12 +2117,14 @@ export default function init(canvas, data, opts = {}) {
     if (node.h !== hoverHash) {
       hoverHash = node.h;
       attrChoosing = null; // new node → start at the resting (generic) view
+      choiceChoosing = null; // new node → start at the resting (choice) view
       loadCards().then((c) => {
         if (hoverHash !== node.h) return; // moved on while the artifact loaded
         t.setContent(c[node.h] || node.name || '');
         t.show();
         if (t.popperInstance) t.popperInstance.update();
         if (node.attr) paintAttrChoice(t.popper, node.h);
+        if (choiceOptions.has(node.h)) paintChoiceMenu(t.popper, node.h);
       });
     } else if (t.popperInstance) {
       t.popperInstance.update(); // keep anchored while panning
@@ -2077,6 +2222,11 @@ export default function init(canvas, data, opts = {}) {
       attrChoosing = null;
       if (tip && hoverHash === prior) paintAttrChoice(tip.popper, prior);
     }
+    if (choiceChoosing != null && choiceChoosing !== hit.h) {
+      const prior = choiceChoosing;
+      choiceChoosing = null;
+      if (tip && hoverHash === prior) paintChoiceMenu(tip.popper, prior);
+    }
 
     // Weapon-set editing mode acts on the active set's own pool, never the shared
     // backbone (managed in default mode). Ascendancy nodes are exempt — modeFor()
@@ -2106,6 +2256,13 @@ export default function init(canvas, data, opts = {}) {
         _deallocateSync(hit.h); // second click, non-attr, or leaf: refund now
         attrChoosing = null;
       }
+    } else if (choiceOptions.has(hit.h)) {
+      // Multiple-choice node (Implanted Gems et al.): never allocated itself — a
+      // click opens the option picker; the pick takes the node's place for 1 pt.
+      const picked = choiceOptions.get(hit.h).find((o) => allocated.has(o)) ?? null;
+      if (picked == null && !_canAllocateSync(hit.h)) return; // not reached yet
+      attrChoosing = null;
+      choiceChoosing = hit.h;
     } else if (wsAlloc[1].has(hit.h) || wsAlloc[2].has(hit.h)) {
       // Allocated in a weapon set — edit it from that set's mode, not the shared
       // view (so a shared-mode click can't pull it into the main pool too).
@@ -2128,6 +2285,8 @@ export default function init(canvas, data, opts = {}) {
     }
     // Keep the attribute card in sync (resting/menu/chosen) after the commit.
     if (hit.attr && tip && hoverHash === hit.h) paintAttrChoice(tip.popper, hit.h);
+    // Same for the multiple-choice card (resting/menu/picked).
+    if (choiceOptions.has(hit.h) && tip && hoverHash === hit.h) paintChoiceMenu(tip.popper, hit.h);
   }
 
   canvas.addEventListener('pointerdown', (e) => {
@@ -2250,6 +2409,13 @@ export default function init(canvas, data, opts = {}) {
         // For an allocated mid-line attribute, inspection itself is the first
         // step: show its current choice immediately, then the next tap refunds.
         openAttrRechoice(hit.h);
+        // For a picked multiple-choice node, inspection arms the re-pick menu
+        // directly (mirrors the allocated-attribute behaviour above); the menu
+        // itself is painted by showCardFor once the card content lands.
+        if (choiceOptions.has(hit.h) &&
+            choiceOptions.get(hit.h).some((o) => allocated.has(o))) {
+          choiceChoosing = hit.h;
+        }
         return;
       }
       touchInspect = null;
@@ -2263,7 +2429,7 @@ export default function init(canvas, data, opts = {}) {
     // attribute picker (painted into the card) has somewhere to render.
     if (hit && pendingHash === hit.h) { cancelPendingShow(); cancelHide(); showCardFor(hit); }
     if (hit) commitTap(hit);
-    else if (attrChoosing != null) { hideTip(); clearPathPreview(); }
+    else if (attrChoosing != null || choiceChoosing != null) { hideTip(); clearPathPreview(); }
   });
 
   canvas.addEventListener('pointercancel', (e) => {
@@ -2676,7 +2842,10 @@ export default function init(canvas, data, opts = {}) {
     for (const h of decodedNodeSet) {
       if (!startSet.has(h) && !weaponSetHashes.has(h)) newAllocated.add(h);
     }
-    allocated = newAllocated;
+    // Multiple-choice nodes are never allocated — the picked option takes the
+    // node's place. Older codes (or hand-built ones) may still carry the choice
+    // node hash; drop it so it can't double-charge or render as allocated.
+    allocated = stripChoiceNodes(newAllocated, choiceOptions);
     wsAlloc[1] = ws[1];
     wsAlloc[2] = ws[2];
     wsMode = null;
