@@ -9,7 +9,7 @@ test('treePanelsHtml: exposes every scoped data-hook, no id collisions', () => {
     'data-tree-reset', 'data-tree-copy', 'data-tree-fullscreen',
     'data-tree-panel', 'data-tree-panel-toggle',
     'data-tree-stats-panel', 'data-tree-stats-toggle', 'data-tree-stats-points',
-    'data-tree-stats-list', 'data-ws-set', 'data-ws-count',
+    'data-tree-stats-list', 'data-tree-stats-search', 'data-ws-set', 'data-ws-count',
   ]) assert.ok(html.includes(hook), `missing ${hook}`);
   // No id="tree-*" — two embeds on one page must not collide.
   assert.ok(!/\bid="tree/.test(html), 'panel markup must not use tree-* ids');

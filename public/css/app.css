@@ -534,6 +534,10 @@ body {
   margin-right: -4px;
   padding-right: 4px;
 }
+/* Aggregated-stats filter box. */
+.tree-stats-search { margin-bottom: 6px; }
+/* display:flex on .tree-stats-cat overrides the hidden attribute — re-hide. */
+.tree-stats-cat[hidden] { display: none; }
 .tree-stats-empty { margin: 0; color: var(--text-muted, #9a8f7a); font-style: italic; }
 .tree-stats-cat { display: flex; flex-direction: column; gap: 2px; }
 .tree-stats-cat-head {
@@ -788,6 +792,28 @@ main:has(.page--passives) + .site-footer { margin-top: 0; }
 /* Once selected the card collapses to the single chosen stat — show it as a
    plain stat line (the node itself carries the colour; respec via node click). */
 .attr-choice.locked .attr-opt { cursor: default; background: none; padding: 0; }
+
+/* Multiple-choice node (e.g. Implanted Gems): the in-card option picker. Each
+   row is a clickable option (name + stats); the picked one is highlighted, and
+   once picked the list collapses to it — re-pick via the node click, mirroring
+   the generic-attribute picker above. */
+.choice-menu .choice-hint {
+  color: var(--color-default);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.choice-menu .choice-opt {
+  cursor: pointer;
+  border-radius: 3px;
+  padding: 2px 8px;
+  transition: background 0.1s ease;
+}
+.choice-menu .choice-opt:hover { background: rgba(200, 170, 110, 0.14); }
+.choice-menu .choice-opt.chosen { background: rgba(200, 170, 110, 0.26); }
+.choice-menu .choice-opt .choice-opt-name { color: var(--color-notable); }
+.choice-menu.locked .choice-opt { cursor: default; background: none; padding: 0; }
+.choice-menu.locked .choice-hint { display: none; }
 
 /* Affix base-target flyout — the list of bases that can roll a mod. */
 .affix-bases { padding: 8px 10px; min-width: 160px; }

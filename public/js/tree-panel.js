@@ -10,6 +10,9 @@ export function treePanelsHtml() {
               aria-label="Collapse stats" title="Collapse">‹</button>
       <div class="tree-panel-body">
         <div class="tree-panel-points" data-tree-stats-points>Passive Stats</div>
+        <input type="search" data-tree-stats-search class="passive-tree-input tree-stats-search"
+               placeholder="Filter stats… (regex)" autocomplete="off" spellcheck="false"
+               aria-label="Filter aggregated stats">
         <div class="tree-stats-list" data-tree-stats-list>
           <p class="tree-stats-empty">Allocate nodes to see totals.</p>
         </div>
