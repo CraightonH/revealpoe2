@@ -534,6 +534,10 @@ body {
   margin-right: -4px;
   padding-right: 4px;
 }
+/* Aggregated-stats filter box. */
+.tree-stats-search { margin-bottom: 6px; }
+/* display:flex on .tree-stats-cat overrides the hidden attribute — re-hide. */
+.tree-stats-cat[hidden] { display: none; }
 .tree-stats-empty { margin: 0; color: var(--text-muted, #9a8f7a); font-style: italic; }
 .tree-stats-cat { display: flex; flex-direction: column; gap: 2px; }
 .tree-stats-cat-head {

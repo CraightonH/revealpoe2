@@ -206,6 +206,26 @@ export function stripChoiceNodes(allocated, choices) {
 }
 
 /**
+ * Build a case-insensitive predicate matching aggregated stat text against a
+ * user query. The query is treated as a regular expression; if it doesn't
+ * compile it falls back to a literal substring match. An empty query matches
+ * everything.
+ * @param {string} query
+ * @returns {(text: string) => boolean}
+ */
+export function statsFilterPredicate(query) {
+  const q = (query ?? '').trim();
+  if (!q) return () => true;
+  try {
+    const re = new RegExp(q, 'i');
+    return (text) => re.test(text);
+  } catch {
+    const lit = q.toLowerCase();
+    return (text) => text.toLowerCase().includes(lit);
+  }
+}
+
+/**
  * Rewire adjacency around multiple-choice nodes (e.g. Implanted Gems, 60287).
  * The choice node itself is never allocated — the picked option takes its
  * place for a single point — so options hang directly off the choice node's
@@ -766,6 +786,10 @@ export default function init(canvas, data, opts = {}) {
   // updatePoints() hook the point counter uses.
   const statsPointsEl = q('[data-tree-stats-points]');
   const statsListEl   = q('[data-tree-stats-list]');
+  const statsSearchEl = q('[data-tree-stats-search]');
+  // Aggregated-stats filter query (regex). Persists across re-renders; it is
+  // view state, not build state, so Reset Tree leaves it alone.
+  let statsFilter = '';
   // Raw per-node stat lines (markup-preserved) — a lazy static artifact, like
   // the hover cards. Loaded on first allocation.
   const STATS_URL = '/static/generated/passive-stats.json';
@@ -1231,6 +1255,26 @@ export default function init(canvas, data, opts = {}) {
 
   // Recompute and render the left stat panel from the allocated set. Lazily
   // pulls the stat-line artifact + agg module on first use, then re-renders.
+  // Hide aggregated stat lines that don't match the stats-panel filter query.
+  // Matching runs against the line text plus its category name, so e.g.
+  // "unique" surfaces the whole Unique Effects section. Categories left with
+  // no visible lines are hidden too. Re-applied after every renderStats().
+  function applyStatsFilter() {
+    if (!statsListEl) return;
+    const match = statsFilterPredicate(statsFilter);
+    for (const cat of statsListEl.querySelectorAll('.tree-stats-cat')) {
+      const head = cat.querySelector('.tree-stats-cat-head');
+      const catName = head ? head.textContent : '';
+      let visible = 0;
+      for (const line of cat.querySelectorAll('.tree-stats-line')) {
+        const show = match(`${line.textContent} ${catName}`);
+        line.hidden = !show;
+        if (show) visible++;
+      }
+      cat.hidden = visible === 0;
+    }
+  }
+
   function renderStats() {
     if (!statsListEl) return;
     if (!statLines || !_aggMod) {
@@ -1280,6 +1324,7 @@ export default function init(canvas, data, opts = {}) {
       html += '</div>';
     }
     statsListEl.innerHTML = html || '<p class="tree-stats-empty">Allocate nodes to see totals.</p>';
+    applyStatsFilter();
   }
 
   // Hover a stat line for HOVER_DELAY ms → highlight every matching node. Moving
@@ -1335,6 +1380,16 @@ export default function init(canvas, data, opts = {}) {
         if (searchInput) searchInput.value = hoverQueries[i] || '';
       }
       requestDraw();
+    });
+  }
+
+  // Aggregated-stats filter: typing narrows the list to matching lines (regex,
+  // case-insensitive); clearing the box restores everything. The query survives
+  // re-renders (alloc/dealloc rebuild the list) via applyStatsFilter().
+  if (statsSearchEl) {
+    statsSearchEl.addEventListener('input', () => {
+      statsFilter = statsSearchEl.value;
+      applyStatsFilter();
     });
   }
 
