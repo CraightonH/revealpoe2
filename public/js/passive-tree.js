@@ -246,6 +246,30 @@ export function swapChoicePick(adj, starts, allocated, choices, pick, nodeKindOf
 }
 
 /**
+ * Single step of a collapsed route (_allocatePathSync): an unpicked
+ * multiple-choice option on the route is swap-picked (single selection
+ * enforced — see swapChoicePick); anything else allocates normally. A failed
+ * swap leaves the set unchanged, so later route nodes no-op on their own
+ * allocatability checks. Pure; the closure loop delegates here.
+ * @param {Map<number, number[]>} adj
+ * @param {number[]} starts
+ * @param {Set<number>} allocated
+ * @param {Map<number, number>} choiceOf  option hash -> choice node hash
+ * @param {Map<number, number[]>} choices  choice node hash -> option hashes
+ * @param {number} h  route node to take
+ * @param {(h: number) => string} nodeKindOf
+ * @param {{ main: number, ascendancy: number, ws: number }} budgets
+ * @param {{ allocate: Function, deallocate: Function, canAllocate: Function, canAfford: Function }} alloc
+ * @returns {Set<number>}
+ */
+export function allocRouteStep(adj, starts, allocated, choiceOf, choices, h, nodeKindOf, budgets, alloc) {
+  if (choiceOf.has(h) && !allocated.has(h)) {
+    return swapChoicePick(adj, starts, allocated, choices, h, nodeKindOf, budgets, alloc) ?? allocated;
+  }
+  return alloc.allocate(adj, allocated, starts, h);
+}
+
+/**
  * Build a case-insensitive predicate matching aggregated stat text against a
  * user query. The query is treated as a regular expression; if it doesn't
  * compile it falls back to a literal substring match. An empty query matches
@@ -1627,10 +1651,6 @@ export default function init(canvas, data, opts = {}) {
         // Multiple-choice nodes are never allocated — routes may END at one
         // (hover preview of the pick's path) but never pass THROUGH one.
         if (m == null && choiceOptions.has(h) && h !== hash) return false;
-        // Unpicked multiple-choice options are never pathable either: routing
-        // through one would implicitly pick it, bypassing single selection. A
-        // picked option is part of the tree and paths normally.
-        if (choiceOf.has(h) && !allocated.has(h)) return false;
         return true;
       },
       isAttr: (h) => !!nodeMap.get(h)?.attr,
@@ -1716,7 +1736,7 @@ export default function init(canvas, data, opts = {}) {
       for (const h of route) {
         const n = nodeMap.get(h);
         if (n && n.attr) attrChoice.set(h, primary);
-        allocated = _allocMod.allocate(adj, allocated, starts, h);
+        allocated = allocRouteStep(adj, starts, allocated, choiceOf, choiceOptions, h, nodeKindOf, budgets(), _allocMod);
       }
     }
     decodedState = null;
@@ -2369,10 +2389,13 @@ export default function init(canvas, data, opts = {}) {
       // Allocated in a weapon set — edit it from that set's mode, not the shared
       // view (so a shared-mode click can't pull it into the main pool too).
     } else if (choiceOf.has(hit.h)) {
-      // A multiple-choice option clicked directly on the tree: swap-pick with
-      // single selection enforced (same as the card menu) — never a route, and
+      // A multiple-choice option picked directly on the tree: a distant pick
+      // collapses the route to it like any other node; an adjacent pick swaps
+      // in place. Either way the pick swaps with single selection enforced —
       // never a second pick alongside the current one.
-      _allocChoiceOptionSync(hit.h);
+      const path = computePath(hit.h);
+      if (path && path.length >= 2) _allocatePathSync(path);
+      else _allocChoiceOptionSync(hit.h);
     } else {
       // A multi-node shortest route collapses into a single click (the "fewer
       // clicks" win); attr nodes on it default to the class primary attribute.
