@@ -31,3 +31,4 @@ export function getDataDir() {
 }
 
 export const REPOE = 'repoe-poe2';
+export const POBDATA = 'pob-data';
