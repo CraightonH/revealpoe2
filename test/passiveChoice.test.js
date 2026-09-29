@@ -5,7 +5,7 @@
 // accounting, and the build-time choice linkage behind that rule.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { rewireChoiceAdjacency, stripChoiceNodes, swapChoicePick, buildAdjacency } from '../public/js/passive-tree.js';
+import { rewireChoiceAdjacency, stripChoiceNodes, swapChoicePick, allocRouteStep, buildAdjacency } from '../public/js/passive-tree.js';
 import { canAllocate, allocate, deallocate, pointsSpent, canAfford } from '../public/js/passive-alloc.js';
 import * as allocMod from '../public/js/passive-alloc.js';
 import { shortestPath } from '../public/js/passive-path.js';
@@ -204,4 +204,42 @@ test('swapChoicePick: null when the swap breaks the ascendancy budget', () => {
   // ...but the same swap fits once the budget allows a single point.
   const ok = swapChoicePick(adj, starts, alloc, choices, O2, kindOf, { ...budgets, ascendancy: 1 }, allocMod);
   assert.deepEqual([...ok].sort((a, b) => a - b), [O2, T]);
+});
+
+test('allocRouteStep: regular route nodes allocate normally', () => {
+  const { adj, choices } = wired();
+  const choiceOf = new Map([[O1, C], [O2, C]]);
+  const next = allocRouteStep(adj, starts, new Set(), choiceOf, choices, T, kindOf, budgets, allocMod);
+  assert.deepEqual([...next], [T]);
+});
+
+test('allocRouteStep: unpicked option on a route is swap-picked (single selection)', () => {
+  const { adj, choices } = wired();
+  const choiceOf = new Map([[O1, C], [O2, C]]);
+  // Route to O2 collapses: stepping O2 picks it for 1 point.
+  let alloc = allocRouteStep(adj, starts, new Set([T]), choiceOf, choices, O2, kindOf, budgets, allocMod);
+  assert.ok(alloc.has(O2));
+  assert.equal(pointsSpent(alloc, kindOf).ascendancy, 1);
+  // Stepping the other option swaps, never adds alongside.
+  alloc = allocRouteStep(adj, starts, alloc, choiceOf, choices, O1, kindOf, budgets, allocMod);
+  assert.ok(alloc.has(O1));
+  assert.ok(!alloc.has(O2));
+  assert.equal(pointsSpent(alloc, kindOf).ascendancy, 1);
+});
+
+test('allocRouteStep: already-picked option steps through as a no-op', () => {
+  const { adj, choices } = wired();
+  const choiceOf = new Map([[O1, C], [O2, C]]);
+  const alloc = new Set([T, O1]);
+  const next = allocRouteStep(adj, starts, alloc, choiceOf, choices, O1, kindOf, budgets, allocMod);
+  assert.deepEqual([...next].sort((a, b) => a - b), [O1, T]);
+});
+
+test('allocRouteStep: failed swap leaves the allocation unchanged', () => {
+  const { adj, choices } = wired();
+  const choiceOf = new Map([[O1, C], [O2, C]]);
+  // O1 unreachable with an empty tree around it (T not allocated).
+  const alloc = new Set();
+  const next = allocRouteStep(adj, starts, alloc, choiceOf, choices, O1, kindOf, budgets, allocMod);
+  assert.deepEqual([...next], []);
 });
