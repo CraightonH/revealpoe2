@@ -660,9 +660,15 @@ export default function init(canvas, data, opts = {}) {
   // connector. A main connector (both ends shared) is gold; a weapon-set
   // connector (both ends in the shared tree ∪ that set, at least one in the set)
   // is the set's colour. Mode-independent, so allocated ws branches always show.
+  // A choice parent counts as connected when one of its options is picked —
+  // highlights travel through it to the pick along the drawn connectors.
+  function choiceParentActive(h) {
+    const opts = choiceOptions.get(h);
+    return !!opts && opts.some((o) => allocated.has(o));
+  }
   function solidConnectorColor(na, nb) {
-    const aMain = allocated.has(na.h) || starts.includes(na.h);
-    const bMain = allocated.has(nb.h) || starts.includes(nb.h);
+    const aMain = allocated.has(na.h) || starts.includes(na.h) || choiceParentActive(na.h);
+    const bMain = allocated.has(nb.h) || starts.includes(nb.h) || choiceParentActive(nb.h);
     if (aMain && bMain) return LINE_COLOR.x;
     for (const k of [1, 2]) {
       const ak = aMain || wsAlloc[k].has(na.h);
@@ -674,8 +680,8 @@ export default function init(canvas, data, opts = {}) {
 
   // Rail (unallocated edge) brightness: 'a' if it touches any allocated node.
   function railState(na, nb) {
-    const aOn = isAllocatedAnywhere(na.h) || starts.includes(na.h);
-    const bOn = isAllocatedAnywhere(nb.h) || starts.includes(nb.h);
+    const aOn = isAllocatedAnywhere(na.h) || starts.includes(na.h) || choiceParentActive(na.h);
+    const bOn = isAllocatedAnywhere(nb.h) || starts.includes(nb.h) || choiceParentActive(nb.h);
     return (aOn || bOn) ? 'a' : 'u';
   }
 
@@ -2023,8 +2029,8 @@ export default function init(canvas, data, opts = {}) {
 
   // Preview route connectors — bright white-gold over the normal edges, reusing
   // GGG's exact arc/line geometry so the highlight tracks the real connectors.
-  // Drawn from the path's own segments (not by matching the original edge
-  // list) because rewired choice-option segments don't exist there.
+  // Rewired tree->option segments expand through the choice parent so the
+  // preview follows the tree's drawn connectors (tree -> parent -> option).
   function drawPathEdges() {
     if (!pathNodes || pathNodes.length < 2) return;
     ctx.save();
@@ -2049,7 +2055,17 @@ export default function init(canvas, data, opts = {}) {
       }
       ctx.stroke();
     };
-    for (let i = 0; i + 1 < pathNodes.length; i++) drawSeg(pathNodes[i], pathNodes[i + 1]);
+    let prev = pathNodes[0];
+    for (let i = 1; i < pathNodes.length; i++) {
+      const h = pathNodes[i];
+      const parent = choiceOf.get(h);
+      if (parent != null && prev !== parent) {
+        drawSeg(prev, parent);
+        prev = parent;
+      }
+      drawSeg(prev, h);
+      prev = h;
+    }
     if (pathEntryEdge) drawSeg(pathEntryEdge[0], pathEntryEdge[1]);
     ctx.restore();
   }
