@@ -436,6 +436,10 @@ export default function init(canvas, data, opts = {}) {
   }
   const q = (sel) => (root.querySelector ? root.querySelector(sel) : null);
   const { nodes, edges, meta } = data;
+  const edgeKey = (a, b) => (a < b ? `${a}|${b}` : `${b}|${a}`);
+  // Original edge geometry by key (for arc rendering). Rewired choice-option
+  // segments don't exist here — those draw as straight lines.
+  const edgeByKey = new Map(edges.map((e) => [edgeKey(e.a, e.b), e]));
   // Mastery background patterns (TODO #6): non-selectable decorations anchored at
   // a cluster's mastery position. Each { h, x, y, e (effect path), t (trigger
   // hashes), lock? }. Rendered lit when any trigger is allocated, dim otherwise.
@@ -794,11 +798,12 @@ export default function init(canvas, data, opts = {}) {
   let hoverHits = null;
   // Shortest-path preview: the route from the allocated frontier to the hovered
   // node. `pathNodes` = ordered hashes that would be newly allocated (target
-  // last); `pathNodeSet`/`pathEdgeSet` are draw-time lookups; `pathTarget` is the
+  // last); `pathNodeSet` is a draw-time lookup; `pathEntryEdge` is the
+  // [from, to] frontier connector; `pathTarget` is the
   // hovered node it was computed for (so we only recompute when it changes).
   let pathNodes = null;
   let pathNodeSet = null;
-  let pathEdgeSet = null;
+  let pathEntryEdge = null;
   let pathTarget = null;
   // Hover-to-highlight bookkeeping for the stat panel. `templateIndex` maps a
   // number-less stat template → every node hash carrying it (built once from the
@@ -1629,8 +1634,6 @@ export default function init(canvas, data, opts = {}) {
     return (classArt && activeClass && classArt[activeClass]?.attr) || ATTR_DEFAULT;
   }
 
-  const edgeKey = (a, b) => (a < b ? `${a}|${b}` : `${b}|${a}`);
-
   // Shortest route from the allocated frontier (allocated ∪ starts) to `hash`,
   // through visible/unlocked nodes, fewest points (attr-filler tie-break). Null
   // if the module isn't loaded yet, or the node is already taken / unreachable.
@@ -1666,7 +1669,7 @@ export default function init(canvas, data, opts = {}) {
 
   function clearPathPreview() {
     if (!pathNodes) { pathTarget = null; return; }
-    pathNodes = pathNodeSet = pathEdgeSet = null;
+    pathNodes = pathNodeSet = pathEntryEdge = null;
     pathTarget = null;
     requestDraw();
   }
@@ -1695,18 +1698,19 @@ export default function init(canvas, data, opts = {}) {
     if (target.h === pathTarget) return; // already computed for this node
     const path = computePath(target.h);
     pathTarget = target.h;
-    if (!path) { pathNodes = pathNodeSet = pathEdgeSet = null; requestDraw(); return; }
+    if (!path) { pathNodes = pathNodeSet = pathEntryEdge = null; requestDraw(); return; }
     pathNodes = path;
     pathNodeSet = new Set(path);
-    // Edge set: each consecutive pair, plus the entry edge from the frontier node
-    // that path[0] hangs off (so the route visibly connects to the allocated tree).
-    pathEdgeSet = new Set();
-    for (let i = 0; i + 1 < path.length; i++) pathEdgeSet.add(edgeKey(path[i], path[i + 1]));
+    // Entry edge from the frontier node that path[0] hangs off (so the route
+    // visibly connects to the allocated tree). Path segments themselves draw
+    // straight from pathNodes — rewired choice-option segments don't exist in
+    // the original edge list.
+    pathEntryEdge = null;
     const m = modeFor(target.h);
     const inFrontier = (nb) =>
       allocated.has(nb) || starts.includes(nb) || (m != null && wsAlloc[m].has(nb));
     for (const nb of adj.get(path[0]) ?? []) {
-      if (inFrontier(nb)) { pathEdgeSet.add(edgeKey(path[0], nb)); break; }
+      if (inFrontier(nb)) { pathEntryEdge = [path[0], nb]; break; }
     }
     requestDraw();
   }
@@ -2019,21 +2023,23 @@ export default function init(canvas, data, opts = {}) {
 
   // Preview route connectors — bright white-gold over the normal edges, reusing
   // GGG's exact arc/line geometry so the highlight tracks the real connectors.
+  // Drawn from the path's own segments (not by matching the original edge
+  // list) because rewired choice-option segments don't exist there.
   function drawPathEdges() {
-    if (!pathEdgeSet || !pathEdgeSet.size) return;
+    if (!pathNodes || pathNodes.length < 2) return;
     ctx.save();
     ctx.lineCap = 'round';
     ctx.strokeStyle = pathColor();
     ctx.lineWidth = Math.max(2, PATH_LINE_W * view.scale);
     ctx.shadowColor = 'rgba(255, 243, 196, 0.8)';
     ctx.shadowBlur = 12 * view.scale;
-    for (const e of edges) {
-      if (!pathEdgeSet.has(edgeKey(e.a, e.b))) continue;
-      const na = nodeMap.get(e.a), nb = nodeMap.get(e.b);
-      if (!na || !nb) continue;
+    const drawSeg = (a, b) => {
+      const na = nodeMap.get(a), nb = nodeMap.get(b);
+      if (!na || !nb) return;
+      const orig = edgeByKey.get(edgeKey(a, b));
       ctx.beginPath();
-      if (e.arc) {
-        const arc = e.arc;
+      if (orig?.arc) {
+        const arc = orig.arc;
         const c = worldToScreen(view, arc.cx, arc.cy);
         ctx.arc(c.x, c.y, arc.r * view.scale, arc.a0, arc.a1, arc.ccw);
       } else {
@@ -2042,7 +2048,9 @@ export default function init(canvas, data, opts = {}) {
         ctx.moveTo(sa.x, sa.y); ctx.lineTo(sb.x, sb.y);
       }
       ctx.stroke();
-    }
+    };
+    for (let i = 0; i + 1 < pathNodes.length; i++) drawSeg(pathNodes[i], pathNodes[i + 1]);
+    if (pathEntryEdge) drawSeg(pathEntryEdge[0], pathEntryEdge[1]);
     ctx.restore();
   }
 
