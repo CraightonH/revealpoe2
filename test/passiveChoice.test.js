@@ -5,8 +5,9 @@
 // accounting, and the build-time choice linkage behind that rule.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { rewireChoiceAdjacency, stripChoiceNodes, buildAdjacency } from '../public/js/passive-tree.js';
+import { rewireChoiceAdjacency, stripChoiceNodes, swapChoicePick, buildAdjacency } from '../public/js/passive-tree.js';
 import { canAllocate, allocate, deallocate, pointsSpent, canAfford } from '../public/js/passive-alloc.js';
+import * as allocMod from '../public/js/passive-alloc.js';
 import { shortestPath } from '../public/js/passive-path.js';
 import { parseGggTreeData } from '../scripts/graph/gggTree.js';
 
@@ -151,4 +152,56 @@ test('parseGggTreeData: choice node carries sorted option hashes from multipleCh
   assert.equal(byH.get(36676).choice, undefined);
   assert.equal(byH.get(32952).choice, undefined);
   assert.equal(byH.get(52440).choice, undefined);
+});
+
+test('swapChoicePick: picking a second option overwrites the first — never two picks', () => {
+  const { adj, choices } = wired();
+  let alloc = allocate(adj, new Set(), starts, T);
+  alloc = swapChoicePick(adj, starts, alloc, choices, O1, kindOf, budgets, allocMod);
+  assert.deepEqual([...alloc].sort((a, b) => a - b), [O1, T]);
+  alloc = swapChoicePick(adj, starts, alloc, choices, O2, kindOf, budgets, allocMod);
+  assert.deepEqual([...alloc].sort((a, b) => a - b), [O2, T], 'O1 swapped out, not kept alongside O2');
+  const { ascendancy } = pointsSpent(alloc, kindOf);
+  assert.equal(ascendancy, 1, 'still a single ascendancy point after the swap');
+});
+
+test('swapChoicePick: first pick with no current option just allocates', () => {
+  const { adj, choices } = wired();
+  const alloc = allocate(adj, new Set(), starts, T);
+  const next = swapChoicePick(adj, starts, alloc, choices, O1, kindOf, budgets, allocMod);
+  assert.deepEqual([...next].sort((a, b) => a - b), [O1, T]);
+});
+
+test('swapChoicePick: a legacy state with two picks collapses to one', () => {
+  const { adj, choices } = wired();
+  // Simulate the pre-fix state Craighton hit: both options allocated directly.
+  let alloc = allocate(adj, new Set(), starts, T);
+  alloc = allocate(adj, alloc, starts, O1);
+  alloc = allocate(adj, alloc, starts, O2);
+  assert.ok(alloc.has(O1) && alloc.has(O2));
+  const next = swapChoicePick(adj, starts, alloc, choices, O1, kindOf, budgets, allocMod);
+  assert.deepEqual([...next].sort((a, b) => a - b), [O1, T], 'O2 dropped, O1 kept');
+});
+
+test('swapChoicePick: null when the pick is unreachable after the drop', () => {
+  const { adj, choices } = wired();
+  // T not allocated: neither option hangs off the tree.
+  assert.equal(swapChoicePick(adj, starts, new Set(), choices, O1, kindOf, budgets, allocMod), null);
+});
+
+test('swapChoicePick: null for a hash in no choice group', () => {
+  const { adj, choices } = wired();
+  const alloc = allocate(adj, new Set(), starts, T);
+  assert.equal(swapChoicePick(adj, starts, alloc, choices, 99999, kindOf, budgets, allocMod), null);
+});
+
+test('swapChoicePick: null when the swap breaks the ascendancy budget', () => {
+  const { adj, choices } = wired();
+  let alloc = allocate(adj, new Set(), starts, T);
+  alloc = swapChoicePick(adj, starts, alloc, choices, O1, kindOf, budgets, allocMod);
+  const broke = { ...budgets, ascendancy: 0 };
+  assert.equal(swapChoicePick(adj, starts, alloc, choices, O2, kindOf, broke, allocMod), null);
+  // ...but the same swap fits once the budget allows a single point.
+  const ok = swapChoicePick(adj, starts, alloc, choices, O2, kindOf, { ...budgets, ascendancy: 1 }, allocMod);
+  assert.deepEqual([...ok].sort((a, b) => a - b), [O2, T]);
 });

@@ -206,6 +206,46 @@ export function stripChoiceNodes(allocated, choices) {
 }
 
 /**
+ * Single-selection swap for a multiple-choice group: drop every other
+ * allocated option of `pick`'s group, then allocate the pick. A group can
+ * never hold more than one pick — selecting a different option overwrites the
+ * previous choice, and legacy states with several picks collapse to one.
+ * Returns the new allocation set, or null when `pick` is in no choice group
+ * or isn't allocatable/affordable after the drop. `alloc` is the passive-alloc
+ * module (dependency-injected so this stays pure and node-testable).
+ * @param {Map<number, number[]>} adj
+ * @param {number[]} starts
+ * @param {Set<number>} allocated
+ * @param {Map<number, number[]>} choices  choice node hash -> option hashes
+ * @param {number} pick  option hash to select
+ * @param {(h: number) => string} nodeKindOf
+ * @param {{ main: number, ascendancy: number, ws: number }} budgets
+ * @param {{ deallocate: Function, canAllocate: Function, canAfford: Function, allocate: Function }} alloc
+ * @returns {Set<number> | null}
+ */
+export function swapChoicePick(adj, starts, allocated, choices, pick, nodeKindOf, budgets, alloc) {
+  let group = null;
+  for (const opts of choices.values()) {
+    if (opts.includes(pick)) { group = opts; break; }
+  }
+  if (!group) return null;
+  let afterDrop = new Set(allocated);
+  for (const o of group) {
+    if (o !== pick && afterDrop.has(o)) afterDrop = alloc.deallocate(adj, afterDrop, starts, o);
+  }
+  // Already picked (e.g. a legacy multi-pick state): collapsing the other
+  // picks is the whole swap — no spend, no re-allocatability check needed.
+  // (If a cascade dropped the pick itself, fall through and re-take it.)
+  if (afterDrop.has(pick)) return afterDrop;
+  // The pick hangs off the choice node's tree neighbours (see
+  // rewireChoiceAdjacency), so it is allocatable exactly when the choice
+  // node was — but re-verify after the swap, then budget-check the swap.
+  if (!alloc.canAllocate(adj, afterDrop, starts, pick)) return null;
+  if (!alloc.canAfford(afterDrop, nodeKindOf, [pick], budgets)) return null;
+  return alloc.allocate(adj, afterDrop, starts, pick);
+}
+
+/**
  * Build a case-insensitive predicate matching aggregated stat text against a
  * user query. The query is treated as a regular expression; if it doesn't
  * compile it falls back to a literal substring match. An empty query matches
@@ -1082,9 +1122,9 @@ export default function init(canvas, data, opts = {}) {
   }
 
   // Clicking a multiple-choice option: allocate the OPTION (never the choice
-  // node — the pick takes the node's place, 1 point not 2). Re-picking swaps
-  // the old option out first, so the count never double-charges; the swap is
-  // budget-checked against the post-removal set, not the current one.
+  // node — the pick takes the node's place, 1 point not 2). Single selection
+  // is enforced by _allocChoiceOptionSync: re-picking swaps the old option
+  // out, so the count never double-charges.
   function onChoiceOptionClick(e) {
     const opt = e.target.closest('.choice-opt[data-choice-hash]');
     if (!opt) return;
@@ -1100,22 +1140,9 @@ export default function init(canvas, data, opts = {}) {
       requestDraw();
       return;
     }
-    const afterDrop = cur != null
-      ? _allocMod.deallocate(adj, allocated, starts, cur)
-      : new Set(allocated);
-    // The pick hangs off the choice node's tree neighbours (see
-    // rewireChoiceAdjacency), so it is allocatable exactly when the choice
-    // node was — but re-verify after the swap, then budget-check the swap.
-    if (!_allocMod.canAllocate(adj, afterDrop, starts, pick)) return;
-    if (!_allocMod.canAfford(afterDrop, nodeKindOf, [pick], budgets())) return;
-    allocated = _allocMod.allocate(adj, afterDrop, starts, pick);
-    decodedState = null;
-    pruneAttrChoices();
-    clearPathPreview();
+    if (!_allocChoiceOptionSync(pick)) return;
     choiceChoosing = null;
-    updatePoints();
     if (tip) paintChoiceMenu(tip.popper, c);
-    requestDraw();
   }
 
   // Paint a choice node's card across its states:
@@ -1474,6 +1501,22 @@ export default function init(canvas, data, opts = {}) {
     requestDraw();
   }
 
+  // Allocate a multiple-choice option with single selection enforced (see
+  // swapChoicePick): picking a different option overwrites the previous one.
+  // Returns false when the pick isn't in a choice group or can't be taken.
+  function _allocChoiceOptionSync(pick) {
+    if (!_allocMod) return false;
+    const next = swapChoicePick(adj, starts, allocated, choiceOptions, pick, nodeKindOf, budgets(), _allocMod);
+    if (!next) return false;
+    allocated = next;
+    decodedState = null;
+    pruneAttrChoices();
+    clearPathPreview(); // frontier changed → stale preview
+    updatePoints();
+    requestDraw();
+    return true;
+  }
+
   function _deallocateSync(h) {
     if (!_allocMod) return;
     allocated = _allocMod.deallocate(adj, allocated, starts, h);
@@ -1584,6 +1627,10 @@ export default function init(canvas, data, opts = {}) {
         // Multiple-choice nodes are never allocated — routes may END at one
         // (hover preview of the pick's path) but never pass THROUGH one.
         if (m == null && choiceOptions.has(h) && h !== hash) return false;
+        // Unpicked multiple-choice options are never pathable either: routing
+        // through one would implicitly pick it, bypassing single selection. A
+        // picked option is part of the tree and paths normally.
+        if (choiceOf.has(h) && !allocated.has(h)) return false;
         return true;
       },
       isAttr: (h) => !!nodeMap.get(h)?.attr,
@@ -2321,6 +2368,11 @@ export default function init(canvas, data, opts = {}) {
     } else if (wsAlloc[1].has(hit.h) || wsAlloc[2].has(hit.h)) {
       // Allocated in a weapon set — edit it from that set's mode, not the shared
       // view (so a shared-mode click can't pull it into the main pool too).
+    } else if (choiceOf.has(hit.h)) {
+      // A multiple-choice option clicked directly on the tree: swap-pick with
+      // single selection enforced (same as the card menu) — never a route, and
+      // never a second pick alongside the current one.
+      _allocChoiceOptionSync(hit.h);
     } else {
       // A multi-node shortest route collapses into a single click (the "fewer
       // clicks" win); attr nodes on it default to the class primary attribute.
