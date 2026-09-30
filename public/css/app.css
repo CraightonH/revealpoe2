@@ -115,7 +115,7 @@ body {
   color: var(--color-normal);
   text-decoration: none;
 }
-.search-results a:hover { background: var(--bg-base); }
+.search-results a:hover, .search-result-row.active { background: var(--bg-base); }
 /* Escalation row — pinned to the bottom, set off from the named hits above. */
 .search-result-all {
   border-top: 1px solid var(--border);
