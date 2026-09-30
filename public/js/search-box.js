@@ -15,13 +15,39 @@
   var sel = -1; // index into rows(), -1 = nothing highlighted
   function rows() { return results.querySelectorAll('.search-result-row'); }
 
+  // Keyboard "hover": run the row's tooltip through the same delegated tippy
+  // handlers a real mouse hover would hit, so arrow-key navigation shows the
+  // card/keyword tip for affix and glossary rows.
+  function tipTarget(row) {
+    if (!row) return null;
+    var kw = row.querySelector('.kw');
+    if (kw) return kw;
+    return row.hasAttribute('data-card-url') ? row : null;
+  }
+  function showTip(row) {
+    var t = tipTarget(row);
+    if (!t || typeof window.tippy !== 'function') return;
+    // The delegate stamps _tippy on first hover; reuse it when present, else
+    // fire the delegated listener with a synthetic mouseover (the delegate
+    // creates the instance with showOnCreate, so the tip appears on its own).
+    if (t._tippy) t._tippy.show();
+    else t.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+  }
+  function hideTips() {
+    if (window.tippy && typeof window.tippy.hideAll === 'function') {
+      window.tippy.hideAll({ duration: 0 });
+    }
+  }
+
   function highlight(i) {
     var rs = rows();
     if (sel >= 0 && rs[sel]) rs[sel].classList.remove('active');
+    hideTips();
     sel = i;
     if (sel >= 0 && rs[sel]) {
       rs[sel].classList.add('active');
       rs[sel].scrollIntoView({ block: 'nearest' });
+      showTip(rs[sel]);
     }
   }
 
@@ -42,12 +68,12 @@
   }
 
   // Re-render (htmx swap or static innerHTML) invalidates the highlight.
-  new MutationObserver(function () { sel = -1; })
+  new MutationObserver(function () { sel = -1; hideTips(); })
     .observe(results, { childList: true });
 
   // Clicking anywhere outside the search box dismisses the dropdown.
   document.addEventListener('click', function (e) {
-    if (!box.contains(e.target)) { hide(); sel = -1; }
+    if (!box.contains(e.target)) { hide(); sel = -1; hideTips(); }
   });
 
   input.addEventListener('keydown', function (e) {
