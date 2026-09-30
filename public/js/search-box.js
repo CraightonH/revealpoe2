@@ -71,9 +71,10 @@
     }
   });
 
-  // "/" focuses the search box from anywhere (unless already typing).
+  // "?" (shift+/) focuses the global search box from anywhere (unless
+  // already typing). "/" is left to the page-local index filters.
   document.addEventListener('keydown', function (e) {
-    if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key !== '?' || e.ctrlKey || e.metaKey || e.altKey) return;
     var t = e.target;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' ||
               t.tagName === 'SELECT' || t.isContentEditable)) return;
