@@ -451,6 +451,13 @@ export function initItemIndex(config) {
       clearSearch();
       input.focus();
     });
+    document.addEventListener('keydown', (event) => {
+      const target = event.target;
+      const editing = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target?.isContentEditable;
+      if (event.key !== '/' || editing || event.metaKey || event.ctrlKey || event.altKey) return;
+      event.preventDefault();
+      input.focus();
+    });
   }
 
   const initialRow = root.querySelector(`${rowSelector}.is-selected`);
