@@ -38,6 +38,7 @@
   <link rel="stylesheet" href="/static/css/app.css">
   <link rel="stylesheet" href="/static/css/gem-card.css">
   <link rel="stylesheet" href="/static/css/browse.css">
+  <link rel="stylesheet" href="/static/css/settings.css">
   {% block styles %}{% endblock %}
   <link rel="stylesheet" href="/static/vendor/tippy.css">
   <script src="/static/vendor/htmx.min.js" defer></script>
@@ -60,6 +61,8 @@
   <!-- Client-side search dropdown: renders from the prebuilt index and takes
        over from the /search route on the static build. Modules are deferred. -->
   <script type="module" src="/static/js/search-client.js"></script>
+  <!-- Site settings popup (header gear button; AI provider tab). Module = deferred. -->
+  <script type="module" src="/static/js/settings.js"></script>
   <!-- Add-to-Build card affordance (delegated; menu + toast). Module = deferred. -->
   <script type="module" src="/static/js/add-to-build.js"></script>
   <!-- Add-to-Theory-Craft pin affordance (delegated; toast). Module = deferred. -->
@@ -89,6 +92,7 @@
       <button type="button" data-size="l" title="Large card">L</button>
       <button type="button" data-size="xl" title="Extra large card">XL</button>
     </div>
+    <button type="button" id="site-settings-btn" title="Settings" aria-label="Open settings"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="2.1"/><path d="M8 1.6v1.9M8 12.5v1.9M1.6 8h1.9M12.5 8h1.9M3.5 3.5l1.3 1.3M11.2 11.2l1.3 1.3M12.5 3.5l-1.3 1.3M4.8 11.2l-1.3 1.3"/></svg></button>
   </header>
   <nav class="site-nav" aria-label="Browse">
     <ul class="site-nav__list">
