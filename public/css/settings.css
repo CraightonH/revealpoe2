@@ -1,0 +1,87 @@
+/* Site settings: header gear button + popup (sidebar tabs + content pane). */
+
+/* Gear button — same footprint as the card-size control buttons (26×26, same
+   border/radius/colours) so it reads as part of the header's control cluster. */
+#site-settings-btn {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--color-normal);
+  cursor: pointer;
+}
+#site-settings-btn svg { width: 14px; height: 14px; }
+#site-settings-btn:hover { border-color: var(--color-prop); color: var(--color-prop); }
+
+/* Overlay + panel (same stacking as the picker overlay: scrim 140, panel 141,
+   below the header search dropdown at 200). */
+.settings-overlay .settings-scrim { position: fixed; inset: 0; z-index: 140; background: rgb(0 0 0 / .6); }
+.settings-panel {
+  position: fixed; z-index: 141; left: 50%; transform: translateX(-50%);
+  top: 6vh; max-height: 88vh;
+  width: min(46rem, calc(100vw - 2rem)); display: flex; flex-direction: column;
+  background: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: 0 18px 48px rgb(0 0 0 / .38); }
+.settings-head { flex: none; display: flex; justify-content: space-between; align-items: center;
+  padding: .6rem 1rem; border-bottom: 1px solid var(--border); }
+.settings-head h2 { margin: 0; font-family: var(--font-display); font-size: 15px;
+  font-weight: 500; color: var(--color-normal); }
+.settings-close { background: none; border: 0; color: inherit; font-size: 1.2rem; cursor: pointer; }
+.settings-close:hover { color: var(--color-normal); }
+
+.settings-body { flex: 1 1 auto; min-height: 0; display: flex; }
+.settings-nav { flex: none; width: 9rem; padding: .8rem .6rem; border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 2px; }
+.settings-nav button {
+  text-align: left; padding: .45rem .6rem; background: none; border: 0; border-radius: 4px;
+  color: var(--color-default); font: inherit; font-size: 13px; cursor: pointer; }
+.settings-nav button:hover { background: rgb(255 255 255 / .06); color: var(--color-normal); }
+.settings-nav button[aria-current] { background: rgb(255 255 255 / .08); color: var(--color-prop); }
+
+.settings-content { flex: 1 1 auto; min-width: 0; overflow-y: auto; padding: .9rem 1.1rem 1.2rem; }
+.settings-lead { margin: 0 0 .9rem; color: var(--color-default); font-size: 13px; line-height: 1.55; }
+.settings-field { margin-bottom: .8rem; }
+.settings-field label { display: block; margin-bottom: .3rem; color: var(--color-normal);
+  font-size: 12px; letter-spacing: .04em; text-transform: uppercase; }
+.settings-optional { text-transform: none; letter-spacing: 0; color: var(--color-default); }
+.settings-input {
+  width: 100%; padding: .5rem .7rem; font: inherit; font-size: 13px; color: inherit;
+  background: rgb(0 0 0 / .35); border: 1px solid var(--border); border-radius: 5px; }
+.settings-input:focus-visible { outline: none;
+  border-color: color-mix(in srgb, var(--accent-ui) 55%, var(--border));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-ui) 12%, transparent); }
+select.settings-input { appearance: auto; }
+.settings-hint { margin: .3rem 0 0; color: var(--color-default); font-size: 11.5px; line-height: 1.5; }
+
+.settings-actions { display: flex; align-items: center; gap: .6rem; margin: .4rem 0 1rem; flex-wrap: wrap; }
+.settings-btn-action {
+  padding: .45rem .9rem; font: inherit; font-size: 13px; cursor: pointer;
+  background: var(--bg-base); border: 1px solid var(--border); border-radius: 5px;
+  color: var(--color-normal); }
+.settings-btn-action:hover { border-color: var(--color-prop); color: var(--color-prop); }
+.settings-status { font-size: 12.5px; color: var(--color-default); }
+.settings-status.ok { color: var(--color-prop); }
+.settings-status.err { color: var(--color-corrupted, #d63b3b); }
+
+.settings-help { border-top: 1px solid var(--border); padding-top: .8rem; }
+.settings-help h3 { margin: 0 0 .5rem; font-family: var(--font-smallcaps); font-size: 13px;
+  letter-spacing: .06em; color: var(--color-normal); }
+.settings-help h4 { margin: .7rem 0 .3rem; font-size: 13px; color: var(--color-normal); }
+.settings-help ol { margin: 0 0 .4rem; padding-left: 1.3rem; color: var(--color-default);
+  font-size: 12.5px; line-height: 1.6; }
+.settings-help p { color: var(--color-default); font-size: 12.5px; line-height: 1.6; }
+.settings-help code {
+  font-family: ui-monospace, monospace; font-size: 11.5px; padding: .1em .35em;
+  background: rgb(0 0 0 / .4); border: 1px solid var(--border); border-radius: 4px;
+  color: var(--color-normal); }
+
+@media (max-width: 560px) {
+  .settings-body { flex-direction: column; }
+  .settings-nav { width: auto; flex-direction: row; border-right: 0;
+    border-bottom: 1px solid var(--border); padding: .5rem .8rem; }
+}
