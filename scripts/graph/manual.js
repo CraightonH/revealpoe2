@@ -382,7 +382,7 @@ function expandPoolUniques(data, ctx, via) {
       classSlug,
       vid: e.vid,
       iconDds: meta.visual_identity?.dds_file ?? null,
-      flavour: ctx.flavourForVid(e.vid),
+      flavour: ctx.flavourForName(e.unique),
       inventorySize: { w: meta.inventory_width, h: meta.inventory_height },
       // toUnique() in src/data/uniques.js indexes props.variants[currentIndex] for
       // implicits/explicits. A pool unique has no guaranteed mods, so it presents
@@ -480,7 +480,7 @@ export function applyOverlays({
   // guardrail (kept as injections so applyOverlays stays pure/testable).
   uniqueMetaByVid = () => null,
   modIdsByPrefix = () => [],
-  flavourForVid = () => null,
+  flavourForName = () => null,
   repoeUniqueNames = () => [],
 }) {
   const byId = new Map(nodes.map((n) => [n.id, n]));
@@ -533,7 +533,7 @@ export function applyOverlays({
     resolveModTexts,
     uniqueMetaByVid,
     modIdsByPrefix,
-    flavourForVid,
+    flavourForName,
   };
 
   const outNodes = [];
@@ -667,7 +667,7 @@ export function manualOverlay({ nodes, edges }) {
     resolveModTexts,
     uniqueMetaByVid: (vid) => uniqueMetaIndex().byVid.get(vid) ?? null,
     modIdsByPrefix: (prefix) => modIdList().filter((id) => id.startsWith(prefix)),
-    flavourForVid: (vid) => getFlavourLines(vid),
+    flavourForName: (name) => getFlavourLines(name),
     repoeUniqueNames: () => uniqueMetaIndex().names,
   });
 }

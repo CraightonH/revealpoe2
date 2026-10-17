@@ -229,6 +229,9 @@ export function uniqueNodes() {
     for (const text of entries) {
       const parsed = parseBlock(text);
       if (!parsed) continue;
+      // PoB's FlavourText is keyed by PoB's own name spelling — try it before
+      // the RePoE-reconciled name.
+      const pobName = parsed.name;
       parsed.name = reconcileName(parsed.name, parsed.base, metaByName);
       const slug = slugify(parsed.name);
       if (seenSlug.has(slug)) continue; // same-name dedup: keep first
@@ -240,7 +243,7 @@ export function uniqueNodes() {
       const { className, classSlug } = classify(parsed.base, rawItemClass);
       const variants = resolveVariants(parsed);
       const currentIndex = currentIndexOf(variants);
-      const flavour = getFlavourLines(meta?.visual_identity?.id);
+      const flavour = getFlavourLines(parsed.name) ?? getFlavourLines(pobName);
 
       const props = {
         base: parsed.base,

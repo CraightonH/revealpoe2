@@ -17,6 +17,7 @@
 // base resolver can store them on base nodes and retire mods.js's source reads.
 import { loadJson } from './loader.js';
 import { REPOE } from './source.js';
+import { pobModOverlay } from './pobMods.js';
 import { slugify } from '../../src/data/slug.js';
 import { makeNode, makeEdge, KINDS, EDGE_TYPES } from './schema.js';
 import { abyssBoss, humanizeType, toGenericDisplay } from '../../src/data/affixText.js';
@@ -45,16 +46,21 @@ function originOf(domain, gen) {
   return null;
 }
 
-// A single tier row — raw facts only; the app renders text -> HTML.
+// A single tier row — raw facts only; the app renders text -> HTML. Display
+// fields (name, text) come from PoB's mod pool (pobMods.js) with a RePoE
+// fallback for the RePoE-only mods PoB doesn't list; stats/tags stay on RePoE.
 function tierRecord(id, v) {
+  const overlay = pobModOverlay(id);
   return {
     id,
-    name: v.name,
-    text: v.text ?? '',
+    name: overlay?.name ?? v.name,
+    text: overlay?.text ?? v.text ?? '',
     level: v.required_level ?? 0,
     generationType: v.generation_type,
     stats: v.stats ?? [],
     tags: v.implicit_tags ?? [],
+    // Trade-site stat hashes (PoB-only) — reserved for future trade integration.
+    ...(overlay?.tradeHashes?.length ? { tradeHashes: overlay.tradeHashes } : {}),
   };
 }
 
@@ -106,6 +112,7 @@ export function affixNodes() {
       tiers: r.tiers.map((t) => ({
         id: t.id, name: t.name, text: t.text, level: t.level,
         generationType: t.generationType, stats: t.stats, tags: t.tags,
+        ...(t.tradeHashes ? { tradeHashes: t.tradeHashes } : {}),
       })),
     };
     const search = [humanizeType(r.type), toGenericDisplay(top.text)].join(' ').toLowerCase();

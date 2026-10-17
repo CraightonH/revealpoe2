@@ -71,6 +71,16 @@ SOURCES = [
         "base": "https://repoe-fork.github.io/pob-data/poe2/Uniques/",
         "exclude_dirs": [],
     },
+    {
+        # Path of Building community data export (repoe-fork mirror): item mod
+        # pool (ModItem*, ModFlask/Jewel/Charm/Veiled/Corrupted), gems, bases,
+        # flavour text, enemies. JSON conversions of PoB's Lua tables — the
+        # metadata/curation authority for build entities. Uniques/ is excluded:
+        # already mirrored separately as pob-uniques above.
+        "name": "pob-data",
+        "base": "https://repoe-fork.github.io/pob-data/poe2/",
+        "exclude_dirs": ["Uniques"],
+    },
 ]
 
 # Scraped data lives in-repo under data/source/ (gitignored). This script sits in
